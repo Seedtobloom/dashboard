@@ -457,49 +457,41 @@
       pollWake();
     });
   }
-  var NAV_CLIENTS = [], NAV_OPEN = {};
+  var NAV_CLIENTS = [];
   function buildNavHtml() {
     var groups = [
       // « Tâches » réunit l'ancien « Toutes les tâches » (le travail client) et
       // l'ancien « Mes tâches » (le travail de la boîte) : c'était la même
       // question posée à deux endroits, qu'il fallait croiser de tête.
-      ['Mon travail', [['cockpit', 'Accueil'], ['cktaches', 'Tâches'], ['ckplanning', 'Planning'], ['ckprojets', 'Projets'], ['inbox', 'Inbox'], ['questionnaires', 'Questionnaires'], ['visios', 'Visios'], ['plannings', 'Plannings éditoriaux']]],
-      ['Pilotage', [['kpi', 'Tableau de bord'], ['temps', 'Temps & rentabilité'], ['done', 'Réalisé'], ['avis', 'Avis'], ['incidents', 'Incidents']]],
-      ['Configuration', [['projtpl', 'Modèles de projets'], ['reglages', 'Réglages']]],
+      ['Mon travail', [['cockpit', 'Accueil'], ['cktaches', 'Tâches'], ['ckplanning', 'Planning'], ['ckprojets', 'Projets'], ['inbox', 'Inbox'], ['visios', 'Visios'], ['plannings', 'Plannings éditoriaux']]],
+      ['Pilotage', [['kpi', 'Tableau de bord'], ['temps', 'Temps & rentabilité']]],
+      ['Configuration', [['projtpl', 'Modèles'], ['reglages', 'Réglages']]],
     ];
+    // Écrans sans entrée propre : ils sont devenus l'onglet d'une page du menu,
+    // c'est cette entrée-là qui s'allume.
+    var NAV_PARENT = { done: 'temps', questionnaires: 'projtpl', trames: 'projtpl', newclient: 'clients' };
+    var navCur = NAV_PARENT[VIEW] || VIEW;
     function navItemHtml(it) {
-      var badgeSpan = (it[0] === 'chat' || it[0] === 'clients' || it[0] === 'priorities' || it[0] === 'alltasks' || it[0] === 'inbox' || it[0] === 'incidents') ? '<span id="nav-unread-' + it[0] + '" style="margin-left:auto"></span>' : '';
-      return '<button class="navitem' + ((VIEW === it[0] || (VIEW === 'newclient' && it[0] === 'clients')) ? ' active' : '') + '" onclick="ADM.nav(\'' + it[0] + '\')">' + admIcon(it[0]) + '<span>' + it[1] + '</span>' + badgeSpan + '</button>';
+      // Les incidents vivent dans Réglages : leur pastille s'y affiche.
+      var bid = it[0] === 'reglages' ? 'incidents' : it[0];
+      var badgeSpan = (bid === 'chat' || bid === 'clients' || bid === 'inbox' || bid === 'incidents') ? '<span id="nav-unread-' + bid + '" style="margin-left:auto">' + (BADGE_CACHE[bid] || '') + '</span>' : '';
+      return '<button class="navitem' + (navCur === it[0] ? ' active' : '') + '" onclick="ADM.nav(\'' + it[0] + '\')">' + admIcon(it[0]) + '<span>' + it[1] + '</span>' + badgeSpan + '</button>';
     }
-    // Accès direct : chaque client a son entrée, dépliable en sous-sections.
+    // Accès direct : chaque client a son entrée, qui ouvre sa fiche (les
+    // sections sont les onglets de la fiche, pas des sous-entrées du menu).
     function clientNavHtml(c) {
       var isCur = VIEW === 'client' && CURKEY === c.key;
-      // NAV_OPEN[key] : true/false explicite si l'utilisateur a cliqué le chevron,
-      // undefined = défaut (déplié seulement si c'est le client courant).
-      var open = NAV_OPEN[c.key] === true || (NAV_OPEN[c.key] === undefined && isCur);
       var nm = clientName(c);
-      var subs = [['infos', 'Infos', 0]];
-      (c.sections || []).forEach(function (x) { subs.push([x.id, x.label, x.unread || 0]); });
-      subs.push(['journal', 'Journal', 0]);
-      subs.push(['documents', 'Documents', 0]);
-      subs.push(['qnranswers', 'Questionnaires', 0]);
-      subs.push(['bilanavis', 'Bilan & avis', 0]);
       var pr = presence(c.lastSeen);
       var av = '<span style="position:relative;flex-shrink:0;width:22px;height:22px">' +
         '<span style="width:22px;height:22px;border-radius:50%;background:rgba(242,229,194,0.16);display:inline-flex;align-items:center;justify-content:center;font-family:var(--font-display);font-style:italic;font-size:15px">' + esc((nm[0] || '?').toUpperCase()) + '</span>' +
         (pr.online ? '<span title="En ligne" style="position:absolute;bottom:-1px;right:-1px;width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 0 2px var(--nuit,#2a1f16)"></span>' : '') +
         '</span>';
-      var head = '<div class="navrow"><button class="navitem' + (isCur ? ' active' : '') + '" onclick="ADM.navClientTab(\'' + c.key + '\',null)" style="padding-right:36px" title="' + esc(pr.label) + '">' +
+      return '<button class="navitem' + (isCur ? ' active' : '') + '" onclick="ADM.navClientTab(\'' + c.key + '\',null)" title="' + esc(pr.label) + '">' +
         av +
         '<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(nm) + '</span>' +
         (c.unread > 0 ? badge(c.unread) : '') +
-        '</button><button type="button" class="navchev" onclick="ADM.navToggleClient(\'' + c.key + '\')" aria-expanded="' + open + '" aria-label="' + (open ? 'Replier' : 'Déplier') + ' ' + esc(nm) + '" title="' + (open ? 'Replier' : 'Déplier') + '">' + (open ? IC_BAS_V : IC_DROITE_V) + '</button></div>';
-      var subsHtml = open ? subs.map(function (sub) {
-        var on = isCur && TAB === sub[0];
-        return '<button class="navitem" onclick="ADM.navClientTab(\'' + c.key + '\',\'' + sub[0] + '\')" style="padding:6px 12px 6px 44px;font-size:15px;' + (on ? 'color:var(--paille)' : 'opacity:0.72') + '">' +
-          '<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(sub[1]) + '</span>' + (sub[2] > 0 ? badge(sub[2]) : '') + '</button>';
-      }).join('') : '';
-      return head + subsHtml;
+        '</button>';
     }
     var clientsGroup = '<div class="navgroup__label" style="margin-top:14px">Mes clients</div>' +
       navItemHtml(['clients', 'Clients']) +
@@ -513,16 +505,10 @@
   var BADGE_CACHE = { chat: '', clients: '', priorities: '', alltasks: '', inbox: '' };
   function paintBadges() { ['chat', 'clients', 'priorities', 'alltasks', 'inbox'].forEach(function (k) { var b = el('nav-unread-' + k); if (b) b.innerHTML = BADGE_CACHE[k] || ''; }); }
   function renderNav() { var n = el('side-nav'); if (n) { n.innerHTML = buildNavHtml(); paintBadges(); } }
-  function navToggleClient(key) {
-    var isCur = VIEW === 'client' && CURKEY === key;
-    var open = NAV_OPEN[key] === true || (NAV_OPEN[key] === undefined && isCur);
-    NAV_OPEN[key] = !open; // bascule explicite, y compris pour le client courant
-    renderNav();
-  }
   function navClientTab(key, tab) { navPas(function () { navClientTab_(key, tab); }); }
   function navClientTab_(key, tab) {
     var sameClient = CUR && CUR.key === key;
-    CURKEY = key; VIEW = 'client'; NAV_OPEN[key] = true;
+    CURKEY = key; VIEW = 'client';
     TAB = tab || TAB_BY_CLIENT[key] || 'apercu';
     if (tab) TAB_BY_CLIENT[key] = tab;
     renderShell(); // renderClient charge le client si besoin
@@ -715,17 +701,16 @@
     if (VIEW === 'ckplanning') return renderCockpitPlanning();
     if (VIEW === 'ckprojets') return renderCockpitProjets();
     if (VIEW === 'visios') return renderVisios();
+    if (VIEW === 'trames') return renderVisios();
     if (VIEW === 'plannings') return renderPlannings();
     if (VIEW === 'questionnaires') return renderQuestionnaires();
     if (VIEW === 'projtpl') return renderProjTpl();
-    if (VIEW === 'incidents') return renderIncidents();
     if (VIEW === 'kpi') return renderKpi();
     if (VIEW === 'temps') return renderTemps();
     if (VIEW === 'clients') return renderClients();
     if (VIEW === 'newclient') return renderNewClient();
     if (VIEW === 'client') return renderClient();
     if (VIEW === 'chat') return renderChat();
-    if (VIEW === 'avis') return renderAvis();
     if (VIEW === 'reglages') return renderReglages();
   }
   /* Icônes dessinées, un seul trait : elles remplacent les caractères
@@ -857,12 +842,15 @@
   var MISSION_LIST = [];
   var REGL_TAB = 'types';
   function reglTabs() {
-    var items = [['types', 'Types de mission'], ['conges', 'Congés'], ['quick', 'Réponses rapides'], ['emails', 'Textes des e-mails'], ['rdv', 'Rendez-vous'], ['calendar', 'Calendrier iCloud'], ['backups', 'Sauvegardes'], ['kv', 'Consommation KV']];
+    var items = [['types', 'Types de mission'], ['conges', 'Congés'], ['quick', 'Réponses rapides'], ['emails', 'Textes des e-mails'], ['rdv', 'Rendez-vous'], ['calendar', 'Calendrier iCloud'], ['backups', 'Sauvegardes'], ['kv', 'Consommation KV'], ['incidents', 'Incidents']];
     return '<div class="subtabs">' + items.map(function (it) {
-      return '<button class="subtab' + (REGL_TAB === it[0] ? ' active' : '') + '" onclick="ADM.reglSetTab(\'' + it[0] + '\')">' + it[1] + '</button>';
+      var n = it[0] === 'incidents' && BADGE_CACHE.incidents ? ' ' + BADGE_CACHE.incidents : '';
+      return '<button class="subtab' + (REGL_TAB === it[0] ? ' active' : '') + '" onclick="ADM.reglSetTab(\'' + it[0] + '\')">' + it[1] + n + '</button>';
     }).join('') + '</div>';
   }
   function reglSetTab(t) { REGL_TAB = t; renderReglages(); }
+  // Ouvrir Réglages directement sur un onglet (les incidents y vivent).
+  function reglOuvrir(t) { REGL_TAB = t; nav('reglages'); }
   /* ── Consommation KV : mesurer au lieu d'estimer ───────────────────────
    * Cloudflare prévient à 90 % sans dire QUELLE opération sature : les
    * lectures (100 000/jour) et les écritures (1 000/jour) ont des plafonds
@@ -955,6 +943,13 @@
     } else if (REGL_TAB === 'kv') {
       // Le relevé se lit sans rien appeler : il totalise ce qui est déjà passé.
       renderKvBody(null);
+    } else if (REGL_TAB === 'incidents') {
+      // Les erreurs rencontrées par tes clients (upload, plantage) remontent ici.
+      var bi = el('regl-body');
+      if (bi) bi.innerHTML = '<div class="mdl-barre"><p>Les erreurs rencontrées par tes clients (un envoi de fichier qui échoue, un plantage) remontent ici, pour que tu puisses les corriger.</p></div>' +
+        '<div class="mdl-pied" style="margin:0 0 16px"><button class="tps-lien" onclick="ADM.incSeenAll()">Tout marquer comme vu</button><button class="tps-lien" onclick="ADM.incClear()">Effacer la liste…</button></div>' +
+        '<div id="inc-body"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>';
+      incLoad();
     } else if (REGL_TAB === 'backups') {
       renderBackups();
     } else if (REGL_TAB === 'conges') {
@@ -2881,7 +2876,7 @@
       var pjAvoir = '<div class="pj-avoir"><div class="pj-avoir__h">À aller voir</div><div class="pj-indics">' +
         pjIndic('pj-indic--new', '<svg class="ico" viewBox="0 0 24 24" style="width:17px;height:17px"><path d="M4 5h16v11H9l-4 3v-3H4z"/></svg>', 'Inbox', 'Documents &amp; commentaires', nInbox || '', '', "ADM.nav('inbox')") +
         pjIndic('', '<svg class="ico" viewBox="0 0 24 24" style="width:17px;height:17px"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2"/></svg>', 'En attente client', 'Chez tes clientes', nWait || '', 'pj-indic__b--calm', "ADM.prioMainTab('semaine')") +
-        pjIndic('', '<svg class="ico" viewBox="0 0 24 24" style="width:17px;height:17px;stroke-width:2"><path d="M12 9v4M12 17h0M10.3 3.9L2.4 18a2 2 0 0 0 1.7 3h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>', 'Incidents', 'Tickets ouverts', nTickets || '', 'pj-indic__b--attn', "ADM.nav('incidents')") +
+        pjIndic('', '<svg class="ico" viewBox="0 0 24 24" style="width:17px;height:17px;stroke-width:2"><path d="M12 9v4M12 17h0M10.3 3.9L2.4 18a2 2 0 0 0 1.7 3h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>', 'Incidents', 'Tickets ouverts', nTickets || '', 'pj-indic__b--attn', "ADM.reglOuvrir('incidents')") +
         pjIndic('', '<svg class="ico" viewBox="0 0 24 24" style="width:17px;height:17px"><path d="M4 5h16v15H4zM4 9h16M8 3v4M16 3v4"/></svg>', 'Ma semaine', 'La suite, jour par jour', nWeek || '', 'pj-indic__b--calm', "ADM.prioMainTab('semaine')") +
         '</div></div>';
       // Tâches actives SANS date (ni échéance ni « à faire le ») : elles ne
@@ -3472,8 +3467,10 @@
   function visTypeChip(t) { var m = visTypeMeta(t); if (!m) return ''; return '<span style="font-family:var(--font-micro);font-size:13px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;padding:3px 8px;border-radius:999px;background:' + m[3] + ';color:' + m[2] + '">' + m[1] + '</span>'; }
   function visSetTypeFilter(v) { VIS_TYPEFILTER = v; renderVisiosBody(); }
   function renderVisios() {
-    setMain(topbar('') + '<div class="wrap" id="vis-body" style="max-width:none"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
-    if (!NAV_CLIENTS.length) { clientsGet().then(function (d) { NAV_CLIENTS = d.clients || []; if (VIEW === 'visios') renderVisiosBody(); }).catch(function () {}); }
+    // « Trames d'appel » vit dans Modèles mais partage le chargement des Visios.
+    if (VIEW === 'trames') setMain('<div class="wrap mdl">' + modelesTete('trames') + '<div id="vis-body"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div></div>');
+    else setMain(topbar('') + '<div class="wrap" id="vis-body" style="max-width:none"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
+    if (!NAV_CLIENTS.length) { clientsGet().then(function (d) { NAV_CLIENTS = d.clients || []; if (VIEW === 'visios' || VIEW === 'trames') renderVisiosBody(); }).catch(function () {}); }
     visLoadCalendar();
     // Bibliothèque de trames (serveur) — chargée une fois, avec migration douce
     // depuis l'ancien stockage local et ajout de la trame kakémonos si absente.
@@ -3507,8 +3504,8 @@
         }
         TRAMES_SRV = srv; TRAMES_LOADED = true;
         if (changed) jpost('/api/call-trames', { trames: srv }, 'PATCH').catch(function () {});
-        if (VIEW === 'visios') renderVisiosBody();
-      }).catch(function () { TRAMES_SRV = [erdynTrame(), kakemonoTrame(), defaultTrame()]; TRAMES_LOADED = true; if (VIEW === 'visios') renderVisiosBody(); });
+        if (VIEW === 'visios' || VIEW === 'trames') renderVisiosBody();
+      }).catch(function () { TRAMES_SRV = [erdynTrame(), kakemonoTrame(), defaultTrame()]; TRAMES_LOADED = true; if (VIEW === 'visios' || VIEW === 'trames') renderVisiosBody(); });
     }
     if (VISIOS_LOADED) { renderVisiosBody(); return; }
     api('/api/visios').then(function (r) { return r.json(); }).then(function (d) { VISIOS = { cards: (d && d.cards) || [], templates: (d && d.templates) || [] }; visMigrate(); VISIOS_LOADED = true; renderVisiosBody(); }).catch(showError);
@@ -3518,7 +3515,7 @@
   function visLoadCalendar() {
     api('/api/calendar/events').then(function (r) { return r.json(); }).then(function (d) {
       VIS_CAL = { loaded: true, configured: !!d.configured, calName: d.calName || '', events: Array.isArray(d.events) ? d.events : [], error: d.error || '' };
-      if (VIEW === 'visios') renderVisiosBody();
+      if (VIEW === 'visios' || VIEW === 'trames') renderVisiosBody();
     }).catch(function () { VIS_CAL = { loaded: true, configured: false, calName: '', events: [], error: '' }; });
   }
   // Migration douce : les anciennes visios (trame unique) deviennent un déroulé
@@ -3534,10 +3531,11 @@
   function visTpl(id) { return VISIOS.templates.filter(function (t) { return t.id === id; })[0]; }
   function renderVisiosBody() {
     var body = el('vis-body'); if (!body) return;
+    if (VIEW === 'trames') { body.innerHTML = visTramesHtml(); return; }
+    if (VIS_TAB === 'trames') VIS_TAB = 'cards';
     var head = '<div class="clhead"><div><p class="hello">Visios</p><p class="hello__s">Tes rendez-vous avec tes clientes, à venir et passés.</p></div></div>';
     var tabs = '<div class="ttabs">' +
       '<button class="ttab' + (VIS_TAB === 'cards' ? ' is-on' : '') + '" onclick="ADM.visTab(\'cards\')">Rendez-vous</button>' +
-      '<button class="ttab' + (VIS_TAB === 'trames' ? ' is-on' : '') + '" onclick="ADM.visTab(\'trames\')">Trames d\'appel</button>' +
       '<button class="ttab' + (VIS_TAB === 'templates' ? ' is-on' : '') + '" onclick="ADM.visTab(\'templates\')">Modèles de déroulé</button>' +
       '<button class="ttab' + (VIS_TAB === 'fiche' ? ' is-on' : '') + '" onclick="ADM.visTab(\'fiche\')">Fiche d\'appel</button>' +
     '</div>';
@@ -3877,21 +3875,16 @@
   function trameQNote(k, v) { if (!VIS_TRAME_ANS[k]) VIS_TRAME_ANS[k] = {}; VIS_TRAME_ANS[k].n = v; }
   function visTramesHtml() {
     if (VIS_TRAME_OPEN) return visTrameCallHtml(VIS_TRAME_OPEN);
-    var trames = tramesGet();
-    var cards = trames.map(function (t) {
-      var secs = trameParse(t.content); var nq = 0; secs.forEach(function (s) { nq += s.questions.length; });
-      return '<div tabindex="0" data-kb onclick="ADM.trameOpen(\'' + t.id + '\')" style="position:relative;cursor:pointer;background:var(--card);border-radius:16px;padding:20px 22px;display:flex;flex-direction:column">' +
-        '<button onclick="event.stopPropagation();ADM.trameEditLib(\'' + t.id + '\')" title="Modifier cette trame" style="position:absolute;top:14px;right:14px;border:none;background:var(--bone);border-radius:999px;width:32px;height:32px;cursor:pointer;color:var(--terre-600);font-size:15px;display:grid;place-items:center">' + IC_CRAYON + '</button>' +
-        '<span style="width:40px;height:40px;border-radius:11px;background:var(--gold-chip);color:var(--terre);display:grid;place-items:center;margin-bottom:13px"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8 10h8M8 14h5"/><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>' +
-        '<span style="font-family:\'Alegreya\',Georgia,serif;font-style:italic;font-size:23px;color:var(--terre);line-height:1.12">' + esc(t.title || 'Sans titre') + '</span>' +
-        '<span style="font-family:var(--font-micro);font-weight:300;font-size:15px;color:var(--muted);margin-top:6px">' + secs.length + ' étape' + (secs.length > 1 ? 's' : '') + ' · ' + nq + ' question' + (nq > 1 ? 's' : '') + '</span>' +
-        '<span style="font-family:var(--font-micro);font-size:15px;font-weight:600;color:var(--terre-600);margin-top:14px;display:inline-flex;align-items:center;gap:6px">Ouvrir l\'appel <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>' +
-      '</div>';
+    var cartes = tramesGet().map(function (t) {
+      var secs = trameParse(t.content); var nq = 0; secs.forEach(function (x) { nq += x.questions.length; });
+      var i = esc(t.id);
+      return mdlCarte(t.title, secs.length + ' étape' + (secs.length > 1 ? 's' : '') + ' · ' + nq + ' question' + (nq > 1 ? 's' : ''), 'ADM.trameEditLib(\'' + i + '\')', [
+        ['Ouvrir pendant un appel', 'ADM.trameOpen(\'' + i + '\')']
+      ], 'ADM.trameDel(\'' + i + '\')');
     }).join('');
-    return '<div class="vis-wrap" style="max-width:900px;margin:0 auto">' +
-      '<div style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap"><div><p class="hello" style="margin:0">Trames d\'appel</p><p class="hello__s" style="margin:6px 0 0">Tes canevas de questions réutilisables. Ouvre-en un avant un appel, puis coche et note pendant la visio.</p></div>' +
-      '<button class="btn btn--dark btn--sm" onclick="ADM.trameNew()">Nouvelle trame</button></div>' +
-      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:22px">' + cards + '</div></div>';
+    return mdlBarre('Tes canevas de questions pour les appels. Ouvre-en un pendant la visio pour cocher et noter au fil de l’échange.',
+      '<button class="btn btn--dark" onclick="ADM.trameNew()">Nouvelle trame</button>') +
+      (cartes ? mdlGrille(cartes) : '<div class="mdl-vide">Aucune trame pour l’instant.</div>');
   }
   function visTrameCallHtml(id) {
     var t = tramesGet().filter(function (x) { return x.id === id; })[0];
@@ -7605,13 +7598,22 @@
     var satis = rated.length ? Math.round(rated.reduce(function (s0, b) { return s0 + b.rating; }, 0) / rated.length * 10) / 10 : 0;
     var ancienne = fs.slice().filter(function (f) { return f.start; }).sort(function (x, y) { return x.start < y.start ? -1 : 1; })[0];
     var depuisMois = ancienne ? (auj.getFullYear() * 12 + auj.getMonth()) - (Number(ancienne.start.slice(0, 4)) * 12 + Number(ancienne.start.slice(5, 7)) - 1) : 0;
-    var carteSat = rated.length
-      ? '<p class="tdb-sp">' + String(satis).replace('.', ',') + ' / 5 sur ' + rated.length + ' avis.</p>' +
-        '<div class="tdb-act"><button class="tdb-btn tdb-btn--clair" onclick="ADM.nav(\'avis\')">Voir les avis</button></div>'
-      : '<p class="tdb-sp">Pas encore d’avis.</p>' +
+    // Les derniers bilans, lisibles sans quitter la page (l'ancien écran
+    // « Avis » est rangé ici) ; les avis sur l'espace s'ouvrent à côté.
+    var nAvisEsp = ((KPI_AVIS && KPI_AVIS.avis) || []).length;
+    var recents = bilans.slice().sort(function (x, y) { return String(y.submittedAt || '').localeCompare(String(x.submittedAt || '')); }).slice(0, 3);
+    var carteSat = (recents.length ? recents.map(function (b) {
+        var quand = b.submittedAt ? new Date(b.submittedAt).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }) : '';
+        return '<div class="tdb-bil"><div class="tdb-bil__h"><b>' + esc(b.client || '') + '</b>' + (b.rating ? tdbEtoiles(b.rating) : '') + '</div>' +
+          (b.testimonial ? '<p class="tdb-bil__q">« ' + esc(b.testimonial) + ' »</p>' : (b.liked ? '<p class="tdb-bil__q">' + esc(b.liked) + '</p>' : '')) +
+          '<p class="tdb-bil__m">Bilan de collaboration' + (quand ? ' · ' + esc(quand) : '') + (b.recommend ? ' · recommande' : '') + '</p></div>';
+      }).join('')
+      : '<p class="tdb-sp">Pas encore de bilan.</p>' +
         (ancienne && depuisMois > 0 ? '<p class="tdb-ss">' + esc(ancienne.client || '') + ' travaille avec toi depuis ' + depuisMois + ' mois : c’est le bon moment pour un bilan.</p>'
-          : '<p class="tdb-ss">Un bilan en fin de projet t’aide à ajuster tes offres.</p>') +
-        '<div class="tdb-act"><button class="tdb-btn tdb-btn--clair" onclick="' + (ancienne ? 'ADM.navClientTab(\'' + esc(ancienne.key) + '\',\'bilanavis\')' : 'ADM.nav(\'avis\')') + '">Demander un bilan</button></div>';
+          : '<p class="tdb-ss">Un bilan en fin de projet t’aide à ajuster tes offres.</p>')) +
+      '<div class="tdb-act"><button class="tdb-btn tdb-btn--clair" onclick="ADM.tdbBilanChoisir()">Demander un bilan</button>' +
+      '<button class="tdb-lien" onclick="ADM.tdbAvisOuvrir()">Voir les avis sur l’espace client' + (nAvisEsp ? ' [' + nAvisEsp + ']' : '') + '</button></div>';
+    var satTete = rated.length ? '<span class="tdb-sat__n num">' + String(satis).replace('.', ',') + ' sur 5 · ' + rated.length + ' bilan' + (rated.length > 1 ? 's' : '') + '</span>' : '';
 
     var html = '<div class="wrap tdb">' +
       '<header class="tdb-tete">' +
@@ -7631,155 +7633,225 @@
         lignesF + '</section>' +
       '<section class="tdb-bas">' +
         '<div class="tdb-panel"><h2>Temps travaillé, 6 derniers mois</h2><p class="tdb-pp">' + phrasePic + '</p><div class="tdb-bars">' + barres + '</div></div>' +
-        '<div class="tdb-panel tdb-panel--sombre"><h2>Satisfaction</h2>' + carteSat + '</div>' +
+        '<div class="tdb-panel tdb-panel--sombre tdb-sat"><div class="tdb-sat__h"><h2>Satisfaction</h2>' + satTete + '</div>' + carteSat + '</div>' +
       '</section>' +
     '</div>';
     setMain(html);
   }
 
-  // ═══════════ Temps & rentabilité (maquette) ═══════════
+  function tdbEtoiles(n) {
+    var h = '';
+    for (var i = 1; i <= 5; i++) h += '<svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true" fill="' + (n >= i ? '#E6E5B2' : 'rgba(230,229,178,0.3)') + '"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6-4.9-4.6 6.6-.8z"/></svg>';
+    return '<span class="tdb-etoiles" role="img" aria-label="' + n + ' sur 5">' + h + '</span>';
+  }
+  // Panneau latéral du tableau de bord : un seul, pour les avis et le choix
+  // du client à qui demander un bilan.
+  function tdbPanneau(titre, corps) {
+    tdbPanneauFermer();
+    var bk = document.createElement('div'); bk.id = 'tdb-pan-bk'; bk.className = 'tdb-pan-bk'; bk.onclick = tdbPanneauFermer; document.body.appendChild(bk);
+    var d = document.createElement('div'); d.id = 'tdb-pan'; d.className = 'tdb-pan'; d.setAttribute('role', 'dialog'); d.setAttribute('aria-modal', 'true'); d.setAttribute('aria-label', titre);
+    d.innerHTML = '<div class="tdb-pan__h"><h2>' + esc(titre) + '</h2><button class="ckm-b" aria-label="Fermer" onclick="ADM.tdbPanneauFermer()">' + IC_X + '</button></div>' + corps;
+    document.body.appendChild(d);
+    var f = d.querySelector('button'); if (f) f.focus();
+    document.addEventListener('keydown', tdbPanEchap);
+  }
+  function tdbPanEchap(e) { if (e.key === 'Escape') tdbPanneauFermer(); }
+  function tdbPanneauFermer() {
+    var d = el('tdb-pan'); if (d) d.remove(); var b = el('tdb-pan-bk'); if (b) b.remove();
+    document.removeEventListener('keydown', tdbPanEchap);
+  }
+  function tdbAvisOuvrir() {
+    var avis = ((KPI_AVIS && KPI_AVIS.avis) || []).slice().sort(function (x, y) { return String(y.createdAt || '').localeCompare(String(x.createdAt || '')); });
+    tdbPanneau('Avis sur l’espace client', '<p class="tdb-pan__s">Ce que tes clients signalent pour améliorer leur espace : un manque, une incompréhension, une idée.</p>' +
+      (avis.length ? avis.map(function (a) {
+        return '<div class="tdb-pan__l"><div class="tdb-pan__t"><b>' + esc(a.client || '') + '</b><span>' + (a.category ? esc(a.category) + ' · ' : '') + esc(fmtDate(a.createdAt)) + '</span></div><p>' + esc(a.content || '') + '</p></div>';
+      }).join('') : '<p class="tdb-pan__s">Aucun avis pour le moment. Tes clients le laissent depuis « Votre avis » dans leur espace.</p>'));
+  }
+  function tdbBilanChoisir() {
+    var dem = {};
+    ((KPI_AVIS && KPI_AVIS.bilans) || []).forEach(function (b) { if (b.key) dem[b.key] = 1; });
+    var go = function () {
+      var l = (NAV_CLIENTS || []).slice().sort(function (x, y) { return clientName(x).localeCompare(clientName(y)); });
+      tdbPanneau('Demander un bilan', '<p class="tdb-pan__s">Ton client reçoit un e-mail qui l’invite à remplir son bilan de fin de collaboration. Tu confirmes avant l’envoi.</p>' +
+        (l.length ? l.map(function (c) {
+          return '<div class="tdb-pan__l tdb-pan__l--r"><div class="tdb-pan__t"><b>' + esc(clientName(c)) + '</b>' + (dem[c.key] ? '<span>a déjà rempli un bilan</span>' : '') + '</div>' +
+            '<button class="tps-lien" onclick="ADM.tdbBilanEnvoyer(\'' + esc(c.key) + '\')">Envoyer l’invitation</button></div>';
+        }).join('') : '<p class="tdb-pan__s">Aucun client pour l’instant.</p>'));
+    };
+    if (NAV_CLIENTS.length) go(); else clientsGet().then(function (d) { NAV_CLIENTS = d.clients || []; go(); }).catch(function () { toast('Erreur'); });
+  }
+  function tdbBilanEnvoyer(key) {
+    var c = (NAV_CLIENTS || []).filter(function (x) { return x.key === key; })[0];
+    var nm = c ? clientName(c) : 'ce client';
+    admConfirm({ title: 'Envoyer l’invitation au bilan ?', message: 'Un e-mail sera envoyé à ' + esc(nm) + ' pour l’inviter à remplir son bilan de fin de collaboration.', yes: 'Oui, envoyer', no: 'Annuler' }, function () {
+      jpost('/api/clients/' + key + '/bilan/request', {}, 'POST').then(function (r) {
+        if (r.ok) { toast('Invitation envoyée à ' + nm); tdbPanneauFermer(); } else toast('Erreur, réessaie');
+      }).catch(function () { toast('Erreur, réessaie'); });
+    });
+  }
+
+  // ═══════════ Temps & rentabilité ═══════════
+  /* Une page, quatre onglets en blocs : Rentabilité, Où part mon temps,
+   * Estimé vs réel (vue « temps ») et Journal (l'ancien « Réalisé », vue
+   * « done »). Même tête pour toutes les pages regroupées : titre, puis un
+   * bloc par onglet, l'onglet ouvert en ciel. */
+  function pageTete(titre, onglets, cur) {
+    return '<h1 class="pg-h1">' + esc(titre) + '</h1>' +
+      '<div class="pg-ongs" role="tablist" aria-label="' + esc(titre) + '">' + onglets.map(function (o) {
+        var on = o[0] === cur;
+        return '<button role="tab" aria-selected="' + on + '" class="pg-ong' + (on ? ' on' : '') + (o[3] ? '' : ' pg-ong--seul') + '" onclick="' + o[1] + '">' +
+          '<span class="pg-ong__n">' + esc(o[2]) + '</span>' + (o[3] ? '<span class="pg-ong__s">' + esc(o[3]) + '</span>' : '') + '</button>';
+      }).join('') + '</div>';
+  }
   var TEMPS_TAB = 'rent';
   var TEMPS_OBJ = 60; // objectif €/h (défini avec Cindy)
+  var TEMPS_PER = 'mois'; // période de « Où part mon temps » : mois | 3mois | tout
+  function tempsTete() {
+    var cur = VIEW === 'done' ? 'journal' : TEMPS_TAB;
+    return pageTete('Temps & rentabilité', [
+      ['rent', 'ADM.tempsOnglet(\'rent\')', 'Rentabilité', 'Ce que te rapporte chaque projet'],
+      ['repart', 'ADM.tempsOnglet(\'repart\')', 'Où part mon temps', 'Par type de travail'],
+      ['estim', 'ADM.tempsOnglet(\'estim\')', 'Estimé vs réel', 'Tes estimations tiennent-elles'],
+      ['journal', 'ADM.nav(\'done\')', 'Journal', 'Tout ce que tu as livré']
+    ], cur) + tempsChrono();
+  }
+  function tempsOnglet(t) {
+    TEMPS_TAB = t;
+    if (VIEW !== 'temps') { nav('temps'); return; }
+    renderTempsBody();
+  }
+  // Le chrono n'occupe la page que lorsqu'il tourne : une fine barre ciel.
+  function tempsChrono() {
+    var run = MT_TIMER || PT_TIMER || TK_TIMER;
+    if (!run) return '';
+    var qui = '';
+    if (MT_TIMER) qui = 'Seed to Bloom';
+    else { var c = (NAV_CLIENTS || []).filter(function (x) { return x.key === run.key; })[0]; if (c) qui = clientName(c); }
+    var sec = run.base + (Date.now() - run.startedAt) / 1000;
+    return '<div class="tps-chrono" role="status"><span class="tps-chrono__pt" aria-hidden="true"></span>' +
+      '<span class="tps-chrono__t">Chrono en cours : <b>' + esc(run.title || 'tâche') + '</b>' + (qui ? ', ' + esc(qui) : '') + '</span>' +
+      '<span class="tps-chrono__h num" id="tps-chrono-h">' + mtClock(sec) + '</span>' +
+      '<button class="tps-lien" onclick="ADM.navTimerPause()">Arrêter le chrono</button></div>';
+  }
+  setInterval(function () {
+    var h = typeof document !== 'undefined' && el('tps-chrono-h'); if (!h) return;
+    var run = MT_TIMER || PT_TIMER || TK_TIMER; if (!run) return;
+    h.textContent = mtClock(run.base + (Date.now() - run.startedAt) / 1000);
+  }, 1000);
+  // Durées écrites comme on les lit : « 8 h 15 », « 4 h », « 40 min ».
+  function tpsDuree(m) {
+    m = Math.round(m || 0);
+    if (!m) return '0 h';
+    if (m < 60) return m + ' min';
+    var h = Math.floor(m / 60), r = m % 60;
+    return h + ' h' + (r ? ' ' + (r < 10 ? '0' : '') + r : '');
+  }
+  function tpsPct(n) { return (n > 0 ? '+ ' : n < 0 ? '− ' : '') + Math.abs(n) + ' %'; }
+  function tpsFaits(faits) {
+    return '<div class="tps-faits tps-faits--' + faits.length + '">' + faits.map(function (f) {
+      return '<div class="tps-fait"><span class="tps-fait__k">' + esc(f[0]) + '</span><span class="tps-fait__v num">' + esc(f[1]) + '</span></div>';
+    }).join('') + '</div>';
+  }
   function renderTemps() {
-    setMain(topbar('') + '<div class="wrap"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
+    setMain('<div class="wrap tps">' + tempsTete() + '<div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
+    if (!NAV_CLIENTS.length) clientsGet().then(function (d) { NAV_CLIENTS = d.clients || []; }).catch(function () {});
     Promise.all([
       api('/api/kpi').then(function (r) { return r.json(); }).catch(function () { return {}; }),
       dashGet().catch(function () { return {}; })
-    ]).then(function (res) { KPI_D = res[0] || {}; KPI_DASH = res[1] || {}; renderTempsBody(); }).catch(showError);
+    ]).then(function (res) { KPI_D = res[0] || {}; KPI_DASH = res[1] || {}; if (VIEW === 'temps') renderTempsBody(); }).catch(showError);
   }
   function tempsSetTab(t) { TEMPS_TAB = t; renderTempsBody(); }
+  function tempsSetPer(p) { TEMPS_PER = p; renderTempsBody(); }
   function hhm(m) { m = Math.round(m || 0); var h = Math.floor(m / 60), r = m % 60; return h ? h + 'h' + (r ? ('' + (r < 10 ? '0' : '') + r) : '') : m + ' min'; }
   function renderTempsBody() {
     var d = KPI_D || {};
-    // ── chrono live ──
-    var run = MT_TIMER || PT_TIMER || TK_TIMER;
-    var tlive;
-    if (run) {
-      var sec = run.base + (Date.now() - run.startedAt) / 1000;
-      tlive = '<div class="tlive"><span class="tlive__pulse"></span>' +
-        '<div class="tlive__m"><div class="tlive__k">Chrono en cours</div><div class="tlive__t">' + esc(run.title || 'tâche') + '</div></div>' +
-        '<div style="text-align:right"><div class="tlive__clock">' + mtClock(sec) + '</div></div>' +
-        '<button class="tlive__btn" onclick="ADM.navTimerPause()">Mettre en pause</button></div>';
-    } else {
-      tlive = '<div class="tlive"><span class="tlive__pulse" style="background:var(--paille-700);animation:none"></span>' +
-        '<div class="tlive__m"><div class="tlive__k">Chrono</div><div class="tlive__t">Aucun chrono en cours</div></div>' +
-        '<div style="text-align:right"><div class="tlive__clock">00:00:00</div><div class="tlive__day">démarre un chrono depuis une tâche ou un ticket</div></div></div>';
-    }
-    // ── sous-onglets ──
-    var tabs = [['rent', 'Rentabilité'], ['repart', 'Où part mon temps'], ['estim', 'Estimé vs réel']];
-    var ttabs = '<div class="ttabs">' + tabs.map(function (t) {
-      return '<button class="ttab' + (TEMPS_TAB === t[0] ? ' is-on' : '') + '" onclick="ADM.tempsSetTab(\'' + t[0] + '\')">' + esc(t[1]) + '</button>';
-    }).join('') + '</div>';
     var content = TEMPS_TAB === 'repart' ? tempsRepart(d) : (TEMPS_TAB === 'estim' ? tempsEstim(d) : tempsRent(d));
-    var html = '<div class="wrap tempsview">' +
-      '<div class="clhead"><div><p class="hello">Temps &amp; rentabilité</p><p class="hello__s">En temps réel : où part ton temps, où tu peux en gagner, et si chaque projet tient dans son forfait.</p></div></div>' +
-      tlive + ttabs + content + '</div>';
-    setMain(topbar('') + html);
+    setMain('<div class="wrap tps">' + tempsTete() + content + '</div>');
   }
+  function tpsYm(dt) { return dt.getFullYear() + '-' + String(dt.getMonth() + 1).padStart(2, '0'); }
   // Rentabilité au temps : basée sur les forfaits (heures), sans compta.
   function tempsRent(d) {
     var forf = (d.forfaits || []).filter(function (f) { return f.configured; });
     var pr = d.profitability || {};
-    var ratio = pr.estMin > 0 ? Math.round(pr.realMin / pr.estMin * 100) : 0;
-    var ecart = ratio - 100;
+    var ecart = pr.estMin > 0 ? Math.round(pr.realMin / pr.estMin * 100) - 100 : 0;
     var okCount = forf.filter(function (f) { return f.remaining >= 0; }).length;
-    var trackMin = (d.timeByType || []).reduce(function (s, x) { return s + (x.minutes || 0); }, 0);
-    var kts =
-      '<div class="kt"><div class="kt__v">' + TEMPS_OBJ + ' €/h</div><div class="kt__l">Ton objectif au temps</div><span class="kt__d kt__d--flat">défini avec toi</span></div>' +
-      '<div class="kt"><div class="kt__v">' + hhm(trackMin) + '</div><div class="kt__l">Temps tracké · cumul</div><span class="kt__d kt__d--flat">tâches + tickets</span></div>' +
-      '<div class="kt"><div class="kt__v">' + (pr.estCount ? (ecart >= 0 ? '+' : '') + ecart + ' %' : '—') + '</div><div class="kt__l">Écart estimé → réel</div><span class="kt__d ' + (pr.estCount ? (ecart > 10 ? 'kt__d--attn' : 'kt__d--up') : 'kt__d--flat') + '">' + (pr.estCount ? (ecart > 10 ? 'tu dépasses tes estimations' : 'dans tes clous') : 'note tes estimations') + '</span></div>' +
-      '<div class="kt"><div class="kt__v">' + okCount + ' / ' + forf.length + '</div><div class="kt__l">Forfaits dans les clous</div><span class="kt__d ' + (okCount < forf.length ? 'kt__d--attn' : 'kt__d--up') + '">' + (forf.length - okCount) + ' dépassé' + ((forf.length - okCount) > 1 ? 's' : '') + '</span></div>';
+    var moisMin = (d.minutesByMonth || {})[tpsYm(new Date())] || 0;
+    var faits = tpsFaits([
+      ['Ton objectif', TEMPS_OBJ + ' €/h'],
+      ['Temps tracé ce mois', tpsDuree(moisMin)],
+      ['Écart estimé / réel', pr.estCount ? tpsPct(ecart) : 'Pas encore'],
+      ['Forfaits dans les clous', forf.length ? okCount + ' sur ' + forf.length : 'Aucun']
+    ]);
+    if (!forf.length) return faits + '<div class="tps-carte"><p class="tps-vide">Aucun forfait configuré. Configure un forfait mensuel sur un client partenaire pour suivre sa rentabilité au temps.</p></div>';
     var rows = forf.map(function (f) {
-      var used = f.used || 0, base = f.base || 0, rem = f.remaining;
+      var used = Math.round((f.used || 0) * 60), base = Math.round((f.base || 0) * 60);
       var pct = base ? Math.round(used / base * 100) : 0;
-      var under = rem < 0;
+      var under = f.remaining < 0;
       var watch = !under && base && used >= base * 0.8;
-      var flag = under ? '<span class="rentflag rentflag--under">Dépassé</span>' : (watch ? '<span class="rentflag rentflag--watch">À surveiller</span>' : '<span class="rentflag rentflag--ok">Dans le forfait</span>');
-      var restLbl = under ? ('dépassé de ' + Math.abs(rem) + ' h') : ('reste ' + rem + ' h');
-      return '<div class="rentrow' + (under ? ' rentrow--under' : '') + '">' +
-        '<div><div class="rentrow__p">' + esc(f.client || '') + '</div><div class="rentrow__c">Forfait mensuel</div></div>' +
-        '<div class="rentcell">' + base + ' h</div>' +
-        '<div class="rentcell">' + used + ' h<small>' + restLbl + '</small></div>' +
-        '<div class="rentcell rentrate" style="color:' + (under ? 'var(--gold-ink)' : (watch ? 'var(--gold-ink)' : '#4a6b43')) + '">' + pct + '%</div>' +
-        flag + '</div>';
+      var etat = under ? '<span class="tps-pil tps-pil--sur">Dépassé de ' + esc(tpsDuree(used - base)) + '</span>'
+        : watch ? '<span class="tps-pil tps-pil--veille">À surveiller</span>' : '<span class="tps-pil">Dans le forfait</span>';
+      return '<div class="tps-rent__l">' +
+        '<div><div class="tps-nom">' + esc(f.client || '') + '</div><div class="tps-sous">Partenaire créative</div></div>' +
+        '<div class="num">' + esc(tpsDuree(base)) + '</div>' +
+        '<div class="num tps-fort">' + esc(tpsDuree(used)) + '</div>' +
+        '<div class="tps-conso"><span class="tps-barre"><i class="' + (under ? 'sur' : '') + '" style="width:' + Math.min(100, pct) + '%"></i></span><span class="num">' + pct + ' %</span></div>' +
+        '<div class="tps-etat">' + etat + '</div></div>';
     }).join('');
-    var rentBlock = forf.length
-      ? '<div class="rent"><div class="renthead"><span>Projet</span><span>Forfait</span><span>Temps</span><span>% conso</span><span>Statut</span></div>' + rows + '</div>' +
-        '<div class="rentobj"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" style="color:var(--terre-400)"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg> Ton objectif de rentabilité au temps : <b>' + TEMPS_OBJ + ' €/h</b> · un €/h précis par projet arrivera quand tu renseigneras le prix de chaque forfait.</div>'
-      : '<div class="empty">Aucun forfait configuré. Configure un forfait mensuel sur une cliente partenaire pour suivre sa rentabilité au temps.</div>';
-    // où tu gagnes / où tu perds (depuis estimé vs réel par pôle)
-    var gains = '';
-    var poles = (pr.poles || []).slice();
-    if (poles.length) {
-      poles.sort(function (a, b) { return (a.est > 0 ? a.real / a.est : 9) - (b.est > 0 ? b.real / b.est : 9); });
-      var win = poles[0], loss = poles[poles.length - 1];
-      var winR = win.est > 0 ? Math.round(win.real / win.est * 100) : 0;
-      var lossR = loss.est > 0 ? Math.round(loss.real / loss.est * 100) : 0;
-      gains = '<div class="gains">' +
-        '<div class="gain gain--win"><span class="gain__ic">▲</span><div class="gain__body"><div class="gain__k">Tu tiens tes estimations</div><div class="gain__t">' + esc(win.pole) + '</div><div class="gain__d">Réel à ' + winR + '% de ton estimé sur ' + win.count + ' tâche' + (win.count > 1 ? 's' : '') + '. C\'est là que tu es le plus juste.</div></div></div>' +
-        (poles.length > 1 ? '<div class="gain gain--loss"><span class="gain__ic">▼</span><div class="gain__body"><div class="gain__k">Tu débordes</div><div class="gain__t">' + esc(loss.pole) + '</div><div class="gain__d">Réel à ' + lossR + '% de ton estimé : c\'est ton poste qui dépasse le plus. Prévois plus large dans tes devis.</div></div></div>' : '') +
-      '</div>';
-    }
-    return '<div class="kts">' + kts + '</div>' +
-      '<div class="bento">' +
-        '<section class="panel panel--card"><div class="panel__h"><h2>Rentabilité par projet</h2></div><p class="tnote">Basé sur tes forfaits et le temps tracké, pas de compta ici. En dessous, chaque projet montre ce qu\'il a consommé de son forfait.</p>' + rentBlock + '</section>' +
-        '<section class="panel panel--card"><div class="panel__h"><h2>Où tu tiens, où tu débordes</h2></div>' + (gains || '<div class="empty">Renseigne un « temps estimé » sur tes tâches pour voir où tu tiens tes estimations et où tu débordes.</div>') + '</section>' +
-      '</div>';
+    return faits +
+      '<section class="tps-carte"><div class="tps-carte__h"><h2>Chaque projet, ce mois-ci</h2><span>Sur tes forfaits et le temps tracé</span></div>' +
+      '<div class="tps-rent__l tps-rent__l--h"><span>Projet</span><span>Forfait</span><span>Temps passé</span><span>Consommé</span><span class="tps-etat">État</span></div>' +
+      rows + '</section>' +
+      '<p class="tps-note">Ton taux réel par projet s’affichera quand le prix de chaque forfait sera renseigné.</p>';
   }
-  // Où part ton temps : répartition par type (données réelles timeByType).
+  // Où part ton temps : répartition par type, sur la période choisie.
   function tempsRepart(d) {
-    var list = (d.timeByType || []).slice();
-    if (!list.length) return '<section class="panel panel--card"><div class="panel__h"><h2>Où part ton temps</h2></div><div class="empty">Aucun temps enregistré pour l\'instant. Le temps que tu passes sur tes tâches et tes tickets apparaîtra ici, réparti par type.</div></section>';
+    var list;
+    var parMois = d.poleTimeByMonth;
+    if (TEMPS_PER !== 'tout' && parMois) {
+      var now = new Date(), mois = [tpsYm(now)];
+      if (TEMPS_PER === '3mois') for (var i = 1; i < 3; i++) mois.push(tpsYm(new Date(now.getFullYear(), now.getMonth() - i, 1)));
+      var acc = {};
+      mois.forEach(function (ym) { var o = parMois[ym] || {}; Object.keys(o).forEach(function (k) { acc[k] = (acc[k] || 0) + o[k]; }); });
+      list = Object.keys(acc).map(function (k) { return { type: k, minutes: acc[k] }; }).sort(function (a, b) { return b.minutes - a.minutes; });
+    } else list = (d.timeByType || []).slice();
+    var titre = TEMPS_PER === 'mois' ? 'Où part ton temps ce mois-ci' : TEMPS_PER === '3mois' ? 'Où part ton temps sur 3 mois' : 'Où part ton temps depuis le début';
+    var seg = '<div class="tps-seg" role="group" aria-label="Période">' + [['mois', 'Ce mois'], ['3mois', '3 mois'], ['tout', 'Tout']].map(function (p) {
+      return '<button class="' + (TEMPS_PER === p[0] ? 'on' : '') + '" aria-pressed="' + (TEMPS_PER === p[0]) + '" onclick="ADM.tempsSetPer(\'' + p[0] + '\')">' + p[1] + '</button>';
+    }).join('') + '</div>';
+    var head = '<div class="tps-carte__h"><h2>' + titre + '</h2>' + seg + '</div>';
+    if (!list.length) return '<section class="tps-carte">' + head + '<p class="tps-vide">Aucun temps enregistré sur cette période. Le temps de tes tâches et de tes tickets apparaîtra ici.</p></section>';
     var total = list.reduce(function (s, x) { return s + (x.minutes || 0); }, 0);
-    var maxM = list[0].minutes || 1;
-    var DOTS = ['#5A2A11', '#CD8F6E', '#8fb0d8', '#d8b9a2', '#b8b45f', '#7a5540'];
     var rows = list.map(function (x, i) {
       var pct = total ? Math.round(x.minutes / total * 100) : 0;
-      var w = Math.round(x.minutes / maxM * 100);
-      var col = DOTS[i % DOTS.length];
-      return '<div class="repx__r' + (i === 0 ? ' repx__r--top' : '') + '">' +
-        '<span class="repx__name"><span class="repx__dot" style="background:' + col + '"></span>' + esc(x.type) + '</span>' +
-        '<span class="repx__track"><i style="width:' + w + '%;background:' + col + '"></i></span>' +
-        '<span class="repx__right"><span class="repx__v">' + hhm(x.minutes) + '</span><span class="repx__pct">' + pct + '%</span></span></div>';
+      return '<div class="tps-rep__l' + (i === 0 ? ' tps-rep__l--1' : '') + '"><span class="tps-rep__n">' + esc(x.type) + '</span>' +
+        '<span class="tps-barre"><i style="width:' + pct + '%"></i></span>' +
+        '<span class="tps-rep__v num"><b>' + esc(tpsDuree(x.minutes)) + '</b> · ' + pct + ' %</span></div>';
     }).join('');
-    var top = list[0];
-    var topPct = total ? Math.round(top.minutes / total * 100) : 0;
-    return '<section class="panel panel--card"><div class="panel__h"><h2>Où part ton temps</h2><span class="n">' + hhm(total) + '</span></div>' +
-      '<p class="tnote">Par type de tâche, sur tout ce que tu as tracké. Ton plus gros poste est mis en avant.</p>' +
-      '<div class="repx">' + rows + '</div>' +
-      '<div class="insight" style="margin-top:14px"><b>À noter :</b> « ' + esc(top.type) + ' » pèse ' + topPct + '% de ton temps tracké. C\'est ton poste principal, à garder à l\'œil pour ta rentabilité.</div>' +
-    '</section>';
+    var top = list[0], topPct = total ? Math.round(top.minutes / total * 100) : 0;
+    return '<section class="tps-carte">' + head + rows + '</section>' +
+      '<div class="tps-retenir"><b>À retenir :</b> « ' + esc(top.type) + ' » prend ' + topPct + ' % de ton temps. C’est ton premier poste, à regarder pour ta rentabilité.</div>';
   }
-  // Estimé vs réel : comparer prévu et réel par pôle (données réelles profitability).
+  // Estimé vs réel : prévu et réel par type de travail.
   function tempsEstim(d) {
     var pr = d.profitability || {};
     var poles = (pr.poles || []).slice();
-    if (!poles.length) return '<section class="panel panel--card"><div class="panel__h"><h2>Estimé vs réel</h2></div><div class="empty">Renseigne un « temps estimé » sur tes tâches (dans le détail d\'une tâche) pour comparer avec le temps réellement passé. Après quelques projets, tu sauras combien te prend vraiment chaque type de travail.</div></section>';
-    var DOTS = ['#5A2A11', '#CD8F6E', '#8fb0d8', '#d8b9a2', '#b8b45f'];
-    var rows = poles.map(function (p, i) {
+    var note = '<p class="tps-note">Les tâches sans estimation ne comptent pas ici. <button class="tps-lien" onclick="ADM.nav(\'cktaches\')">Estimer mes tâches</button></p>';
+    if (!poles.length) return '<section class="tps-carte"><p class="tps-vide">Renseigne un temps estimé sur tes tâches pour comparer ce que tu prévois à ce que ça te prend vraiment.</p></section>' + note;
+    var ecart = pr.estMin > 0 ? Math.round(pr.realMin / pr.estMin * 100) - 100 : 0;
+    var juste = poles.filter(function (p) { return p.est > 0; }).sort(function (a, b) { return Math.abs(a.real / a.est - 1) - Math.abs(b.real / b.est - 1); })[0];
+    var faits = tpsFaits([['Tâches comparées', String(pr.estCount || 0)], ['En moyenne', tpsPct(ecart)], ['Le plus juste', juste ? juste.pole : 'Pas encore']]);
+    var rows = poles.map(function (p) {
       var maxV = Math.max(p.est, p.real, 1);
-      var estW = Math.round(p.est / maxV * 100), realW = Math.round(p.real / maxV * 100);
       var delta = p.est > 0 ? Math.round(p.real / p.est * 100) - 100 : 0;
       var over = delta > 5;
-      var col = DOTS[i % DOTS.length];
-      return '<div class="kpirow">' +
-        '<div class="kpi__name"><span class="kpi__dot" style="background:' + col + '"></span>' + esc(p.pole) + '</div>' +
-        '<div class="kpi__bars">' +
-          '<div class="kpi__b"><span>Estimé</span><span class="kpi__track"><i style="width:' + estW + '%;background:var(--terre)"></i></span><b>' + hhm(p.est) + '</b></div>' +
-          '<div class="kpi__b"><span>Réel</span><span class="kpi__track"><i style="width:' + realW + '%;background:' + col + '"></i></span><b>' + hhm(p.real) + '</b></div>' +
+      return '<div class="tps-est__l"><span class="tps-nom">' + esc(p.pole) + '</span>' +
+        '<div class="tps-est__b">' +
+          '<span class="tps-est__k">Prévu</span><span class="tps-barre tps-barre--fine"><i class="prevu" style="width:' + Math.round(p.est / maxV * 100) + '%"></i></span><span class="num">' + esc(tpsDuree(p.est)) + '</span>' +
+          '<span class="tps-est__k">Réel</span><span class="tps-barre tps-barre--fine"><i class="' + (over ? 'sur' : '') + '" style="width:' + Math.round(p.real / maxV * 100) + '%"></i></span><span class="num tps-fort">' + esc(tpsDuree(p.real)) + '</span>' +
         '</div>' +
-        '<span class="kpi__delta ' + (over ? 'kpi__delta--over' : 'kpi__delta--ok') + '">' + (delta > 5 ? '+' + delta + '%' : (delta < -5 ? delta + '%' : 'juste')) + '</span>' +
-      '</div>';
+        '<span class="tps-est__d num' + (over ? ' sur' : '') + '">' + (Math.abs(delta) <= 5 ? 'Juste' : tpsPct(delta)) + '</span></div>';
     }).join('');
-    var over = poles.filter(function (p) { return p.est > 0 && p.real / p.est > 1.1; }).map(function (p) { return p.pole; });
-    var insight = over.length
-      ? '<b>Ce que ça t\'apprend :</b> tu sous-estimes ' + over.slice(0, 2).map(esc).join(' et ') + '. Prévois plus large sur ' + (over.length > 1 ? 'ces postes' : 'ce poste') + ' dans tes prochains devis.'
-      : '<b>Bien joué :</b> tes estimations tombent globalement juste. Continue à noter ton temps réel pour affiner encore tes devis.';
-    return '<section class="panel panel--card"><div class="panel__h"><h2>Estimé vs réel · pour affiner tes devis</h2></div>' +
-      '<p class="tnote">Ce que tu prévois face à ce que ça te prend vraiment. Plus tu notes ton temps réel, plus tes prochains devis tombent juste.</p>' +
-      '<div class="kpi">' + rows + '</div>' +
-      '<div class="kpi__insight">' + insight + '</div>' +
-    '</section>';
+    return faits + '<section class="tps-carte"><div class="tps-carte__h"><h2>Par type de travail</h2></div>' + rows + '</section>' + note;
   }
 
   /* ── Réalisé (historique daté) ── */
@@ -7811,98 +7883,78 @@
     return P[h % P.length];
   }
   function renderDone() {
-    setMain(topbar('') + '<div class="wrap"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
+    setMain('<div class="wrap tps">' + tempsTete() + '<div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
     api('/api/done').then(function (r) { return r.json(); }).then(function (d) {
-      DONE_LIST = d.completed || []; renderDoneBody();
+      DONE_LIST = d.completed || []; if (VIEW === 'done') renderDoneBody();
     }).catch(showError);
   }
   function renderDoneBody() {
     var list = DONE_LIST || [];
-    function hh(m) { m = Math.round(m || 0); if (!m) return '—'; if (m < 60) return m + ' min'; var h = Math.floor(m / 60), r = m % 60; return h + 'h' + (r ? ('' + (r < 10 ? '0' : '') + r) : ''); }
     function mkey(dt) { return dt.getFullYear() + '-' + String(dt.getMonth() + 1).padStart(2, '0'); }
-    function monthLabel(k) { var p = k.split('-'); var dd = new Date(p[0], p[1] - 1, 1); var s = dd.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }); return s.charAt(0).toUpperCase() + s.slice(1); }
+    function nomMoisK(k, opt) { var p = k.split('-'); return new Date(p[0], p[1] - 1, 1).toLocaleDateString('fr-FR', opt || { month: 'long' }); }
+    function jour(iso) { return new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }); }
     var groups = {}, order = [];
     list.forEach(function (x) { var k = mkey(new Date(x.completedAt)); if (!groups[k]) { groups[k] = []; order.push(k); } groups[k].push(x); });
     order.sort(function (a, b) { return a < b ? 1 : -1; });
-    var nowD = new Date(); var curKey = mkey(nowD);
-    var prevD = new Date(nowD.getFullYear(), nowD.getMonth() - 1, 1); var prevKey = mkey(prevD);
+    var nowD = new Date(), curKey = mkey(nowD);
     function minOf(k) { return (groups[k] || []).reduce(function (s, x) { return s + (x.timeSpentMinutes || 0); }, 0); }
-    var monthCount = (groups[curKey] || []).length, prevCount = (groups[prevKey] || []).length;
-    var monthMin = minOf(curKey), totalMinAll = list.reduce(function (s, x) { return s + (x.timeSpentMinutes || 0); }, 0);
-    // satisfaction (avis)
-    var bilans = (KPI_AVIS && KPI_AVIS.bilans) || [];
-    var rated = bilans.filter(function (b) { return b.rating > 0; });
-    var satis = rated.length ? Math.round(rated.reduce(function (s, b) { return s + b.rating; }, 0) / rated.length * 10) / 10 : 0;
-    var deltaVs = monthCount - prevCount;
-    var kts =
-      '<div class="kt"><div class="kt__v">' + monthCount + '</div><div class="kt__l">Réalisés · ce mois</div><span class="kt__d ' + (deltaVs >= 0 ? 'kt__d--up' : 'kt__d--flat') + '">' + (deltaVs >= 0 ? '+' + deltaVs : deltaVs) + ' vs mois dernier</span></div>' +
-      '<div class="kt"><div class="kt__v">' + list.length + '</div><div class="kt__l">Réalisés · en tout</div><span class="kt__d kt__d--flat">ton archive</span></div>' +
-      '<div class="kt"><div class="kt__v">' + hh(monthMin) + '</div><div class="kt__l">Temps livré · ce mois</div><span class="kt__d kt__d--flat">sur ' + monthCount + ' réalisé' + (monthCount > 1 ? 's' : '') + '</span></div>' +
-      '<div class="kt"><div class="kt__v">' + (satis ? String(satis).replace('.', ',') : '—') + '</div><div class="kt__l">Satisfaction moyenne</div><span class="kt__d kt__d--up">/ 5</span></div>';
-    // rythme : 6 derniers mois
-    var months = []; for (var i = 5; i >= 0; i--) { var dm = new Date(nowD.getFullYear(), nowD.getMonth() - i, 1); months.push(mkey(dm)); }
-    var maxMin = Math.max.apply(null, months.map(minOf).concat([1]));
-    var rythme = months.map(function (k) {
-      var mn = minOf(k); var pct = Math.round(mn / maxMin * 100); var lbl = new Date(k.split('-')[0], k.split('-')[1] - 1, 1).toLocaleDateString('fr-FR', { month: 'short' }).replace('.', '');
-      return '<div class="ry' + (k === curKey ? ' ry--on' : '') + '"><div class="ry__i" style="height:' + Math.max(4, pct) + '%"></div><div class="ry__v">' + (mn ? Math.round(mn / 60) + 'h' : '0') + '</div><div class="ry__l">' + esc(lbl.charAt(0).toUpperCase() + lbl.slice(1)) + '</div></div>';
+    // ── Heures livrées par mois : le repère de la page, en grand ──
+    var months = []; for (var i = 5; i >= 0; i--) months.push(mkey(new Date(nowD.getFullYear(), nowD.getMonth() - i, 1)));
+    var vals = months.map(minOf);
+    var passes = vals.slice(0, 5).filter(function (v) { return v > 0; });
+    var moy = passes.length ? Math.round(passes.reduce(function (s, v) { return s + v; }, 0) / passes.length) : 0;
+    var maxV = Math.max.apply(null, vals.concat([moy, 1]));
+    var H = 200; // hauteur utile des barres, en px
+    var barres = months.map(function (k, j) {
+      var v = vals[j], h = v ? Math.max(8, Math.round(v / maxV * H)) : 0;
+      return '<div class="jr-col' + (k === curKey ? ' on' : '') + '"><span class="jr-v num">' + (v ? esc(tpsDuree(v)) : '') + '</span>' +
+        '<span class="jr-b" style="height:' + h + 'px"></span><span class="jr-m">' + esc(nomMoisK(k)) + '</span></div>';
     }).join('');
-    var rythmeBlock = '<section class="panel panel--card" style="margin-bottom:15px"><div class="panel__h"><h2>Rythme de livraison</h2><span class="n">6 mois</span></div>' +
-      '<p class="tnote">Heures livrées par mois. Ça te dit si ta charge est régulière ou en dents de scie.</p><div class="rythme">' + rythme + '</div></section>';
-    // sous-onglets
-    var tabs = [['journal', 'Journal'], ['projet', 'Par projet'], ['cat', 'Par catégorie']];
-    var ttabs = '<div class="ttabs">' + tabs.map(function (t) { return '<button class="ttab' + (DONE_TAB === t[0] ? ' is-on' : '') + '" onclick="ADM.doneSetTab(\'' + t[0] + '\')">' + esc(t[1]) + '</button>'; }).join('') + '</div>';
+    var ligne = moy ? '<div class="jr-moy" style="bottom:' + (28 + Math.round(moy / maxV * H)) + 'px"><span>moyenne ' + esc(tpsDuree(moy)) + '</span></div>' : '';
+    var cur = vals[5];
+    var pos = !moy ? '' : cur > moy * 1.1 ? 'au-dessus de la moyenne' : cur < moy * 0.9 ? 'en dessous de la moyenne' : 'dans la moyenne';
+    var graphe = '<section class="tps-carte jr">' +
+      '<div class="jr-h"><div><h2 class="jr-t">Heures livrées par mois</h2><p class="jr-s">Sur les 6 derniers mois. Ta charge est-elle régulière ?</p></div>' +
+      '<div class="jr-ce"><span>Ce mois-ci</span><b class="num">' + esc(tpsDuree(cur)) + '</b>' + (pos ? '<span>' + pos + '</span>' : '') + '</div></div>' +
+      '<div class="jr-g">' + ligne + barres + '</div></section>';
+    // ── liste ──
+    var seg = '<div class="tps-seg tps-seg--grand" role="group" aria-label="Regrouper">' + [['journal', 'Par mois'], ['projet', 'Par projet']].map(function (p) {
+      var on = (DONE_TAB === 'projet') === (p[0] === 'projet');
+      return '<button class="' + (on ? 'on' : '') + '" aria-pressed="' + on + '" onclick="ADM.doneSetTab(\'' + p[0] + '\')">' + p[1] + '</button>';
+    }).join('') + '</div>';
+    var barreOutils = '<div class="jr-outils">' + seg + (list.length ? '<button class="tps-lien" onclick="ADM.doneExport()">Exporter en CSV</button>' : '') + '</div>';
+    function ligneLivre(x, sous) {
+      return '<div class="jr-l"><div><div class="tps-nom">' + esc(x.title || 'Sans titre') + '</div><div class="tps-sous">' + sous + '</div></div>' +
+        '<span class="num tps-fort">' + (x.timeSpentMinutes ? esc(tpsDuree(x.timeSpentMinutes)) : '') + '</span>' +
+        '<span class="jr-d">' + esc(jour(x.completedAt)) + '</span></div>';
+    }
+    function bloc(titre, droite, lignes) {
+      return '<section class="tps-carte"><div class="tps-carte__h tps-carte__h--liste"><h2>' + titre + '</h2><span>' + droite + '</span></div>' + lignes + '</section>';
+    }
+    function resume(items, mn) { return items.length + ' livré' + (items.length > 1 ? 's' : '') + (mn ? ', ' + esc(tpsDuree(mn)) : ''); }
+    function recents(items) { return items.slice().sort(function (a, b) { return +new Date(b.completedAt) - +new Date(a.completedAt); }); }
     var content;
     if (!list.length) {
-      content = '<div class="empty">Rien de terminé pour le moment. Marque des tâches « Fait » depuis Priorités ou les espaces clients.</div>';
+      content = '<section class="tps-carte"><p class="tps-vide">Rien de terminé pour le moment. Ce que tu termines depuis Tâches ou les fiches clients arrivera ici.</p></section>';
     } else if (DONE_TAB === 'projet') {
       var byP = {}, pOrder = [];
       list.forEach(function (x) { var k = (x.client || '') + '|' + (x.projectLabel || ''); if (!byP[k]) { byP[k] = []; pOrder.push(k); } byP[k].push(x); });
-      pOrder.sort(function (a, b) { var la = Math.max.apply(null, byP[a].map(function (x) { return +new Date(x.completedAt); })), lb = Math.max.apply(null, byP[b].map(function (x) { return +new Date(x.completedAt); })); return lb - la; });
-      content = '<section class="panel panel--card">' + pOrder.map(function (k) {
-        var items = byP[k]; var cl = k.split('|')[0], pl = k.split('|')[1];
+      pOrder.sort(function (a, b) { return +new Date(recents(byP[b])[0].completedAt) - +new Date(recents(byP[a])[0].completedAt); });
+      content = pOrder.map(function (k) {
+        var items = recents(byP[k]), cl = k.split('|')[0], pl = k.split('|')[1];
         var tot = items.reduce(function (s, x) { return s + (x.timeSpentMinutes || 0); }, 0);
-        var last = items.slice().sort(function (a, b) { return +new Date(b.completedAt) - +new Date(a.completedAt); })[0];
-        var lastM = mkey(new Date(last.completedAt)); var live = (lastM === curKey || lastM === prevKey);
-        return '<div class="pj"><div class="pj__t"><span class="pj__dot" style="background:' + doneCatColor(pl) + '"></span>' + esc(cl) + ' · ' + esc(pl || 'Projet') + '</div>' +
-          '<span class="pj__st ' + (live ? 'pj__st--live">En cours' : 'pj__st--closed">Livré') + '</span>' +
-          '<div class="pj__c">Dernier livrable le ' + esc(fmtDate(last.completedAt)) + '</div>' +
-          '<div class="pj__meta"><span class="pj__k"><b>' + items.length + '</b>livrable' + (items.length > 1 ? 's' : '') + '</span><span class="pj__k"><b>' + hh(tot) + '</b>au total</span></div></div>';
-      }).join('') + '</section>';
-    } else if (DONE_TAB === 'cat') {
-      var byC = {};
-      list.forEach(function (x) { var c = x.projectLabel || x.kind || 'Autre'; byC[c] = (byC[c] || 0) + (x.timeSpentMinutes || 0); });
-      var cats = Object.keys(byC).map(function (c) { return { c: c, m: byC[c] }; }).sort(function (a, b) { return b.m - a.m; });
-      var maxC = Math.max.apply(null, cats.map(function (x) { return x.m; }).concat([1]));
-      var rep = cats.map(function (x) {
-        var col = doneCatColor(x.c); var w = Math.round(x.m / maxC * 100);
-        return '<div class="rep__r"><span class="rep__d" style="background:' + col + '"></span><span class="rep__n">' + esc(x.c) + '</span><span class="rep__track"><i style="width:' + w + '%;background:' + col + '"></i></span><span class="rep__v">' + hh(x.m) + '</span></div>';
+        return bloc(esc(cl) + (pl ? ' · ' + esc(pl) : ''), resume(items, tot), items.map(function (x) { return ligneLivre(x, esc(nomMoisK(mkey(new Date(x.completedAt)), { month: 'long', year: 'numeric' }))); }).join(''));
       }).join('');
-      content = '<section class="panel panel--card"><div class="panel__h"><h2>Heures livrées par catégorie</h2><span class="n">tout</span></div>' +
-        '<p class="tnote">Ce que tu as réellement produit, par type de travail. Utile pour voir ce qui remplit tes mois.</p><div class="rep">' + (rep || '<div class="empty">—</div>') + '</div></section>';
     } else {
-      content = '<section class="panel panel--card"><p class="tnote" style="margin-top:0">Chaque réalisé daté, avec le temps réel passé. L\'écart s\'affiche quand tu as noté une estimation sur la tâche.</p>' +
-        order.map(function (k) {
-          var items = groups[k].slice().sort(function (a, b) { return +new Date(b.completedAt) - +new Date(a.completedAt); });
-          var mn = minOf(k);
-          var rows = items.map(function (x) {
-            var col = doneCatColor(x.projectLabel || x.kind);
-            var delta = '';
-            if (x.estMinutes > 0 && x.timeSpentMinutes) { var dm = Math.round((x.timeSpentMinutes - x.estMinutes) / 60 * 10) / 10; delta = Math.abs(dm) < 0.3 ? '<span class="done__delta done__delta--ok">juste</span>' : (dm > 0 ? '<span class="done__delta done__delta--over">+' + dm + ' h vs estimé</span>' : '<span class="done__delta done__delta--ok">' + dm + ' h</span>'); }
-            else delta = '<span></span>';
-            return '<div class="done"><span class="done__dot" style="background:' + col + '"></span>' +
-              '<div><div class="done__p">' + esc(x.title || '') + '</div><div class="done__c"><a href="javascript:ADM.openClient(\'' + x.key + '\')" style="color:inherit">' + esc(x.client || '') + '</a> · <b>' + esc(x.projectLabel || x.kind || '') + '</b></div></div>' +
-              delta +
-              '<div class="done__time">' + hh(x.timeSpentMinutes) + '</div>' +
-              '<div class="done__date">' + esc(fmtDate(x.completedAt)) + '</div></div>';
-          }).join('');
-          return '<div class="month"><b>' + monthLabel(k) + '</b> · ' + items.length + ' réalisé' + (items.length > 1 ? 's' : '') + '<span class="msum">' + (mn ? hh(mn) + ' livrées' : '') + '</span></div>' + rows;
-        }).join('') + '</section>';
+      content = order.map(function (k) {
+        var items = recents(groups[k]);
+        var t = nomMoisK(k, k.slice(0, 4) === String(nowD.getFullYear()) ? { month: 'long' } : { month: 'long', year: 'numeric' });
+        return bloc(esc(t.charAt(0).toUpperCase() + t.slice(1)), resume(items, minOf(k)), items.map(function (x) {
+          return ligneLivre(x, esc(x.client || '') + (x.projectLabel ? ' · ' + esc(x.projectLabel) : ''));
+        }).join(''));
+      }).join('');
     }
-    var exportBtn = list.length ? '<button class="btn btn--outline btn--sm" onclick="ADM.doneExport()">Exporter en CSV</button>' : '';
-    var html = '<div class="wrap">' +
-      '<div class="clhead"><div><p class="hello">Réalisé</p><p class="hello__s">Tout ce que tu as livré. Ton archive, et le temps que ça t\'a pris.</p></div><div class="clfilters">' + exportBtn + '</div></div>' +
-      '<div class="kts">' + kts + '</div>' + rythmeBlock + ttabs + content + '</div>';
-    setMain(topbar('') + html);
+    setMain('<div class="wrap tps">' + tempsTete() + barreOutils + graphe + content + '</div>');
   }
 
   function prioUrl(key, kind, id) { return '/api/clients/' + key + (kind === 'tâche' ? '/tasks/' : kind === 'ticket' ? '/tickets/' : '/steps/') + id; }
@@ -11468,49 +11520,6 @@
     });
   }
 
-  /* ── Avis : bilans + avis sur l'espace (hero + onglets) ── */
-  var AVIS_TAB = 'bilans', AVIS_D = null;
-  function avisSetTab(v) { AVIS_TAB = v; if (AVIS_D) renderAvisBody(AVIS_D); }
-  function renderAvis() {
-    setMain(topbar('Avis') + '<div class="wrap"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
-    api('/api/avis').then(function (r) { return r.json(); }).then(function (d) { AVIS_D = d; renderAvisBody(d); }).catch(showError);
-  }
-  function renderAvisBody(d) {
-    var avis = d.avis || [], bilans = d.bilans || [];
-    var rated = bilans.filter(function (b) { return b.rating; });
-    var avg = rated.length ? (rated.reduce(function (s, b) { return s + b.rating; }, 0) / rated.length) : 0;
-    var reco = bilans.filter(function (b) { return b.recommend; }).length;
-    function starStr(n) { var s = ''; for (var i = 1; i <= 5; i++) s += (n >= i ? '★' : '☆'); return s; }
-    function avInit(name) { return (String(name || '?').trim().charAt(0) || '?').toUpperCase(); }
-    var avNote = avg ? avg.toFixed(1).replace('.', ',') : '—';
-    var avscore = '<div class="avscore"><div class="avscore__n">' + avNote + '</div>' +
-      '<div class="avscore__stars">' + starStr(Math.round(avg)) + '</div>' +
-      '<div class="avscore__c">' + rated.length + ' bilan' + (rated.length > 1 ? 's' : '') + ' · sur 5</div>' +
-      '<div class="avscore__sub">' + (bilans.length ? Math.round(reco / bilans.length * 100) + ' % recommandent' : 'Pas encore de bilan') + (avis.length ? '<br>' + avis.length + ' avis sur l\'espace' : '') + '</div></div>';
-    var avisRows = avis.length ? avis.map(function (a) {
-      return '<div class="rev"><div class="rev__top"><span class="rev__a">' + avInit(a.client) + '</span>' +
-        '<div class="rev__who"><b>' + esc(a.client) + '</b><span>' + (a.category ? esc(a.category) + ' · ' : '') + fmtDate(a.createdAt) + '</span></div></div>' +
-        '<div class="rev__q">' + esc(a.content) + '</div></div>';
-    }).join('') : '<div class="empty">Aucun avis sur l\'espace pour le moment. Les clients le laissent depuis l\'onglet « Votre avis » de leur espace.</div>';
-    var bilRows = bilans.length ? bilans.map(function (b) {
-      return '<div class="rev"><div class="rev__top"><span class="rev__a">' + avInit(b.client) + '</span>' +
-        '<div class="rev__who"><b>' + esc(b.client) + '</b><span>' + fmtDate(b.submittedAt) + (b.recommend ? ' · recommande' : '') + '</span></div>' +
-        '<span class="rev__stars">' + starStr(b.rating || 0) + '</span></div>' +
-        (b.testimonial ? '<div class="rev__q rev__q--it">« ' + esc(b.testimonial) + ' »</div>' : '') +
-        (b.liked ? '<div class="rev__x"><b>Ce qui a plu :</b> ' + esc(b.liked) + '</div>' : '') +
-        (b.improve ? '<div class="rev__x"><b>À améliorer :</b> ' + esc(b.improve) + '</div>' : '') + '</div>';
-    }).join('') : '<div class="empty">Aucun bilan de collaboration reçu.</div>';
-    var tabDefs = [['bilans', 'Bilans de collaboration', bilans.length], ['avis', 'Avis sur l\'espace', avis.length]];
-    if (!tabDefs.some(function (x) { return x[0] === AVIS_TAB; })) AVIS_TAB = 'bilans';
-    var tabBar = '<div class="tabs">' + tabDefs.map(function (x) {
-      return '<button class="tab' + (AVIS_TAB === x[0] ? ' active' : '') + '" onclick="ADM.avisSetTab(\'' + x[0] + '\')">' + esc(x[1]) + badge(x[2]) + '</button>';
-    }).join('') + '</div>';
-    var body = AVIS_TAB === 'avis'
-      ? '<div class="micro mb">Ce que les clients signalent pour améliorer leur espace (manques, incompréhensions, suggestions).</div>' + avisRows
-      : '<div class="micro mb">Retours de satisfaction reçus à la fin des accompagnements.</div>' + bilRows;
-    setMain(topbar('Avis', '', 'Les retours et bilans remplis par tes clients') + '<div class="wrap"><div class="avgrid">' + avscore + '<div>' + tabBar + '<div id="avisbody">' + body + '</div></div></div></div>');
-  }
-
   /* ────────────────────────────────────────────────────────────────────────
    * Questionnaires — plateforme générique (bibliothèque + éditeur par blocs +
    * assignation aux clientes). Les modèles sont réutilisables ; on en envoie un
@@ -11714,7 +11723,7 @@
 
   var QNR_D = null, QNR_TAB = 'modeles';
   function renderQuestionnaires() {
-    setMain(topbar('') + '<div class="wrap" id="qnr-body"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
+    setMain('<div class="wrap mdl">' + modelesTete('questionnaires') + '<div id="qnr-body"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div></div>');
     if (!NAV_CLIENTS.length) { clientsGet().then(function (d) { NAV_CLIENTS = d.clients || []; }).catch(function () {}); }
     // Le registre des envois vient du tableau de bord (lecture mutualisée).
     dashGet().then(function (d) { QNR_D = d; if (VIEW === 'questionnaires') renderQnrBody(); }).catch(function () {});
@@ -11728,43 +11737,35 @@
     var active = QNR.filter(function (t) { return !t.archived; });
     var archived = QNR.filter(function (t) { return t.archived; });
     var nRep = qnrRepAll().length;
-    var head = '<div class="clhead"><div><p class="hello">Questionnaires</p><p class="hello__s">Tes questionnaires-types, et les réponses de tes clientes.</p></div></div>' +
-      '<div class="subtabs">' +
-        '<button class="subtab' + (QNR_TAB !== 'reponses' ? ' active' : '') + '" onclick="ADM.qnrSetTab(\'modeles\')">Mes modèles · ' + active.length + '</button>' +
-        '<button class="subtab' + (QNR_TAB === 'reponses' ? ' active' : '') + '" onclick="ADM.qnrSetTab(\'reponses\')">Réponses' + (nRep ? ' · ' + nRep : '') + '</button>' +
-      '</div>';
-    if (QNR_TAB === 'reponses') { body.innerHTML = head + qnrRepView(); return; }
-    var bar = '<div class="qbar"><p style="font-family:var(--font-body);font-size:15px;color:var(--muted);margin:0">Crée un modèle, envoie-le, et retrouve les réponses dans l\'onglet « Réponses ».</p><div style="display:flex;gap:8px;align-items:center"><button class="btn btn--outline btn--sm" onclick="ADM.qnrImportJson()">Importer (JSON)</button><button class="btn btn--dark btn--sm" onclick="ADM.qnrAdd()">Nouveau modèle</button></div></div>';
-    var list = active.length
-      ? active.map(qnrTplCardHtml).join('')
-      : '<div class="empty">Aucun questionnaire pour l\'instant. Crée ton premier modèle (ex. « Questions de démarrage », « Brief branding »), puis envoie-le à une ou plusieurs clientes.</div>';
-    var archBtn = archived.length ? '<button class="btn btn--outline btn--sm" style="margin-top:14px" onclick="ADM.qnrToggleArch()">' + (QNR_SHOW_ARCH ? 'Masquer' : 'Voir') + ' les archivés · ' + archived.length + '</button>' : '';
-    var archGrid = (QNR_SHOW_ARCH && archived.length) ? '<div style="margin-top:14px;opacity:0.75">' + archived.map(qnrTplCardHtml).join('') + '</div>' : '';
-    body.innerHTML = head + bar + list + archBtn + archGrid;
+    if (QNR_TAB === 'reponses') {
+      body.innerHTML = mdlBarre('Toutes les réponses reçues. Chaque nouvelle réponse arrive aussi dans l’Inbox et dans la fiche du client.',
+        '<button class="tps-lien" onclick="ADM.qnrSetTab(\'modeles\')">Revenir aux modèles</button>') + qnrRepView();
+      return;
+    }
+    var barre = mdlBarre('Les questionnaires que tu envoies à tes clients. Leurs réponses arrivent dans l’Inbox et dans leur fiche.',
+      '<button class="btn btn--dark" onclick="ADM.qnrAdd()">Nouveau modèle</button>');
+    var list = active.length ? mdlGrille(active.map(qnrTplCardHtml).join(''))
+      : '<div class="mdl-vide">Aucun questionnaire pour l’instant. Crée ton premier modèle (par exemple « Questions de démarrage »), puis envoie-le à un ou plusieurs clients.</div>';
+    var pied = mdlPied([
+      '<button class="tps-lien" onclick="ADM.qnrImportJson()">Importer un modèle</button>',
+      nRep ? '<button class="tps-lien" onclick="ADM.qnrSetTab(\'reponses\')">Toutes les réponses [' + nRep + ']</button>' : '',
+      archived.length ? '<button class="tps-lien" onclick="ADM.qnrToggleArch()">' + (QNR_SHOW_ARCH ? 'Masquer' : 'Voir') + ' les archivés [' + archived.length + ']</button>' : ''
+    ]);
+    var archGrid = (QNR_SHOW_ARCH && archived.length) ? '<div class="mdl-arch">' + mdlGrille(archived.map(qnrTplCardHtml).join('')) + '</div>' : '';
+    body.innerHTML = barre + list + pied + archGrid;
   }
   function qnrTplCardHtml(t) {
-    var nQ = qnrCountBlocks(t), nS = (t.steps || []).length;
+    var nQ = qnrCountBlocks(t);
     var used = (typeof t.usedCount === 'number') ? t.usedCount : ((t.assignments || []).length || 0);
-    // Chips des types de questions présents (maquette tpltype).
-    var typeLbl = {}; QNR_BLOCKS.forEach(function (b) { typeLbl[b[0]] = b[1]; });
-    var seen = {}, chips = [];
-    (t.steps || []).forEach(function (s) { (s.blocks || []).forEach(function (b) { if (!qnrIsStatic(b.type) && !seen[b.type]) { seen[b.type] = 1; chips.push(typeLbl[b.type] || b.type); } }); });
-    var typesHtml = chips.length ? '<div class="tplcard__types">' + chips.slice(0, 6).map(function (c) { return '<span class="tpltype">' + esc(c) + '</span>'; }).join('') + '</div>' : '';
-    return '<div class="tplcard">' +
-      '<div class="tplcard__top"><div><div class="tplcard__n" style="cursor:pointer" role="button" tabindex="0" data-kb onclick="ADM.qnrOpen(\'' + t.id + '\')">' + esc(t.name || 'Sans titre') + '</div>' +
-        '<div class="tplcard__s">' + nQ + ' question' + (nQ > 1 ? 's' : '') + ' · ' + nS + ' section' + (nS > 1 ? 's' : '') + (used ? ' · envoyé ' + used + ' fois' : '') + '</div></div>' +
-        '<button class="ibbtn ibbtn--dark" onclick="ADM.qnrAssignOpen(\'' + t.id + '\')">Assigner</button></div>' +
-      typesHtml +
-      (t.description ? '<p class="tnote" style="margin:12px 0 0">' + esc(t.description) + '</p>' : '') +
-      '<div class="tplcard__act">' +
-        '<button class="ibbtn" onclick="ADM.qnrOpen(\'' + t.id + '\')">Modifier</button>' +
-        '<button class="ibbtn" onclick="ADM.qnrPreview(\'' + t.id + '\')">Aperçu</button>' +
-        '<button class="ibbtn" onclick="ADM.qnrDup(\'' + t.id + '\')">Dupliquer</button>' +
-        '<button class="ibbtn" onclick="ADM.qnrExportJson(\'' + t.id + '\')">Exporter</button>' +
-        '<button class="ibbtn" onclick="ADM.qnrArchive(\'' + t.id + '\')">' + (t.archived ? 'Désarchiver' : 'Archiver') + '</button>' +
-        '<button class="ibbtn ibbtn--del" onclick="ADM.qnrDel(\'' + t.id + '\')">Supprimer</button>' +
-      '</div>' +
-    '</div>';
+    var i = esc(t.id);
+    var meta = nQ + ' question' + (nQ > 1 ? 's' : '') + (used ? ' · envoyé ' + used + ' fois' : ' · jamais envoyé');
+    return mdlCarte(t.name, meta, 'ADM.qnrOpen(\'' + i + '\')', [
+      ['Envoyer à un client', 'ADM.qnrAssignOpen(\'' + i + '\')'],
+      ['Aperçu', 'ADM.qnrPreview(\'' + i + '\')'],
+      ['Dupliquer', 'ADM.qnrDup(\'' + i + '\')'],
+      ['Exporter', 'ADM.qnrExportJson(\'' + i + '\')'],
+      [t.archived ? 'Désarchiver' : 'Archiver', 'ADM.qnrArchive(\'' + i + '\')']
+    ], 'ADM.qnrDel(\'' + i + '\')');
   }
   function qnrToggleArch() { QNR_SHOW_ARCH = !QNR_SHOW_ARCH; renderQnrBody(); }
   /* ── Registre des réponses ────────────────────────────────────────────
@@ -12328,9 +12329,26 @@
   function prjCountSteps(t) { var n = 0; (t.phases || []).forEach(function (p) { n += (p.steps || []).length; }); return n; }
   function prjCountDeliv(t) { var n = 0; (t.phases || []).forEach(function (p) { n += (p.deliverables || []).length; }); return n; }
 
+  /* ── Modèles : une page, trois onglets (Projets, Questionnaires, Trames
+   * d'appel). Même tête et mêmes cartes partout : le nom, une ligne de
+   * repères, « Modifier » et le menu ⋯ pour le reste. ── */
+  function modelesTete(cur) {
+    return pageTete('Modèles', [
+      ['projtpl', 'ADM.nav(\'projtpl\')', 'Projets'],
+      ['questionnaires', 'ADM.nav(\'questionnaires\')', 'Questionnaires'],
+      ['trames', 'ADM.nav(\'trames\')', 'Trames d’appel']
+    ], cur);
+  }
+  function mdlBarre(phrase, bouton) { return '<div class="mdl-barre"><p>' + phrase + '</p>' + (bouton || '') + '</div>'; }
+  function mdlCarte(nom, meta, modifier, items, supprimer) {
+    return '<div class="mdl-c"><button class="mdl-c__n" onclick="' + modifier + '">' + esc(nom || 'Sans titre') + '</button>' +
+      '<p class="mdl-c__m">' + meta + '</p>' +
+      '<div class="mdl-c__a"><button class="tps-lien" onclick="' + modifier + '">Modifier</button>' + ckMenuHtml(items, supprimer) + '</div></div>';
+  }
+  function mdlGrille(cartes) { return '<div class="mdl-g">' + cartes + '</div>'; }
+  function mdlPied(liens) { return '<div class="mdl-pied">' + liens.filter(Boolean).join('') + '</div>'; }
   function renderProjTpl() {
-    var right = '<button class="btn btn--dark btn--sm" onclick="ADM.prjAdd()">Nouveau modèle</button> <button class="btn btn--outline btn--sm" onclick="ADM.prjSeed()" title="Créer les 3 scénarios prêts à l\'emploi (Site, Identité, Support)">Modèles de départ</button>';
-    setMain(topbar('Modèles de projets', right, 'Un scénario = des phases, des étapes (cliente / studio / validation) et des livrables. Crée-le une fois, instancie-le dans l\'espace d\'une cliente.') + '<div class="wrap" id="prj-body"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
+    setMain('<div class="wrap mdl">' + modelesTete('projtpl') + '<div id="prj-body"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div></div>');
     if (!NAV_CLIENTS.length) { clientsGet().then(function (d) { NAV_CLIENTS = d.clients || []; }).catch(function () {}); }
     if (PRJ_LOADED) { renderPrjBody(); return; }
     api('/api/project-templates').then(function (r) { return r.json(); }).then(function (d) { PRJ = (d && d.templates) || []; PRJ_LOADED = true; renderPrjBody(); }).catch(showError);
@@ -12341,37 +12359,26 @@
     var body = el('prj-body'); if (!body) return;
     var active = PRJ.filter(function (t) { return !t.archived; });
     var archived = PRJ.filter(function (t) { return t.archived; });
-    var grid = active.length
-      ? '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px">' + active.map(prjCardHtml).join('') + '</div>'
-      : '<div class="empty">Aucun modèle de projet. Clique sur « Modèles de départ » pour créer les 3 scénarios prêts à l\'emploi (Site, Identité, Support), ou crée le tien.</div>';
-    var archBtn = archived.length ? '<button class="btn btn--outline btn--sm" style="margin-top:22px" onclick="ADM.prjToggleArch()">' + (PRJ_SHOW_ARCH ? 'Masquer' : 'Voir') + ' les archivés · ' + archived.length + '</button>' : '';
-    var archGrid = (PRJ_SHOW_ARCH && archived.length) ? '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;margin-top:14px;opacity:0.75">' + archived.map(prjCardHtml).join('') + '</div>' : '';
-    body.innerHTML = grid + archBtn + archGrid;
+    var barre = mdlBarre('Tes scénarios de projet : des phases, des étapes et des livrables. Crée-le une fois, utilise-le pour chaque client.',
+      '<button class="btn btn--dark" onclick="ADM.prjAdd()">Nouveau modèle</button>');
+    var grid = active.length ? mdlGrille(active.map(prjCardHtml).join(''))
+      : '<div class="mdl-vide">Aucun modèle de projet. Pars des 3 scénarios prêts à l’emploi (Site, Identité, Support), ou crée le tien.</div>';
+    var pied = mdlPied([
+      '<button class="tps-lien" onclick="ADM.prjSeed()">Ajouter les modèles de départ</button>',
+      archived.length ? '<button class="tps-lien" onclick="ADM.prjToggleArch()">' + (PRJ_SHOW_ARCH ? 'Masquer' : 'Voir') + ' les archivés [' + archived.length + ']</button>' : ''
+    ]);
+    var archGrid = (PRJ_SHOW_ARCH && archived.length) ? '<div class="mdl-arch">' + mdlGrille(archived.map(prjCardHtml).join('')) + '</div>' : '';
+    body.innerHTML = barre + grid + pied + archGrid;
   }
   function prjCardHtml(t) {
-    var col = qnrColor(t);
     var nP = (t.phases || []).length, nS = prjCountSteps(t), nD = prjCountDeliv(t);
-    var wk = t.totalWeeks ? esc(t.totalWeeks) + ' sem. · ' : '';
-    var head = (t.icon ? '<span style="font-size:18px;line-height:1">' + esc(t.icon) + '</span>' : admIcon('projtpl'));
-    return '<div class="card" style="padding:0;overflow:hidden;border:none;border-radius:14px;display:flex;flex-direction:column">' +
-      '<div style="height:6px;background:' + esc(col) + '"></div>' +
-      '<div style="padding:15px 16px;flex:1;display:flex;flex-direction:column;gap:8px">' +
-        '<div class="between" style="align-items:flex-start;gap:8px">' +
-          '<span class="row" style="gap:8px;align-items:center;cursor:pointer" tabindex="0" data-kb onclick="ADM.prjOpen(\'' + t.id + '\')"><span style="color:' + esc(col) + ';display:flex">' + head + '</span><strong style="font-size:15.5px;line-height:1.3">' + esc(t.name || 'Sans titre') + '</strong></span>' +
-          '<span style="font-family:var(--font-micro);font-size:13px;text-transform:uppercase;letter-spacing:0.04em;color:#fff;background:' + esc(col) + ';padding:3px 8px;border-radius:999px;white-space:nowrap;flex-shrink:0">' + esc(prjOfferLabel(t.offer)) + '</span>' +
-        '</div>' +
-        '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:auto">' + wk + nP + ' phase' + (nP > 1 ? 's' : '') + ' · ' + nS + ' étape' + (nS > 1 ? 's' : '') + ' · ' + nD + ' livrable' + (nD > 1 ? 's' : '') + '</div>' +
-      '</div>' +
-      '<div style="display:flex;gap:4px;padding:9px 12px;border:none;flex-wrap:wrap">' +
-        '<button class="pbtn" onclick="ADM.prjOpen(\'' + t.id + '\')">Éditer</button>' +
-        '<button class="pbtn pbtn--ok" onclick="ADM.prjAssignOpen(\'' + t.id + '\')">Instancier</button>' +
-        '<span style="margin-left:auto;display:flex;gap:4px">' +
-          '<button class="pbtn" title="Dupliquer" onclick="ADM.prjDup(\'' + t.id + '\')">⧉</button>' +
-          '<button class="pbtn" title="' + (t.archived ? 'Désarchiver' : 'Archiver') + '" onclick="ADM.prjArchive(\'' + t.id + '\')">' + (t.archived ? '↩' : '🗄') + '</button>' +
-          '<button class="pbtn" style="color:#5A2A11" title="Supprimer" onclick="ADM.prjDel(\'' + t.id + '\')">' + IC_X + '</button>' +
-        '</span>' +
-      '</div>' +
-    '</div>';
+    var i = esc(t.id);
+    var meta = esc(prjOfferLabel(t.offer)) + ' · ' + (t.totalWeeks ? esc(t.totalWeeks) + ' sem. · ' : '') + nP + ' phase' + (nP > 1 ? 's' : '') + ' · ' + nS + ' étape' + (nS > 1 ? 's' : '') + ' · ' + nD + ' livrable' + (nD > 1 ? 's' : '');
+    return mdlCarte(t.name, meta, 'ADM.prjOpen(\'' + i + '\')', [
+      ['Utiliser pour un client', 'ADM.prjAssignOpen(\'' + i + '\')'],
+      ['Dupliquer', 'ADM.prjDup(\'' + i + '\')'],
+      [t.archived ? 'Désarchiver' : 'Archiver', 'ADM.prjArchive(\'' + i + '\')']
+    ], 'ADM.prjDel(\'' + i + '\')');
   }
   function prjToggleArch() { PRJ_SHOW_ARCH = !PRJ_SHOW_ARCH; renderPrjBody(); }
   function prjAdd() {
@@ -12565,15 +12572,10 @@
 
   /* ════════════════ Incidents (erreurs remontées par les clientes) ════════════════ */
   var INC = [];
-  function renderIncidents(){
-    var right = '<button class="btn btn--outline btn--sm" onclick="ADM.incSeenAll()">Tout marquer comme vu</button> <button class="btn btn--danger btn--sm" onclick="ADM.incClear()">Effacer</button>';
-    setMain(topbar('Incidents', right, 'Les erreurs rencontrées par tes clientes (upload, plantage…) remontent ici, pour que tu puisses les corriger.') + '<div class="wrap" id="inc-body"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
-    incLoad();
-  }
   function incLoad(){ api('/api/client-errors').then(function(r){ return r.json(); }).then(function(d){ INC = (d && d.errors) || []; renderIncBody(); }).catch(showError); }
   function renderIncBody(){
     var b = el('inc-body'); if (!b) return;
-    if (!INC.length){ b.innerHTML = '<div class="card" style="background:var(--card)"><div class="empty">Aucun incident. 🎉 Tout roule pour tes clientes.</div></div>'; return; }
+    if (!INC.length){ b.innerHTML = '<div class="card" style="background:var(--card)"><div class="empty">Aucun incident. Tout roule pour tes clients.</div></div>'; return; }
     var ctxLbl = { 'upload-ticket':'Upload, ticket', 'upload-brief':'Upload, demande', 'js':'Erreur technique', 'promise':'Erreur technique' };
     var icon = '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 9v4M12 17h0M10.3 3.9L2.4 18a2 2 0 0 0 1.7 3h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>';
     b.innerHTML = '<div class="inclist">' + INC.map(function(e){
@@ -12591,12 +12593,12 @@
     }).join('') + '</div>';
   }
   function incClearBadge(){ BADGE_CACHE.incidents = ''; var bx = el('nav-unread-incidents'); if (bx) bx.innerHTML = ''; }
-  function incSeenAll(){ jpost('/api/client-errors', {}, 'PATCH').then(function(){ incClearBadge(); incLoad(); toast('Marqué comme vu'); }).catch(function(){ toast('Erreur'); }); }
+  function incSeenAll(){ jpost('/api/client-errors', {}, 'PATCH').then(function(){ incClearBadge(); renderReglages(); toast('Marqué comme vu'); }).catch(function(){ toast('Erreur'); }); }
   function incClear(){ admConfirm({ title:'Effacer tous les incidents ?', message:'La liste sera vidée définitivement.', yes:'Effacer', no:'Annuler', danger:true }, function(){ jpost('/api/client-errors', {}, 'DELETE').then(function(){ INC = []; incClearBadge(); renderIncBody(); toast('Liste vidée'); }).catch(function(){ toast('Erreur'); }); }); }
 
   // API publique pour les onclick
   window.ADM = {
-    nav: nav, login: login, logout: logout, scan: scan, createClient: createClient, copy: copy, editToken: editToken, navClientTab: navClientTab, navToggleClient: navToggleClient,
+    nav: nav, login: login, logout: logout, scan: scan, createClient: createClient, copy: copy, editToken: editToken, navClientTab: navClientTab,
     msWeek: msWeek, msFilter: msFilter, msToggleCap: msToggleCap, msMode: msMode, msDaySel: msDaySel, msPlace: msPlace, msDone: msDone, msDelete: msDelete, msNoteOpen: msNoteOpen, msPlanOver: msPlanOver, msPlanLeave: msPlanLeave, msPlanDrop: msPlanDrop, msPlanUnplace: msPlanUnplace, msAutoPlan: msAutoPlan, msOrganizeWeek: msOrganizeWeek, msOrganizeDay: msOrganizeDay, msUnplace: msUnplace, msDragStart: msDragStart, msDragEnd: msDragEnd, msDayOver: msDayOver, msDayLeave: msDayLeave, msDrop: msDrop, msSlotOver: msSlotOver, msDropSlot: msDropSlot, msNewBlock: msNewBlock, msSaveBlock: msSaveBlock, msDeleteBlock: msDeleteBlock, msEst: msEst, msEstH: msEstH, msAddTop: msAddTop, msAddDay: msAddDay,
     openClient: openClient, tab: tab, subtab: subtab, ffShow: ffShow, saveInfos: saveInfos, saveForfait: saveForfait, forfaitOverrideAdd: forfaitOverrideAdd, forfaitOverrideDel: forfaitOverrideDel, testEmail: testEmail, toggleOffer: toggleOffer, addOffer: addOffer, setBanner: setBanner, setMaintenance: setMaintenance, renameSupport: renameSupport, cloturerProjet: cloturerProjet, rouvrirProjet: rouvrirProjet, addSupportQuick: addSupportQuick, delSupport: delSupport, crAdd: crAdd, crSet: crSet, crCloturer: crCloturer, crRouvrir: crRouvrir, cgToggle: cgToggle, cgNeuve: cgNeuve, pjEdit: pjEdit, crReply: crReply, crDel: crDel, crAddVersion: crAddVersion, crAddVersionLink: crAddVersionLink, crDelVersion: crDelVersion, pjAdd: pjAdd, pjSet: pjSet, pjMove: pjMove, pjDel: pjDel, pjStart: pjStart, pjNotify: pjNotify, pjToggle: pjToggle, deleteClient: deleteClient,
     toggleTicketsSpace: toggleTicketsSpace, ticketStatus: ticketStatus, ticketDue: ticketDue, ticketTime: ticketTime, ticketDelete: ticketDelete, ticketForfait: ticketForfait, ticketProposeDate: ticketProposeDate,
@@ -12614,12 +12616,12 @@
     tblDragLeave: tblDragLeave, tblDrop: tblDrop,
     taskStatus: taskStatus, ptFinishPrompt: ptFinishPrompt, ptTimePrompt: ptTimePrompt, taskDelete: taskDelete, taskDuplicate: taskDuplicate, taskTime: taskTime, ptToggleContent: ptToggleContent, taskComment: taskComment, taskReview: taskReview, taskSendReview: taskSendReview, taskClearRework: taskClearRework, uploadTaskDlv: uploadTaskDlv, addDlvLink: addDlvLink, delDeliverable: delDeliverable, taskArchive: taskArchive, taskMilestone: taskMilestone, taskProposeDate: taskProposeDate, taskEditOpen: taskEditOpen, ptStart: ptStart, ptPause: ptPause, tkStart: tkStart, tkPause: tkPause, navTimerPause: navTimerPause,
     bilanRequest: bilanRequest, beneficeAdd: beneficeAdd, beneficeDel: beneficeDel,
-    emailSave: emailSave, emailReset: emailReset, reglSetTab: reglSetTab, bookingSave: bookingSave, calSave: calSave, calTest: calTest, calDisconnect: calDisconnect, congesAdd: congesAdd, congesDel: congesDel, congesSave: congesSave, wsAdd: wsAdd, wsDel: wsDel, wsSave: wsSave, backupRun: backupRun, backupDownload: backupDownload, backupRestoreOpen: backupRestoreOpen,
+    emailSave: emailSave, emailReset: emailReset, reglSetTab: reglSetTab, reglOuvrir: reglOuvrir, bookingSave: bookingSave, calSave: calSave, calTest: calTest, calDisconnect: calDisconnect, congesAdd: congesAdd, congesDel: congesDel, congesSave: congesSave, wsAdd: wsAdd, wsDel: wsDel, wsSave: wsSave, backupRun: backupRun, backupDownload: backupDownload, backupRestoreOpen: backupRestoreOpen,
     missionTypeAdd: missionTypeAdd, missionTypeDel: missionTypeDel, missionTypeSave: missionTypeSave,
     prioDone: prioDone, prioCloseDlv: prioCloseDlv, prioPostpone: prioPostpone, prioProposeDate: prioProposeDate, prioTicketStart: prioTicketStart, prioAddDlv: prioAddDlv, prioAddDlvLink: prioAddDlvLink, revResolve: revResolve, prioDragStart: prioDragStart, prioDragEnd: prioDragEnd, prioDayOver: prioDayOver, prioDayLeave: prioDayLeave, prioDropDay: prioDropDay, prioSetDoDate: prioSetDoDate, prioClearDoDate: prioClearDoDate, prioPlan: prioPlan,
     atCloseTask: atCloseTask, atCopyLink: atCopyLink, atAddEntry: atAddEntry, atDelEntry: atDelEntry,
     atSetSec: atSetSec, atWide: atWide, atReviewUpdated: atReviewUpdated, atEditNote: atEditNote, atSaveNote: atSaveNote, atNoteRestore: atNoteRestore, atCalMove: atCalMove, atCalToday: atCalToday,
-    atSetFilter: atSetFilter, atRenderBody: atRenderBody, atOnQ: atOnQ, atOnClient: atOnClient, atOnOffer: atOnOffer, atPlan: atPlan, atPlan2: atPlan2, atOpen: atOpen, atClose: atClose, prioSetCat: prioSetCat, prioSendReview: prioSendReview, prioSetTime: prioSetTime, prioAddTaskTime: prioAddTaskTime, prioSetGroup: prioSetGroup, prioSetFilter: prioSetFilter, prioSetTab: prioSetTab, prioMainTab: prioMainTab, prioWkView: prioWkView, prioConsultQnr: prioConsultQnr, qnrDelete: qnrDelete, qnrExportPdf: qnrExportPdf, qnrSetTab: qnrSetTab, qnrRepToggle: qnrRepToggle, qnrRepPdf: qnrRepPdf, capSave: capSave, inboxTriage: inboxTriage, ptDemandeTriage: ptDemandeTriage, inboxProposeDate: inboxProposeDate, inboxSeen: inboxSeen, inboxDrawer: inboxDrawer, inboxDrawerClose: inboxDrawerClose, inboxResend: inboxResend, inboxResendLink: inboxResendLink, kpiSetTab: kpiSetTab, kpiExport: kpiExport, tempsSetTab: tempsSetTab, doneSetTab: doneSetTab, doneExport: doneExport, avisSetTab: avisSetTab, remind: remind,
+    atSetFilter: atSetFilter, atRenderBody: atRenderBody, atOnQ: atOnQ, atOnClient: atOnClient, atOnOffer: atOnOffer, atPlan: atPlan, atPlan2: atPlan2, atOpen: atOpen, atClose: atClose, prioSetCat: prioSetCat, prioSendReview: prioSendReview, prioSetTime: prioSetTime, prioAddTaskTime: prioAddTaskTime, prioSetGroup: prioSetGroup, prioSetFilter: prioSetFilter, prioSetTab: prioSetTab, prioMainTab: prioMainTab, prioWkView: prioWkView, prioConsultQnr: prioConsultQnr, qnrDelete: qnrDelete, qnrExportPdf: qnrExportPdf, qnrSetTab: qnrSetTab, qnrRepToggle: qnrRepToggle, qnrRepPdf: qnrRepPdf, capSave: capSave, inboxTriage: inboxTriage, ptDemandeTriage: ptDemandeTriage, inboxProposeDate: inboxProposeDate, inboxSeen: inboxSeen, inboxDrawer: inboxDrawer, inboxDrawerClose: inboxDrawerClose, inboxResend: inboxResend, inboxResendLink: inboxResendLink, kpiSetTab: kpiSetTab, kpiExport: kpiExport, tempsSetTab: tempsSetTab, tdbAvisOuvrir: tdbAvisOuvrir, tdbBilanChoisir: tdbBilanChoisir, tdbBilanEnvoyer: tdbBilanEnvoyer, tdbPanneauFermer: tdbPanneauFermer, tempsOnglet: tempsOnglet, tempsSetPer: tempsSetPer, doneSetTab: doneSetTab, doneExport: doneExport, remind: remind,
     notifToggle: notifToggle, notifOpen: notifOpen, notifAck: notifAck, notifAckRework: notifAckRework, notifAckComment: notifAckComment,
     myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, myTaskArchive: myTaskArchive, mtStart: mtStart, mtPause: mtPause, mtQuickAdd: mtQuickAdd, mtQuickDue: mtQuickDue, mtSubAdd: mtSubAdd, mtSubToggle: mtSubToggle, mtSubDel: mtSubDel, mtGoTask: mtGoTask, mtEditNote: mtEditNote, mtSaveNote: mtSaveNote, mtNoteRestore: mtNoteRestore, mtEditOpen: mtEditOpen, mtToggleRow: mtToggleRow,
     visTab: visTab, trameOpen: trameOpen, trameEditLib: trameEditLib, trameBackLib: trameBackLib, trameQToggle: trameQToggle, trameQNote: trameQNote, callNoteNew: callNoteNew, callNoteSel: callNoteSel, callNoteDel: callNoteDel, callNoteSet: callNoteSet, callRight: callRight, trameNew: trameNew, trameSel: trameSel, trameDel: trameDel, trameSet: trameSet, trameEditToggle: trameEditToggle, trameEdField: trameEdField, trameEdQ: trameEdQ, trameEdQAdd: trameEdQAdd, trameEdQDel: trameEdQDel, trameEdSecAdd: trameEdSecAdd, trameEdSecDel: trameEdSecDel, trameEdSecMove: trameEdSecMove, visAdd: visAdd, visSet: visSet, visSetClient: visSetClient, visOpen: visOpen, visCloseDrawer: visCloseDrawer, visPresent: visPresent, visPushICloud: visPushICloud, visSetTypeFilter: visSetTypeFilter, visNoteSave: visNoteSave, visDel: visDel, visStepAdd: visStepAdd, visStepSet: visStepSet, visStepDel: visStepDel, visStepMove: visStepMove, visSaveEditor: visSaveEditor, visQAdd: visQAdd, visQToggle: visQToggle, visQSet: visQSet, visQDel: visQDel, visApplyTpl: visApplyTpl, visTplAdd: visTplAdd, visTplSet: visTplSet, visTplDel: visTplDel, visTplStepAdd: visTplStepAdd, visTplStepSet: visTplStepSet, visTplStepDel: visTplStepDel, visTplStepMove: visTplStepMove, visTplQAdd: visTplQAdd, visTplQSet: visTplQSet, visTplQDel: visTplQDel, visFmt: visFmt, visEdActive: visEdActive,

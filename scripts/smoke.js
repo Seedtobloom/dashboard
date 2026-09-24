@@ -109,8 +109,10 @@ section('4. Admin — vues du menu ↔ fonctions de rendu');
   // entrée : écran routé, pastille de retard peinte, mais introuvable.
   const navSet = new Set(navKeys);
   // Vues atteintes autrement que par le menu, légitimement : la fiche d'une
-  // cliente, la création d'une cliente, une conversation.
-  const noMenu = new Set(['client', 'newclient', 'chat', 'clients']);
+  // cliente, la création d'une cliente, une conversation. Et les écrans
+  // devenus l'onglet d'une page du menu : Journal (done) dans Temps &
+  // rentabilité, Questionnaires et Trames d'appel dans Modèles.
+  const noMenu = new Set(['client', 'newclient', 'chat', 'clients', 'done', 'questionnaires', 'trames']);
   const orphanView = Object.keys(routed).filter((v) => !navSet.has(v) && !noMenu.has(v));
   if (!orphanView.length) ok(Object.keys(routed).length + ' vues — toutes ont une entrée de menu');
   else fail('vue(s) routée(s) sans entrée de menu (introuvables)', orphanView);
