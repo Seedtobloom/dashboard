@@ -13,3 +13,5 @@ dist/
 # Générés par build-front.js (la CI les reconstruit avant chaque déploiement)
 client-v2/front.js
 admin-v2/front.js
+# Cache Python (scripts de skills)
+__pycache__/
