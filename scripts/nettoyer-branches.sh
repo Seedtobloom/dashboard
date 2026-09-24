@@ -15,8 +15,8 @@
 #   bash scripts/nettoyer-branches.sh --pour-de-vrai
 set -euo pipefail
 
-DEPLOYEE="${DEPLOYEE:-claude/shared-session-zpw6l6}"   # la branche qui part en ligne
-PROTEGEES="main ${DEPLOYEE}"
+DEPLOYEE="${DEPLOYEE:-main}"   # la branche qui part en ligne
+PROTEGEES="main ${DEPLOYEE}"   # on ne supprime jamais ces deux-là
 VRAI=0; [ "${1:-}" = "--pour-de-vrai" ] && VRAI=1
 
 git fetch --quiet --prune origin

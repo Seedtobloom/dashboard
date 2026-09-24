@@ -42,17 +42,16 @@ personne, six mois plus tard, pas même à celle qui l'a créée.
 Une branche se supprime dès qu'elle est fusionnée. C'est le seul moyen de ne
 pas se retrouver à 83.
 
-## Ce qui reste à décider
+## Ce qui a été décidé, et fait
 
-La branche qui déploie s'appelle `claude/shared-session-zpw6l6`, et son nom est
-écrit en dur dans `.github/workflows/deploy-v2.yml`. C'est le nom d'une session
-de travail, pour la branche qui fait tourner l'activité. Deux façons d'en
-sortir, au choix :
+`main` redevient la vérité. Le 24 septembre 2026 :
 
-1. **`main` redevient la vérité.** On y amène l'état déployé, le déploiement
-   écoute `main`, et les branches de travail repartent de là. C'est ce que tout
-   le monde attend d'un dépôt.
-2. **Une branche de travail au nom clair**, par exemple `studio`, et le
-   déploiement l'écoute. Plus léger, mais `main` reste un leurre.
+- le commit que `main` avait en propre a été fusionné dans l'état déployé
+  avant tout le reste, pour ne rien perdre. Il ne changeait rien : il corrigeait
+  le contraste de couleurs qui n'existent plus depuis le passage à la charte.
+  La fusion n'a donc modifié aucun fichier, et c'est vérifiable ;
+- `main` a été amenée sur cet état ;
+- `.github/workflows/deploy-v2.yml` n'écoute plus qu'une branche : `main`.
 
-La première est la bonne. Elle demande une seule opération, à faire une fois.
+Ce qui part en ligne est donc, de nouveau, ce que `main` contient. Les branches
+de travail repartent de `main` et y reviennent.
