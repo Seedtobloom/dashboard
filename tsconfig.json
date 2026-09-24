@@ -11,6 +11,6 @@
     "noImplicitReturns": true,
     "skipLibCheck": true
   },
-  "include": ["worker.ts", "lib/**/*.ts"],
+  "include": ["wBack.ts", "lib/**/*.ts"],
   "exclude": ["node_modules"]
 }

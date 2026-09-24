@@ -5,10 +5,10 @@ le **même KV client** que la vue client + un KV d'auth admin.
 
 ## Workers
 
-| Worker | Fichier à coller | Rôle | Bindings (UI Cloudflare) |
+| Worker | Point d'entrée | Rôle | Bindings (UI Cloudflare) |
 |---|---|---|---|
-| `stb-admin-front` | **`front.js`** | Sert le SPA (Écrin) + proxy `/api/*` | Service binding `SERVICE_BACK` → back · Secret `INTERNAL_SECRET` |
-| `stb-admin-back` | **`back.js`** | API admin : auth, clients, chat, upload, suivi, tâches, priorités | KV `KV_CLIENT` · KV `KV_ADMIN` · R2 `R2_FILES` (`stb-files`) · Secrets `INTERNAL_SECRET`, `RESEND_API_KEY`, `RESEND_FROM_EMAIL` |
+| `stb-admin-front` | **`front.js`** (généré par `build-front.js`) | Sert le SPA (Écrin) + proxy `/api/*` | Service binding `SERVICE_BACK` → back · Secret `INTERNAL_SECRET` |
+| `stb-admin-back` | **`back.ts`** | API admin : auth, clients, chat, upload, suivi, tâches, priorités | KV `KV_CLIENT` · KV `KV_ADMIN` · R2 `R2_FILES` (`stb-files`) · Secrets `INTERNAL_SECRET`, `RESEND_API_KEY`, `RESEND_FROM_EMAIL` |
 
 `INTERNAL_SECRET` identique des deux côtés. `KV_CLIENT`/`R2_FILES` = **les mêmes** que la vue client.
 
@@ -21,14 +21,10 @@ Session 24h (cookie HttpOnly `stb_admin`).
 ```json
 { "keyA": "<32 chars>", "keyB": "<32 chars>" }
 ```
-Exemple de 2 clés générées (à remplacer par les tiennes) :
-```
-keyA = f1a26c6cb3dbd448fd9062ad97b6d891
-keyB = ca81811560e7f877958c00eba51d3dd2
-```
+Générer chaque clé avec `openssl rand -hex 16`, puis :
 ```bash
 wrangler kv key put --config wrangler.admin-back.toml "admin:auth" \
-  '{"keyA":"f1a26c6cb3dbd448fd9062ad97b6d891","keyB":"ca81811560e7f877958c00eba51d3dd2"}'
+  '{"keyA":"<CLE_A_32_CHARS>","keyB":"<CLE_B_32_CHARS>"}'
 ```
 `KV_ADMIN` contient aussi `session:<id>` (sessions) et `clients:index` (index des clients, maintenu par l'admin).
 
@@ -49,8 +45,7 @@ wrangler kv key put --config wrangler.admin-back.toml "admin:auth" \
 
 ```bash
 cd admin-v2
-node build-front.js                                   # app.css + app.js -> front.js
-npx esbuild back.ts --format=esm --target=es2022 --charset=utf8 --outfile=back.js
+node build-front.js                                   # app.css + app.js -> front.js (non versionné)
 npx tsc --noEmit -p tsconfig.json                     # typecheck back
 
 wrangler deploy --config wrangler.admin-back.toml
@@ -60,7 +55,8 @@ wrangler secret put INTERNAL_SECRET   --config wrangler.admin-front.toml
 wrangler secret put RESEND_API_KEY    --config wrangler.admin-back.toml
 wrangler secret put RESEND_FROM_EMAIL --config wrangler.admin-back.toml
 ```
-(Insertion à la main : 2 Workers, coller `back.js` / `front.js`, configurer les bindings.)
+En temps normal, rien à faire : la CI (`deploy-v2.yml`) reconstruit `front.js` et déploie à chaque push sur `main`.
+En déploiement manuel, lancer `node build-front.js` avant `wrangler deploy` : `front.js` n'est pas versionné.
 
 ## Routes back (résumé)
 

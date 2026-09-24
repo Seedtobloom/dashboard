@@ -10,3 +10,6 @@ dist/
 # … sauf les réglages partagés, qui décrivent l'outillage du dépôt et non
 # l'état local d'une session.
 !.claude/settings.json
+# Générés par build-front.js (la CI les reconstruit avant chaque déploiement)
+client-v2/front.js
+admin-v2/front.js

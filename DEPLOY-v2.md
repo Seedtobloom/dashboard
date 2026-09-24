@@ -2,7 +2,7 @@
 
 Le workflow `.github/workflows/deploy-v2.yml` déploie les **4 workers** v2
 (`stb-client-back`, `stb-admin-back`, `stb-client-front`, `stb-admin-front`)
-à chaque push sur `main` ou `claude/shared-session-zpw6l6` (ou manuellement via
+à chaque push sur `main` (ou manuellement via
 l'onglet **Actions → Deploy v2 → Run workflow**).
 
 ## 1. Créer un token API Cloudflare
@@ -25,17 +25,12 @@ Repo GitHub → **Settings → Secrets and variables → Actions → New reposit
 | `CLOUDFLARE_API_TOKEN` | le token de l'étape 1 |
 | `CLOUDFLARE_ACCOUNT_ID` | l'account id de l'étape 2 |
 
-## 4. Renseigner les id KV dans les wrangler.toml
+## 4. Id KV dans les wrangler.toml
 
-Récupère les id de tes namespaces : `wrangler kv namespace list`
-(ou dashboard → Workers & Pages → KV).
-
-- `client-v2/wrangler.client-back.toml` → remplace `REMPLACER_PAR_ID_KV_CLIENT`
-  par l'id du namespace clients (les deux champs `id` et `preview_id`).
-- `admin-v2/wrangler.admin-back.toml` → remplace `REMPLACER_PAR_ID_KV_CLIENT`
-  (même namespace clients) **et** `REMPLACER_PAR_ID_KV_ADMIN` (namespace admin).
-
-Le bucket R2 `stb-files` et les service bindings sont déjà renseignés.
+Déjà renseignés dans `client-v2/wrangler.client-back.toml` et
+`admin-v2/wrangler.admin-back.toml` (namespaces `KV_CLIENT` et `KV_ADMIN`).
+À ne modifier que si les namespaces sont recréés : `wrangler kv namespace list`
+donne les nouveaux id (champs `id` et `preview_id`).
 
 ## 5. Vérifier que les prérequis existent (une fois)
 
@@ -55,7 +50,7 @@ Ces éléments ne sont **pas** créés par le workflow :
 
 ## 6. Déployer
 
-Pousse sur la branche (ou **Actions → Deploy v2 → Run workflow**). Le job :
+Pousse sur `main` (ou **Actions → Deploy v2 → Run workflow**). Le job :
 build les fronts → déploie les 2 backs → déploie les 2 fronts. Suis le détail
 dans l'onglet **Actions**.
 
@@ -63,4 +58,4 @@ dans l'onglet **Actions**.
 
 - Le déploiement V1 (`deploy.yml`) reste séparé et inchangé.
 - Si un déploiement échoue sur « KV namespace not found », c'est l'étape 4
-  (id KV) qui manque.
+  (id KV) qui ne correspond plus à un namespace existant.

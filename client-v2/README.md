@@ -12,10 +12,10 @@ et le branchement du boot dessus. Le back **reproduit l'API client V1**
 
 ## Workers
 
-| Worker | Fichier à coller | Rôle | Bindings (dashboard → *Settings → Variables and Bindings*) |
+| Worker | Point d'entrée | Rôle | Bindings (dashboard → *Settings → Variables and Bindings*) |
 |---|---|---|---|
-| `stb-client-front` | **`front.js`** | Sert le SPA (HTML/CSS/JS inline) + proxy `/api/*` vers le back | Service binding `SERVICE_BACK` → worker back · Secret `INTERNAL_SECRET` |
-| `stb-client-back` | **`back.js`** | API : auth, lecture/écriture KV, R2, mails Resend | KV `KV_CLIENT` · R2 `R2_FILES` (`stb-files`) · Secrets `INTERNAL_SECRET`, `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `ADMIN_EMAIL` |
+| `stb-client-front` | **`front.js`** (généré par `build-front.js`) | Sert le SPA (HTML/CSS/JS inline) + proxy `/api/*` vers le back | Service binding `SERVICE_BACK` → worker back · Secret `INTERNAL_SECRET` |
+| `stb-client-back` | **`back.ts`** | API : auth, lecture/écriture KV, R2, mails Resend | KV `KV_CLIENT` · R2 `R2_FILES` (`stb-files`) · Secrets `INTERNAL_SECRET`, `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `ADMIN_EMAIL` |
 
 `INTERNAL_SECRET` doit être **identique** des deux côtés. Le back refuse tout appel
 direct : il exige l'en-tête `X-Internal-Auth`, injecté par le front.
@@ -76,11 +76,9 @@ Mapping KV → « projets » attendus par le SPA V1 :
 cd client-v2
 
 # Front : SPA V1 verbatim (src/*.js) + greffe login (_login_patch.js) -> front.js
-node build-front.js          # vérifie aussi la syntaxe du SPA greffé
+node build-front.js          # vérifie aussi la syntaxe du SPA greffé ; front.js n'est pas versionné
 
-# Back : back.ts -> back.js (types retirés)
-npx esbuild back.ts --format=esm --target=es2022 --charset=utf8 --outfile=back.js
-# puis remettre `export default {` en tête (le script de commit le fait déjà)
+# Back : wrangler déploie back.ts directement, pas de compilation à faire
 
 npx tsc --noEmit -p tsconfig.json   # typecheck du back
 ```
@@ -95,7 +93,7 @@ et `_login_patch.js`).
 # 1) Namespace KV (reporter l'id dans wrangler.client-back.toml si déploiement CLI)
 wrangler kv namespace create KV_CLIENT
 
-# 2) Déployer back puis front
+# 2) Déployer back puis front (après `node build-front.js`)
 wrangler deploy --config wrangler.client-back.toml
 wrangler deploy --config wrangler.client-front.toml
 
@@ -107,8 +105,8 @@ wrangler secret put RESEND_FROM_EMAIL --config wrangler.client-back.toml
 wrangler secret put ADMIN_EMAIL       --config wrangler.client-back.toml
 ```
 
-*(Insertion à la main : créer 2 Workers, coller `back.js` et `front.js`, et
-configurer les bindings ci-dessus dans l'UI.)*
+En temps normal, rien à faire : la CI (`deploy-v2.yml`) reconstruit `front.js`
+et déploie à chaque push sur `main`.
 
 ## Espace de test
 
