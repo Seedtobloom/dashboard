@@ -1913,7 +1913,7 @@ select.cg-in{cursor:pointer}
 .ck-segb{padding:6px 13px;border-radius:999px;border:none;background:none;font-family:var(--font-micro);font-size:12px;font-weight:500;color:var(--muted);white-space:nowrap;cursor:pointer}
 .ck-segb:hover{color:var(--text)}
 .ck-segb.on{background:var(--bone);color:var(--terre);font-weight:600}
-.ck-tbl{background:var(--bone);border-radius:26px;padding:4px 24px 8px}
+.ck-tbl{background:var(--card);border-radius:26px;padding:4px 24px 8px}
 .ck-th,.ck-tr{display:grid;grid-template-columns:minmax(0,2.6fr) 1.1fr 1.5fr 1.2fr auto;gap:18px;align-items:center}
 .ck-th{padding:16px 0 10px;border-bottom:1px solid var(--border)}
 .ck-th span{font-family:var(--font-micro);font-size:10.5px;letter-spacing:0.13em;text-transform:uppercase;color:var(--muted);font-weight:600}
@@ -1992,7 +1992,7 @@ select.cg-in{cursor:pointer}
 .ckl-f--d{color:var(--red)}
 
 .ckl-cap{display:grid;grid-template-columns:repeat(auto-fit,minmax(198px,1fr));gap:14px}
-.ckl-capb{background:var(--bone);border-radius:22px;padding:18px 20px}
+.ckl-capb{background:var(--card);border-radius:22px;padding:18px 20px}
 .ckl-capv{font-family:var(--font-display);font-style:italic;font-size:30px;line-height:1;color:var(--terre)}
 .ckl-capn{font-family:var(--font-micro);font-size:11px;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);margin-top:9px}
 .ckl-capx{font-size:12.5px;color:var(--muted);margin-top:7px;line-height:1.45}
@@ -2033,6 +2033,24 @@ select.cg-in{cursor:pointer}
 .ckj-etn{display:block;font-size:11.5px;color:var(--muted);margin-top:3px}
 .ckj-jauge{display:block;height:5px;border-radius:999px;background:var(--surface-2);overflow:hidden;margin-top:7px;max-width:170px}
 .ckj-jauge span{display:block;height:100%;background:var(--glycine-900);border-radius:999px}
+/* Le bandeau d'une page projet : le même aplat que sa card dans la liste.
+   C'est lui qui dit, sans lire, dans quel projet on se trouve. */
+.ckj-band{--bg:#F8F6F2;--e:#110704;background:var(--bg);color:var(--e);border-radius:26px;padding:24px 28px 20px;margin-top:16px;margin-bottom:26px}
+.ckj-band .ck-tete{align-items:flex-end}
+.ckj-band .ck-meta,.ckj-band .ck-h1,.ckj-band .ck-date{color:var(--e)}
+.ckj-band .ck-meta,.ckj-band .ck-date{opacity:.74}
+.ckj-band .ckj-ong{margin-top:18px;margin-bottom:0}
+.ckj-band .ck-segm{background:color-mix(in srgb,var(--e) 11%,transparent)}
+.ckj-band .ck-segb{color:var(--e);opacity:.74}
+.ckj-band .ck-segb.on{background:rgba(255,255,255,.88);color:#110704;opacity:1}
+.ckj-band--sombre .ck-segb.on{background:#F8F6F2}
+.ckj-band .ckj-ongn{background:color-mix(in srgb,var(--e) 16%,transparent);color:var(--e)}
+.ckj-band .ck-segb.on .ckj-ongn{background:rgba(17,7,4,.10);color:#110704}
+.ckj-band .btn--dark{background:var(--e);color:#F8F6F2}
+.ckj-band .btn--outline{background:color-mix(in srgb,var(--e) 12%,transparent);color:var(--e)}
+.ckj-band--sombre .btn--dark{background:#F8F6F2;color:#110704}
+.ckj-band--sombre .btn--outline{background:rgba(248,246,242,.18);color:#F8F6F2}
+
 /* Les onglets d'un côté, les gestes du projet de l'autre. Avec sept sections,
    « margin-left:auto » renvoyait le second bouton à la ligne, tout seul : les
    gestes forment donc leur propre groupe, qui bascule d'un bloc. */
@@ -2185,32 +2203,47 @@ select.cg-in{cursor:pointer}
    mêmes blocs, on ne les redessine pas, on les accueille. */
 .ckj-ongn{display:inline-block;min-width:17px;padding:0 5px;margin-left:5px;border-radius:999px;background:var(--surface-2);font-size:10.5px;font-weight:700;line-height:17px;text-align:center;color:var(--cuivre)}
 .ck-segb.on .ckj-ongn{background:rgba(255,255,255,.22);color:#fff}
-.ckj-pl{display:flex;flex-direction:column;gap:11px;background:var(--bone);border-radius:16px;padding:16px 18px;box-shadow:inset 0 0 0 1px var(--border)}
-.ckj-plj{height:6px;border-radius:999px;background:var(--surface-2);overflow:hidden}
-.ckj-plj span{display:block;height:100%;background:var(--cuivre);border-radius:999px}
+/* La bande « où on en est » : l'Ébène en aplat, et le Mimosa en texte dessus.
+   C'est la seule place où le jaune est chez lui, et ça évite que la bande
+   redise la couleur du bandeau du projet. */
+.ckj-pl{display:flex;flex-direction:column;gap:12px;background:var(--ebene);color:#F8F6F2;border-radius:20px;padding:20px 22px}
+.ckj-plj{height:6px;border-radius:999px;background:rgba(248,246,242,.18);overflow:hidden}
+.ckj-plj span{display:block;height:100%;background:var(--paille);border-radius:999px}
 .ckj-plc{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.ckj-plc b{font-size:15px;color:var(--cuivre)}
+.ckj-plc b{font-size:15px;color:var(--paille)}
+.ckj-pl .ck-ts{color:rgba(248,246,242,.72)}
+.ckj-pl .btn--outline{background:rgba(248,246,242,.16);color:#F8F6F2}
 .ckj-pl .btn{align-self:flex-start}
 .ckj-ret+.ckj-ret{margin-top:6px;padding-top:12px;border-top:1px solid var(--border)}
 .ckj-rett{display:block;margin-bottom:6px}
 .ckj-sec{margin-top:4px}
 .ckj-sec .card{max-width:none}
 .pjc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(296px,1fr));gap:14px}
-.pjc{--t:#5A2A11;--e:#5A2A11;--w:6%;--r:34%;position:relative;background:color-mix(in srgb,var(--t) var(--w),#fff);border-radius:18px;padding:17px 19px 15px;display:flex;flex-direction:column;gap:9px;box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--t) var(--r),transparent);overflow:hidden}
+/* Une card = un aplat de la palette, sans contour. L'encre (--e) s'adapte à
+   l'aplat : Ébène sur les clairs, Neige sur les foncés. Tout ce qui vit dans
+   la card en découle, pour qu'un seul réglage suffise. */
+.pjc{--bg:#F8F6F2;--e:#110704;position:relative;background:var(--bg);color:var(--e);border-radius:18px;padding:17px 19px 15px;display:flex;flex-direction:column;gap:9px;overflow:hidden}
 /* Un filet de teinte en haut : on repère la prestation d'un coup d'œil, sans
    aplat de couleur et sans barre sur le côté. */
-.pjc--clos{opacity:.62;background:var(--card);box-shadow:inset 0 0 0 1px var(--border)}
+.pjc--clos{opacity:.55}
 .pjc-h{display:flex;align-items:center;justify-content:space-between;gap:9px;min-height:20px}
-.pjc-p{font-family:var(--font-micro);font-size:10px;font-weight:600;letter-spacing:0.11em;text-transform:uppercase;color:var(--e)}
-.pjc-n{font-family:var(--font-display);font-style:italic;font-size:22px;line-height:1.1;color:var(--terre)}
-.pjc-ou{font-size:14px;color:var(--text);line-height:1.4}
-.pjc-rang{display:block;font-family:var(--font-micro);font-size:10.5px;letter-spacing:0.05em;text-transform:uppercase;color:var(--muted);margin-top:5px}
-.pjc-j{height:5px;border-radius:999px;background:var(--surface-2);overflow:hidden;margin-top:7px}
+.pjc-p{font-family:var(--font-micro);font-size:10px;font-weight:600;letter-spacing:0.11em;text-transform:uppercase;color:var(--e);opacity:.74}
+.pjc-n{font-family:var(--font-display);font-style:italic;font-size:22px;line-height:1.1;color:var(--e)}
+.pjc-ou{font-size:14px;color:var(--e);line-height:1.4}
+.pjc-rang{display:block;font-family:var(--font-micro);font-size:10.5px;letter-spacing:0.05em;text-transform:uppercase;color:var(--e);opacity:.66;margin-top:5px}
+.pjc-j{height:5px;border-radius:999px;background:color-mix(in srgb,var(--e) 20%,transparent);overflow:hidden;margin-top:7px}
 .pjc-j span{display:block;height:100%;background:var(--e);border-radius:999px}
 .pjc-d{border-top:1px solid color-mix(in srgb,var(--e) 16%,transparent);padding-top:9px;margin-top:2px}
+.pjc .ck-doux,.pjc .ck-ap,.pjc .ck-inc{color:var(--e);opacity:.7}
+.pjc .ck-ch{background:color-mix(in srgb,var(--e) 12%,transparent);color:var(--e)}
+/* Les boutons se posent sur l'aplat : ils empruntent son encre. */
+.pjc .btn--dark{background:var(--e);color:#F8F6F2}
+.pjc .btn--outline,.pjc .btn--danger{background:color-mix(in srgb,var(--e) 12%,transparent);color:var(--e)}
+.pjc--sombre .btn--dark{background:#F8F6F2;color:#110704}
+.pjc--sombre .btn--outline,.pjc--sombre .btn--danger{background:rgba(248,246,242,.18);color:#F8F6F2}
 .pjc-l{display:flex;justify-content:space-between;gap:10px;font-size:13px;padding:3px 0}
-.pjc-l span{color:var(--muted)}
-.pjc-l b{text-align:right;font-weight:600}
+.pjc-l span{color:var(--e);opacity:.68}
+.pjc-l b{text-align:right;font-weight:600;color:var(--e)}
 .pjc-a{display:flex;gap:7px;flex-wrap:wrap;margin-top:auto;padding-top:9px}
 /* Créations terminées : rangées sous un intertitre, jamais mélangées. */
 .cg-seg{display:flex;align-items:center;gap:9px;font-family:var(--font-micro);font-size:10.5px;letter-spacing:0.09em;text-transform:uppercase;color:var(--muted);margin:22px 0 10px;padding-bottom:8px;border-bottom:1px solid var(--border)}

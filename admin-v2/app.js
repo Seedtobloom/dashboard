@@ -5901,8 +5901,11 @@
     onglets.push(['fichiers', 'Fichiers', 0]);
     // L'onglet ouvert ailleurs ne doit pas laisser une page vide ici.
     if (!onglets.some(function (o) { return o[0] === CKJ.onglet; })) CKJ.onglet = 'ensemble';
+    var tn = ckTeinte({ presta2: p.prestation });
     return '<button class="btn btn--outline btn--sm" onclick="ADM.ckJFermer()">← Tous les projets</button>' +
-      '<div class="ck-tete" style="margin-top:16px"><div>' +
+      '<div class="ckj-band' + (tn.sombre ? ' ckj-band--sombre' : '') +
+        '" style="--bg:' + tn.bg + ';--e:' + tn.e + '">' +
+      '<div class="ck-tete"><div>' +
         '<div class="ck-meta">' + esc(p.client + (CKJ_PRESTA[p.prestation] && CKJ_PRESTA[p.prestation] !== p.projectLabel
           ? ' · ' + CKJ_PRESTA[p.prestation] : '')) + '</div>' +
         '<h1 class="ck-h1">' + esc(p.projectLabel) + '</h1></div>' +
@@ -5921,7 +5924,7 @@
           ? '<button class="btn btn--outline btn--sm" onclick="ADM.rouvrirProjet(' + arg + ')">Rouvrir le projet</button>'
           : '<button class="btn btn--outline btn--sm" onclick="ADM.cloturerProjet(' + arg + ')">Clôturer le projet</button>';
       }()) +
-      '<button class="btn btn--dark btn--sm" onclick="ADM.openClient(\'' + esc(p.key) + '\')">Fiche cliente</button></div></div>' +
+      '<button class="btn btn--dark btn--sm" onclick="ADM.openClient(\'' + esc(p.key) + '\')">Fiche cliente</button></div></div></div>' +
       (CKJ.onglet === 'ensemble' ? ckJEnsemble(p, b, d)
         : CKJ.onglet === 'fichiers' ? ckJOngletFichiers(p)
         : CKJ.onglet === 'etapes' ? ckJOngletEtapes(p)
@@ -8677,17 +8680,19 @@
    * dans les deux foncées, parce qu'un libellé en Azur ou en Mimosa ne se lit
    * pas. Le Mimosa ne sert jamais d'aplat : à 12 % dans du blanc, c'est un
    * voile, et le contour en porte la couleur. */
-  // w = combien de teinte dans le fond, r = combien dans le contour. Le brun et
-  // l'ébène ne passent qu'en voile et en trait fin : jamais en aplat.
+  /* Un aplat par prestation, dans la palette Seed to Bloom, sans contour.
+   * bg = l'aplat, e = l'encre qui s'y lit, sombre = l'aplat est foncé (les
+   * boutons s'inversent). Le Mimosa fait exception : le jaune ne se pose
+   * jamais en aplat, il passe en dégradé. */
   var CKJ_TEINTES = {
-    site:        { t: '#C5DEFF', e: '#5A2A11', w: '15%', r: '58%' },   // Azur
-    partenaire:  { t: '#CD8F6E', e: '#5A2A11', w: '13%', r: '52%' },   // Mandarine
-    support:     { t: '#E6E5B2', e: '#5A2A11', w: '16%', r: '60%' },   // Mimosa
-    identite:    { t: '#5A2A11', e: '#5A2A11', w: '6%',  r: '34%' },   // Cuivre
-    maintenance: { t: '#110704', e: '#110704', w: '5%',  r: '30%' },   // Ébène
-    interne:     { t: '#5A2A11', e: '#5A2A11', w: '6%',  r: '34%' }
+    site:        { bg: '#C5DEFF', e: '#110704', sombre: false },                       // Azur
+    partenaire:  { bg: '#CD8F6E', e: '#110704', sombre: false },                       // Mandarine
+    support:     { bg: 'linear-gradient(150deg,#E6E5B2 0%,#EFEEC9 45%,#FBFAF0 100%)', e: '#5A2A11', sombre: false }, // Mimosa : dégradé, jamais aplat
+    identite:    { bg: '#5A2A11', e: '#F8F6F2', sombre: true },                        // Cuivre
+    maintenance: { bg: '#110704', e: '#F8F6F2', sombre: true },                        // Ébène
+    interne:     { bg: '#F8F6F2', e: '#110704', sombre: false }                        // Neige
   };
-  var CKJ_DEFAUT = { t: '#5A2A11', e: '#5A2A11', w: '6%', r: '34%' };
+  var CKJ_DEFAUT = { bg: '#F8F6F2', e: '#110704', sombre: false };
   var CKJ_PRESTA_PAR_LB = null;
   function ckTeinte(v) {
     if (v.presta2) return CKJ_TEINTES[v.presta2] || CKJ_DEFAUT;
@@ -8705,7 +8710,8 @@
                     : '\'' + esc(v.id) + '\',false,\'' + esc(v.key || '') + '\'';
     var jauge = v.total ? '<div class="pjc-j"><span style="width:' + (v.faites / v.total * 100).toFixed(0) + '%"></span></div>' : '';
     var ligne = function (k, val) { return val ? '<div class="pjc-l"><span>' + esc(k) + '</span><b>' + val + '</b></div>' : ''; };
-    return '<div class="pjc' + (v.clos ? ' pjc--clos' : '') + '" style="--t:' + teinte.t + ';--e:' + teinte.e + ';--w:' + teinte.w + ';--r:' + teinte.r + '">' +
+    return '<div class="pjc' + (v.clos ? ' pjc--clos' : '') + (teinte.sombre ? ' pjc--sombre' : '') +
+      '" style="--bg:' + teinte.bg + ';--e:' + teinte.e + '">' +
       // La prestation ne se répète pas quand elle porte déjà le nom du projet.
       '<div class="pjc-h"><span class="pjc-p">' +
         (v.presta && v.presta.split(' · ')[0] !== v.nom ? esc(v.presta) : '') + '</span>' +
