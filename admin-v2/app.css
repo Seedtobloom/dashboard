@@ -1113,12 +1113,19 @@ input[type=checkbox]{width:16px;height:16px;cursor:pointer}
 .cgc-x{margin-left:auto;font-size:13px;color:var(--muted)}
 /* Un jalon replié : date, intitulé, qui le porte, son avancement. Le crayon
    ouvre les champs, qui n'encombrent plus les cinq autres jalons. */
-.cgj-l{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:7px 10px;border-radius:11px;cursor:pointer}
-.cgj-l:hover{background:rgba(17,7,4,.04)}
-.cgj-d{font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--terre-600);min-width:104px}
-.cgj-t{flex:1;min-width:160px;font-size:14px;color:var(--terre);line-height:1.35}
-.cgj-s{padding:3px 8px;font-size:12px;height:auto;min-width:96px}
-.cgj-x{font-size:13px;color:var(--muted)}
+.cgj-l{display:grid;grid-template-columns:132px 1fr auto auto 20px;align-items:center;gap:14px;padding:11px 14px;border-radius:14px;cursor:pointer}
+.cgj-l:hover{background:var(--card)}
+.cgj-d{font-family:var(--font-micro);font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--terre-600)}
+.cgj-t{font-size:14.5px;color:var(--terre);line-height:1.35;min-width:0}
+.cgj-s{padding:4px 9px;font-size:12px;height:auto;min-width:104px}
+.cgj-x{font-size:13px;color:var(--muted);text-align:right}
+@media (max-width:900px){
+  .cgj-l{grid-template-columns:1fr auto;gap:8px 12px}
+  .cgj-d{grid-column:1/-1}
+  .cgj-t{grid-column:1/-1}
+}
+.cg-jal__meta{margin:0 14px 14px;padding-top:12px;border-top:1px solid var(--bone-d)}
+.cg-jal .cg-in--title{margin:0 14px;width:calc(100% - 28px)}
 .cg-head{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
 .cg-ic{width:40px;height:40px;border-radius:11px;background:var(--brume);color:var(--terre);display:flex;align-items:center;justify-content:center;flex:none}
 .cg-name{flex:0 1 auto;font-family:var(--font-display);font-style:italic;font-size:24px;color:var(--terre);border:none;background:transparent;padding:0;min-width:120px;outline:none}
@@ -1132,6 +1139,9 @@ select.cg-in{cursor:pointer}
 .cg-pill{font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:5px 11px;border-radius:999px;white-space:nowrap}
 .cg-chip{font-family:var(--font-micro);font-size:10px;font-weight:700;padding:3px 10px;border-radius:999px;white-space:nowrap}
 .cg-cols{display:grid;grid-template-columns:1fr 1.35fr;gap:24px;margin-top:16px;padding-top:16px;border-top:none}
+/* Le planning prévisionnel était serré dans une demi-colonne : ses dates, ses
+   intitulés et son avancement se chevauchaient. Il prend toute la largeur. */
+.cg-cols--1{grid-template-columns:1fr;gap:22px}
 @media(max-width:900px){.cg-cols{grid-template-columns:1fr}}
 .cg-lbl{font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:12px;display:flex;align-items:center;gap:6px}
 .cg-empty{font-family:var(--font-micro);font-size:12.5px;color:var(--terre-400);padding:8px 0}
@@ -1146,27 +1156,28 @@ select.cg-in{cursor:pointer}
 .cg-btn--icon{padding:9px 11px}
 .cg-ib{width:30px;height:30px;border-radius:8px;border:none;background:#fff;box-shadow:inset 0 0 0 1px var(--bone-d);color:var(--terre-600);display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
 .cg-ib--del{color:var(--red)}
-.cg-plan{background:#fff;border:none;border-radius:14px;padding:16px 18px}
-.cg-t0{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding-bottom:12px;margin-bottom:12px;border-bottom:none}
+.cg-plan{background:#fff;border:none;border-radius:18px;padding:18px 20px}
+.cg-t0{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--card);border-radius:12px;padding:9px 14px;margin-bottom:14px}
 .cg-t0>span:first-child{font-family:var(--font-micro);font-size:11px;color:var(--muted)}
 .cg-t0 .cg-hint{font-family:var(--font-micro);font-size:10.5px;color:var(--terre-400)}
-.cg-jal{display:flex;gap:13px}
-.cg-jal__spine{display:flex;flex-direction:column;align-items:center;flex:none;padding-top:4px}
-.cg-jal__dot{width:12px;height:12px;border-radius:50%;box-shadow:0 0 0 4px #fff}
-.cg-jal__line{flex:1;width:2px;background:var(--bone-d);margin:4px 0}
+.cg-jal{display:flex;gap:14px}
+.cg-jal__spine{display:flex;flex-direction:column;align-items:center;flex:none;padding-top:13px}
+.cg-jal__dot{width:10px;height:10px;border-radius:50%;box-shadow:0 0 0 4px #fff}
+.cg-jal__line{flex:1;width:2px;background:var(--bone-d);margin:5px 0}
 .cg-jal:last-child .cg-jal__line{display:none}
-.cg-jal__body{flex:1;min-width:0;background:#fff;border:none;border-radius:12px;padding:13px 15px;margin-bottom:11px}
+.cg-jal__body{flex:1;min-width:0;background:#fff;border:none;border-radius:14px;margin-bottom:6px}
 .cg-jal__top{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap}
 .cg-jal__date{font-family:var(--font-display);font-style:italic;font-size:16px;color:var(--terre);white-space:nowrap}
 .cg-jal__top .cg-pill{margin-left:auto}
-.cg-jal__meta{display:flex;flex-wrap:wrap;gap:11px;align-items:flex-end;margin-top:10px}
+.cg-jal__meta{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end}
 .cg-fld{display:flex;flex-direction:column;gap:5px}
 .cg-fld>span{font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--terre-400)}
 .cg-dates{display:inline-flex;align-items:center;gap:6px}
 .cg-dates .cg-sep{color:var(--terre-400)}
 .cg-dur{display:inline-flex;gap:6px}
 .cg-jal__actions{display:flex;gap:6px;margin-left:auto}
-.cg-addj{display:flex;gap:8px;margin-top:12px}
+.cg-addj{display:flex;gap:8px;margin-top:14px}
+.cg-jals{margin-top:2px}
 .cg-newcr{background:#F8F6F2;border:1px dashed var(--terre-200);border-radius:18px;padding:18px 22px;display:flex;align-items:center;gap:12px;margin-top:20px;flex-wrap:wrap}
 .cg-newcr .cg-lbl{margin:0;flex-shrink:0}
 
@@ -2218,6 +2229,9 @@ select.cg-in{cursor:pointer}
 .ckj-clih{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;padding:0 24px 8px}
 .ckj-clin{font-family:var(--font-display);font-style:italic;font-size:22px;color:var(--terre)}
 .ckj-clim{font-family:var(--font-micro);font-size:11px;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted)}
+.ckj-clib{margin-left:auto}
+.ckj-neuf{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--card);border-radius:16px;padding:14px 18px;margin:0 24px 12px}
+.ckj-neuf .inp{min-width:220px}
 
 /* ── La carte d'un projet : une seule, posée par deux écrans ──────────────
    Pas de barre sur le côté : c'est l'eyebrow de prestation qui situe. */

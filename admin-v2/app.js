@@ -5728,7 +5728,7 @@
      pas afficher un total que la liste des tâches contredirait.
      ════════════════════════════════════════════════════════════════════════ */
 
-  var CKJ = { ouvert: null, onglet: 'ensemble', filtre: 'actifs', charge: null, chargeFait: null, y: 0 };
+  var CKJ = { ouvert: null, onglet: 'ensemble', filtre: 'actifs', charge: null, chargeFait: null, y: 0, neuf: null };
   var CKJ_PRESTA = { partenaire: 'Partenaire créative', site: 'Site web', identite: 'Identité visuelle',
     support: 'Support de com', maintenance: 'Espace tickets' };
 
@@ -5928,12 +5928,41 @@
     return ordre.map(function (c) {
       var arr = par[c];
       var restant = arr.reduce(function (s2, p) { return s2 + ckJBilan(p).restant; }, 0);
+      var key = (arr[0] && arr[0].key) || '';
+      var ouvert = CKJ.neuf === key;
       return '<div class="ckj-cli">' +
         '<div class="ckj-clih"><span class="ckj-clin">' + esc(c) + '</span>' +
           '<span class="ckj-clim">' + arr.length + ' projet' + (arr.length > 1 ? 's' : '') +
-          (restant ? ' · ' + esc(ckpDuree(restant)) + ' à faire' : '') + '</span></div>' +
+          (restant ? ' · ' + esc(ckpDuree(restant)) + ' à faire' : '') + '</span>' +
+          '<button class="btn btn--outline btn--sm ckj-clib" onclick="ADM.ckJNeuf(\'' + esc(key) + '\')">' +
+          (ouvert ? 'Annuler' : '+ Projet de com') + '</button></div>' +
+        (ouvert ? '<div class="ckj-neuf">' +
+          '<input class="inp" id="ckj-neuf-' + esc(key) + '" placeholder="Nom du projet (ex. Lancement printemps)" style="flex:1"' +
+          ' onkeydown="if(event.key===\'Enter\'){event.preventDefault();ADM.ckJCreer(\'' + esc(key) + '\');}">' +
+          '<button class="btn btn--dark btn--sm" onclick="ADM.ckJCreer(\'' + esc(key) + '\')">Créer</button>' +
+          '<span class="ck-ts">Il apparaît tout de suite dans son espace, avec son fil de messages.</span>' +
+          '</div>' : '') +
         '<div class="pjc-grid">' + arr.map(ckJLigne).join('') + '</div></div>';
     }).join('');
+  }
+  /* Créer un projet de com depuis l'écran Projets : un champ qui s'ouvre sous
+   * le nom de la cliente, là où on regarde ses projets. La route est celle de
+   * la fiche cliente, inchangée : c'est l'endroit du geste qui change. */
+  function ckJNeuf(key) {
+    CKJ.neuf = (CKJ.neuf === key) ? null : key;
+    renderCockpitProjetsBody();
+    var ch = el('ckj-neuf-' + key); if (ch) ch.focus();
+  }
+  function ckJCreer(key) {
+    var ch = el('ckj-neuf-' + key);
+    var nom = ((ch && ch.value) || '').trim();
+    if (!nom) { toast('Donne-lui un nom, tu t’y retrouveras mieux'); if (ch) ch.focus(); return; }
+    jpost('/api/clients/' + key + '/supports', { name: nom }).then(function (r) {
+      if (!r.ok) { toast('Erreur'); return; }
+      toast('Projet « ' + nom + ' » créé · déjà visible dans son espace');
+      CKJ.neuf = null;
+      ckRedessine(key);
+    }).catch(function () { toast('Erreur'); });
   }
   function ckJSousTitre(p) {
     if (p.prestation === 'partenaire') {
@@ -8535,7 +8564,7 @@
             : '<button class="cg-btn cg-btn--soft" onclick="ADM.crCloturer(\'' + pid + '\',\'' + c.id + '\')">Clôturer</button>') +
         '</div>' +
         crBannerRow(pid, c) +
-        '<div class="cg-cols">' +
+        '<div class="cg-cols cg-cols--1">' +
           '<div class="cg-ver-col">' +
             '<div class="cg-lbl">Versions</div>' + vHtml +
             '<div class="cg-btnrow">' +
@@ -8804,22 +8833,19 @@
      (sans jaune). Elle sert à REPÉRER, pas à décorer : même prestation, même
      couleur, sur les deux écrans. Le fond reste très pâle — le cuivre et le
      jaune ne s'emploient jamais en grand aplat. */
-  /* Repérer une prestation à sa couleur : rien que la palette Seed to Bloom.
-   * t = la teinte, qui lave le fond et dessine le contour ; e = l'encre, prise
-   * dans les deux foncées, parce qu'un libellé en Azur ou en Mimosa ne se lit
-   * pas. Le Mimosa ne sert jamais d'aplat : à 12 % dans du blanc, c'est un
-   * voile, et le contour en porte la couleur. */
-  /* Un aplat par prestation, dans la palette Seed to Bloom, sans contour.
-   * bg = l'aplat, e = l'encre qui s'y lit, sombre = l'aplat est foncé (les
-   * boutons s'inversent). Le Mimosa fait exception : le jaune ne se pose
-   * jamais en aplat, il passe en dégradé. */
+  /* Repérer une prestation à sa couleur : un aplat de la palette Seed to
+   * Bloom, sans contour. bg = l'aplat, e = l'encre qui s'y lit, sombre = le
+   * fond est foncé (les boutons s'inversent alors).
+   * Le Mimosa n'est pas dans cette table : le jaune ne se pose jamais en fond,
+   * même pâle, même en dégradé. Il ne sert qu'en texte ou en jauge sur un fond
+   * foncé, où il est chez lui. */
   var CKJ_TEINTES = {
-    site:        { bg: '#C5DEFF', e: '#110704', sombre: false },                       // Azur
-    partenaire:  { bg: '#CD8F6E', e: '#110704', sombre: false },                       // Mandarine
-    support:     { bg: 'linear-gradient(150deg,#E6E5B2 0%,#EFEEC9 45%,#FBFAF0 100%)', e: '#5A2A11', sombre: false }, // Mimosa : dégradé, jamais aplat
-    identite:    { bg: '#5A2A11', e: '#F8F6F2', sombre: true },                        // Cuivre
-    maintenance: { bg: '#110704', e: '#F8F6F2', sombre: true },                        // Ébène
-    interne:     { bg: '#F8F6F2', e: '#110704', sombre: false }                        // Neige
+    site:        { bg: '#C5DEFF', e: '#110704', sombre: false },   // Azur
+    partenaire:  { bg: '#CD8F6E', e: '#110704', sombre: false },   // Mandarine
+    support:     { bg: '#110704', e: '#F8F6F2', sombre: true },    // Ébène
+    identite:    { bg: '#5A2A11', e: '#F8F6F2', sombre: true },    // Cuivre
+    maintenance: { bg: '#F8F6F2', e: '#110704', sombre: false },   // Neige
+    interne:     { bg: '#F8F6F2', e: '#110704', sombre: false }    // Neige
   };
   var CKJ_DEFAUT = { bg: '#F8F6F2', e: '#110704', sombre: false };
   var CKJ_PRESTA_PAR_LB = null;
@@ -8949,10 +8975,9 @@
       '<h3><span class="infocard__dot" style="background:#35608f"></span>Ses projets</h3>' +
       bloc('En cours', vifs, 'Aucun projet en cours pour cette cliente.') +
       (clos.length ? bloc('Terminés', clos, '') : '') +
-      '<div class="cpj-seg"><div class="cpj-seg__t">Créer un projet de com</div>' +
-        '<p class="cpj-note">Il apparaît <b>tout de suite</b> dans son espace, avec son fil de messages. Quand il est fini, « Clôturer » l’archive sans rien effacer.</p>' +
-        '<div class="row"><input class="inp" id="new-support-name" placeholder="Nom du projet (ex. Lancement printemps)" style="flex:1">' +
-        '<button class="btn btn--dark btn--sm" onclick="ADM.addSupport()">+ Nouveau projet</button></div></div>' +
+      // Créer un projet se fait dans l'écran Projets, à côté des autres projets
+      // de cette cliente : c'est là qu'on y pense, pas dans sa fiche.
+      '<p class="cpj-note">Un nouveau projet de com se crée depuis l’écran <b>Projets</b>, sous le nom de ta cliente.</p>' +
       '</div>';
   }
   /* Clôturer : un seul geste pour tous les projets. Les supports ont leur
@@ -8975,13 +9000,6 @@
     }).catch(function () { toast('Erreur'); });
   }
   function renameSupport(pid, name) { jpost('/api/clients/' + CURKEY + '/support/' + pid, { name: name }, 'PATCH').then(function (r) { if (r.ok) { toast('Nom enregistré'); loadClient(); } else toast('Erreur'); }); }
-  function addSupport() {
-    var champ = el('new-support-name'); var name = ((champ && champ.value) || '').trim();
-    if (!name) { toast('Donne-lui un nom, tu t’y retrouveras mieux'); if (champ) champ.focus(); return; }
-    jpost('/api/clients/' + CURKEY + '/supports', { name: name }).then(function (r) {
-      if (r.ok) { toast('Projet « ' + name + ' » créé · déjà visible dans son espace'); loadClient(); } else toast('Erreur');
-    }).catch(function () { toast('Erreur'); });
-  }
   // Ajout rapide d'un support de com depuis la carte « Offres / espaces ».
   function addSupportQuick() { jpost('/api/clients/' + CURKEY + '/supports', { name: 'Support de com' }).then(function (r) { if (r.ok) { toast('Projet de com créé · déjà visible dans son espace'); loadClient(); } else toast('Erreur'); }).catch(function () { toast('Erreur'); }); }
   function delSupport(pid) {
@@ -12020,7 +12038,7 @@
   window.ADM = {
     nav: nav, login: login, logout: logout, scan: scan, createClient: createClient, copy: copy, editToken: editToken, navClientTab: navClientTab, navToggleClient: navToggleClient,
     msWeek: msWeek, msFilter: msFilter, msToggleCap: msToggleCap, msMode: msMode, msDaySel: msDaySel, msPlace: msPlace, msDone: msDone, msDelete: msDelete, msNoteOpen: msNoteOpen, msPlanOver: msPlanOver, msPlanLeave: msPlanLeave, msPlanDrop: msPlanDrop, msPlanUnplace: msPlanUnplace, msAutoPlan: msAutoPlan, msOrganizeWeek: msOrganizeWeek, msOrganizeDay: msOrganizeDay, msUnplace: msUnplace, msDragStart: msDragStart, msDragEnd: msDragEnd, msDayOver: msDayOver, msDayLeave: msDayLeave, msDrop: msDrop, msSlotOver: msSlotOver, msDropSlot: msDropSlot, msNewBlock: msNewBlock, msSaveBlock: msSaveBlock, msDeleteBlock: msDeleteBlock, msEst: msEst, msEstH: msEstH, msAddTop: msAddTop, msAddDay: msAddDay,
-    openClient: openClient, tab: tab, subtab: subtab, ffShow: ffShow, saveInfos: saveInfos, saveForfait: saveForfait, forfaitOverrideAdd: forfaitOverrideAdd, forfaitOverrideDel: forfaitOverrideDel, testEmail: testEmail, toggleOffer: toggleOffer, addOffer: addOffer, setBanner: setBanner, setMaintenance: setMaintenance, renameSupport: renameSupport, cloturerProjet: cloturerProjet, rouvrirProjet: rouvrirProjet, addSupport: addSupport, addSupportQuick: addSupportQuick, delSupport: delSupport, crAdd: crAdd, crSet: crSet, crCloturer: crCloturer, crRouvrir: crRouvrir, cgToggle: cgToggle, pjEdit: pjEdit, crReply: crReply, crDel: crDel, crAddVersion: crAddVersion, crAddVersionLink: crAddVersionLink, crDelVersion: crDelVersion, pjAdd: pjAdd, pjSet: pjSet, pjMove: pjMove, pjDel: pjDel, pjStart: pjStart, pjNotify: pjNotify, pjToggle: pjToggle, deleteClient: deleteClient,
+    openClient: openClient, tab: tab, subtab: subtab, ffShow: ffShow, saveInfos: saveInfos, saveForfait: saveForfait, forfaitOverrideAdd: forfaitOverrideAdd, forfaitOverrideDel: forfaitOverrideDel, testEmail: testEmail, toggleOffer: toggleOffer, addOffer: addOffer, setBanner: setBanner, setMaintenance: setMaintenance, renameSupport: renameSupport, cloturerProjet: cloturerProjet, rouvrirProjet: rouvrirProjet, addSupportQuick: addSupportQuick, delSupport: delSupport, crAdd: crAdd, crSet: crSet, crCloturer: crCloturer, crRouvrir: crRouvrir, cgToggle: cgToggle, pjEdit: pjEdit, crReply: crReply, crDel: crDel, crAddVersion: crAddVersion, crAddVersionLink: crAddVersionLink, crDelVersion: crDelVersion, pjAdd: pjAdd, pjSet: pjSet, pjMove: pjMove, pjDel: pjDel, pjStart: pjStart, pjNotify: pjNotify, pjToggle: pjToggle, deleteClient: deleteClient,
     toggleTicketsSpace: toggleTicketsSpace, ticketStatus: ticketStatus, ticketDue: ticketDue, ticketTime: ticketTime, ticketDelete: ticketDelete, ticketForfait: ticketForfait, ticketProposeDate: ticketProposeDate,
     ckpReste: ckpReste, ckpEstim: ckpEstim, ckpFinir: ckpFinir, ckpPasMaintenant: ckpPasMaintenant, ckpOrdreSysteme: ckpOrdreSysteme,
     ckTSetVue: ckTSetVue, ckTSetTri: ckTSetTri, ckTSetFiltre: ckTSetFiltre, ckTOuvrir: ckTOuvrir,
@@ -12029,6 +12047,7 @@
     ckLRegSet: ckLRegSet, ckLRegEnregistrer: ckLRegEnregistrer, ckLRegAnnuler: ckLRegAnnuler,
     ckLSetSimH: ckLSetSimH, ckLSetSimHz: ckLSetSimHz, ckLDepuis: ckLDepuis,
     ckJSetFiltre: ckJSetFiltre, ckJOuvrir: ckJOuvrir, ckJFermer: ckJFermer, ckJOnglet: ckJOnglet,
+    ckJNeuf: ckJNeuf, ckJCreer: ckJCreer,
     tblStart: tblStart, tblCancel: tblCancel, tblSave: tblSave,
     tblDragStart: tblDragStart, tblDragEnd: tblDragEnd, tblDragOver: tblDragOver,
     tblDragLeave: tblDragLeave, tblDrop: tblDrop,
