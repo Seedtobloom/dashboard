@@ -360,7 +360,7 @@ input[type=checkbox]{width:16px;height:16px;cursor:pointer}
 .sem2 .charge{background:var(--surf);border-radius:20px;padding:clamp(20px,2.6vw,30px);margin-bottom:18px}
 .sem2 .charge__row{display:flex;flex-wrap:wrap;gap:clamp(20px,4vw,44px);align-items:flex-end}
 .sem2 .charge__n{font-family:var(--font-display);font-weight:600;font-size:clamp(30px,4vw,46px);line-height:.82;color:var(--brun)}
-.sem2 .charge__n small{font-size:.4em;font-style:italic;color:var(--brun);opacity:.7}
+.sem2 .charge__n small{font-size:16px;font-style:italic;color:var(--brun);opacity:.7}
 .sem2 .charge__l{font-family:var(--font-micro);font-size:15px;letter-spacing:0.1em;text-transform:uppercase;color:var(--brun);opacity:.65;margin-top:8px}
 .sem2 .charge__note{font-family:var(--font-display);font-style:italic;font-size:18px;color:var(--brun);opacity:.85;max-width:34ch;margin:0 0 0 auto}
 /* filtres */
