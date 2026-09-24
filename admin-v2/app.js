@@ -8552,8 +8552,49 @@
    * champs d'édition de CHAQUE jalon, et tout le fil de la cliente. Trois
    * créations faisaient une page sans fin où rien ne se repérait.
    * On montre donc l'essentiel, et on ouvre ce qu'on veut modifier. */
-  var CG_OPEN = {}, PJ_ED = {};
-  function cgToggle(cid) { if (CG_OPEN[cid]) delete CG_OPEN[cid]; else CG_OPEN[cid] = 1; renderTab(); }
+  var CG_OPEN = { id: null }, PJ_ED = {};
+  function cgToggle(cid) {
+    navPas(function () {
+      CG_OPEN.id = (CG_OPEN.id === cid) ? null : cid;
+      renderTab();
+      window.scrollTo(0, 0);
+    });
+  }
+  /* Une création repliée est une CARD, comme un projet : même anatomie, même
+   * composant, même grille. Sa teinte est celle de sa catégorie, prise dans
+   * les nuances de la charte. */
+  function cgCarte(c, vs, used, max) {
+    var tc = CR_TYCOL[c.type] || CR_TYCOL.autre;
+    var der = vs.length ? vs[vs.length - 1] : null;
+    var VST = { a_valider: 'à valider', valide: 'validée', refuse: 'à revoir', revision: 'à revoir' };
+    var jal = Array.isArray(c.planning) ? c.planning : [];
+    var si = jal.length ? planSituation({ jalons: jal, planningStart: c.planningStart || '' }) : null;
+    var nm = (Array.isArray(c.comments) ? c.comments : []).length + (Array.isArray(c.files) ? c.files : []).length;
+    var lignes = [];
+    lignes.push(['Versions', vs.length ? 'V' + vs.length + ' · ' + (VST[der.status] || der.status || '') : '<span class="ck-doux">aucune</span>']);
+    if (si) {
+      lignes.push(['Planning', si.ended ? 'terminé' : si.done + ' / ' + si.total + ' jalons' +
+        (si.current && si.current.label ? ' · ' + esc(si.current.label) : '')]);
+      if (!si.ended && si.late.length) lignes.push(['En retard', '<span class="ck-ap">' + si.late.length + ' jalon' + (si.late.length > 1 ? 's' : '') + '</span>']);
+    }
+    if (nm) lignes.push(['Échanges', nm + (c.clientNotif ? ' · <span class="ck-ap">nouveau</span>' : '')]);
+    lignes.push(['Allers-retours', (used > max ? '<span class="ck-ap">' : '<span>') + used + ' / ' + max + '</span>']);
+    return stbCarteProjet({
+      id: c.id, key: CURKEY, nom: c.name || 'Sans nom',
+      teinte: { bg: tc[1], e: tc[0], sombre: false },
+      presta: crTypeLabel(c.type), clos: !!c.clotureAt, clotureAt: c.clotureAt,
+      ou: crStatusLabel(c.status),
+      total: si && !si.ended ? si.total : 0, faites: si ? si.done : 0,
+      rang: si ? Math.min(si.done + 1, si.total) : 0, motRang: 'jalon',
+      lignes: lignes,
+      ouvrir: 'ADM.cgToggle(\'' + c.id + '\')',
+      gestes: c.clotureAt
+        ? '<button class="btn btn--outline btn--sm" onclick="event.stopPropagation();ADM.crRouvrir(\'' + CG_PID + '\',\'' + c.id + '\')">Rouvrir</button>'
+        : '<button class="btn btn--outline btn--sm" onclick="event.stopPropagation();ADM.crCloturer(\'' + CG_PID + '\',\'' + c.id + '\')">Clôturer</button>'
+    });
+  }
+  function crTypeLabel(t) { for (var i = 0; i < CR_TYPES.length; i++) if (CR_TYPES[i][0] === t) return CR_TYPES[i][1]; return ''; }
+  var CG_PID = '';
   function pjEdit(jid) { if (PJ_ED[jid]) delete PJ_ED[jid]; else PJ_ED[jid] = 1; renderTab(); }
   // Ce qu'une création dit d'elle-même sans être ouverte : où en sont ses
   // versions, son planning, son fil. Les mêmes calculs que partout ailleurs.
@@ -8576,6 +8617,7 @@
   }
   function creationsGallery(d) {
     var pid = d.pid;
+    CG_PID = pid;
     var creations = Array.isArray(d.content.creations) ? d.content.creations : [];
     var livr = Array.isArray(d.content.livrables) ? d.content.livrables : [];
     var CG_VST = { a_valider: ['À valider', '#E8F1FF', '#2c4a72'], valide: ['Validé', '#e3f0e7', '#2f7d4e'], refuse: ['À revoir', '#F0E2D6', '#8a4a2c'], revision: ['À revoir', '#F0E2D6', '#8a4a2c'] };
@@ -8616,19 +8658,10 @@
       var vHtml = vs.length ? vs.map(verRow).join('') : '<div class="cg-empty">Aucune version. Dépose la V1 ci-dessous.</div>';
       var fullPid = 'support-' + pid;
       var n = Array.isArray(c.planning) ? c.planning.length : 0;
-      var ouvert = !!CG_OPEN[c.id];
-      // La ligne de résumé : lisible d'un coup d'oeil, cliquable pour ouvrir.
-      var resume = '<div class="cgc" onclick="ADM.cgToggle(\'' + c.id + '\')" title="' +
-        (ouvert ? 'Replier' : 'Ouvrir cette création') + '">' +
-        '<span class="cgc-pt" style="background:' + col + '"></span>' +
-        '<span class="cgc-n">' + esc(c.name || 'Sans nom') + '</span>' +
-        '<span class="cg-pill" style="background:' + col + '1f;color:' + col + '">' + esc(crStatusLabel(c.status)) + '</span>' +
-        cgResume(c, vs).map(function (x) { return '<span class="cgc-i">' + esc(x) + '</span>'; }).join('') +
-        '<span class="cgc-r' + (crRevUsed > crRevMax ? ' cgc-r--trop' : '') + '">↩ ' + crRevUsed + '/' + crRevMax + '</span>' +
-        '<span class="cgc-x">' + (ouvert ? '▴' : '▾') + '</span>' +
-      '</div>';
-      if (!ouvert) return '<section class="cg-card cg-card--plie">' + resume + '</section>';
-      return '<section class="cg-card">' + resume +
+      var ouvert = CG_OPEN.id === c.id;
+      if (!ouvert) return cgCarte(c, vs, crRevUsed, crRevMax);
+      return '<section class="cg-card">' +
+        '<button class="btn btn--outline btn--sm" style="margin-bottom:14px" onclick="ADM.cgToggle(\'' + c.id + '\')">← Toutes les créations</button>' +
         '<div class="cg-head">' +
           '<span class="cg-ic">' + cgIcon('image', 20) + '</span>' +
           '<input class="cg-name" value="' + esc(c.name) + '" onchange="ADM.crSet(\'' + pid + '\',\'' + c.id + '\',\'name\',this.value)" title="Nom de la création">' +
@@ -8690,20 +8723,41 @@
     }
     var crVives = creations.filter(function (c) { return !c.clotureAt; });
     var crClos = creations.filter(function (c) { return !!c.clotureAt; });
-    var listHtml = crVives.length ? crVives.map(card).join('')
-      : '<div class="cg-empty" style="padding:16px 0">' +
-        (crClos.length ? 'Toutes les créations sont terminées.' : 'Aucune création pour le moment. Crée la première ci-dessous.') + '</div>';
-    if (crClos.length) {
-      listHtml += '<div class="cg-seg">Terminées <span class="cg-seg__n">' + crClos.length + '</span></div>' +
-        crClos.map(card).join('');
-    }
-    var newcr = '<div class="cg-newcr"><span class="cg-lbl">Nouvelle création</span><input class="cg-in" id="cr-new-' + pid + '" placeholder="ex. Flyer, Carte de visite…" style="flex:1;min-width:180px" onkeydown="if(event.key===\'Enter\'){event.preventDefault();ADM.crAdd(\'' + pid + '\');}"><button class="cg-btn cg-btn--dark" onclick="ADM.crAdd(\'' + pid + '\')">' + cgIcon('plus', 14) + ' Créer</button></div>';
     var unclassed = livr.filter(function (l) { return !l.creationId; });
     var unclassedHtml = unclassed.length ? '<div class="cg-card" style="margin-top:16px"><div class="cg-lbl">Versions non classées (dépôts d\'avant les créations)</div>' + unclassed.map(verRow).join('') + '</div>' : '';
-    return '<div class="card infocard" style="background:#fff"><h3>Créations</h3>' +
-      '<div class="cg-lead">Une ligne par création : clique pour l’ouvrir. Ce que tu déposes, ta cliente le retrouve dans son espace.</div>' +
-      '<div class="cg-list">' + listHtml + '</div>' + newcr + unclassedHtml +
-    '</div>';
+
+    // Une création ouverte occupe la place : on y travaille, on ne la parcourt
+    // pas. On revient à la grille par le bouton, ou par le retour du navigateur.
+    var ouverte = CG_OPEN.id ? creations.filter(function (c) { return c.id === CG_OPEN.id; })[0] : null;
+    if (ouverte) return card(ouverte) + unclassedHtml;
+
+    // Le bouton de création est en haut à droite, avec le titre : c'est là
+    // qu'on le cherche, pas au bas d'une liste.
+    var neuve = CG_OPEN.neuve
+      ? '<div class="cg-neuve"><input class="inp" id="cr-new-' + pid + '" placeholder="ex. Flyer, Carte de visite…"' +
+        ' style="flex:1;min-width:200px" onkeydown="if(event.key===\'Enter\'){event.preventDefault();ADM.crAdd(\'' + pid + '\');}">' +
+        '<button class="btn btn--dark btn--sm" onclick="ADM.crAdd(\'' + pid + '\')">Créer</button></div>'
+      : '';
+    var entete = '<div class="cg-tete"><div><h3 style="margin:0">Créations</h3>' +
+      '<div class="cg-lead" style="margin:6px 0 0">Une card par création : clique pour l’ouvrir. Ce que tu déposes, ta cliente le retrouve dans son espace.</div></div>' +
+      '<button class="btn ' + (CG_OPEN.neuve ? 'btn--outline' : 'btn--dark') + ' btn--sm" onclick="ADM.cgNeuve()">' +
+      (CG_OPEN.neuve ? 'Annuler' : '+ Nouvelle création') + '</button></div>';
+
+    var grille = crVives.length
+      ? '<div class="pjc-grid">' + crVives.map(function (c) { return card(c); }).join('') + '</div>'
+      : '<div class="cg-empty" style="padding:16px 0">' +
+        (crClos.length ? 'Toutes les créations sont terminées.' : 'Aucune création pour le moment. Crée la première avec le bouton en haut.') + '</div>';
+    var finies = crClos.length
+      ? '<div class="cg-seg">Terminées <span class="cg-seg__n">' + crClos.length + '</span></div>' +
+        '<div class="pjc-grid">' + crClos.map(function (c) { return card(c); }).join('') + '</div>'
+      : '';
+    return '<div class="card infocard" style="background:#fff">' +
+      entete + neuve + grille + finies + unclassedHtml + '</div>';
+  }
+  function cgNeuve() {
+    CG_OPEN.neuve = !CG_OPEN.neuve;
+    renderTab();
+    var ch = el('cr-new-' + CG_PID); if (ch) ch.focus();
   }
   // ── Planning éditorial d'un projet de com (jalons datés, cascade) ──
   var PLAN_MONTHS = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
@@ -8947,7 +9001,7 @@
     return CKJ_TEINTES[CKJ_PRESTA_PAR_LB[lb]] || CKJ_DEFAUT;
   }
   function stbCarteProjet(v) {
-    var teinte = ckTeinte(v);
+    var teinte = v.teinte || ckTeinte(v);
     var arg = v.pid ? '\'' + esc(v.pid) + '\',true,\'' + esc(v.key || '') + '\''
                     : '\'' + esc(v.id) + '\',false,\'' + esc(v.key || '') + '\'';
     var jauge = v.total ? '<div class="pjc-j"><span style="width:' + (v.faites / v.total * 100).toFixed(0) + '%"></span></div>' : '';
@@ -8962,7 +9016,7 @@
       '<div class="pjc-ou">' + (v.clos
         ? 'Clôturé le ' + esc(String(v.clotureAt).slice(0, 10).split('-').reverse().join('/'))
         : (v.ou || '<span class="ck-doux">Rien de posé pour l’instant</span>')) +
-        (!v.clos && v.total ? '<span class="pjc-rang">étape ' + v.rang + ' sur ' + v.total + '</span>' + jauge : '') +
+        (!v.clos && v.total ? '<span class="pjc-rang">' + esc(v.motRang || 'étape') + ' ' + v.rang + ' sur ' + v.total + '</span>' + jauge : '') +
       '</div>' +
       '<div class="pjc-d">' +
         ligne('Travail', v.restant ? esc(ckpDuree(v.restant)) + ' à faire'
@@ -8971,12 +9025,16 @@
         ligne('Créations', v.creations ? esc(v.creations) : '') +
         ligne('Prochain jalon', v.jalon ? esc(v.jalon) : '') +
         ligne('Forfait', v.forfait ? esc(v.forfait) : '') +
+        // Des lignes propres à ce que porte la card, quand ce ne sont pas
+        // celles d'un projet (une création parle de versions et de retours).
+        (v.lignes || []).map(function (x) { return ligne(x[0], x[1]); }).join('') +
       '</div>' +
       '<div class="pjc-a">' +
         '<button class="btn btn--dark btn--sm" onclick="' + v.ouvrir + '">Ouvrir</button>' +
-        (v.clos ? '<button class="btn btn--outline btn--sm" onclick="ADM.rouvrirProjet(' + arg + ')">Rouvrir</button>'
-                : '<button class="btn btn--outline btn--sm" onclick="ADM.cloturerProjet(' + arg + ')">Clôturer</button>') +
-        (v.pid ? '<button class="btn btn--danger btn--sm" onclick="ADM.delSupport(\'' + esc(v.pid) + '\')">Suppr.</button>' : '') +
+        (v.gestes !== undefined ? v.gestes
+          : ((v.clos ? '<button class="btn btn--outline btn--sm" onclick="ADM.rouvrirProjet(' + arg + ')">Rouvrir</button>'
+                     : '<button class="btn btn--outline btn--sm" onclick="ADM.cloturerProjet(' + arg + ')">Clôturer</button>') +
+             (v.pid ? '<button class="btn btn--danger btn--sm" onclick="ADM.delSupport(\'' + esc(v.pid) + '\')">Suppr.</button>' : ''))) +
       '</div></div>';
   }
   function cliProjets() {
@@ -12125,7 +12183,7 @@
   window.ADM = {
     nav: nav, login: login, logout: logout, scan: scan, createClient: createClient, copy: copy, editToken: editToken, navClientTab: navClientTab, navToggleClient: navToggleClient,
     msWeek: msWeek, msFilter: msFilter, msToggleCap: msToggleCap, msMode: msMode, msDaySel: msDaySel, msPlace: msPlace, msDone: msDone, msDelete: msDelete, msNoteOpen: msNoteOpen, msPlanOver: msPlanOver, msPlanLeave: msPlanLeave, msPlanDrop: msPlanDrop, msPlanUnplace: msPlanUnplace, msAutoPlan: msAutoPlan, msOrganizeWeek: msOrganizeWeek, msOrganizeDay: msOrganizeDay, msUnplace: msUnplace, msDragStart: msDragStart, msDragEnd: msDragEnd, msDayOver: msDayOver, msDayLeave: msDayLeave, msDrop: msDrop, msSlotOver: msSlotOver, msDropSlot: msDropSlot, msNewBlock: msNewBlock, msSaveBlock: msSaveBlock, msDeleteBlock: msDeleteBlock, msEst: msEst, msEstH: msEstH, msAddTop: msAddTop, msAddDay: msAddDay,
-    openClient: openClient, tab: tab, subtab: subtab, ffShow: ffShow, saveInfos: saveInfos, saveForfait: saveForfait, forfaitOverrideAdd: forfaitOverrideAdd, forfaitOverrideDel: forfaitOverrideDel, testEmail: testEmail, toggleOffer: toggleOffer, addOffer: addOffer, setBanner: setBanner, setMaintenance: setMaintenance, renameSupport: renameSupport, cloturerProjet: cloturerProjet, rouvrirProjet: rouvrirProjet, addSupportQuick: addSupportQuick, delSupport: delSupport, crAdd: crAdd, crSet: crSet, crCloturer: crCloturer, crRouvrir: crRouvrir, cgToggle: cgToggle, pjEdit: pjEdit, crReply: crReply, crDel: crDel, crAddVersion: crAddVersion, crAddVersionLink: crAddVersionLink, crDelVersion: crDelVersion, pjAdd: pjAdd, pjSet: pjSet, pjMove: pjMove, pjDel: pjDel, pjStart: pjStart, pjNotify: pjNotify, pjToggle: pjToggle, deleteClient: deleteClient,
+    openClient: openClient, tab: tab, subtab: subtab, ffShow: ffShow, saveInfos: saveInfos, saveForfait: saveForfait, forfaitOverrideAdd: forfaitOverrideAdd, forfaitOverrideDel: forfaitOverrideDel, testEmail: testEmail, toggleOffer: toggleOffer, addOffer: addOffer, setBanner: setBanner, setMaintenance: setMaintenance, renameSupport: renameSupport, cloturerProjet: cloturerProjet, rouvrirProjet: rouvrirProjet, addSupportQuick: addSupportQuick, delSupport: delSupport, crAdd: crAdd, crSet: crSet, crCloturer: crCloturer, crRouvrir: crRouvrir, cgToggle: cgToggle, cgNeuve: cgNeuve, pjEdit: pjEdit, crReply: crReply, crDel: crDel, crAddVersion: crAddVersion, crAddVersionLink: crAddVersionLink, crDelVersion: crDelVersion, pjAdd: pjAdd, pjSet: pjSet, pjMove: pjMove, pjDel: pjDel, pjStart: pjStart, pjNotify: pjNotify, pjToggle: pjToggle, deleteClient: deleteClient,
     toggleTicketsSpace: toggleTicketsSpace, ticketStatus: ticketStatus, ticketDue: ticketDue, ticketTime: ticketTime, ticketDelete: ticketDelete, ticketForfait: ticketForfait, ticketProposeDate: ticketProposeDate,
     ckpReste: ckpReste, ckpEstim: ckpEstim, ckpFinir: ckpFinir, ckpPasMaintenant: ckpPasMaintenant, ckpOrdreSysteme: ckpOrdreSysteme,
     ckTSetVue: ckTSetVue, ckTSetTri: ckTSetTri, ckTSetFiltre: ckTSetFiltre, ckTOuvrir: ckTOuvrir,
