@@ -4662,7 +4662,7 @@
       var pire = sansPlace[0];
       var lim = pire.echeance < auj ? auj : pire.echeance;
       var dispo = ckpLibreJusqua(lim);
-      out.push({ g: ckpAPlanifier(pire) > dispo ? 90 : 58,
+      out.push({ g: ckpAPlanifier(pire) > dispo ? 90 : 58, tag: ['Sans place', 'info'], action: 'Planifier',
         titre: sansPlace.length === 1 ? '« ' + pire.titre + ' » n’a encore de place nulle part'
           : ckpDuree(vol) + ' de travail sans place d’ici ' + ckpQuand(sansPlace[sansPlace.length - 1].echeance),
         texte: sansPlace.slice(0, 3).map(function (t) {
@@ -4674,7 +4674,7 @@
     // Du travail en retard qui n'est pas déjà dans le cap.
     var tard = ckpTaches().filter(function (t) { return ckpEnRetard(t) && capIds.indexOf(t.id) < 0 && t.statut !== 'review'; });
     if (tard.length) {
-      out.push({ g: 85, ton: 'alerte',
+      out.push({ g: 85, ton: 'alerte', tag: ['En retard', 'retard'], action: 'Ouvrir',
         titre: tard.length === 1 ? '« ' + tard[0].titre + ' » est en retard'
           : tard.length + ' tâches sont en retard',
         texte: tard.slice(0, 3).map(function (t) { return '« ' + t.titre + ' » depuis ' + ckpQuand(t.echeance); }).join(' · ') + '.',
@@ -4685,7 +4685,7 @@
     // ça, aucune capacité n'est honnête.
     var inconnues = ckpTaches().filter(function (t) { return ckpRestant(t) === null && t.statut !== 'review'; });
     if (inconnues.length) {
-      out.push({ g: 44, ton: 'calme', aller: 'ADM.ckTAEstimer()',
+      out.push({ g: 44, ton: 'calme', aller: 'ADM.ckTAEstimer()', tag: ['À estimer', 'estim'], action: 'Estimer',
         titre: inconnues.length + ' tâche' + (inconnues.length > 1 ? 's' : '') + ' sans temps estimé',
         texte: 'Tant qu’on ne sait pas, la capacité affichée est optimiste.' });
     }
@@ -4695,18 +4695,23 @@
       return t.statut === 'review' && t.echeance && ckpJoursOuvres(t.echeance, auj) >= 3;
     });
     if (attente.length) {
-      out.push({ g: 52, ton: 'calme',
+      out.push({ g: 52, ton: 'calme', tag: ['À relancer', 'relance'], action: attente.length === 1 ? 'Relancer' : 'Voir',
+        t: attente.length === 1 ? attente[0] : null,
         titre: attente.length + ' retour' + (attente.length > 1 ? 's' : '') + ' attendu' + (attente.length > 1 ? 's' : '') + ' depuis plus de 3 jours',
         texte: attente.slice(0, 3).map(function (t) { return '« ' + t.titre + ' » · ' + t.qui; }).join(' · ') + '.' });
     }
 
-    // Une journée engagée au-delà de la capacité.
-    var c = ckpCapaciteDu(auj);
-    if (c.depassement > 0) {
-      out.push({ g: 80,
-        titre: 'Ta journée est engagée au-delà de ta capacité',
-        texte: ckpDuree(c.engagee) + ' de posé pour ' + ckpDuree(c.certaine) + ' disponibles. ' +
-          'Le dépassement mord sur ta marge.' });
+    // La semaine qui déborde (le dépassement du jour, lui, est dans le bandeau).
+    var sem = ckpSemaine();
+    if (sem.verdict === 'surcharge' || sem.depassement > 0) {
+      var pire = sem.jours.filter(function (j) { return !j.passe && j.depassement > 0; })
+        .sort(function (a, b) { return b.depassement - a.depassement; })[0];
+      var manque = Math.max(0, sem.besoin - sem.libre);
+      out.push({ g: 70, tag: ['Cette semaine', 'info'], action: 'Régler ma semaine', aller: 'ADM.nav(\'ckplanning\')',
+        titre: manque > 0 ? 'Il te manque ' + ckpDuree(manque) + ' cette semaine'
+          : 'Ta semaine dépasse ta capacité de ' + ckpDuree(sem.depassement),
+        texte: pire ? ckpMaj(CKP_JOURS[ckpD(pire.date).getDay()]) + ' dépasse ta capacité : déplace une tâche ou raccourcis un rendez-vous.'
+          : ckpDuree(sem.besoin) + ' à caser pour ' + ckpDuree(sem.libre) + ' de place libre.' });
     }
 
     return out.sort(function (a, b) { return b.g - a.g; }).slice(0, 5);
@@ -4762,13 +4767,8 @@
   }
 
   function renderCockpitBody() {
-    var auj = ckpAuj(), c = ckpCapaciteDu(auj), cap = ckpCap(), s = ckpSemaine();
+    var auj = ckpAuj(), c = ckpCapaciteDu(auj), cap = ckpCap();
     var d = ckpD(auj);
-    var phrase;
-    if (!cap.length) phrase = 'Rien ne te réclame aujourd’hui. C’est une vraie information, pas un écran vide.';
-    else if (c.libre <= 0) phrase = cap.length + ' choses comptent aujourd’hui. Ta journée est engagée en entier : les ' +
-      ckpDuree(c.mobilisable) + ' qui restent, c’est ta marge.';
-    else phrase = cap.length + ' choses comptent aujourd’hui, et il te reste ' + ckpDuree(c.libre) + ' de vraie place.';
 
     setMain('<div class="wrap ck ck--accueil">' +
         '<div class="ck-tete"><div>' +
@@ -4776,19 +4776,48 @@
           '<div class="ck-date">' + esc(ckpMaj(CKP_JOURS[d.getDay()]) + ' ' + d.getDate() + ' ' + CKP_MOIS[d.getMonth()]) + '</div>' +
         '</div>' +
         
-        ckpHero('Aujourd’hui', c.certaine > 0
+        ckpHero('', c.certaine > 0
           ? esc(ckpDuree(c.libre)) + ' <em>disponibles</em>'
-          : '<em>Journée terminée</em>', esc(phrase), ckpHeroJournee()) +
-        ckpSecCap(cap) + ckpSecJournee(c) + ckpSecAttention() + ckpSecSemaine(s) +
+          : '<em>Journée terminée</em>', ckpBandeauPhrase(), ckpBandeauBarre()) +
+        ckpSecAttention() + ckpSecCap(cap, c.certaine <= 0) +
       '</div>');
   }
 
   /* ── Le bandeau sombre d'en-tête ────────────────────────────────────────
      Posé en haut des quatre écrans neufs. Écrit UNE fois : quatre bandeaux
      recopiés, ce serait quatre occasions de ne plus dire la même chose. */
+  /* Bandeau de l'accueil : ce que la journée a réellement contenu, comparé à
+     la capacité réglée dans le Planning. Les chevauchements ne comptent qu'une
+     fois (ckpFusion). */
+  function ckpJourTotal() {
+    var auj = ckpAuj();
+    var prog = ckpProgramme(auj);
+    return { rdv: prog.filter(function (x) { return x.type === 'rdv'; }).length,
+      total: ckpFusion(ckpSegments(auj), -1), cap: ckpMinJour(auj) };
+  }
+  function ckpBandeauPhrase() {
+    var j = ckpJourTotal();
+    var debut = (j.rdv ? j.rdv + ' rendez-vous aujourd’hui, ' : 'Aujourd’hui, ') + ckpDuree(j.total) + ' au total';
+    var fin = !j.total ? 'Rien n’est posé aujourd’hui.'
+      : (j.total > j.cap ? debut + ' : ' + ckpDuree(j.total - j.cap) + ' de plus que ta capacité.'
+        : debut + ', dans ta capacité de ' + ckpDuree(j.cap) + '.');
+    return esc(fin) + '<br><button class="ck-hero__lien" onclick="ADM.nav(\'ckplanning\')">Voir ta journée dans le planning</button>';
+  }
+  // Un seul bleu : la barre = ce qui est posé, le trait = la capacité du jour.
+  function ckpBandeauBarre() {
+    var j = ckpJourTotal();
+    if (!j.cap && !j.total) return '';
+    var ech = Math.max(j.total, j.cap) || 1;
+    var pCap = Math.round(j.cap / ech * 1000) / 10, pTot = Math.round(j.total / ech * 1000) / 10;
+    return '<div class="ck-jb"><div class="ck-jb__b"><i style="width:' + pTot + '%"></i>' +
+      (j.cap ? '<b style="left:' + pCap + '%"></b>' : '') + '</div>' +
+      '<div class="ck-jb__l"><span>0 h</span>' +
+      (j.cap ? '<span class="ck-jb__m" style="' + (pCap > 80 ? 'left:auto;right:0;transform:none' : 'left:' + pCap + '%') + '">' + esc(ckpDuree(j.cap)) + ', ta capacité</span>' : '') +
+      (j.total > j.cap ? '<span class="ck-jb__f">' + esc(ckpDuree(j.total)) + '</span>' : '') + '</div></div>';
+  }
   function ckpHero(eyebrow, valeur, sous, droite) {
     return '<div class="ck-hero"><div>' +
-      '<div class="ck-hero__e">' + esc(eyebrow) + '</div>' +
+      (eyebrow ? '<div class="ck-hero__e">' + esc(eyebrow) + '</div>' : '') +
       '<div class="ck-hero__v">' + valeur + '</div>' +
       (sous ? '<div class="ck-hero__s">' + sous + '</div>' : '') +
       '</div><div class="ck-hero__d">' + (droite || '') + '</div></div>';
@@ -4857,39 +4886,41 @@
    * créations et les tâches. Un bloc de texte dense se lisait de haut en bas ;
    * trois cards se lisent d'un coup d'oeil, et chacune porte ses gestes.
    * Une tâche en retard prend le Ciel, les autres le Lin. */
-  function ckpCarteCap(c, i) {
-    var t = c.t, ap = ckpAPlanifier(t), r = ckpRestant(t), pf = ckpPlanifieFutur(t);
-    var retard = ckpEnRetard(t);
-    var lignes = [];
-    lignes.push(['À faire', r === null ? '<span class="ck-inc">à estimer</span>' : (r ? esc(ckpDuree(r)) : 'rien de ton côté')]);
-    if (pf) lignes.push(['Planifié', esc(ckpDuree(pf))]);
-    else if (ap) lignes.push(['Sans place', '<span class="ck-ap">' + esc(ckpDuree(ap)) + '</span>']);
-    if (t.reel) lignes.push(['Déjà passé', esc(ckpDuree(t.reel))]);
-
-    return stbCarteProjet({
-      id: t.id, key: t.key || '', nom: t.titre,
-      teinte: retard ? { bg: '#C5DEFF', e: '#110704', sombre: false }
-                     : { bg: '#F8F6F2', e: '#110704', sombre: false },
-      presta: (i + 1) + ' · ' + (t.qui || '') + (t.ctx ? ' · ' + t.ctx : ''),
-      ou: (retard && !/^en retard/i.test(c.raison || '') ? '<span class="ck-ap">En retard. </span>' : '') + esc(c.raison) +
-        (c.raison2 ? '<span class="pjc-ou2">' + esc(c.raison2) + '</span>' : ''),
-      lignes: lignes,
-      ouvrir: ckpOuvrirArg(t), ouvrirLibelle: 'Ouvrir la tâche', gestePrincipal: true,
-      // Un seul geste en vue : « J'ai terminé ». Il déplie le temps passé
-      // (prérempli), qu'on valide ; le geste secondaire se déplie de même.
-      gestes: '<details class="ck-pli"><summary class="btn btn--dark btn--sm">J’ai terminé</summary>' + ckpChampFini(t, 'cap') + '</details>' +
-        (r === null ? '<details class="ck-pli"><summary class="pjc-lien">Estimer</summary>' + ckpChampEstim(t, 'cap') + '</details>'
-        : (ap ? '<button class="pjc-lien" onclick="event.stopPropagation();ADM.ckLDepuis(\'' + esc(t.id) + '\')">Planifier</button>'
-              : '<button class="pjc-lien" onclick="ADM.ckpPasMaintenant(\'' + esc(t.id) + '\')">Pas maintenant</button>'))
-    });
+  function ckpDateLongue(iso) {
+    var d = ckpD(iso), y = new Date().getFullYear();
+    return d.getDate() + ' ' + CKP_MOIS[d.getMonth()] + (d.getFullYear() !== y ? ' ' + d.getFullYear() : '');
   }
-  function ckpSecCap(cap) {
-    var corps = cap.length
-      ? '<div class="pjc-grid ck-capgrid">' + cap.map(ckpCarteCap).join('') + '</div>'
-      : '<div class="ck-vide">Aucune tâche ne réclame de décision aujourd’hui.</div>';
-    return '<section class="ck-sec">' + ckpTitre('Ton cap aujourd’hui', '',
-      CKP.ordre ? '<button class="btn btn--outline btn--sm" onclick="ADM.ckpOrdreSysteme()">Ordre conseillé</button>' : '') +
-      corps + '</section>';
+  function ckpCarteCap(c, i, commun) {
+    var t = c.t, auj = ckpAuj(), retard = ckpEnRetard(t), r = ckpRestant(t);
+    var pastille, detail;
+    if (retard) {
+      var n = Math.max(1, Math.round((ckpD(auj) - ckpD(t.echeance)) / 86400000));
+      pastille = 'En retard de ' + n + ' jour' + (n > 1 ? 's' : '');
+      detail = 'Prévu le ' + ckpDateLongue(t.echeance);
+    } else {
+      pastille = !t.echeance ? '' : (t.echeance === auj ? 'Aujourd’hui' : (t.echeance === ckpPlus(auj, 1) ? 'Demain' : 'Pour le ' + ckpDateLongue(t.echeance)));
+      detail = r === null ? 'À estimer' : (r ? 'Estimé à ' + ckpDuree(r) : 'Rien à faire de ton côté');
+    }
+    if (t.reel) detail += ' · déjà ' + ckpDuree(t.reel) + ' passées';
+    var ton = retard ? 'retard' : (t.echeance === auj ? 'auj' : 'plus');
+    return '<article class="ckc' + (retard ? ' ckc--retard' : '') + '">' +
+      '<div class="ckc__h"><span class="ckc__n">' + (i + 1) + '</span>' + (pastille ? '<span class="ckc__p ckc__p--' + ton + '">' + esc(pastille) + '</span>' : '') + '</div>' +
+      (commun ? '' : '<div class="ckc__q">' + esc((t.qui || '') + (t.ctx ? ' · ' + t.ctx : '')) + '</div>') +
+      '<h3 class="ckc__t">' + esc(t.titre) + '</h3>' +
+      '<div class="ckc__d">' + esc(detail) + '</div>' +
+      '<div class="ckc__a"><details class="ck-pli"><summary class="ckc__b">J’ai terminé</summary>' + ckpChampFini(t, 'cap') + '</details>' +
+      '<button class="pjc-lien" onclick="' + ckpOuvrirArg(t) + '">Ouvrir la tâche</button></div></article>';
+  }
+  function ckpSecCap(cap, pourDemain) {
+    if (!cap.length) return '<section class="ck-capsec"><h2 class="ck-h2">' + (pourDemain ? 'Pour demain, ton cap' : 'Ton cap aujourd’hui') + '</h2>' +
+      '<div class="ck-vide">Aucune tâche ne réclame de décision.</div></section>';
+    var qui = function (x) { return (x.t.qui || '') + (x.t.ctx ? ' · ' + x.t.ctx : ''); };
+    var commun = cap.every(function (x) { return qui(x) === qui(cap[0]); }) ? qui(cap[0]) : '';
+    var nRetard = cap.filter(function (x) { return ckpEnRetard(x.t); }).length;
+    var meta = [commun, nRetard ? nRetard + ' tâche' + (nRetard > 1 ? 's' : '') + ' en retard, dans cet ordre' : 'dans cet ordre'].filter(Boolean).join(' · ');
+    return '<section class="ck-capsec"><div class="ck-capsec__h"><h2 class="ck-h2">' + (pourDemain ? 'Pour demain, ton cap' : 'Ton cap aujourd’hui') + '</h2>' +
+      '<span class="ck-capsec__m">' + esc(meta) + (CKP.ordre ? ' · <button class="pjc-lien" onclick="ADM.ckpOrdreSysteme()">Ordre conseillé</button>' : '') + '</span></div>' +
+      '<div class="ck-capgrid2">' + cap.map(function (x, i) { return ckpCarteCap(x, i, !!commun); }).join('') + '</div></section>';
   }
 
   /* Le programme d'une journée : créneaux de tâches, rendez-vous fixes et
@@ -4941,68 +4972,19 @@
     return 'Tout est engagé. Les ' + ckpDuree(c.mobilisable) +
       ' qui restent sont ta marge : les entamer, c’est supprimer l’amortisseur.';
   }
-  function ckpSecJournee(c) {
-    var droite = c.certaine > 0
-      ? '<span class="ck-doux"><b>' + esc(ckpDuree(c.engagee)) + '</b> engagées sur ' + esc(ckpDuree(c.certaine)) + '</span>'
-      : '<span class="ck-doux">Journée terminée</span>';
-    return '<section class="ck-sec">' + ckpTitre('Ta journée', esc(ckpChapoJournee(c)), droite) +
-      ckpJourneeCorps() + '</section>';
-  }
 
   function ckpSecAttention() {
     var l = ckpAttention();
     if (!l.length) return '';
-    return '<section class="ck-sec">' + ckpTitre('À ton attention',
-      '') +
-      '<div class="ck-att">' + l.map(function (a) {
-        var ton = a.g >= 80 ? 'ck-atti--al' : (a.ton === 'calme' ? 'ck-atti--ca' : '');
-        return '<div class="ck-atti ' + ton + '">' +
-          '<div><div class="ck-attt"><span class="ck-attp"></span>' + esc(a.titre) + '</div>' +
-          '<div class="ck-attx">' + esc(a.texte) + '</div></div>' +
-          (a.t ? '<button class="btn btn--outline btn--sm" onclick="' + ckpOuvrirArg(a.t) + '">Ouvrir</button>'
-               : '<button class="btn btn--outline btn--sm" onclick="' + (a.aller || 'ADM.nav(\'cktaches\')') + '">Voir</button>') +
-          '</div>';
-      }).join('') + '</div></section>';
+    return '<section class="ck-bloc"><h2 class="ck-h2">À ton attention</h2>' + l.map(function (a) {
+      var tag = a.tag || ['À voir', 'info'];
+      var geste = a.t ? ckpOuvrirArg(a.t) : (a.aller || 'ADM.nav(\'cktaches\')');
+      return '<div class="ck-atr"><div><span class="ck-tag ck-tag--' + tag[1] + '">' + esc(tag[0]) + '</span></div>' +
+        '<div><div class="ck-atr__t">' + esc(a.titre) + '</div>' + (a.texte ? '<div class="ck-atr__x">' + esc(a.texte) + '</div>' : '') + '</div>' +
+        '<button class="pjc-lien" onclick="' + geste + '">' + esc(a.action || (a.t ? 'Ouvrir' : 'Voir')) + '</button></div>';
+    }).join('') + '</section>';
   }
 
-  function ckpSecSemaine(s) {
-    var mot = { confortable: 'Ça tient.', tendu: 'C’est tendu.', surcharge: 'Ça ne rentre pas.' }[s.verdict];
-    var p = ckpDuree(s.besoin) + ' encore à caser pour ' + ckpDuree(s.libre) + ' de place libre.';
-    if (s.cause === 'depassement') {
-      p += ' Sur la semaine ça rentre, mais une journée est déjà engagée de ' +
-        ckpDuree(s.depassement) + ' au-delà de sa capacité.';
-    } else if (s.verdict === 'confortable') p += ' Tu peux dire oui à quelque chose.';
-    else if (s.verdict === 'surcharge') p += ' Quelque chose doit bouger.';
-    else p += ' Il ne reste presque plus d’amortisseur.';
-    if (s.inconnu) p += ' Et ' + s.inconnu + ' tâche' + (s.inconnu > 1 ? 's n’ont' : ' n’a') +
-      ' pas de temps estimé : le calcul est donc optimiste.';
-
-    return '<section class="ck-sec">' + ckpTitre('Cette semaine', '') +
-      '<div class="ck-sem">' +
-        '<div class="ck-verdict ck-verdict--' + s.verdict + '">' + esc(mot) + '</div>' +
-        '<p class="ck-semp">' + esc(p) + '</p>' +
-        '<div class="ck-semg">' + s.jours.map(function (j) {
-          var tot = j.certaine + j.mobilisable || 1;
-          var pE = Math.min(j.engagee, j.certaine) / tot * 100;
-          var pD = Math.min(j.depassement, j.mobilisable) / tot * 100;
-          var pL = Math.max(0, j.certaine - j.engagee) / tot * 100;
-          var pM = Math.max(0, j.mobilisable - j.depassement) / tot * 100;
-          var etat = j.passe ? 'Passé' : (j.depassement ? 'Au-delà de ta capacité' : (j.libre === 0 ? 'Plein' : ckpDuree(j.libre) + ' de libre'));
-          return '<div class="ck-semj ' + (j.auj ? 'ck-semj--auj' : '') + (j.passe ? ' ck-semj--p' : '') + '">' +
-            '<div class="ck-semn">' + esc(ckpJourCourt(j.date)) + (j.auj ? ' · auj.' : '') + '</div>' +
-            (j.passe ? '<div class="ck-barre"></div>' :
-              '<div class="ck-barre"><span class="ck-b-e" style="width:' + pE.toFixed(1) + '%"></span>' +
-              (pD ? '<span class="ck-b-d" style="width:' + pD.toFixed(1) + '%"></span>' : '') +
-              '<span style="width:' + pL.toFixed(1) + '%"></span>' +
-              '<span class="ck-b-m" style="width:' + pM.toFixed(1) + '%"></span></div>') +
-            '<div class="ck-semt">' + esc(etat) + '</div></div>';
-        }).join('') + '</div>' +
-        '<div class="ck-leg"><span class="ck-lg"><span class="ck-lgp" style="background:var(--glycine-900)"></span>Engagé</span>' +
-        '<span class="ck-lg"><span class="ck-lgp" style="background:var(--surface);box-shadow:inset 0 0 0 1px var(--border)"></span>Libre</span>' +
-        '<span class="ck-lg"><span class="ck-lgp ck-b-m"></span>Marge protégée</span>' +
-        '<span class="ck-lg" style="margin-left:auto"><button class="btn btn--outline btn--sm" onclick="ADM.nav(\'ckplanning\')">Régler ma semaine</button></span></div>' +
-      '</div></section>';
-  }
 
   /* ── Les deux seules actions de cet écran ─────────────────────────────── */
 

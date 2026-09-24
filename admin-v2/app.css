@@ -2430,3 +2430,55 @@ select.cg-in{cursor:pointer}
 .tdb-sp{margin:0;font-size:16px;line-height:1.5}
 .tdb-ss{margin:0;font-size:15px;line-height:1.5;color:rgba(242,229,194,.78)}
 .tdb-panel--sombre .tdb-act{margin-top:auto}
+
+/* ── Accueil version D (maquette validée) ── */
+.ck--accueil{display:flex;flex-direction:column;gap:32px}
+.ck.ck--accueil{--font-display:'Cormorant Garamond','EB Garamond',Georgia,serif;--font-body:'Inter Tight',ui-sans-serif,system-ui,sans-serif;font-family:var(--font-body)}
+.ck--accueil .ck-h1{font-family:var(--font-display);font-style:italic;font-weight:400}
+.ck--accueil .ck-accent{color:inherit}
+.ck--accueil .ck-hero__v{font-style:italic}
+.ck--accueil .ck-hero__s .ck-hero__lien{margin-top:6px;border:none;background:none;padding:6px 0;font:inherit;font-size:15px;font-weight:600;color:#F8F6F2;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.ck-jb{display:flex;flex-direction:column;gap:10px;font-size:15px;font-variant-numeric:lining-nums tabular-nums}
+.ck-jb__b{position:relative;height:8px;border-radius:99px;background:rgba(242,229,194,.16)}
+.ck-jb__b i{display:block;height:8px;border-radius:99px;background:#C5DEFF}
+.ck-jb__b b{position:absolute;top:-6px;width:2px;height:20px;background:#F8F6F2;transform:translateX(-1px)}
+.ck-jb__l{position:relative;height:20px;color:rgba(242,229,194,.85)}
+.ck-jb__l span{position:absolute;left:0}
+.ck-jb__l .ck-jb__m{transform:translateX(-50%);white-space:nowrap}
+.ck-jb__l .ck-jb__f{left:auto;right:0}
+.ck-h2{margin:0;font-family:'Cormorant Garamond',Georgia,serif;font-style:italic;font-weight:400;font-size:30px;color:#110704}
+.ck-bloc{background:#fff;border-radius:18px;padding:24px 28px;display:flex;flex-direction:column;gap:4px;box-shadow:0 0 0 1px rgba(17,7,4,.06)}
+.ck-bloc .ck-h2{margin-bottom:8px}
+.ck-atr{display:grid;grid-template-columns:130px minmax(0,1fr) auto;gap:16px;align-items:center;padding:12px 0;border-top:1px solid rgba(17,7,4,.08)}
+.ck-atr__t{font-size:16px;font-weight:500;color:#110704;font-variant-numeric:lining-nums}
+.ck-atr__x{font-size:13px;color:#7a5540;margin-top:2px}
+.ck-atr .pjc-lien{color:#5A2A11}
+.ck-tag{display:inline-block;font-family:var(--font-micro);font-size:13px;font-weight:600;padding:4px 10px;border-radius:999px;white-space:nowrap}
+.ck-tag--retard{background:#5A2A11;color:#F8F6F2}
+.ck-tag--relance{background:#C5DEFF;color:#110704}
+.ck-tag--estim{background:#E4D9C5;color:#110704}
+.ck-tag--info{background:#F8F6F2;color:#5A2A11;box-shadow:inset 0 0 0 1px rgba(90,42,17,.3)}
+.ck-capsec{display:flex;flex-direction:column;gap:16px}
+.ck-capsec__h{display:flex;align-items:baseline;justify-content:space-between;gap:20px}
+.ck-capsec .ck-h2{font-size:32px}
+.ck-capsec__m{font-size:15px;color:#7a5540}
+.ck-capgrid2{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.ckc{background:#C5DEFF;color:#110704;border-radius:18px;padding:22px 24px;display:flex;flex-direction:column;gap:10px}
+.ckc__h{display:flex;align-items:center;justify-content:space-between}
+.ckc__n{font-size:13px;font-weight:600;color:rgba(17,7,4,.8);font-variant-numeric:lining-nums}
+.ckc__p{font-family:var(--font-micro);font-size:13px;font-weight:600;padding:4px 10px;border-radius:999px;white-space:nowrap;font-variant-numeric:lining-nums}
+.ckc__p--auj{background:#110704;color:#F8F6F2}
+.ckc__p--plus{background:#F8F6F2;color:#110704;box-shadow:inset 0 0 0 1px rgba(17,7,4,.25)}
+.ckc__q{font-size:13px;color:rgba(17,7,4,.8)}
+.ckc__t{margin:0;font-family:'Cormorant Garamond',Georgia,serif;font-style:italic;font-weight:500;font-size:24px;line-height:1.15}
+.ckc__d{font-size:15px;color:rgba(17,7,4,.8);font-variant-numeric:lining-nums}
+.ckc__a{display:flex;flex-wrap:wrap;align-items:center;gap:16px;margin-top:6px}
+.ckc__b{display:inline-flex;align-items:center;font-size:15px;font-weight:600;border-radius:999px;padding:10px 18px;min-height:44px;box-sizing:border-box;cursor:pointer;background:#110704;color:#F8F6F2}
+.ckc .pjc-lien{color:#110704}
+.ckc--retard{background:#5A2A11;color:#F8F6F2}
+.ckc--retard .ckc__n,.ckc--retard .ckc__q,.ckc--retard .ckc__d{color:rgba(248,246,242,.85)}
+.ckc--retard .ckc__p{background:#F8F6F2;color:#5A2A11}
+.ckc--retard .ckc__b{background:#F8F6F2;color:#110704}
+.ckc--retard .pjc-lien{color:#F8F6F2}
+.ckc--retard .ck-fini .ck-fl{color:rgba(248,246,242,.85)}
+.ckc--retard .ck-fini .ck-bfin{background:#F8F6F2;color:#110704;border-color:#F8F6F2}
