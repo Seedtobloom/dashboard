@@ -62,6 +62,7 @@ input, textarea, select, [contenteditable="true"], .selectable, p, pre,
 .cp-msg__text, .cp-step__desc, .cp-prac__body, .cp-file__name, .mx-b, .mx-conv__snip { -webkit-user-select: text; -moz-user-select: text; user-select: text; }
 input, textarea, select, [contenteditable="true"] { cursor: text; }
 a, button, .cp-btn, label, summary, [onclick], [role="button"] { cursor: pointer; }
+button, input, textarea, select { font-family: inherit; }
 .cp { display: grid; grid-template-columns: var(--sw) 1fr; min-height: 100vh; }
 ::selection { background: var(--glycine); color: var(--terre); }
 .micro { font-family: var(--font-micro); font-size: var(--fs-micro); font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; }
