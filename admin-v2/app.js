@@ -8404,7 +8404,17 @@
   var CR_TYPES = [['print', 'Print'], ['digital', 'Digital'], ['reseaux', 'Réseaux sociaux'], ['evenementiel', 'Événementiel'], ['autre', 'Autre']];
   var CR_STATUSES = [['a_preparer', 'À préparer'], ['en_creation', 'En création'], ['attente_client', 'Attente cliente'], ['revision', 'En révision'], ['valide', 'Validé'], ['archive', 'Archivé']];
   // Couleur d'identité par catégorie : [encre, fond teinté] pour différencier les cards.
-  var CR_TYCOL = { print: ['#a35a1a', '#fbeee0'], digital: ['#35608f', '#e7eff9'], reseaux: ['#2c4a72', '#E8F1FF'], evenementiel: ['#4f6a46', '#e8f0e3'], autre: ['#6b533b', '#efe9e2'] };
+  /* Les catégories de création : cinq pastilles pour quatre couleurs de la
+   * charte. On ne va pas en inventer une cinquième : on prend deux nuances de
+   * la Mandarine et deux de l'Azur, plus une nuance claire de l'Ébène.
+   * [encre, fond] — toujours une encre foncée sur un fond clair. */
+  var CR_TYCOL = {
+    print:        ['#8A4522', '#F7E6DC'],   // Mandarine claire
+    evenementiel: ['#5A2A11', '#E3BFA8'],   // Mandarine soutenue
+    digital:      ['#33527A', '#EAF2FF'],   // Azur clair
+    reseaux:      ['#2A4266', '#C5DEFF'],   // Azur
+    autre:        ['#3A2A22', '#EDEAE7'],   // Ébène très clair
+  };
   // Palette de bannière : la charte Seed to Bloom, et rien d'autre. Le Mimosa
   // n'y est pas : une bannière est un aplat, et le jaune ne s'y met jamais.
   var CR_BANNERS = ['#5A2A11', '#CD8F6E', '#C5DEFF', '#110704', '#F8F6F2'];
@@ -8421,6 +8431,33 @@
   var CR_ST_COL = { a_preparer: '#8a7d6b', en_creation: '#35608f', attente_client: '#c9952f', revision: '#c0533b', valide: '#3f8f5b', archive: '#8a7d6b' };
   function crStatusLabel(st) { for (var i = 0; i < CR_STATUSES.length; i++) if (CR_STATUSES[i][0] === st) return CR_STATUSES[i][1]; return st; }
   // Galerie des créations d'un projet de com (onglet « Support de com »).
+  /* Une création tient en une ligne tant qu'on ne l'ouvre pas.
+   * Chaque création déroulait tout : ses versions, son planning avec les huit
+   * champs d'édition de CHAQUE jalon, et tout le fil de la cliente. Trois
+   * créations faisaient une page sans fin où rien ne se repérait.
+   * On montre donc l'essentiel, et on ouvre ce qu'on veut modifier. */
+  var CG_OPEN = {}, PJ_ED = {};
+  function cgToggle(cid) { if (CG_OPEN[cid]) delete CG_OPEN[cid]; else CG_OPEN[cid] = 1; renderTab(); }
+  function pjEdit(jid) { if (PJ_ED[jid]) delete PJ_ED[jid]; else PJ_ED[jid] = 1; renderTab(); }
+  // Ce qu'une création dit d'elle-même sans être ouverte : où en sont ses
+  // versions, son planning, son fil. Les mêmes calculs que partout ailleurs.
+  function cgResume(c, vs) {
+    var r = [];
+    var der = vs.length ? vs[vs.length - 1] : null;
+    var VST = { a_valider: 'à valider', valide: 'validée', refuse: 'à revoir', revision: 'à revoir' };
+    r.push(vs.length ? 'V' + vs.length + ' · ' + (VST[der.status] || der.status || '') : 'aucune version');
+    var jal = Array.isArray(c.planning) ? c.planning : [];
+    if (jal.length) {
+      var si = planSituation({ jalons: jal, planningStart: c.planningStart || '' });
+      r.push(si.ended ? 'planning terminé'
+        : si.done + '/' + si.total + ' jalons' + (si.current && si.current.label ? ' · ' + si.current.label : ''));
+      if (!si.ended && si.late.length) r.push(si.late.length + ' en retard');
+    }
+    var nm = (Array.isArray(c.comments) ? c.comments : []).length;
+    var nf = (Array.isArray(c.files) ? c.files : []).length;
+    if (nm || nf) r.push(nm + nf + ' échange' + (nm + nf > 1 ? 's' : '') + (c.clientNotif ? ' · nouveau' : ''));
+    return r;
+  }
   function creationsGallery(d) {
     var pid = d.pid;
     var creations = Array.isArray(d.content.creations) ? d.content.creations : [];
@@ -8463,7 +8500,19 @@
       var vHtml = vs.length ? vs.map(verRow).join('') : '<div class="cg-empty">Aucune version. Dépose la V1 ci-dessous.</div>';
       var fullPid = 'support-' + pid;
       var n = Array.isArray(c.planning) ? c.planning.length : 0;
-      return '<section class="cg-card">' +
+      var ouvert = !!CG_OPEN[c.id];
+      // La ligne de résumé : lisible d'un coup d'oeil, cliquable pour ouvrir.
+      var resume = '<div class="cgc" onclick="ADM.cgToggle(\'' + c.id + '\')" title="' +
+        (ouvert ? 'Replier' : 'Ouvrir cette création') + '">' +
+        '<span class="cgc-pt" style="background:' + col + '"></span>' +
+        '<span class="cgc-n">' + esc(c.name || 'Sans nom') + '</span>' +
+        '<span class="cg-pill" style="background:' + col + '1f;color:' + col + '">' + esc(crStatusLabel(c.status)) + '</span>' +
+        cgResume(c, vs).map(function (x) { return '<span class="cgc-i">' + esc(x) + '</span>'; }).join('') +
+        '<span class="cgc-r' + (crRevUsed > crRevMax ? ' cgc-r--trop' : '') + '">↩ ' + crRevUsed + '/' + crRevMax + '</span>' +
+        '<span class="cgc-x">' + (ouvert ? '▴' : '▾') + '</span>' +
+      '</div>';
+      if (!ouvert) return '<section class="cg-card cg-card--plie">' + resume + '</section>';
+      return '<section class="cg-card">' + resume +
         '<div class="cg-head">' +
           '<span class="cg-ic">' + cgIcon('image', 20) + '</span>' +
           '<input class="cg-name" value="' + esc(c.name) + '" onchange="ADM.crSet(\'' + pid + '\',\'' + c.id + '\',\'name\',this.value)" title="Nom de la création">' +
@@ -8481,7 +8530,6 @@
               '<button type="button" onclick="ADM.crSet(\'' + pid + '\',\'' + c.id + '\',\'revExtra\',' + (crRevExtra + 1) + ')" title="Ajouter un aller-retour fait hors espace" style="width:24px;height:24px;border-radius:7px;border:none;background:#fff;cursor:pointer;font-size:15px;line-height:1;color:var(--terre)">+</button>' +
             '</span>' +
           '</div>' +
-          '<span class="cg-status cg-pill" style="background:' + col + '1f;color:' + col + '">' + esc(crStatusLabel(c.status)) + '</span>' +
           (c.clotureAt
             ? '<button class="cg-btn cg-btn--soft" onclick="ADM.crRouvrir(\'' + pid + '\',\'' + c.id + '\')" title="Cette création est terminée depuis le ' + esc(String(c.clotureAt).slice(0, 10).split('-').reverse().join('/')) + '">Rouvrir</button>'
             : '<button class="cg-btn cg-btn--soft" onclick="ADM.crCloturer(\'' + pid + '\',\'' + c.id + '\')">Clôturer</button>') +
@@ -8537,7 +8585,7 @@
     var unclassed = livr.filter(function (l) { return !l.creationId; });
     var unclassedHtml = unclassed.length ? '<div class="cg-card" style="margin-top:16px"><div class="cg-lbl">Versions non classées (dépôts d\'avant les créations)</div>' + unclassed.map(verRow).join('') + '</div>' : '';
     return '<div class="card infocard" style="background:#fff"><h3>Créations</h3>' +
-      '<div class="cg-lead">Chaque création (flyer, carte, brochure…) a sa catégorie, son statut et ses versions. Dépose une version par fichier ou par lien, la cliente la retrouve dans son espace pour la valider ou demander une révision.</div>' +
+      '<div class="cg-lead">Une ligne par création : clique pour l’ouvrir. Ce que tu déposes, ta cliente le retrouve dans son espace.</div>' +
       '<div class="cg-list">' + listHtml + '</div>' + newcr + unclassedHtml +
     '</div>';
   }
@@ -8602,22 +8650,35 @@
         : (j.dateMode === 'range'
           ? '<label class="cg-fld"><span>Plage</span><span class="cg-dates"><input class="cg-in" type="date" value="' + esc(j.dateStart || '') + '" onchange="ADM.pjSet(\'' + pid + '\',\'' + j.id + '\',\'dateStart\',this.value' + cq + ')" title="Début"><span class="cg-sep">→</span><input class="cg-in" type="date" value="' + esc(j.dateEnd || '') + '" onchange="ADM.pjSet(\'' + pid + '\',\'' + j.id + '\',\'dateEnd\',this.value' + cq + ')" title="Fin"></span></label>'
           : '<label class="cg-fld"><span>Durée</span><span class="cg-dur"><input class="cg-in" type="number" min="0" max="52" value="' + (j.durationValue || '') + '" onchange="ADM.pjSet(\'' + pid + '\',\'' + j.id + '\',\'durationValue\',this.value' + cq + ')" style="width:60px"><select class="cg-in" onchange="ADM.pjSet(\'' + pid + '\',\'' + j.id + '\',\'durationUnit\',this.value' + cq + ')"><option value="semaines"' + (j.durationUnit === 'semaines' ? ' selected' : '') + '>semaines</option><option value="jours"' + (j.durationUnit === 'jours' ? ' selected' : '') + '>jours</option></select></span></label>');
+      /* Un jalon tient en une ligne : sa date, ce qu'il est, qui le porte, et
+       * son avancement, modifiable sans rien ouvrir. Le reste (titre, jalon,
+       * mode d'échéance, dates) n'apparaît que si on clique sur le crayon :
+       * huit champs par jalon rendaient le planning illisible. */
+      var edite = !!PJ_ED[j.id];
+      var ligne = '<div class="cgj-l" onclick="ADM.pjEdit(\'' + j.id + '\')" title="' +
+        (edite ? 'Replier' : 'Modifier ce jalon') + '">' +
+        '<span class="cgj-d">' + (r.label || '—') + '</span>' +
+        '<span class="cgj-t">' + esc(j.title || 'Sans titre') + '</span>' +
+        '<span class="cg-chip" style="background:' + ow[1] + ';color:' + ow[2] + '">' + ow[0] + '</span>' +
+        '<select class="cg-in cgj-s" onclick="event.stopPropagation()" onchange="event.stopPropagation();ADM.pjSet(\'' + pid + '\',\'' + j.id + '\',\'status\',this.value' + cq + ')" title="Avancement">' +
+          '<option value="a_venir"' + (j.status !== 'en_cours' && j.status !== 'fait' ? ' selected' : '') + '>À venir</option>' +
+          '<option value="en_cours"' + (j.status === 'en_cours' ? ' selected' : '') + '>En cours</option>' +
+          '<option value="fait"' + (j.status === 'fait' ? ' selected' : '') + '>Fait</option>' +
+        '</select>' +
+        '<span class="cgj-x">' + (edite ? '▴' : '✎') + '</span>' +
+      '</div>';
+      if (!edite) {
+        return '<div class="cg-jal">' +
+          '<div class="cg-jal__spine"><span class="cg-jal__dot" style="background:' + dotc + '"></span><span class="cg-jal__line"></span></div>' +
+          '<div class="cg-jal__body">' + ligne + '</div></div>';
+      }
       return '<div class="cg-jal">' +
         '<div class="cg-jal__spine"><span class="cg-jal__dot" style="background:' + dotc + '"></span><span class="cg-jal__line"></span></div>' +
-        '<div class="cg-jal__body">' +
-          '<div class="cg-jal__top">' +
-            '<span class="cg-jal__date">' + (r.label || '—') + '</span>' +
-            '<span class="cg-chip" style="background:' + ow[1] + ';color:' + ow[2] + '">' + ow[0] + '</span>' +
-            '<span class="cg-pill" style="background:' + stt[1] + ';color:' + stt[2] + '">' + stt[0] + '</span>' +
-          '</div>' +
+        '<div class="cg-jal__body">' + ligne +
           '<input class="cg-in cg-in--title" value="' + esc(j.title) + '" onchange="ADM.pjSet(\'' + pid + '\',\'' + j.id + '\',\'title\',this.value' + cq + ')" placeholder="Ce que tu fais">' +
           '<div class="cg-jal__meta">' +
             '<label class="cg-fld"><span>Jalon</span><input class="cg-in" value="' + esc(j.jalon || '') + '" onchange="ADM.pjSet(\'' + pid + '\',\'' + j.id + '\',\'jalon\',this.value' + cq + ')" placeholder="Envoi V1, Retours…" style="min-width:130px"></label>' +
             '<label class="cg-fld"><span>Responsable</span><select class="cg-in" onchange="ADM.pjSet(\'' + pid + '\',\'' + j.id + '\',\'owner\',this.value' + cq + ')"><option value="studio"' + (j.owner === 'studio' ? ' selected' : '') + '>🎨 Toi</option><option value="cliente"' + (j.owner === 'cliente' ? ' selected' : '') + '>👤 Cliente</option><option value="les_deux"' + (j.owner === 'les_deux' ? ' selected' : '') + '>🤝 Vous deux</option></select></label>' +
-            // Cocher l'avancement : le statut était AFFICHÉ (pastille, point de
-            // couleur) sans qu'aucun contrôle ne permette de le changer. Les
-            // jalons restaient donc éternellement « à venir ».
-            '<label class="cg-fld"><span>Avancement</span><select class="cg-in" onchange="ADM.pjSet(\'' + pid + '\',\'' + j.id + '\',\'status\',this.value' + cq + ')"><option value="a_venir"' + (j.status !== 'en_cours' && j.status !== 'fait' ? ' selected' : '') + '>À venir</option><option value="en_cours"' + (j.status === 'en_cours' ? ' selected' : '') + '>En cours</option><option value="fait"' + (j.status === 'fait' ? ' selected' : '') + '>Fait</option></select></label>' +
             '<label class="cg-fld"><span>Échéance</span><select class="cg-in" onchange="ADM.pjSet(\'' + pid + '\',\'' + j.id + '\',\'dateMode\',this.value' + cq + ')"><option value="duration"' + (j.dateMode !== 'fixed' && j.dateMode !== 'range' ? ' selected' : '') + '>Durée</option><option value="range"' + (j.dateMode === 'range' ? ' selected' : '') + '>Plage de dates</option><option value="fixed"' + (j.dateMode === 'fixed' ? ' selected' : '') + '>Date fixe</option></select></label>' +
             timing +
             '<div class="cg-jal__actions">' +
@@ -9538,11 +9599,48 @@
     tblPaint(id);
   }
   function tblCancel(id) { TBL = null; tblPaint(id); }
-  function tblMove(id, i, d) {
+  /* Réorganiser un tableau de brief se fait en glissant la ligne, comme dans
+   * l'espace de la cliente : le même geste des deux côtés. Les flèches
+   * montaient d'un cran à la fois, ce qui obligeait à cliquer dix fois pour
+   * remonter une ligne de dix rangs. */
+  var TBL_DRAG = null;
+  function tblEfface() {
+    var l = document.querySelectorAll('.tbl-cible');
+    for (var i = 0; i < l.length; i++) l[i].classList.remove('tbl-cible');
+  }
+  function tblDragStart(ev, id, i) {
     if (!TBL || TBL.id !== id) return;
-    var j = i + d;
-    if (j < 0 || j >= TBL.ordre.length) return;
-    var o = TBL.ordre, t = o[i]; o[i] = o[j]; o[j] = t;
+    TBL_DRAG = { id: id, de: i };
+    try { ev.dataTransfer.effectAllowed = 'move'; ev.dataTransfer.setData('text/plain', String(i)); } catch (e) {}
+    // Ce qu'on voit glisser : la ligne entière, pas la poignée toute seule.
+    try {
+      var tr = ev.target.parentNode && ev.target.parentNode.parentNode;
+      if (tr && ev.dataTransfer.setDragImage) ev.dataTransfer.setDragImage(tr, 14, 14);
+    } catch (e2) {}
+  }
+  function tblDragEnd() { TBL_DRAG = null; tblEfface(); }
+  function tblDragOver(ev, id, i) {
+    if (!TBL_DRAG || TBL_DRAG.id !== id || TBL_DRAG.de === i) return;
+    ev.preventDefault();
+    try { ev.dataTransfer.dropEffect = 'move'; } catch (e) {}
+    var c = ev.currentTarget;
+    if (!c.classList.contains('tbl-cible')) { tblEfface(); c.classList.add('tbl-cible'); }
+  }
+  function tblDragLeave(ev) { ev.currentTarget.classList.remove('tbl-cible'); }
+  function tblDrop(ev, id, i) {
+    ev.preventDefault(); tblEfface();
+    if (!TBL_DRAG || TBL_DRAG.id !== id) { TBL_DRAG = null; return; }
+    var de = TBL_DRAG.de; TBL_DRAG = null;
+    tblDeplacer(id, de, i);
+  }
+  // Déplacer n'est pas échanger : la ligne se retire et se repose à sa
+  // nouvelle place, les autres se décalent d'un rang. Un échange ferait sauter
+  // la ligne survolée à l'autre bout du tableau.
+  function tblDeplacer(id, de, vers) {
+    if (!TBL || TBL.id !== id) return;
+    var o = TBL.ordre;
+    if (de < 0 || de >= o.length || vers < 0 || vers >= o.length || de === vers) return;
+    o.splice(vers, 0, o.splice(de, 1)[0]);
     tblPaint(id);
   }
   function tblSave(id) {
@@ -9573,10 +9671,10 @@
     var actif = !!(TBL && TBL.id === id);
     var vue = actif ? TBL.ordre.map(function (i) { return data[i]; }) : data;
     var barre = '<div class="tbord">' + (actif
-      ? '<span class="tbord__t">Remonte ou descends les lignes, puis enregistre.</span>' +
+      ? '<span class="tbord__t">Glisse une ligne par sa poignée, puis enregistre.</span>' +
         '<button class="btn btn--outline btn--sm" onclick="ADM.tblCancel(\'' + id + '\')">Annuler</button>' +
         '<button class="btn btn--dark btn--sm" onclick="ADM.tblSave(\'' + id + '\')">Enregistrer l\'ordre</button>'
-      : '<button class="btn btn--outline btn--sm" title="Changer l\'ordre des lignes de ce tableau" onclick="ADM.tblStart(\'' + id + '\')">⇅ Déplacer les lignes</button>') +
+      : '<button class="btn btn--outline btn--sm" title="Changer l\'ordre des lignes de ce tableau" onclick="ADM.tblStart(\'' + id + '\')">⠿ Déplacer les lignes</button>') +
       '</div>';
     return '<div id="' + id + '">' + barre + admPrettyTable(r.cols, vue, actif ? id : null, r.zebre, r.teinte) + '</div>';
   }
@@ -9604,17 +9702,20 @@
       var even = (zebre !== false) && ri % 2 === 1, last = ri === dataRows.length - 1;
       var rowBg = even ? (teinte || '#FBF4E7') : 'var(--card)';
       var td0 = '';
+      var mid = '\'' + moveId + '\',' + ri;
       if (moveId) {
-        var mid = '\'' + moveId + '\',' + ri;
         // Pas de numéro de rang ici : la cliente a souvent déjà sa propre
         // colonne de numérotation, deux compteurs se contrediraient.
         td0 = '<td style="padding:12px 8px;vertical-align:top;width:1%;white-space:nowrap;background:' + rowBg + ';' +
-          (last ? 'border-bottom-left-radius:13px;' : '') + '"><div class="tbmv">' +
-          '<button class="tbmv__b" title="Monter cette ligne"' + (ri === 0 ? ' disabled' : '') + ' onclick="ADM.tblMove(' + mid + ',-1)">↑</button>' +
-          '<button class="tbmv__b" title="Descendre cette ligne"' + (last ? ' disabled' : '') + ' onclick="ADM.tblMove(' + mid + ',1)">↓</button>' +
-          '</div></td>';
+          (last ? 'border-bottom-left-radius:13px;' : '') + '">' +
+          '<span class="tbmv__p" draggable="true" title="Glisser pour déplacer cette ligne"' +
+          ' ondragstart="ADM.tblDragStart(event,' + mid + ')" ondragend="ADM.tblDragEnd()">⠿</span></td>';
       }
-      return '<tr>' + td0 + cols.map(function (c, ci) {
+      var trAttr = moveId
+        ? ' ondragover="ADM.tblDragOver(event,' + mid + ')" ondragleave="ADM.tblDragLeave(event)"' +
+          ' ondrop="ADM.tblDrop(event,' + mid + ')"'
+        : '';
+      return '<tr' + trAttr + '>' + td0 + cols.map(function (c, ci) {
         var val = (row && row[ci] != null) ? row[ci] : '';
         var vis = ci === visIdx;
         var cellBg = vis ? (even ? '#E8F1FF' : '#eaf1fb') : rowBg;
@@ -11919,7 +12020,7 @@
   window.ADM = {
     nav: nav, login: login, logout: logout, scan: scan, createClient: createClient, copy: copy, editToken: editToken, navClientTab: navClientTab, navToggleClient: navToggleClient,
     msWeek: msWeek, msFilter: msFilter, msToggleCap: msToggleCap, msMode: msMode, msDaySel: msDaySel, msPlace: msPlace, msDone: msDone, msDelete: msDelete, msNoteOpen: msNoteOpen, msPlanOver: msPlanOver, msPlanLeave: msPlanLeave, msPlanDrop: msPlanDrop, msPlanUnplace: msPlanUnplace, msAutoPlan: msAutoPlan, msOrganizeWeek: msOrganizeWeek, msOrganizeDay: msOrganizeDay, msUnplace: msUnplace, msDragStart: msDragStart, msDragEnd: msDragEnd, msDayOver: msDayOver, msDayLeave: msDayLeave, msDrop: msDrop, msSlotOver: msSlotOver, msDropSlot: msDropSlot, msNewBlock: msNewBlock, msSaveBlock: msSaveBlock, msDeleteBlock: msDeleteBlock, msEst: msEst, msEstH: msEstH, msAddTop: msAddTop, msAddDay: msAddDay,
-    openClient: openClient, tab: tab, subtab: subtab, ffShow: ffShow, saveInfos: saveInfos, saveForfait: saveForfait, forfaitOverrideAdd: forfaitOverrideAdd, forfaitOverrideDel: forfaitOverrideDel, testEmail: testEmail, toggleOffer: toggleOffer, addOffer: addOffer, setBanner: setBanner, setMaintenance: setMaintenance, renameSupport: renameSupport, cloturerProjet: cloturerProjet, rouvrirProjet: rouvrirProjet, addSupport: addSupport, addSupportQuick: addSupportQuick, delSupport: delSupport, crAdd: crAdd, crSet: crSet, crCloturer: crCloturer, crRouvrir: crRouvrir, crReply: crReply, crDel: crDel, crAddVersion: crAddVersion, crAddVersionLink: crAddVersionLink, crDelVersion: crDelVersion, pjAdd: pjAdd, pjSet: pjSet, pjMove: pjMove, pjDel: pjDel, pjStart: pjStart, pjNotify: pjNotify, pjToggle: pjToggle, deleteClient: deleteClient,
+    openClient: openClient, tab: tab, subtab: subtab, ffShow: ffShow, saveInfos: saveInfos, saveForfait: saveForfait, forfaitOverrideAdd: forfaitOverrideAdd, forfaitOverrideDel: forfaitOverrideDel, testEmail: testEmail, toggleOffer: toggleOffer, addOffer: addOffer, setBanner: setBanner, setMaintenance: setMaintenance, renameSupport: renameSupport, cloturerProjet: cloturerProjet, rouvrirProjet: rouvrirProjet, addSupport: addSupport, addSupportQuick: addSupportQuick, delSupport: delSupport, crAdd: crAdd, crSet: crSet, crCloturer: crCloturer, crRouvrir: crRouvrir, cgToggle: cgToggle, pjEdit: pjEdit, crReply: crReply, crDel: crDel, crAddVersion: crAddVersion, crAddVersionLink: crAddVersionLink, crDelVersion: crDelVersion, pjAdd: pjAdd, pjSet: pjSet, pjMove: pjMove, pjDel: pjDel, pjStart: pjStart, pjNotify: pjNotify, pjToggle: pjToggle, deleteClient: deleteClient,
     toggleTicketsSpace: toggleTicketsSpace, ticketStatus: ticketStatus, ticketDue: ticketDue, ticketTime: ticketTime, ticketDelete: ticketDelete, ticketForfait: ticketForfait, ticketProposeDate: ticketProposeDate,
     ckpReste: ckpReste, ckpEstim: ckpEstim, ckpFinir: ckpFinir, ckpPasMaintenant: ckpPasMaintenant, ckpOrdreSysteme: ckpOrdreSysteme,
     ckTSetVue: ckTSetVue, ckTSetTri: ckTSetTri, ckTSetFiltre: ckTSetFiltre, ckTOuvrir: ckTOuvrir,
@@ -11928,7 +12029,9 @@
     ckLRegSet: ckLRegSet, ckLRegEnregistrer: ckLRegEnregistrer, ckLRegAnnuler: ckLRegAnnuler,
     ckLSetSimH: ckLSetSimH, ckLSetSimHz: ckLSetSimHz, ckLDepuis: ckLDepuis,
     ckJSetFiltre: ckJSetFiltre, ckJOuvrir: ckJOuvrir, ckJFermer: ckJFermer, ckJOnglet: ckJOnglet,
-    tblStart: tblStart, tblCancel: tblCancel, tblMove: tblMove, tblSave: tblSave,
+    tblStart: tblStart, tblCancel: tblCancel, tblSave: tblSave,
+    tblDragStart: tblDragStart, tblDragEnd: tblDragEnd, tblDragOver: tblDragOver,
+    tblDragLeave: tblDragLeave, tblDrop: tblDrop,
     taskStatus: taskStatus, ptFinishPrompt: ptFinishPrompt, ptTimePrompt: ptTimePrompt, taskDelete: taskDelete, taskDuplicate: taskDuplicate, taskTime: taskTime, ptToggleContent: ptToggleContent, taskComment: taskComment, taskReview: taskReview, taskSendReview: taskSendReview, taskClearRework: taskClearRework, uploadTaskDlv: uploadTaskDlv, addDlvLink: addDlvLink, delDeliverable: delDeliverable, taskArchive: taskArchive, taskMilestone: taskMilestone, taskProposeDate: taskProposeDate, taskEditOpen: taskEditOpen, ptStart: ptStart, ptPause: ptPause, tkStart: tkStart, tkPause: tkPause, navTimerPause: navTimerPause,
     bilanRequest: bilanRequest, beneficeAdd: beneficeAdd, beneficeDel: beneficeDel,
     emailSave: emailSave, emailReset: emailReset, reglSetTab: reglSetTab, bookingSave: bookingSave, calSave: calSave, calTest: calTest, calDisconnect: calDisconnect, congesAdd: congesAdd, congesDel: congesDel, congesSave: congesSave, wsAdd: wsAdd, wsDel: wsDel, wsSave: wsSave, backupRun: backupRun, backupDownload: backupDownload, backupRestoreOpen: backupRestoreOpen,

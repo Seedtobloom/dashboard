@@ -1099,6 +1099,26 @@ input[type=checkbox]{width:16px;height:16px;cursor:pointer}
 .cg-lead{font-family:var(--font-micro);font-size:12.5px;color:var(--muted);line-height:1.5;max-width:72ch;margin:-4px 0 20px}
 .cg-list{display:flex;flex-direction:column;gap:20px}
 .cg-card{background:var(--card);border:none;border-radius:18px;padding:22px 24px}
+/* Une création repliée : une seule ligne, lisible d'un coup d'oeil. Ouvrir
+   n'est plus obligatoire pour savoir où elle en est. */
+.cg-card--plie{padding:0;background:transparent}
+.cgc{display:flex;align-items:center;gap:11px;flex-wrap:wrap;background:var(--card);border-radius:16px;padding:14px 18px;cursor:pointer;user-select:none}
+.cg-card--plie .cgc:hover{background:#F1EDE6}
+.cg-card .cgc{margin:-22px -24px 14px;border-radius:18px 18px 0 0;background:#F1EDE6}
+.cgc-pt{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.cgc-n{font-family:var(--font-display);font-style:italic;font-size:18px;color:var(--terre);margin-right:2px}
+.cgc-i{font-family:var(--font-micro);font-size:11.5px;color:var(--muted);padding:2px 9px;border-radius:999px;background:rgba(17,7,4,.05)}
+.cgc-r{font-family:var(--font-micro);font-size:11.5px;font-weight:700;color:var(--terre-600)}
+.cgc-r--trop{color:#b23b2a}
+.cgc-x{margin-left:auto;font-size:13px;color:var(--muted)}
+/* Un jalon replié : date, intitulé, qui le porte, son avancement. Le crayon
+   ouvre les champs, qui n'encombrent plus les cinq autres jalons. */
+.cgj-l{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:7px 10px;border-radius:11px;cursor:pointer}
+.cgj-l:hover{background:rgba(17,7,4,.04)}
+.cgj-d{font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--terre-600);min-width:104px}
+.cgj-t{flex:1;min-width:160px;font-size:14px;color:var(--terre);line-height:1.35}
+.cgj-s{padding:3px 8px;font-size:12px;height:auto;min-width:96px}
+.cgj-x{font-size:13px;color:var(--muted)}
 .cg-head{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
 .cg-ic{width:40px;height:40px;border-radius:11px;background:var(--brume);color:var(--terre);display:flex;align-items:center;justify-content:center;flex:none}
 .cg-name{flex:0 1 auto;font-family:var(--font-display);font-style:italic;font-size:24px;color:var(--terre);border:none;background:transparent;padding:0;min-width:120px;outline:none}
@@ -1797,10 +1817,13 @@ select.cg-in{cursor:pointer}
 /* Déplacement des lignes d'un tableau du brief (fiche cliente) */
 .tbord{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin:12px 0 0}
 .tbord__t{font-family:var(--font-micro);font-size:12px;color:var(--muted);margin-right:auto}
-.tbmv{display:flex;gap:3px}
-.tbmv__b{width:25px;height:25px;border:none;border-radius:8px;background:var(--surface-2);color:var(--terre);font-size:13px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}
-.tbmv__b:hover:not(:disabled){background:var(--glycine)}
-.tbmv__b:disabled{opacity:0.28;cursor:default}
+/* La poignée de déplacement d'une ligne de tableau, et la ligne visée pendant
+   le glissement. Les cellules portent un fond en style direct : c'est pour ça
+   que la cible doit l'emporter explicitement. */
+.tbmv__p{display:inline-block;margin-top:7px;padding:2px 5px;border-radius:7px;background:var(--surface-2);color:var(--terre-600);font-size:14px;line-height:1.1;cursor:grab;user-select:none}
+.tbmv__p:hover{background:var(--glycine)}
+.tbmv__p:active{cursor:grabbing}
+.tbl-cible>td{background:#EFD9C8!important;box-shadow:inset 0 2px 0 var(--terre-600)}
 
 /* ════════════════════════════════════════════════════════════════════════
    COCKPIT — le nouvel Accueil. Éditorial pour comprendre, compact pour
