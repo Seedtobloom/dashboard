@@ -7727,7 +7727,12 @@
     // vue propre), puis Fichiers, Échanges, et Réglages.
     var _projTabs = (CUR.domains || []).concat(CUR.supports || []);
     var tabs = [['apercu', 'Vue d\'ensemble', 0]];
-    _projTabs.forEach(function (x) { tabs.push([x.id, DOMAIN_LABELS[x.id] || x.label || 'Projet', x.unread || 0]); });
+    // Un projet clôturé reste consultable : son onglet le dit, sinon il se
+    // confond avec les projets en cours et on le rouvre pour rien.
+    _projTabs.forEach(function (x) {
+      var nom = DOMAIN_LABELS[x.id] || x.label || 'Projet';
+      tabs.push([x.id, x.clotureAt ? nom + ' · terminé' : nom, x.unread || 0]);
+    });
     // Réponses aux questionnaires de la plateforme. La pastille compte les
     // questionnaires remplis que tu n'as pas encore ouverts.
     var _qnrNew = (CUR.questionnaires || []).filter(function (q) {
@@ -7920,7 +7925,7 @@
     });
     acts += '<div class="inrow"><span class="inrow__ic"><svg viewBox="0 0 24 24" style="width:16px;height:16px" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2"/></svg></span><div class="inrow__m"><div class="inrow__t">' + esc(pr.label) + '</div><div class="inrow__s">Dernière connexion</div></div></div>';
     var activity = '<div class="ovcard"><h2>Activité récente</h2>' + acts + '</div>';
-    return '<div class="ovgrid">' + overview + activity + '</div>';
+    return '<div class="ovgrid">' + overview + activity + '</div>' + supportsCard();
   }
   function renderTab() {
     var body = el('tabbody'); if (!body) return;
@@ -8137,7 +8142,7 @@
       '<div class="micro mb">Supprime définitivement ce client : son espace, ses messages, ses tâches et ses fichiers. Action irréversible.</div>' +
       '<button class="btn btn--danger btn--sm" onclick="ADM.deleteClient()">Supprimer ce client et son espace</button></div>';
     return '<div class="grid grid--2" style="align-items:start;max-width:1100px">' +
-      '<div>' + coord + supportsCard() + '</div>' +
+      '<div>' + coord + '</div>' +
       '<div>' + offersCard() + ticketsSpaceCard() + '</div>' +
       '</div>' + danger;
   }
@@ -8499,14 +8504,20 @@
         '<button class="btn btn--danger btn--sm" onclick="ADM.delSupport(\'' + s.pid + '\')">Suppr.</button></div>';
     }).join('');
     return '<div class="card infocard" style="background:var(--card)"><h3><span class="infocard__dot" style="background:#35608f"></span>Mes créations (supports de com)</h3>' +
-      '<div class="micro mb">Chaque projet de com regroupe une ou plusieurs <b>créations</b>. Crée le projet ici, puis clique <b>Ouvrir</b> pour gérer ses créations et leurs versions dans l\'onglet dédié.</div>' +
+      '<div class="micro mb">Chaque projet de com regroupe une ou plusieurs <b>créations</b>. Crée-le ici, puis clique <b>Ouvrir</b> pour gérer ses créations et leurs versions. Un projet créé apparaît <b>tout de suite</b> dans l\'espace de ta cliente, avec son fil de messages. Quand il est fini, <b>Clôturer</b> l\'archive sans rien effacer.</div>' +
       (rows || '<div class="empty">Aucun projet de com pour ce client.</div>') +
       '<div class="row mt"><input class="inp" id="new-support-name" placeholder="Nom du projet de com (ex. Lancement printemps)" style="flex:1"><button class="btn btn--dark btn--sm" onclick="ADM.addSupport()">+ Nouveau projet</button></div></div>';
   }
   function renameSupport(pid, name) { jpost('/api/clients/' + CURKEY + '/support/' + pid, { name: name }, 'PATCH').then(function (r) { if (r.ok) { toast('Nom enregistré'); loadClient(); } else toast('Erreur'); }); }
-  function addSupport() { var name = (el('new-support-name').value || '').trim(); jpost('/api/clients/' + CURKEY + '/supports', { name: name }).then(function (r) { if (r.ok) { toast('Support ajouté'); loadClient(); } else toast('Erreur'); }); }
+  function addSupport() {
+    var champ = el('new-support-name'); var name = ((champ && champ.value) || '').trim();
+    if (!name) { toast('Donne-lui un nom, tu t’y retrouveras mieux'); if (champ) champ.focus(); return; }
+    jpost('/api/clients/' + CURKEY + '/supports', { name: name }).then(function (r) {
+      if (r.ok) { toast('Projet « ' + name + ' » créé · déjà visible dans son espace'); loadClient(); } else toast('Erreur');
+    }).catch(function () { toast('Erreur'); });
+  }
   // Ajout rapide d'un support de com depuis la carte « Offres / espaces ».
-  function addSupportQuick() { jpost('/api/clients/' + CURKEY + '/supports', { name: 'Support de com' }).then(function (r) { if (r.ok) { toast('Support de com ajouté ✓, coche « visible » quand la cliente a signé'); loadClient(); } else toast('Erreur'); }).catch(function () { toast('Erreur'); }); }
+  function addSupportQuick() { jpost('/api/clients/' + CURKEY + '/supports', { name: 'Support de com' }).then(function (r) { if (r.ok) { toast('Projet de com créé · déjà visible dans son espace'); loadClient(); } else toast('Erreur'); }).catch(function () { toast('Erreur'); }); }
   /* Clôturer : le projet est fini. La conversation est ARCHIVÉE, pas effacée —
      elle reste entièrement lisible des deux côtés, mais plus personne n'y
      écrit. Réversible : une clôture faite trop tôt se rouvre. */
