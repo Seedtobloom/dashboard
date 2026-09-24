@@ -4869,7 +4869,7 @@
 
     return stbCarteProjet({
       id: t.id, key: t.key || '', nom: t.titre,
-      teinte: retard ? { bg: '#F5E3D9', e: '#5A2A11', sombre: false }
+      teinte: retard ? { bg: '#CD8F6E', e: '#110704', sombre: false }
                      : { bg: '#F8F6F2', e: '#110704', sombre: false },
       presta: (i + 1) + ' · ' + (t.qui || '') + (t.ctx ? ' · ' + t.ctx : ''),
       ou: (retard ? '<span class="ck-ap">En retard. </span>' : '') + esc(c.raison) +
@@ -8598,7 +8598,7 @@
     }).join('');
     var autoOn = !c.bannerColor;
     var auto = '<button onclick="ADM.crSet(\'' + pid + '\',\'' + c.id + '\',\'bannerColor\',\'\')" title="Auto (couleur de catégorie)" style="height:22px;padding:0 10px;border-radius:999px;background:#fff;border:2px solid ' + (autoOn ? 'var(--terre)' : '#fff') + ';box-shadow:0 0 0 1px var(--bone-d);cursor:pointer;font-family:var(--font-micro);font-size:15px;font-weight:700;color:var(--terre-600)">Auto</button>';
-    return '<div class="row" style="gap:7px;align-items:center;flex-wrap:wrap"><span class="micro" style="color:var(--muted)">Bannière</span>' + auto + sw + '</div>';
+    return '<div class="row" style="gap:7px;align-items:center;flex-wrap:wrap">' + auto + sw + '</div>';
   }
   function crOpts(list, cur) { return list.map(function (o) { return '<option value="' + o[0] + '"' + (cur === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join(''); }
   var CR_ST_COL = { a_preparer: '#8a7d6b', en_creation: '#35608f', attente_client: '#c9952f', revision: '#c0533b', valide: '#3f8f5b', archive: '#8a7d6b' };
@@ -8719,28 +8719,35 @@
       if (!ouvert) return cgCarte(c, vs, crRevUsed, crRevMax);
       return '<section class="cg-card">' +
         '<button class="btn btn--outline btn--sm" style="margin-bottom:14px" onclick="ADM.cgToggle(\'' + c.id + '\')">← Toutes les créations</button>' +
-        '<div class="cg-head">' +
+        // Un titre, puis les réglages rangés dans leur bloc. Tout tenait sur
+        // une ligne : nom, catégorie, statut, deux compteurs et un bouton,
+        // sans hiérarchie ni libellé. On ne savait plus quoi regarder.
+        '<div class="cg-tete2">' +
           '<span class="cg-ic">' + cgIcon('image', 20) + '</span>' +
           '<input class="cg-name" value="' + esc(c.name) + '" onchange="ADM.crSet(\'' + pid + '\',\'' + c.id + '\',\'name\',this.value)" title="Nom de la création">' +
-          '<select class="cg-in" onchange="ADM.crSet(\'' + pid + '\',\'' + c.id + '\',\'type\',this.value)" title="Catégorie">' + crOpts(CR_TYPES, c.type) + '</select>' +
-          '<select class="cg-in" onchange="ADM.crSet(\'' + pid + '\',\'' + c.id + '\',\'status\',this.value)" title="Statut">' + crOpts(CR_STATUSES, c.status) + '</select>' +
-          '<label class="cg-rev" title="Nombre de séries de retours incluses (aller-retours de validation) pour ce support">' +
-            '<span class="cg-rev__lb">↩ Séries de retours</span>' +
-            '<input class="cg-in cg-rev__in" type="number" min="0" max="20" value="' + (typeof c.revisionsMax === 'number' ? c.revisionsMax : 3) + '" onchange="ADM.crSet(\'' + pid + '\',\'' + c.id + '\',\'revisionsMax\',this.value)">' +
-          '</label>' +
-          '<div class="cg-rev" title="Allers-retours utilisés : comptés automatiquement dans l\'espace + ajustés à la main pour ceux faits ailleurs (mail, appel…). − / +">' +
-            '<span class="cg-rev__lb">↩ Utilisés' + (crRevExtra ? ' (dont ' + (crRevExtra > 0 ? '+' : '') + crRevExtra + ' manuel)' : '') + '</span>' +
-            '<span style="display:inline-flex;align-items:center;gap:6px">' +
-              '<button type="button" onclick="ADM.crSet(\'' + pid + '\',\'' + c.id + '\',\'revExtra\',' + (crRevExtra - 1) + ')" title="Retirer un aller-retour" style="width:24px;height:24px;border-radius:7px;border:none;background:#fff;cursor:pointer;font-size:15px;line-height:1;color:var(--terre)">−</button>' +
-              '<span style="font-family:var(--font-micro);font-size:15px;font-weight:700;color:' + (crRevUsed > crRevMax ? '#b23b2a' : 'var(--terre)') + ';min-width:36px;text-align:center">' + crRevUsed + ' / ' + crRevMax + '</span>' +
-              '<button type="button" onclick="ADM.crSet(\'' + pid + '\',\'' + c.id + '\',\'revExtra\',' + (crRevExtra + 1) + ')" title="Ajouter un aller-retour fait hors espace" style="width:24px;height:24px;border-radius:7px;border:none;background:#fff;cursor:pointer;font-size:15px;line-height:1;color:var(--terre)">+</button>' +
-            '</span>' +
-          '</div>' +
           (c.clotureAt
-            ? '<button class="cg-btn cg-btn--soft" onclick="ADM.crRouvrir(\'' + pid + '\',\'' + c.id + '\')" title="Cette création est terminée depuis le ' + esc(String(c.clotureAt).slice(0, 10).split('-').reverse().join('/')) + '">Rouvrir</button>'
-            : '<button class="cg-btn cg-btn--soft" onclick="ADM.crCloturer(\'' + pid + '\',\'' + c.id + '\')">Clôturer</button>') +
+            ? '<button class="btn btn--outline btn--sm" onclick="ADM.crRouvrir(\'' + pid + '\',\'' + c.id + '\')" title="Terminée le ' + esc(String(c.clotureAt).slice(0, 10).split('-').reverse().join('/')) + '">Rouvrir</button>'
+            : '<button class="btn btn--outline btn--sm" onclick="ADM.crCloturer(\'' + pid + '\',\'' + c.id + '\')">Clôturer</button>') +
         '</div>' +
-        crBannerRow(pid, c) +
+        '<section class="cg-bloc cg-regl">' +
+          '<div class="cg-lbl">Réglages</div>' +
+          '<div class="cg-reglg">' +
+            '<label class="cg-f"><span>Catégorie</span>' +
+              '<select class="cg-in" onchange="ADM.crSet(\'' + pid + '\',\'' + c.id + '\',\'type\',this.value)">' + crOpts(CR_TYPES, c.type) + '</select></label>' +
+            '<label class="cg-f"><span>Statut</span>' +
+              '<select class="cg-in" onchange="ADM.crSet(\'' + pid + '\',\'' + c.id + '\',\'status\',this.value)">' + crOpts(CR_STATUSES, c.status) + '</select></label>' +
+            '<label class="cg-f" title="Nombre d’allers-retours de validation inclus pour ce support"><span>Retours inclus</span>' +
+              '<input class="cg-in" type="number" min="0" max="20" value="' + (typeof c.revisionsMax === 'number' ? c.revisionsMax : 3) + '" onchange="ADM.crSet(\'' + pid + '\',\'' + c.id + '\',\'revisionsMax\',this.value)"></label>' +
+            '<div class="cg-f" title="Comptés dans l’espace, plus ceux faits ailleurs que tu ajoutes à la main">' +
+              '<span>Retours utilisés' + (crRevExtra ? ' (dont ' + (crRevExtra > 0 ? '+' : '') + crRevExtra + ' à la main)' : '') + '</span>' +
+              '<div class="cg-compte">' +
+                '<button type="button" class="cg-cb" onclick="ADM.crSet(\'' + pid + '\',\'' + c.id + '\',\'revExtra\',' + (crRevExtra - 1) + ')" title="Retirer un aller-retour">−</button>' +
+                '<b' + (crRevUsed > crRevMax ? ' class="ck-ap"' : '') + '>' + crRevUsed + ' / ' + crRevMax + '</b>' +
+                '<button type="button" class="cg-cb" onclick="ADM.crSet(\'' + pid + '\',\'' + c.id + '\',\'revExtra\',' + (crRevExtra + 1) + ')" title="Ajouter un aller-retour fait hors espace">+</button>' +
+              '</div></div>' +
+            '<div class="cg-f cg-f--large"><span>Bannière chez ta cliente</span>' + crBannerRow(pid, c) + '</div>' +
+          '</div>' +
+        '</section>' +
         '<div class="cg-cols cg-cols--1">' +
           '<section class="cg-bloc">' +
             '<div class="cg-lbl">Versions</div>' + vHtml +
