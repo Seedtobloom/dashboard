@@ -24,6 +24,11 @@ const favicon = fs.readFileSync(path.join(dir, 'favicon.svg'), 'utf8');
 // (fini le cache de 5 min qui masquait les déploiements).
 const jsV = crypto.createHash('sha1').update(js).digest('hex').slice(0, 10);
 const cssV = crypto.createHash('sha1').update(css).digest('hex').slice(0, 10);
+// La bannière « nouvelle version » comparait la seule empreinte du JS : un
+// déploiement qui ne touchait QUE le style ne prévenait donc personne, et
+// l'onglet déjà ouvert gardait l'ancienne feuille indéfiniment. L'empreinte
+// de l'application couvre désormais le script ET le style.
+const appV = crypto.createHash('sha1').update(jsV + cssV).digest('hex').slice(0, 10);
 
 const html = '<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8">' +
   '<meta name="viewport" content="width=device-width,initial-scale=1"><title>Admin · Seed to Bloom</title>' +
@@ -33,7 +38,7 @@ const html = '<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8">' +
   '<link href="https://fonts.googleapis.com/css2?family=Alegreya:ital,wght@0,400;0,500;1,400;1,500&family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400;1,500&family=Inter+Tight:wght@300;400;500;600;700&display=swap" rel="stylesheet">' +
   '<link rel="stylesheet" href="/admin.css?v=' + cssV + '"></head><body>' +
   '<div id="app"><div class="center"><div class="spin"></div></div></div>' +
-  '<div class="toast" id="toast"></div><script>window.__APPV=' + JSON.stringify(jsV) + '</script>' +
+  '<div class="toast" id="toast"></div><script>window.__APPV=' + JSON.stringify(appV) + '</script>' +
   '<script src="/admin.js?v=' + jsV + '"></script></body></html>';
 
 const handler = [
@@ -49,7 +54,7 @@ const handler = [
   "    if (url.pathname === '/admin.css') return new Response(ADMIN_CSS, { headers: { 'Content-Type': 'text/css; charset=utf-8', 'Cache-Control': url.search ? 'public, max-age=31536000, immutable' : 'public, max-age=60' } });",
   "    if (url.pathname === '/admin.js') return new Response(ADMIN_JS, { headers: { 'Content-Type': 'application/javascript; charset=utf-8', 'Cache-Control': url.search ? 'public, max-age=31536000, immutable' : 'public, max-age=60' } });",
   "    if (url.pathname === '/favicon.svg') return new Response(FAVICON, { headers: { 'Content-Type': 'image/svg+xml; charset=utf-8', 'Cache-Control': 'public, max-age=86400' } });",
-  "    if (url.pathname === '/version') return new Response(JSON.stringify({ v: " + JSON.stringify(jsV) + " }), { headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' } });",
+  "    if (url.pathname === '/version') return new Response(JSON.stringify({ v: " + JSON.stringify(appV) + " }), { headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' } });",
   "    return new Response(HTML, { headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store, must-revalidate' } });",
   '  }',
   '};',
