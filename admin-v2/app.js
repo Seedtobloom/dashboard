@@ -6076,7 +6076,7 @@
      pas afficher un total que la liste des tâches contredirait.
      ════════════════════════════════════════════════════════════════════════ */
 
-  var CKJ = { ouvert: null, onglet: 'ensemble', filtre: 'actifs', qui: 'tous', charge: null, chargeFait: null, y: 0, neuf: null };
+  var CKJ = { ouvert: null, onglet: 'ensemble', filtre: 'actifs', client: null, charge: null, chargeFait: null, y: 0, neuf: null };
   var CKJ_PRESTA = { partenaire: 'Partenaire créative', site: 'Site web', identite: 'Identité visuelle',
     support: 'Support de com', maintenance: 'Espace tickets' };
 
@@ -6180,7 +6180,6 @@
   }
 
   function ckJSetFiltre(f) { CKJ.filtre = f; renderCockpitProjetsBody(); }
-  function ckJSetQui(q) { CKJ.qui = q; renderCockpitProjetsBody(); }
   /* Où l'on arrive en ouvrant un projet : là où il se travaille.
    * Un support de com vit par ses créations ; une vue d'ensemble en tête
    * n'était qu'une page qu'on traversait sans la lire. Les autres prestations
@@ -6287,43 +6286,101 @@
     if (!ckJEtapes(p).length && (p.prestation === 'site' || p.prestation === 'identite')) return { qui: 'rien', phrase: 'Poser les étapes du projet', quand: '' };
     return { qui: 'rien', phrase: 'Rien en attente pour l’instant', quand: '' };
   }
-  function ckJQuiPil(p, pr) {
-    var m = { retard: ['Toi, en retard', 'retard'], toi: ['Toi', 'toi'], client: [ckJPrenom(p), 'client'], rien: ['Personne', 'rien'] }[pr.qui];
-    return '<span class="pj-pil pj-pil--' + m[1] + '">' + esc(m[0]) + '</span>';
-  }
-  function ckJRepere(p) {
-    var c = ckJEtapeCourante(p);
-    if (c && !c.fini) return 'Étape ' + c.rang + ' sur ' + c.total + ' : ' + (c.etape.title || 'sans titre');
-    if (c && c.fini) return 'Toutes les étapes sont faites';
-    return ckJSousTitre(p);
-  }
-
   /* ── La liste : un bloc par client, une phrase par projet ───────────── */
   var FLECHE = '<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h10M9 4l4 4-4 4"/></svg>';
-  function ckJLigne(p) {
-    var pr = ckJProchain(p);
-    return '<button class="pj-l" onclick="ADM.ckJOuvrir(\'' + esc(ckJId(p)) + '\')" aria-label="Ouvrir ' + esc(p.projectLabel) + ', ' + esc(p.client) + '">' +
-      '<span><span class="pj-nom">' + esc(p.projectLabel) + '</span><span class="pj-sous">' + esc(ckJRepere(p)) + '</span></span>' +
-      '<span class="pj-phr">' + esc(pr.phrase) + '</span>' +
-      '<span>' + ckJQuiPil(p, pr) + '</span>' +
-      '<span class="pj-quand num' + (pr.qui === 'retard' ? ' pj-quand--retard' : '') + '">' + esc(pr.quand || '') + '</span>' +
-      '<span class="pj-fl">' + FLECHE + '</span></button>';
-  }
-  function ckJParCliente(l) {
-    var ordre = [], par = {};
-    l.forEach(function (p) {
-      var c = p.client || 'Sans client';
-      if (!par[c]) { par[c] = []; ordre.push(c); }
-      par[c].push(p);
+  /* ── Chaque offre, vue en deux côtés qui ne se mélangent pas ──────────
+   * « De ton côté » : ce que tu dois faire. « Chez <client> » : ce qui
+   * attend sa réponse. Une seule source pour la page Projets ET le suivi de
+   * l'offre ouverte. */
+  function ckJCotes(p) {
+    var x = ckJEchanges(p), auj = ckpAuj(), qui = ckJPrenom(p);
+    var moi = [], eux = [];
+    var vives = ckJTachesDe(p).filter(function (t) { return t.statut !== 'done'; })
+      .sort(function (a, b) { return (a.echeance || '9999') < (b.echeance || '9999') ? -1 : 1; });
+    x.revisions.forEach(function (r) { moi.push({ t: r.name || r.taskTitle || 'Livrable', etat: 'À reprendre', k: 'retard', sous: r.comment ? '« ' + String(r.comment).slice(0, 120) + ' »' : qui + ' a fait un retour' }); });
+    vives.forEach(function (t) {
+      if (t.statut === 'review' || t.statut === 'waiting_client') {
+        eux.push({ t: t.titre, etat: qui + ' regarde', k: 'client', id: t.id, sous: t.echeance ? 'prévue ' + ckpQuand(t.echeance) : '' });
+        return;
+      }
+      var late = t.echeance && t.echeance < auj, r = ckpRestant(t);
+      moi.push({ t: t.titre, id: t.id, estimer: r === null,
+        etat: late ? 'En retard' + (ckJRetardJ(t.echeance) ? ' de ' + ckJRetardJ(t.echeance) + ' j' : '') : (r === null ? 'À estimer' : (t.statut === 'in_progress' ? 'En cours' : 'À faire')),
+        k: late ? 'retard' : (r === null ? 'rien' : (t.statut === 'in_progress' ? 'toi' : 'rien')),
+        sous: (r !== null ? ckpDuree(r) + ' à faire' : '') + (t.echeance ? (r !== null ? ', ' : '') + 'prévue ' + ckpQuand(t.echeance) : '') });
     });
-    return ordre.map(function (c) {
-      var arr = par[c];
-      return '<section class="pj-cli"><div class="pj-cli__h"><h2>' + esc(c) + '</h2>' +
-        '<button class="tps-lien" onclick="ADM.openClient(\'' + esc(arr[0].key) + '\')">Fiche client</button></div>' +
-        '<div class="pj-l pj-l--h" aria-hidden="true"><span>Projet</span><span>Ce qu’il faut faire maintenant</span><span>Qui a la main</span><span>Pour quand</span><span></span></div>' +
-        arr.map(ckJLigne).join('') + '</section>';
-    }).join('');
+    x.attente.forEach(function (a) { eux.push({ t: a.name || a.taskTitle || 'Livrable', etat: qui + ' regarde', k: 'client', sous: a.createdAt ? 'envoyé ' + ckpQuand(String(a.createdAt).slice(0, 10)) : '', relance: true }); });
+    ckJCreations(p).filter(function (c) { return !c.clotureAt; }).forEach(function (c) {
+      if (c.status === 'attente_client') eux.push({ t: c.name || 'Création', etat: qui + ' regarde', k: 'client', sous: 'création' });
+      else moi.push({ t: c.name || 'Création', etat: ckJCrStatut(c.status) || 'En cours', k: 'toi', sous: 'création' });
+    });
+    if (!moi.length) {
+      var c = ckJEtapeCourante(p);
+      if (c && !c.fini) moi.push({ t: 'Étape « ' + (c.etape.title || 'sans titre') + ' »', etat: 'En cours', k: 'toi', sous: c.etape.date ? 'jusqu’à ' + ckpQuand(c.etape.date).replace(/^le /, '') : '' });
+      else if (!ckJEtapes(p).length && (p.prestation === 'site' || p.prestation === 'identite') && !p.clotureAt) moi.push({ t: 'Poser les étapes du projet', etat: 'À faire', k: 'rien', sous: '' });
+    }
+    return { moi: moi, eux: eux };
   }
+  // Où en est l'offre : une phrase courte et une barre en morceaux.
+  function ckJAvance(p) {
+    var f = ckJForfait(p);
+    var t = ckJTachesDe(p), faites = t.filter(function (x) { return x.statut === 'done'; }).length;
+    if (p.prestation === 'partenaire' && f && f.configured) {
+      var h = function (v) { return ckpDuree(Math.round((v || 0) * 60)); };
+      return { txt: (f.remaining < 0 ? 'Forfait dépassé de ' + h(f.over) : h(f.remaining) + ' restantes sur ' + h(f.available)), fait: faites, total: t.length };
+    }
+    var e = ckJEtapes(p);
+    if (e.length) { var c = ckJEtapeCourante(p); return { txt: c && !c.fini ? 'Étape ' + c.rang + ' sur ' + c.total + ' : ' + (c.etape.title || 'sans titre') : 'Toutes les étapes sont faites', fait: e.filter(function (x) { return x.status === 'done'; }).length, total: e.length }; }
+    var cr = ckJCreations(p);
+    if (cr.length) { var ouv = cr.filter(function (x) { return !x.clotureAt; }).length; return { txt: ouv ? ouv + ' création' + (ouv > 1 ? 's' : '') + ' en cours' : 'Toutes les créations sont terminées', fait: cr.length - ouv, total: cr.length }; }
+    if (t.length) return { txt: faites + ' sur ' + t.length + ' faite' + (faites > 1 ? 's' : ''), fait: faites, total: t.length };
+    return { txt: ckJSousTitre(p), fait: 0, total: 0 };
+  }
+  function ckJBarre(a) {
+    if (!a.total) return '';
+    var n = Math.min(a.total, 16), f = Math.round(a.fait / a.total * n), o = '';
+    for (var i = 0; i < n; i++) o += '<i' + (i < f ? ' class="on"' : '') + '></i>';
+    return '<span class="pj-av" role="img" aria-label="' + a.fait + ' sur ' + a.total + '">' + o + '</span>';
+  }
+  // Qui a la main sur l'offre, en couleur : ciel à toi, paille chez le client, crème en pause.
+  function ckJTon(p, cotes) {
+    var retard = cotes.moi.some(function (m) { return m.k === 'retard'; });
+    if (cotes.moi.length) return { cle: retard ? 'retard' : 'toi', txt: retard ? 'À toi, en retard' : 'À toi' };
+    if (cotes.eux.length) return { cle: 'client', txt: 'Chez ' + ckJPrenom(p) };
+    return { cle: 'pause', txt: 'En pause' };
+  }
+  function ckJCoteListe(l, vide, p) {
+    if (!l.length) return '<p class="pj-cote__v">' + vide + '</p>';
+    return l.slice(0, 4).map(function (m) {
+      return '<div class="pj-cote__l"><span>' + esc(m.t) + (m.k === 'retard' ? ' <span class="pj-pil pj-pil--retard">' + esc(m.etat) + '</span>' : '') +
+        (m.sous ? '<span class="pj-cote__s">' + esc(m.sous) + '</span>' : '') + '</span></div>';
+    }).join('') + (l.length > 4 ? '<p class="pj-cote__v">et ' + (l.length - 4) + ' autre' + (l.length > 5 ? 's' : '') + '</p>' : '');
+  }
+  // L'offre, en grand, dans la page Projets (un client choisi).
+  function ckJOffre(p) {
+    var co = ckJCotes(p), ton = ckJTon(p, co), a = ckJAvance(p);
+    return '<section class="pj-of pj-of--' + ton.cle + '"><button class="pj-of__h" onclick="ADM.ckJOuvrir(\'' + esc(ckJId(p)) + '\')">' +
+        '<h3>' + esc(p.projectLabel) + '</h3>' + (ton.cle === 'retard' ? '<span class="pj-pil pj-pil--retard">' + ton.txt + '</span>' : '<b>' + esc(ton.txt) + '</b>') + '</button>' +
+      '<div class="pj-of__c"><p class="pj-of__a num">' + esc(a.txt) + '</p>' + ckJBarre(a) +
+        '<div class="pj-cotes"><div class="pj-cote pj-cote--moi"><b>De ton côté</b>' + ckJCoteListe(co.moi, 'Rien à faire pour l’instant.', p) + '</div>' +
+        '<div class="pj-cote pj-cote--eux"><b>Chez ' + esc(ckJPrenom(p)) + '</b>' + ckJCoteListe(co.eux, 'Rien en attente.', p) + '</div></div>' +
+        '<button class="tps-lien" onclick="ADM.ckJOuvrir(\'' + esc(ckJId(p)) + '\')">Ouvrir l’offre</button></div></section>';
+  }
+  // L'offre, en tuile, dans « Tous les clients ».
+  function ckJTuile(p) {
+    var co = ckJCotes(p), ton = ckJTon(p, co), a = ckJAvance(p);
+    return '<button class="pj-tu pj-tu--' + ton.cle + '" onclick="ADM.ckJOuvrir(\'' + esc(ckJId(p)) + '\')">' +
+      '<span class="pj-tu__h"><b>' + esc(p.projectLabel) + '</b>' + FLECHE + '</span><span class="pj-tu__a num">' + esc(a.txt) + '</span>' + ckJBarre(a) +
+      '<span class="pj-tu__q">' + (ton.cle === 'retard' ? '<span class="pj-pil pj-pil--retard">' + ton.txt + '</span>' : esc(ton.txt)) + '</span></button>';
+  }
+  // Les clients, dans l'ordre : ceux qui ont du retard, puis le reste.
+  function ckJClients(l) {
+    var ordre = [], par = {};
+    l.forEach(function (p) { if (!par[p.key]) { par[p.key] = { key: p.key, nom: p.client || 'Sans client', offres: [], retard: 0 }; ordre.push(par[p.key]); } par[p.key].offres.push(p); });
+    ordre.forEach(function (c) { c.retard = c.offres.filter(function (p) { return ckJTon(p, ckJCotes(p)).cle === 'retard'; }).length; });
+    return ordre.sort(function (a, b) { return (b.retard - a.retard) || a.nom.localeCompare(b.nom); });
+  }
+  function ckJSetClient(k) { CKJ.client = k; renderCockpitProjetsBody(); window.scrollTo(0, 0); }
 
   /* ── Le projet ouvert : Suivi, Échanges, Fichiers ────────────────────
    * Les outils détaillés (tâches, forfait, étapes, livrables, planning,
@@ -6433,55 +6490,30 @@
       '<div class="pj-leg num"><span><i class="pj-case pj-case--u"></i>' + h(f.used) + ' utilisées</span><span><i class="pj-case"></i>' + h(Math.max(0, f.remaining - (f.carryIn || 0))) + ' du mois</span>' +
       (f.carryIn ? '<span><i class="pj-case pj-case--rep"></i>' + h(f.carryIn) + ' reportées</span>' : '') + '</div></section>';
   }
-  function ckJTachePil(t, p) {
-    var auj = ckpAuj();
-    if (t.statut === 'review' || t.statut === 'waiting_client') return '<span class="pj-pil pj-pil--client">' + esc(ckJPrenom(p)) + ' regarde</span>';
-    if (t.echeance && t.echeance < auj) return '<span class="pj-pil pj-pil--retard">En retard' + (ckJRetardJ(t.echeance) ? ' de ' + ckJRetardJ(t.echeance) + ' j' : '') + '</span>';
-    if (ckpRestant(t) === null) return '<span class="pj-pil pj-pil--rien">À estimer</span>';
-    if (t.statut === 'in_progress') return '<span class="pj-pil pj-pil--toi">En cours</span>';
-    return '<span class="pj-pil pj-pil--rien">À faire</span>';
-  }
-  function ckJAFaire(p, d, large) {
-    var toutes = ckJTachesDe(p);
-    var vives = toutes.filter(function (t) { return t.statut !== 'done'; }).sort(function (a, b) { return (a.echeance || '9999') < (b.echeance || '9999') ? -1 : 1; });
-    if (!toutes.length) return '';
-    var faites = toutes.length - vives.length;
-    var titre = p.prestation === 'partenaire' ? 'Les demandes de ' + ckJPrenom(p) : 'À faire de ton côté';
-    var lignes = vives.slice(0, 8).map(function (t) {
-      var r = ckpRestant(t);
-      return '<div class="pj-t"><button class="pj-t__n" onclick="ADM.ckTVoir(\'' + esc(t.id) + '\')">' + esc(t.titre) + '</button>' +
-        '<span class="num">' + (r === null ? '<button class="tps-lien" onclick="ADM.ckTVoir(\'' + esc(t.id) + '\')">Estimer le temps</button>' : esc(ckpDuree(r)) + ' à faire') + '</span>' +
-        '<span class="num pj-t__q">' + esc(t.echeance ? ckpQuand(t.echeance) : '') + '</span>' + ckJTachePil(t, p) + '</div>';
+
+
+
+  // Dans l'offre ouverte : deux blocs, jamais mélangés.
+  function ckJCoteCarte(p, d, cote) {
+    var co = ckJCotes(p), l = cote === 'moi' ? co.moi : co.eux, qui = ckJPrenom(p);
+    var aSec = function (k) { return d && sectionsFor(d).some(function (x) { return x[0] === k; }); };
+    var lignes = l.map(function (m) {
+      var tp = m.estimer && m.id ? '<button class="tps-lien" onclick="ADM.ckTVoir(\'' + esc(m.id) + '\')">Estimer le temps</button>' : '<span class="pj-t__q">' + esc(m.sous || '') + '</span>';
+      var nom = m.id ? '<button class="pj-t__n" onclick="ADM.ckTVoir(\'' + esc(m.id) + '\')">' + esc(m.t) + '</button>' : '<span class="pj-t__n">' + esc(m.t) + '</span>';
+      return '<div class="pj-t">' + nom + tp + '<span class="pj-pil pj-pil--' + m.k + '">' + esc(m.etat) + '</span></div>';
     }).join('');
-    var aSec = d && sectionsFor(d).some(function (x) { return x[0] === 'taches'; });
-    return '<section class="pj-carte' + (large ? ' pj-carte--large' : '') + '"><div class="pj-carte__h"><h2>' + esc(titre) + '</h2>' +
-      '<span class="num">' + faites + ' sur ' + toutes.length + ' faite' + (faites > 1 ? 's' : '') + '</span></div>' +
-      '<div class="pj-prog">' + '<i style="width:' + Math.round(faites / toutes.length * 100) + '%"></i></div>' +
-      (lignes || '<p class="pj-vide">Tout est fait de ton côté.</p>') +
-      (vives.length > 8 || aSec ? '<div class="pj-carte__p"><button class="tps-lien" onclick="ADM.ckJOnglet(\'' + (aSec ? 'taches' : 'ensemble') + '\')">Voir toutes les tâches</button></div>' : '') + '</section>';
-  }
-  function ckJEnvois(p, d) {
-    var x = ckJEchanges(p), qui = ckJPrenom(p);
-    var l = x.revisions.map(function (r) { return [r, 'À reprendre', 'retard']; })
-      .concat(x.attente.map(function (a) { return [a, qui + ' regarde', 'client']; }))
-      .concat(x.valides.map(function (v) { return [v, 'Validé', 'toi']; }));
-    if (!l.length) return '';
-    var kindArg = function (o) { return o.taskId ? 'deliverable' : 'deliverable'; };
-    var aLiv = d && sectionsFor(d).some(function (s) { return s[0] === 'liv'; });
-    var nAtt = x.attente.length;
-    return '<section class="pj-carte pj-envois"><div class="pj-carte__h"><h2>Envoyé à ' + esc(qui) + '</h2><span class="num">' + (nAtt ? nAtt + ' en attente' : l.length + ' envoi' + (l.length > 1 ? 's' : '')) + '</span></div>' +
-      l.map(function (e) {
-        var o = e[0], nm = o.name || o.taskTitle || 'Livrable', quand = (o.createdAt || o.at) ? ckpQuand(String(o.createdAt || o.at).slice(0, 10)) : '';
-        return '<div class="pj-env"><div><div class="pj-env__n">' + esc(nm) + '</div>' +
-          (e[2] === 'retard' && o.comment ? '<div class="pj-env__s">« ' + esc(String(o.comment).slice(0, 160)) + ' »</div>' : (quand ? '<div class="pj-env__s num">envoyé ' + esc(quand) + '</div>' : '')) + '</div>' +
-          (e[2] === 'client' ? '<button class="tps-lien" onclick="ADM.remind(\'' + esc(p.key) + '\',\'' + kindArg(o) + '\',\'' + jsq(nm) + '\',\'' + jsq(p.projectLabel) + '\')">Relancer</button>' : '') +
-          '<span class="pj-pil pj-pil--' + e[2] + '">' + esc(e[1]) + '</span></div>';
-      }).join('') +
-      (aLiv ? '<div class="pj-carte__p"><button class="tps-lien" onclick="ADM.ckJOnglet(\'liv\')">Voir tous les livrables</button></div>' : '') + '</section>';
+    var pied = cote === 'moi'
+      ? (aSec('taches') ? '<button class="tps-lien" onclick="ADM.ckJOnglet(\'taches\')">Voir toutes les demandes</button>' : '')
+      : (aSec('liv') ? '<button class="tps-lien" onclick="ADM.ckJOnglet(\'liv\')">Voir tous les livrables</button>' : '') +
+        (co.eux.some(function (m) { return m.relance; }) ? '<button class="tps-lien" onclick="ADM.remind(\'' + esc(p.key) + '\',\'deliverable\',\'' + jsq(co.eux[0].t) + '\',\'' + jsq(p.projectLabel) + '\')">Relancer ' + esc(qui) + '</button>' : '');
+    var n = l.length;
+    return '<section class="pj-cote-c pj-cote-c--' + cote + '"><div class="pj-cote-c__h"><h2>' + (cote === 'moi' ? 'De ton côté' : 'Chez ' + esc(qui)) + '</h2>' +
+      '<span class="num">' + (cote === 'moi' ? (n ? n + ' chose' + (n > 1 ? 's' : '') + ' à faire' : 'rien à faire') : (n ? n + ' en attente de sa réponse' : 'rien en attente')) + '</span></div>' +
+      '<div class="pj-cote-c__c">' + (lignes || '<p class="pj-vide" style="margin:12px 0">' + (cote === 'moi' ? 'Rien à faire de ton côté pour l’instant.' : 'Rien n’attend sa réponse.') + '</p>') +
+      (pied ? '<div class="pj-carte__p pj-cote-c__p">' + pied + '</div>' : '') + '</div></section>';
   }
   function ckJSuivi(p, d) {
-    var aFaire = ckJAFaire(p, d, false), envois = ckJEnvois(p, d);
-    var cartes = (aFaire && envois) ? '<div class="pj-deux">' + aFaire + envois + '</div>' : (aFaire.replace('pj-carte"', 'pj-carte pj-carte--large"') || envois);
+    var cartes = (p.prestation === 'support' || p.prestation === 'maintenance') ? '' : ckJCoteCarte(p, d, 'moi') + ckJCoteCarte(p, d, 'eux');
     var extra = '';
     // Un support de com vit par ses créations, l'espace tickets par ses tickets :
     // leur outil de travail vient directement sous le suivi.
@@ -6490,7 +6522,7 @@
     else if (!d && (p.prestation === 'support' || p.prestation === 'maintenance')) extra = '<div class="empty"><div class="spin" style="margin:20px auto"></div></div>';
     else if (!ckJEtapes(p).length) extra = ckJBandePlanning(p);
     var b = ckJBilan(p);
-    var fini = b.faites.length ? '<p class="pj-fini"><b>Terminé récemment :</b> ' + b.faites.slice(-4).reverse().map(function (t) {
+    var fini = b.faites.length ? '<p class="pj-fini"><b>Terminé récemment :</b> ' + b.faites.slice(-3).reverse().map(function (t) {
       return esc(t.titre) + (t.reel ? ' (' + esc(ckpDuree(t.reel)) + ')' : '');
     }).join(' · ') + ' <button class="tps-lien" onclick="ADM.nav(\'done\')">Voir le journal</button></p>' : '';
     var vide = !ckJChemin(p) && !cartes && !extra;
@@ -6618,16 +6650,9 @@
       else if (dd && !ckJOngletPrincipal(CKJ.onglet)) sectionEffets(dd, CKJ.onglet);
       return;
     }
-    var tous = ckJListe();
-    var prs = {}; tous.forEach(function (x) { prs[ckJId(x)] = ckJProchain(x); });
-    var l = tous.filter(function (x) {
-      var q = prs[ckJId(x)].qui;
-      return CKJ.qui === 'moi' ? (q === 'toi' || q === 'retard') : CKJ.qui === 'client' ? q === 'client' : true;
-    });
-    var nMoi = tous.filter(function (x) { var q = prs[ckJId(x)].qui; return q === 'toi' || q === 'retard'; }).length;
-    var nRet = tous.filter(function (x) { return prs[ckJId(x)].qui === 'retard'; }).length;
-    var resume = nMoi ? nMoi + ' projet' + (nMoi > 1 ? 's attendent' : ' attend') + ' quelque chose de toi' + (nRet ? ', <b class="pj-ret">' + nRet + ' en retard</b>' : '')
-      : 'Aucun projet n’attend quelque chose de toi';
+    var l = ckJListe();
+    var clients = ckJClients(l);
+    if (CKJ.client !== '*' && !clients.some(function (c) { return c.key === CKJ.client; })) CKJ.client = clients.length ? clients[0].key : '*';
     // Créer un projet de com : un bouton en haut, qui demande pour quel client.
     var clis = (NAV_CLIENTS || []).filter(function (c) { return !c.archived; });
     var neuf = CKJ.neuf === '*' ? '<div class="ckj-neuf">' +
@@ -6637,17 +6662,32 @@
         'onkeydown="if(event.key===\'Enter\'){event.preventDefault();ADM.ckJCreer(\'*\');}">' +
         '<button class="btn btn--dark btn--sm" onclick="ADM.ckJCreer(\'*\')">Créer</button>' +
         '<button class="pjc-lien" onclick="ADM.ckJNeuf(\'*\')">Annuler</button></div>' : '';
-    var seg = function (id, nom) { return '<button class="ck-segb' + (CKJ.qui === id ? ' on' : '') + '" aria-pressed="' + (CKJ.qui === id) + '" onclick="ADM.ckJSetQui(\'' + id + '\')">' + nom + '</button>'; };
+    var nOffres = l.length;
+    var nav = '<nav class="pj-clis" aria-label="Clients">' +
+      '<button class="pj-cli-b' + (CKJ.client === '*' ? ' on' : '') + '" aria-pressed="' + (CKJ.client === '*') + '" onclick="ADM.ckJSetClient(\'*\')"><span><b>Tous les clients</b><span>' + clients.length + ' client' + (clients.length > 1 ? 's' : '') + ', ' + nOffres + ' offre' + (nOffres > 1 ? 's' : '') + ' ouverte' + (nOffres > 1 ? 's' : '') + '</span></span></button>' +
+      '<hr>' + clients.map(function (c) {
+        var on = CKJ.client === c.key;
+        return '<button class="pj-cli-b' + (on ? ' on' : '') + '" aria-pressed="' + on + '" onclick="ADM.ckJSetClient(\'' + esc(c.key) + '\')"><span><b>' + esc(c.nom) + '</b><span>' +
+          esc(c.offres.length < 3 ? c.offres.map(function (p) { return p.projectLabel; }).join(', ') : c.offres.length + ' offres') + '</span></span>' +
+          (c.retard ? '<span class="pj-cli-n num" title="' + c.retard + ' offre' + (c.retard > 1 ? 's' : '') + ' en retard">' + c.retard + '</span>' : '') + '</button>';
+      }).join('') + '</nav>';
+    var droite;
+    if (!clients.length) droite = '<section class="pj-cli"><p class="pj-vide">Aucune offre en cours. Tout est fini, ou tout reste à ouvrir.</p></section>';
+    else if (CKJ.client === '*') droite = clients.map(function (c) {
+      return '<section class="pj-cli"><div class="pj-cli__h"><h2>' + esc(c.nom) + '</h2><span class="pj-cli__n">' + c.offres.length + ' offre' + (c.offres.length > 1 ? 's' : '') + ' ouverte' + (c.offres.length > 1 ? 's' : '') + '</span></div>' +
+        '<div class="pj-tus">' + c.offres.map(ckJTuile).join('') + '</div></section>';
+    }).join('');
+    else {
+      var cc = clients.filter(function (c) { return c.key === CKJ.client; })[0];
+      droite = '<div class="pj-sel__h"><h2>' + esc(cc.nom) + '</h2><button class="tps-lien" onclick="ADM.openClient(\'' + esc(cc.key) + '\')">Fiche client</button></div>' + cc.offres.map(ckJOffre).join('');
+    }
     setMain('<div class="wrap tps pj-page">' +
-        '<h1 class="pg-h1">Projets</h1>' +
-        '<div class="pj-barre"><div class="pj-barre__g"><div class="ck-segm" role="group" aria-label="Qui a la main">' + seg('moi', 'À moi') + seg('client', 'Au client') + seg('tous', 'Tous') + '</div>' +
-          '<span class="pj-resume num">' + resume + '</span></div>' +
-          (clis.length ? '<button class="btn btn--dark" onclick="ADM.ckJNeuf(\'*\')">Nouveau projet de com</button>' : '') + '</div>' +
+        '<div class="pj-tete"><h1 class="pg-h1">Projets</h1>' + (clis.length ? '<button class="btn btn--dark" onclick="ADM.ckJNeuf(\'*\')">Nouveau projet de com</button>' : '') + '</div>' +
+        '<div class="pj-leg"><span><i class="pj-leg--toi"></i>à toi</span><span><i class="pj-leg--client"></i>chez le client</span><span><i class="pj-leg--pause"></i>en pause</span></div>' +
         neuf +
-        (l.length ? ckJParCliente(l)
-          : '<div class="pj-cli"><p class="pj-vide">' + (CKJ.qui === 'tous' ? 'Aucun projet en cours. Tout est fini, ou tout reste à ouvrir.' : 'Aucun projet dans ce cas.') + '</p></div>') +
+        '<div class="pj-2col">' + nav + '<div class="pj-droite">' + droite + '</div></div>' +
         '<p class="pj-pied"><button class="tps-lien" onclick="ADM.ckJSetFiltre(\'' + (CKJ.filtre === 'actifs' ? 'tout' : 'actifs') + '\')">' +
-          (CKJ.filtre === 'actifs' ? 'Voir aussi les projets terminés' : 'Ne montrer que les projets en cours') + '</button></p>' +
+          (CKJ.filtre === 'actifs' ? 'Voir aussi les offres terminées' : 'Ne montrer que les offres en cours') + '</button></p>' +
       '</div>');
   }
 
@@ -12665,7 +12705,7 @@
     ckLChoisir: ckLChoisir, ckLSemaine: ckLSemaine, ckLPoser: ckLPoser, ckLRetirer: ckLRetirer,
     ckLRegSet: ckLRegSet, ckLRegEnregistrer: ckLRegEnregistrer, ckLRegAnnuler: ckLRegAnnuler,
     ckLSetSimH: ckLSetSimH, ckLSetSimHz: ckLSetSimHz, ckLDepuis: ckLDepuis,
-    ckJSetFiltre: ckJSetFiltre, ckJSetQui: ckJSetQui, ckJOuvrir: ckJOuvrir, ckJFermer: ckJFermer, ckJOnglet: ckJOnglet,
+    ckJSetFiltre: ckJSetFiltre, ckJSetClient: ckJSetClient, ckJOuvrir: ckJOuvrir, ckJFermer: ckJFermer, ckJOnglet: ckJOnglet,
     ckJNeuf: ckJNeuf, ckJCreer: ckJCreer,
     tblStart: tblStart, tblCancel: tblCancel, tblSave: tblSave,
     tblDragStart: tblDragStart, tblDragEnd: tblDragEnd, tblDragOver: tblDragOver,
