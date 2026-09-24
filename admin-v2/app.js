@@ -3150,6 +3150,7 @@
       tabTimerOn(mtClock(sec), PT_TIMER.title);
     }, 1000);
     if (VIEW === 'client') renderClient();
+    else if (VIEW === 'cktaches') renderCockpitTaches();
   }
   function ptPause(id, silent) {
     if (!PT_TIMER || PT_TIMER.id !== id) return;
@@ -3171,6 +3172,7 @@
     if (pit) pit.timeSpentSeconds = total;
     if (!silent && VIEW === 'client') renderClient();
     else if (!silent && VIEW === 'priorities' && PRIO_D) renderPrioBody(PRIO_D);
+    else if (!silent && VIEW === 'cktaches') renderCockpitTaches();
     jpost('/api/clients/' + tkey + '/tasks/' + id, { projectId: 'partner', timeSpentSeconds: total, timeSpentMinutes: Math.round(total / 60), sessionStart: sessStart, sessionEnd: sessEnd }, 'PATCH').then(function (r) { if (!r.ok) toast('Erreur d\'enregistrement du temps'); });
   }
   function ptFind(id) {
@@ -3179,7 +3181,10 @@
     var found = ts.find(function (x) { return x.id === id; });
     if (found) return found;
     // Depuis Priorités : la tâche vit dans PRIO_D.deadlines (avec timeSpentSeconds).
-    return (PRIO_D && Array.isArray(PRIO_D.deadlines)) ? PRIO_D.deadlines.filter(function (x) { return x.id === id; })[0] : null;
+    var pr = (PRIO_D && Array.isArray(PRIO_D.deadlines)) ? PRIO_D.deadlines.filter(function (x) { return x.id === id; })[0] : null;
+    if (pr) return pr;
+    // Depuis l'écran Tâches : la tâche vit dans la liste du cockpit.
+    return ((CKP.dash && CKP.dash.tasksAll) || []).filter(function (x) { return x.id === id; })[0] || null;
   }
   // ── Chrono des tickets (maintenance) : même logique que les tâches partenaire ──
   var TK_TIMER = null, TK_INT = null;
@@ -4828,24 +4833,7 @@
   }
   // La jauge de la journée et sa légende : les quatre natures de capacité,
   // dans les mêmes couleurs et le même ordre partout.
-  function ckpHeroJournee() {
-    var c = ckpCapaciteDu(ckpAuj());
-    var tot = (c.certaine + c.mobilisable) || 1;
-    var pc = function (v) { return Math.max(0, v) / tot * 100; };
-    var seg = function (col, v) { return v > 0 ? '<span style="background:' + col + ';width:' + pc(v).toFixed(1) + '%"></span>' : ''; };
-    var barre = '<div class="ck-hero__b">' +
-      seg('var(--ciel)', Math.min(c.engagee, c.certaine)) +
-      seg('var(--terracotta)', Math.min(c.depassement, c.mobilisable)) +
-      seg('var(--paille)', c.certaine - c.engagee) +
-      seg('rgba(230,229,178,.22)', c.mobilisable - c.depassement) + '</div>';
-    return barre +
-      ckpHeroPuce('var(--ciel)', ckpDuree(c.engagee) + ' déjà engagées : créneaux, rendez-vous et consultation des messages') +
-      ckpHeroPuce('var(--paille)', c.libre > 0
-        ? ckpDuree(c.libre) + ' de vraie place, que tu peux promettre sans rien déplacer'
-        : (c.certaine <= 0 ? 'Ta journée de travail est derrière toi' : 'Plus de place libre aujourd’hui')) +
-      ckpHeroPuce('rgba(230,229,178,.28)', ckpDuree(c.mobilisable) + ' de marge protégée : l’entamer supprime l’amortisseur') +
-      (c.depassement ? ckpHeroPuce('var(--terracotta)', ckpDuree(c.depassement) + ' au-delà de ta capacité du jour') : '');
-  }
+
   function ckpTitre(t, chapo, droite) {
     return '<div class="ck-st"><span class="ck-meta">' + esc(t) + '</span><span class="ck-ln"></span>' +
       (droite || '') + '</div>' + (chapo ? '<p class="ck-chapo2">' + chapo + '</p>' : '');
@@ -4943,35 +4931,10 @@
     return items.sort(function (a, b) { return a.h - b.h; });
   }
 
-  function ckpJourneeCorps() {
-    var lignes = ckpProgramme(ckpAuj()).map(function (x) {
-      var heure = '<div class="ck-jh"><b>' + ckpHM(x.h) + '</b> → ' + ckpHM(x.fin) + '</div>';
-      if (x.type === 'msg') {
-        return '<div class="ck-jr ck-jr--msg">' + heure + '<div><div class="ck-jt">Messages &amp; mails</div>' +
-          '</div>' +
-          '<span class="ck-puce ck-puce--j">' + esc(ckpDuree(x.fin - x.h)) + '</span></div>';
-      }
-      if (x.type === 'rdv') {
-        return '<div class="ck-jr ck-jr--rdv">' + heure + '<div><div class="ck-jt">' + esc(x.e.title || x.e.summary || 'Rendez-vous') + '</div>' +
-          '<div class="ck-js">Rendez-vous fixe</div></div>' +
-          '<span class="ck-puce">' + esc(ckpDuree(x.fin - x.h)) + '</span></div>';
-      }
-      return '<div class="ck-jr">' + heure + '<div><div class="ck-jt">' + esc(x.t.titre) + '</div>' +
-        '<div class="ck-js">' + esc(x.t.qui) + ' · ' + ckpPhraseTemps(x.t) + '</div></div>' +
-        '<button class="btn btn--outline btn--sm" onclick="' + ckpOuvrirArg(x.t) + '">Ouvrir</button></div>';
-    }).join('');
 
-    return '<div class="ck-jour">' + (lignes || '<div class="ck-vide">Rien n’est posé aujourd’hui.</div>') + '</div>';
-  }
   // Passé l'heure de fin, il ne reste plus de capacité du tout : dire
   // « engagées sur 0 min » n'aurait aucun sens.
-  function ckpChapoJournee(c) {
-    if (c.certaine <= 0 && c.engagee <= 0) return 'Ta journée de travail est derrière toi. Ce qui suit attend demain.';
-    if (c.libre > 0) return ckpDuree(c.libre) + ' de vraie place, plus ' + ckpDuree(c.mobilisable) +
-      ' de marge que tu peux mobiliser si tu l’assumes.';
-    return 'Tout est engagé. Les ' + ckpDuree(c.mobilisable) +
-      ' qui restent sont ta marge : les entamer, c’est supprimer l’amortisseur.';
-  }
+
 
   function ckpSecAttention() {
     var l = ckpAttention();
@@ -5029,7 +4992,7 @@
       '<input class="inp" id="ck-r-' + zone + '-' + esc(t.id) + '" placeholder="1h30" aria-label="Travail restant" ' +
       'onclick="event.stopPropagation()" ' +
       'onkeydown="event.stopPropagation();if(event.key===\'Enter\'){event.preventDefault();ADM.ckpReste(' + a + ');}">' +
-      '<button class="btn btn--outline btn--sm" onclick="event.stopPropagation();ADM.ckpReste(' + a + ')">Noter</button></div>';
+      '<button class="btn btn--outline btn--sm" onclick="event.stopPropagation();ADM.ckpReste(' + a + ')">Enregistrer</button></div>';
   }
   /* ── Le temps estimé ────────────────────────────────────────────────────
      « Combien ça va me prendre ? » C'est la question qu'on se pose en posant
@@ -5044,7 +5007,7 @@
       'value="' + esc(t.estim > 0 ? ckpDuree(t.estim) : '') + '" ' +
       'onclick="event.stopPropagation()" ' +
       'onkeydown="event.stopPropagation();if(event.key===\'Enter\'){event.preventDefault();ADM.ckpEstim(' + a + ');}">' +
-      '<button class="btn btn--outline btn--sm" onclick="event.stopPropagation();ADM.ckpEstim(' + a + ')">Noter</button></div>';
+      '<button class="btn btn--outline btn--sm" onclick="event.stopPropagation();ADM.ckpEstim(' + a + ')">Enregistrer</button></div>';
   }
   function ckpEstim(id, zone) {
     var t = ckpToutes().filter(function (x) { return x.id === id; })[0];
@@ -5091,7 +5054,7 @@
       'value="' + esc(pre) + '" aria-label="Temps passé" title="Le temps que tu y as passé" ' +
       'onclick="event.stopPropagation()" ' +
       'onkeydown="event.stopPropagation();if(event.key===\'Enter\'){event.preventDefault();ADM.ckpFinir(' + a + ');}">' +
-      '<button class="btn btn--sm ck-bfin" onclick="event.stopPropagation();ADM.ckpFinir(' + a + ')">' + (zone === 'cap' ? 'Valider' : 'J’ai terminé') + '</button></div>';
+      '<button class="btn btn--sm ck-bfin" onclick="event.stopPropagation();ADM.ckpFinir(' + a + ')">' + (zone === 'cap' || zone === 'tp' ? 'Valider' : 'J’ai terminé') + '</button></div>';
   }
   function ckpFinir(id, zone) {
     var t = ckpTaches().filter(function (x) { return x.id === id; })[0];
@@ -5123,36 +5086,32 @@
   }
 
   /* ════════════════════════════════════════════════════════════════════════
-     TÂCHES — trois vues de LA MÊME liste.
-       Liste     pour décider : Tâche · Travail restant · Organisation · Échéance
-       Colonnes  pour voir où en est chaque chose
-       Journée   pour exécuter : la chronologie, la même que celle de l'Accueil
+     TÂCHES — une liste par client, la tâche choisie ouverte à droite.
 
-     Ce ne sont pas trois écrans. C'est le même jeu de données regardé sous
-     trois angles, avec le MÊME moteur que le cap : une tâche ne peut pas être
-     première ici et cinquième là-bas.
+     Une seule vue : les anciennes « Colonnes » redisaient les filtres et la
+     « Journée » redisait le Planning. Le haut de l'écran tient en une ligne :
+     ce qui reste, deux raccourcis (à estimer, sans créneau) et le tri.
+     La tâche ouverte peut s'agrandir pour le brief, ses tableaux, ses
+     fichiers et les échanges.
      ════════════════════════════════════════════════════════════════════════ */
 
-  var CKT = { vue: 'liste', tri: 'priorite', filtre: 'tout', ouverte: null };
+  var CKT = { tri: 'priorite', filtre: 'tout', ouverte: null, grand: false };
 
-  function ckTSetVue(v) { CKT.vue = v; renderCockpitTaches(); }
   function ckTSetTri(v) { CKT.tri = v; renderCockpitTaches(); }
-  function ckTSetFiltre(v) { CKT.filtre = v; renderCockpitTaches(); }
+  // Cliquer une deuxième fois sur un raccourci le retire : la liste revient entière.
+  function ckTSetFiltre(v) { CKT.filtre = CKT.filtre === v ? 'tout' : v; renderCockpitTaches(); }
   // Arriver sur l'écran Tâches avec, sous les yeux, exactement ce qui manque.
-  function ckTAEstimer() { CKT.filtre = 'aestimer'; CKT.tri = 'priorite'; nav('cktaches'); }
-  // Un seul panneau ouvert à la fois : sinon l'écran redevient une pile.
-  // La ligne de tâche sert à deux écrans : l'écran Tâches et la vue d'ensemble
-  // d'un projet. Elle redessine celui où l'on se trouve, pas l'autre — sinon
-  // ouvrir une tâche depuis un projet renverrait ailleurs sans prévenir.
+  function ckTAEstimer() { CKT.filtre = 'aestimer'; CKT.tri = 'priorite'; CKT.grand = false; nav('cktaches'); }
+  // La ligne de tâche sert aussi à la vue d'ensemble d'un projet : là, elle
+  // se déplie sur place ; ici, elle remplit le panneau de droite.
   function ckTOuvrir(id, ecran) {
-    CKT.ouverte = CKT.ouverte === id ? null : id;
-    if (ecran === 'projets') renderCockpitProjetsBody(); else renderCockpitTaches();
+    if (ecran === 'projets') { CKT.ouverte = CKT.ouverte === id ? null : id; renderCockpitProjetsBody(); return; }
+    CKT.ouverte = id; renderCockpitTaches();
   }
+  function ckTGrand(v) { CKT.grand = !!v; renderCockpitTaches(); window.scrollTo(0, 0); }
 
   function ckTListe() {
     var l = ckpTaches();
-    if (CKT.filtre === 'clientes') l = l.filter(function (t) { return t.src !== 'perso'; });
-    if (CKT.filtre === 'stb') l = l.filter(function (t) { return t.src === 'perso'; });
     if (CKT.filtre === 'sansplace') l = l.filter(function (t) { return ckpAPlanifier(t) > 0; });
     if (CKT.filtre === 'aestimer') l = l.filter(function (t) { return ckpRestant(t) === null; });
     if (CKT.tri === 'echeance') {
@@ -5165,98 +5124,292 @@
     }
     return l;
   }
+  function ckTTrouve(id) { return ckpTaches().filter(function (t) { return t.id === id; })[0] || null; }
 
-  function renderCockpitTaches() {
-    if (!CKP.pret) {
-      setMain(topbar('Tâches') + '<div class="wrap"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
-      return ckpCharger(renderCockpitTaches);
-    }
-    var l = ckTListe();
-    var connus = l.filter(function (t) { return ckpRestant(t) !== null; });
-    var restant = connus.reduce(function (s, t) { return s + ckpRestant(t); }, 0);
-    var aPlanifier = connus.reduce(function (s, t) { return s + (ckpAPlanifier(t) || 0); }, 0);
-    var inconnus = l.length - connus.length;
-
-    setMain(topbar('Tâches') +
-      '<div class="wrap ck">' +
-        '<div class="ck-tete"><div>' +
-          '<h1 class="ck-h1">Tout ce qui reste</h1></div>' +
-          '<div class="ck-date">' + l.length + ' tâches actives · ' + esc(ckpDuree(restant)) + ' à faire' +
-          (aPlanifier ? ' · <b>' + esc(ckpDuree(aPlanifier)) + ' à planifier</b>' : '') +
-          (inconnus ? '<br><span class="ck-inc">' + inconnus + ' sans temps estimé</span>' : '') +
-          '</div></div>' +
-        
-        ckpHero('Aujourd’hui · ' + ckpMaj(ckpJourCourt(ckpAuj())),
-          (ckpCapaciteDu(ckpAuj()).certaine > 0
-            ? esc(ckpDuree(ckpCapaciteDu(ckpAuj()).libre)) + ' <em>disponibles</em>'
-            : '<em>Journée terminée</em>'),
-          l.length + ' tâches actives, ' + esc(ckpDuree(restant)) + ' à faire' +
-          (aPlanifier ? ', dont ' + esc(ckpDuree(aPlanifier)) + ' qui n’ont encore de place nulle part' : '') + '.',
-          ckpHeroJournee()) +
-        ckTBarre() +
-        (CKT.vue === 'liste' ? ckTVueListe(l)
-          : CKT.vue === 'colonnes' ? ckTVueColonnes(l)
-          : ckTVueJournee()) +
-      '</div>');
-  }
-
-  function ckTSegm(courant, choix, geste) {
-    return '<div class="ck-segm">' + choix.map(function (c) {
-      return '<button class="ck-segb ' + (courant === c[0] ? 'on' : '') + '" onclick="ADM.' + geste + '(\'' + c[0] + '\')">' +
-        esc(c[1]) + '</button>';
-    }).join('') + '</div>';
-  }
-  function ckTBarre() {
-    return '<div class="ck-barre2">' +
-      ckTSegm(CKT.vue, [['liste', 'Liste'], ['colonnes', 'Colonnes'], ['journee', 'Journée']], 'ckTSetVue') +
-      '<span class="ck-esp"></span>' +
-      ckTSegm(CKT.filtre, [['tout', 'Tout'], ['clientes', 'Clientes'], ['stb', 'Seed to Bloom'],
-        ['sansplace', 'Sans place'], ['aestimer', 'À estimer']], 'ckTSetFiltre') +
-      (CKT.vue === 'liste' ? '<span class="ck-tri"><span class="ck-meta">Trier par</span>' +
-        ckTSegm(CKT.tri, [['priorite', 'Priorité conseillée'], ['echeance', 'Échéance'], ['restant', 'Travail restant']], 'ckTSetTri') + '</span>' : '') +
-      '</div>';
-  }
-
-  /* ── Liste : quatre colonnes, pas une de plus ─────────────────────────── */
-
-  /* Les tâches se regroupent par cliente : une longue liste mélangée obligeait
-   * à relire le nom de la cliente sur chaque ligne pour savoir de quoi on
-   * parle. Le nom porte le groupe, et chaque groupe dit ce qu'il lui reste.
-   * L'ordre des groupes suit celui des tâches : la plus urgente donne le ton,
-   * donc le tri choisi en haut continue de commander. */
+  /* Les tâches se regroupent par client, Seed to Bloom en dernier : une longue
+   * liste mélangée obligeait à relire le nom sur chaque ligne. L'ordre des
+   * autres groupes suit celui des tâches, donc le tri choisi continue de
+   * commander. */
   function ckTParCliente(l) {
     var ordre = [], par = {};
     l.forEach(function (t) {
-      var c = t.qui || 'Sans cliente';
+      var c = t.qui || 'Sans client';
       if (!par[c]) { par[c] = []; ordre.push(c); }
       par[c].push(t);
     });
+    ordre.sort(function (a, b) { return (a === 'Seed to Bloom') - (b === 'Seed to Bloom'); });
     return ordre.map(function (c) { return { qui: c, taches: par[c] }; });
   }
-  function ckTVueListe(l) {
-    if (!l.length) {
-      return '<div class="ck-tbl"><div class="ck-vide">Rien ici. Ce n’est pas un écran vide, c’est une bonne nouvelle.</div></div>';
+
+  function renderCockpitTaches() {
+    if (!CKP.pret) {
+      setMain('<div class="wrap"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
+      return ckpCharger(renderCockpitTaches);
     }
-    // Les titres de colonnes une seule fois, en tête : les répéter à chaque
-    // groupe ajoutait cinq lignes de bruit à un écran qu'on veut aéré.
-    var entete = '<div class="ck-tbl ck-tbl--th"><div class="ck-th"><span>Tâche</span>' +
-      '<span>Travail restant</span><span>Organisation</span><span>Échéance</span><span></span></div></div>';
-    return entete + ckTParCliente(l).map(function (g) {
-      var connus = g.taches.filter(function (t) { return ckpRestant(t) !== null; });
-      var restant = connus.reduce(function (s2, t) { return s2 + ckpRestant(t); }, 0);
-      var sansPlace = connus.reduce(function (s2, t) { return s2 + (ckpAPlanifier(t) || 0); }, 0);
-      var aEstimer = g.taches.length - connus.length;
-      return '<section class="ckt-g">' +
-        '<div class="ckt-gh"><span class="ckt-gn">' + esc(g.qui) + '</span>' +
-          '<span class="ckt-gm">' + g.taches.length + ' tâche' + (g.taches.length > 1 ? 's' : '') +
-          (restant ? ' · ' + esc(ckpDuree(restant)) + ' à faire' : '') +
-          (sansPlace ? ' · ' + esc(ckpDuree(sansPlace)) + ' sans place' : '') +
-          (aEstimer ? ' · ' + aEstimer + ' à estimer' : '') + '</span></div>' +
-        '<div class="ck-tbl">' +
-          g.taches.map(function (t) { return ckTLigne(t, 'grp'); }).join('') +
-        '</div></section>';
-    }).join('');
+    var tout = ckpTaches(), l = ckTListe();
+    // La tâche ouverte reste celle qu'on a choisie tant qu'elle est dans la
+    // liste ; sinon la première, pour que le panneau ne soit jamais vide.
+    var ouverte = l.filter(function (t) { return t.id === CKT.ouverte; })[0] || l[0] || null;
+    CKT.ouverte = ouverte ? ouverte.id : null;
+    if (CKT.grand && ouverte) return setMain(ckTGrandeVue(ouverte, l));
+    CKT.grand = false;
+
+    var restant = tout.reduce(function (s, t) { return s + (ckpRestant(t) || 0); }, 0);
+    var nEstim = tout.filter(function (t) { return ckpRestant(t) === null; }).length;
+    var nPlace = tout.filter(function (t) { return ckpAPlanifier(t) > 0; }).length;
+    var raccourci = function (v, n, lib) {
+      return n ? '<button class="ckt-rac' + (CKT.filtre === v ? ' on' : '') + '" aria-pressed="' + (CKT.filtre === v) + '" onclick="ADM.ckTSetFiltre(\'' + v + '\')">' + n + ' ' + lib + '</button>' : '';
+    };
+    var tri = '<label class="ckt-tri">Trier par <select onchange="ADM.ckTSetTri(this.value)">' +
+      [['priorite', 'Priorité conseillée'], ['echeance', 'Échéance'], ['restant', 'Travail restant']].map(function (o) {
+        return '<option value="' + o[0] + '"' + (CKT.tri === o[0] ? ' selected' : '') + '>' + o[1] + '</option>';
+      }).join('') + '</select></label>';
+
+    setMain('<div class="wrap ck ckt">' +
+        '<h1 class="ck-h1">Tout ce qui reste</h1>' +
+        '<div class="ckt-barre"><div class="ckt-resume num"><b>' + tout.length + ' tâche' + (tout.length > 1 ? 's' : '') +
+          (restant ? ', ' + esc(ckpDuree(restant)) + ' à faire' : '') + '</b>' +
+          raccourci('aestimer', nEstim, 'à estimer') + raccourci('sansplace', nPlace, 'sans créneau') +
+          (CKT.filtre !== 'tout' ? '<button class="ckt-rac" onclick="ADM.ckTSetFiltre(\'' + CKT.filtre + '\')">Tout voir</button>' : '') +
+        '</div>' + tri + '</div>' +
+        (l.length
+          ? '<div class="ckt-corps"><div class="ckt-groupes">' + ckTParCliente(l).map(ckTGroupe).join('') + '</div>' +
+              ckTPanneauDroit(ouverte) + '</div>'
+          : '<div class="ck-vide">Rien ici. Ce n’est pas un écran vide, c’est une bonne nouvelle.</div>') +
+      '</div>');
   }
+
+  function ckTGroupe(g) {
+    var restant = g.taches.reduce(function (s, t) { return s + (ckpRestant(t) || 0); }, 0);
+    var stb = g.qui === 'Seed to Bloom';
+    return '<section class="ckg">' +
+      '<div class="ckg-h"><h2><span class="ckg-i' + (stb ? ' ckg-i--stb' : '') + '" aria-hidden="true">' + esc(g.qui.charAt(0)) + '</span>' + esc(g.qui) + '</h2>' +
+        '<span class="ckg-n">' + g.taches.length + ' tâche' + (g.taches.length > 1 ? 's' : '') + '</span>' +
+        '<span class="ckg-t num">' + (restant ? esc(ckpDuree(restant)) + ' en tout' : '') + '</span></div>' +
+      g.taches.map(ckTRang).join('') + '</section>';
+  }
+  function ckTJoursRetard(t) { return Math.max(1, Math.round((ckpD(ckpAuj()) - ckpD(t.echeance)) / 86400000)); }
+  function ckTEcheanceCourte(t) {
+    if (t.statut === 'review') return '<span class="ckg-doux">Chez le client</span>';
+    if (!t.echeance) return '<span class="ckg-doux">Sans date</span>';
+    if (ckpEnRetard(t)) return '<b class="ckg-ret">En retard, ' + ckTJoursRetard(t) + ' j</b>';
+    var q = ckpQuand(t.echeance);
+    return '<span class="ckg-doux">' + esc(/^(aujourd|demain)/.test(q) ? ckpMaj(q) : 'Pour ' + q.replace(/^le /, 'le ')) + '</span>';
+  }
+  function ckTRang(t) {
+    var r = ckpRestant(t), on = CKT.ouverte === t.id;
+    return '<div class="ckg-r' + (on ? ' on' : '') + '" tabindex="0" data-kb role="button" aria-pressed="' + on + '" onclick="ADM.ckTOuvrir(\'' + esc(t.id) + '\')">' +
+      '<div><div class="ckg-tt">' + esc(t.titre) + '</div>' + (t.ctx ? '<div class="ckg-ctx">' + esc(t.ctx) + '</div>' : '') + '</div>' +
+      '<div class="num">' + ckTEcheanceCourte(t) + '</div>' +
+      '<div class="ckg-re num">' + (r === null ? '<span class="ck-tag ck-tag--paille">À estimer</span>' : (r ? '<b>' + esc(ckpDuree(r)) + '</b>' : '<span class="ckg-doux">Rien</span>')) + '</div>' +
+      '</div>';
+  }
+
+  /* ── Les faits d'une tâche, dits une fois pour le panneau et la grande vue ── */
+
+  function ckTFaits(t) {
+    var r = ckpRestant(t), auj = ckpAuj();
+    var futur = (t.slots || []).filter(function (c) { return !ckpCreneauPasse(c); })
+      .sort(function (a, b) { return (a.date + a.start) < (b.date + b.start) ? -1 : 1; })[0];
+    var ech;
+    if (!t.echeance) ech = { v: 'Aucune', s: '' };
+    else if (t.statut === 'review') ech = { v: ckpDateLongue(t.echeance), s: 'chez le client' };
+    else if (ckpEnRetard(t)) ech = { v: ckpDateLongue(t.echeance), s: 'en retard de ' + ckTJoursRetard(t) + ' j', ret: true };
+    else ech = { v: ckpDateLongue(t.echeance), s: ckpQuand(t.echeance) === 'le ' + ckpDateLongue(t.echeance) ? '' : ckpQuand(t.echeance) };
+    return {
+      ech: ech,
+      reste: r === null ? { v: 'À estimer', s: '' } : { v: r ? ckpDuree(r) : 'Rien', s: t.estim ? 'sur ' + ckpDuree(t.estim) + ' prévues' : '' },
+      passe: { v: t.reel ? ckpDuree(t.reel) : 'Rien encore' },
+      creneau: futur ? { v: ckpMaj(ckpQuand(futur.date)) + ', ' + ckpHM(futur.start || 0), s: ckpDuree(futur.minutes || 0) } : { v: 'Aucun', s: '' },
+      futur: futur, auj: auj
+    };
+  }
+  // Pas de minutes à zéro : « 1 h », pas « 1 h 00 ».
+  function ckTPetitLien(txt, geste) { return '<button class="ckt-pl" onclick="event.stopPropagation();' + geste + '">' + esc(txt) + '</button>'; }
+  function ckTCorriger(t) {
+    return ckpRestant(t) === null
+      ? '<div class="ckt-champ">' + ckpChampEstim(t, 'pan') + '</div>'
+      : '<details class="ckt-cor"><summary>Corriger</summary>' + ckpChampReste(t, 'pan') + '</details>';
+  }
+  function ckTPartenaire(t) { return t.src === 'client' && (t.projet || 'partner') === 'partner'; }
+
+  /* Le menu « ⋯ » : les gestes rares ou à conséquences, jamais à côté du
+   * geste principal. Supprimer est toujours dernier, séparé. */
+  function ckTMenu(t, vers) {
+    var k = esc(t.key), i = esc(t.id), p = esc(t.projet || 'partner');
+    var items = [];
+    if (ckTPartenaire(t)) {
+      items.push(['Envoyer en révision', 'ADM.prioSendReview(\'' + k + '\',\'' + i + '\',\'\')']);
+      items.push([PT_TIMER && PT_TIMER.id === t.id ? 'Arrêter le chrono' : 'Lancer le chrono',
+        PT_TIMER && PT_TIMER.id === t.id ? 'ADM.ptPause(\'' + i + '\')' : 'ADM.ptStart(\'' + i + '\',\'' + k + '\')']);
+      items.push(['Ajouter un lien', 'ADM.prioAddDlvLink(\'' + k + '\',\'' + i + '\',\'' + p + '\')']);
+    }
+    items.push([t.src === 'perso' ? 'Ouvrir dans Ma semaine' : 'Ouvrir dans la fiche client', ckpOuvrirArg(t)]);
+    if (t.statut === 'review') items.push(['Clôturer sans attendre le client', 'ADM.ckTCloturer(\'' + i + '\')']);
+    var del = t.src === 'ticket' ? '' : '<hr><button role="menuitem" class="ckm-i ckm-i--del" onclick="ADM.ckTSupprimer(\'' + i + '\')">Supprimer…</button>';
+    return '<div class="ckm' + (vers === 'haut' ? ' ckm--haut' : '') + '">' +
+      '<button class="ckm-b" aria-haspopup="menu" aria-expanded="false" aria-label="Plus d’actions" onclick="event.stopPropagation();ADM.ckMenu(this)">' + ICON_POINTS + '</button>' +
+      '<div class="ckm-l" role="menu" hidden>' + items.map(function (x) {
+        return '<button role="menuitem" class="ckm-i" onclick="' + x[1] + '">' + esc(x[0]) + '</button>';
+      }).join('') + del + '</div></div>';
+  }
+  var ICON_POINTS = '<svg width="18" height="4" viewBox="0 0 18 4" aria-hidden="true" fill="currentColor"><circle cx="2" cy="2" r="1.7"/><circle cx="9" cy="2" r="1.7"/><circle cx="16" cy="2" r="1.7"/></svg>';
+  var ICON_AGRANDIR = '<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 2.5h4v4M13.5 2.5 9 7M6.5 13.5h-4v-4M2.5 13.5 7 9"/></svg>';
+  var ICON_REDUIRE = '<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M13.5 6.5h-4v-4M9.5 6.5 14 2M2.5 9.5h4v4M6.5 9.5 2 14"/></svg>';
+
+  // Un seul menu ouvert à la fois ; un clic ailleurs ou Échap le referme.
+  function ckMenu(b) {
+    var l = b.nextElementSibling, ouvrir = l.hidden;
+    ckMenuFermer();
+    if (!ouvrir) return;
+    l.hidden = false; b.setAttribute('aria-expanded', 'true');
+    var premier = l.querySelector('.ckm-i'); if (premier) premier.focus();
+  }
+  function ckMenuFermer() {
+    document.querySelectorAll('.ckm-l').forEach(function (m) { m.hidden = true; });
+    document.querySelectorAll('.ckm-b').forEach(function (b) { b.setAttribute('aria-expanded', 'false'); });
+  }
+  document.addEventListener('click', function (e) { if (!e.target.closest || !e.target.closest('.ckm')) ckMenuFermer(); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') ckMenuFermer(); });
+
+  function ckTBoutonFini(t) {
+    return '<details class="ckt-fini"><summary class="ckt-bp">J’ai terminé</summary>' + ckpChampFini(t, 'tp') + '</details>';
+  }
+  function ckTBrief(t) {
+    var avecBlocs = !!(t.blocks && t.blocks.length);
+    // ptBlocksHtml pose son propre intitulé : le titre de la section le dit déjà.
+    if (avecBlocs) return ptBlocksHtml({ blocks: t.blocks }, t.key, '').replace(/<div class="micro"[^>]*>[^<]*<\/div>/, '');
+    return t.brief ? '<div class="ckt-bt">' + admRichSafe(t.brief) + '</div>' : '';
+  }
+
+  /* ── Le panneau de droite : qui, quoi, les trois repères, le brief, le geste ── */
+
+  function ckTPanneauDroit(t) {
+    if (!t) return '';
+    var f = ckTFaits(t);
+    var brief = ckTBrief(t);
+    var lignes = t.table && Array.isArray(t.table.rows) ? t.table.rows.length : 0;
+    return '<aside class="ckp" aria-label="Tâche ouverte">' +
+      '<div class="ckp-h"><div class="ckp-qui">' + ckTQui(t) +
+        '<button class="ckp-ag" onclick="ADM.ckTGrand(1)">' + ICON_AGRANDIR + ' Agrandir</button></div>' +
+        '<h2 class="ckp-t">' + esc(t.titre) + '</h2></div>' +
+      '<dl class="ckp-f num">' +
+        '<div><dt>Échéance</dt><dd class="' + (f.ech.ret ? 'ckp-ret' : '') + '"><b>' + esc(f.ech.v) + '</b>' + (f.ech.s ? '<span>' + esc(f.ech.s) + '</span>' : '') + '</dd></div>' +
+        '<div><dt>Encore à faire</dt><dd><b>' + esc(f.reste.v) + '</b>' + (f.reste.s ? '<span>' + esc(f.reste.s) + '</span>' : '') + ckTCorriger(t) + '</dd></div>' +
+        '<div><dt>Créneau</dt><dd><b>' + esc(f.creneau.v) + '</b>' + ckTPetitLien(f.futur ? 'Déplacer' : 'Poser un créneau', 'ADM.ckLDepuis(\'' + esc(t.id) + '\')') + '</dd></div>' +
+      '</dl>' +
+      (brief || lignes ? '<div class="ckp-b"><h3>Son brief</h3>' + (brief ? '<div class="ckp-bt">' + brief + '</div>' : '') +
+        (lignes ? '<p class="ckp-tab">Avec un tableau de ' + lignes + ' ligne' + (lignes > 1 ? 's' : '') + '. ' +
+          ckTPetitLien('Le voir en grand', 'ADM.ckTGrand(1)') + '</p>' : '') + '</div>' : '') +
+      '<div class="ckp-a">' + ckTBoutonFini(t) +
+        (t.src === 'client' ? '<button class="pjc-lien" onclick="ADM.prioAddDlv(\'' + esc(t.key) + '\',\'' + esc(t.id) + '\',\'' + esc(t.projet || 'partner') + '\')">Ajouter un livrable</button>' : '') +
+        '<span class="ck-esp"></span>' + ckTMenu(t, 'haut') + '</div>' +
+      '</aside>';
+  }
+  function ckTQui(t) {
+    return (t.src === 'perso'
+      ? '<span><b>Seed to Bloom</b>' + (t.ctx ? ', ' + esc(t.ctx) : '') + '</span>'
+      : '<span><button class="ckp-cl" onclick="ADM.openClient(\'' + esc(t.key) + '\')">' + esc(t.qui) + '</button>' + (t.ctx ? ', ' + esc(t.ctx) : '') + '</span>');
+  }
+
+  /* ── La grande vue : le travail à gauche, les repères à droite ─────────── */
+
+  function ckTGrandeVue(t, l) {
+    var f = ckTFaits(t);
+    var memes = l.filter(function (x) { return x.qui === t.qui; });
+    var suiv = memes[memes.indexOf(t) + 1] || (memes[0] !== t ? memes[0] : null);
+    var prop = function (lab, v, sous, cls) {
+      return '<div class="ckgv-p"><span>' + esc(lab) + '</span><div class="num ' + (cls || '') + '"><b>' + esc(v) + '</b>' + (sous || '') + '</div></div>';
+    };
+    var petit = function (s) { return s ? '<small>' + esc(s) + '</small>' : ''; };
+    var chrono = ckTPartenaire(t)
+      ? (PT_TIMER && PT_TIMER.id === t.id
+        ? '<small class="ckgv-ch">En cours : <span id="pt-timer-' + esc(t.id) + '">' + esc(mtClock(PT_TIMER.base + (Date.now() - PT_TIMER.startedAt) / 1000)) + '</span></small>' + ckTPetitLien('Arrêter le chrono', 'ADM.ptPause(\'' + esc(t.id) + '\')')
+        : ckTPetitLien('Lancer le chrono', 'ADM.ptStart(\'' + esc(t.id) + '\',\'' + esc(t.key) + '\')'))
+      : '';
+    var brief = ckTBrief(t);
+    var table = t.table ? briefTableHtml(t.table) : '';
+    var ech = (t.echanges || []).slice().reverse();
+    var fs = t.fichiers || [];
+    var fichier = function (a) {
+      return '<div class="ckgv-fi"><a href="/api/clients/' + esc(t.key) + '/files/' + encodeURIComponent(a.key) + '/download" target="_blank" rel="noopener">' + esc(a.name || 'fichier') + '</a></div>';
+    };
+    return '<div class="wrap ck ckgv">' +
+      '<div class="ckgv-fil"><div><button class="ckt-pl" onclick="ADM.ckTGrand(0)">Tout ce qui reste</button><span aria-hidden="true"> / </span>' + esc(t.titre) + '</div>' +
+        (suiv ? '<div>Suivante chez ' + esc(t.qui) + ' : ' + ckTPetitLien(suiv.titre, 'ADM.ckTOuvrir(\'' + esc(suiv.id) + '\')') + '</div>' : '') + '</div>' +
+      '<header class="ckgv-h"><div class="ckp-qui">' + ckTQui(t) +
+          '<button class="ckp-ag" onclick="ADM.ckTGrand(0)">' + ICON_REDUIRE + ' Réduire</button></div>' +
+        '<h1 class="ckgv-t">' + esc(t.titre) + '</h1>' +
+        '<div class="ckgv-pq">' + (ckpEnRetard(t) && t.statut !== 'review' ? '<span class="ck-tag ck-tag--retard">En retard de ' + ckTJoursRetard(t) + ' jour' + (ckTJoursRetard(t) > 1 ? 's' : '') + '</span>' : '') +
+          '<span>' + esc(ckTRaison(t)) + '</span></div></header>' +
+      '<div class="ckgv-g"><div class="ckgv-m">' +
+        '<section class="ckgv-s"><h2>Ce qu’il faut faire</h2>' + (brief || '<p class="ckg-doux">Pas de brief pour cette tâche.</p>') + table + '</section>' +
+        (t.src !== 'perso' ? '<section class="ckgv-s"><h2>Échanges' + (t.src === 'client' ? ' avec ' + esc(t.qui) : '') + '</h2>' +
+          (ech.length ? ech.map(function (m) {
+            var mien = m.author === 'cindy';
+            var att = (m.attachments || []).map(fichier).join('');
+            return '<div class="ckgv-msg"><div class="ckgv-mq"><b>' + (mien ? 'Toi' : esc(t.qui)) + '</b>' + (m.at ? ' · ' + esc(fmtDT(m.at)) : '') + '</div>' +
+              (m.text ? '<p>' + esc(m.text) + '</p>' : '') + att + '</div>';
+          }).join('') : '<p class="ckg-doux">Rien n’a encore été dit sur cette tâche.</p>') +
+          (t.src === 'client' ? '<div class="ckgv-rep"><textarea id="ckt-rep-' + esc(t.id) + '" class="inp" rows="2" aria-label="Répondre à ' + esc(t.qui) + '" placeholder="Répondre à ' + esc(t.qui) + '…"></textarea>' +
+            '<button class="pjc-lien" onclick="ADM.ckTRepondre(\'' + esc(t.id) + '\')">Envoyer</button></div>' : '') +
+          '</section>' : '') +
+      '</div><aside class="ckgv-c">' +
+        '<section class="ckgv-s"><h2>Le temps</h2>' +
+          prop('Échéance', f.ech.v, petit(f.ech.s), f.ech.ret ? 'ckp-ret' : '') +
+          prop('Encore à faire', f.reste.v, petit(f.reste.s) + ckTCorriger(t)) +
+          prop('Déjà passé', f.passe.v, chrono) +
+          prop('Créneau', f.creneau.v, ckTPetitLien(f.futur ? 'Déplacer' : 'Poser un créneau', 'ADM.ckLDepuis(\'' + esc(t.id) + '\')')) +
+        '</section>' +
+        (t.src !== 'perso' ? '<section class="ckgv-s"><h2>Fichiers</h2>' + (fs.length ? fs.map(fichier).join('') : '<p class="ckg-doux">Aucun fichier.</p>') +
+          (t.lien ? '<div class="ckgv-fi"><a href="' + esc(/^https?:\/\//i.test(t.lien) ? t.lien : 'https://' + t.lien) + '" target="_blank" rel="noopener">Le lien donné par le client</a></div>' : '') +
+          (t.src === 'client' ? '<button class="pjc-lien" onclick="ADM.prioAddDlv(\'' + esc(t.key) + '\',\'' + esc(t.id) + '\',\'' + esc(t.projet || 'partner') + '\')">Ajouter un livrable</button>' : '') +
+          '</section>' : '') +
+      '</aside></div>' +
+      '<div class="ckgv-a">' + ckTBoutonFini(t) + '<span class="ckg-doux">Le temps passé te sera demandé avant de clôturer.</span><span class="ck-esp"></span>' + ckTMenu(t, 'haut') + '</div>' +
+      '</div>';
+  }
+
+  // Pourquoi maintenant, sans redire le retard que la pastille dit déjà.
+  function ckTRaison(t) {
+    var s = ckpSignaux(t).filter(function (x) { return !/^En retard/.test(x.texte); });
+    if (!s.length) return ckpEnRetard(t) ? '' : 'Rien ne la presse aujourd’hui.';
+    return s.slice(0, 2).map(function (x) { return x.texte; }).join(' · ');
+  }
+
+  /* ── Les gestes de cet écran ─────────────────────────────────────────── */
+
+  function ckTRecharger() { CKP.pret = false; renderMain(); }
+  function ckTRepondre(id) {
+    var t = ckTTrouve(id), champ = el('ckt-rep-' + id);
+    var v = champ ? (champ.value || '').trim() : '';
+    if (!t || !v) { if (champ) champ.focus(); return; }
+    jpost('/api/clients/' + t.key + '/tasks/' + t.id + '/comments', { projectId: t.projet || 'partner', text: v }).then(function (r) {
+      if (r.ok) { toast('Message envoyé à ' + t.qui); ckTRecharger(); } else toast('Erreur, message non envoyé');
+    }).catch(function () { toast('Erreur, message non envoyé'); });
+  }
+  function ckTCloturer(id) {
+    var t = ckTTrouve(id); if (!t) return;
+    admConfirm({ title: 'Clôturer cette tâche ?', message: 'Elle sera marquée terminée sans attendre la validation du client.', yes: 'Oui, clôturer', no: 'Annuler' }, function () {
+      var body = { status: 'done' };
+      if (t.src === 'client') body.projectId = t.projet || 'partner';
+      if (t.src === 'ticket') body.projectId = 'maintenance';
+      jpost(ckpUrl(t), body, 'PATCH').then(function (r) { if (r.ok) { toast('Tâche clôturée'); ckTRecharger(); } else toast('Erreur'); }).catch(function () { toast('Erreur'); });
+    });
+  }
+  function ckTSupprimer(id) {
+    var t = ckTTrouve(id); if (!t) return;
+    admConfirm({ title: 'Supprimer cette tâche ?', message: 'La tâche, ses échanges et son temps passé seront effacés, définitivement. Pour une tâche finie, choisis plutôt « J’ai terminé ».', yes: 'Oui, supprimer', no: 'Annuler', danger: true }, function () {
+      if (PT_TIMER && PT_TIMER.id === id) ptPause(id, true);
+      var url = t.src === 'perso' ? '/api/admin/tasks/' + t.id : '/api/clients/' + t.key + '/tasks/' + t.id + '?projectId=' + encodeURIComponent(t.projet || 'partner');
+      api(url, { method: 'DELETE' }).then(function (r) {
+        if (r.ok) { toast('Tâche supprimée'); CKT.ouverte = null; CKT.grand = false; ckTRecharger(); } else toast('Erreur');
+      }).catch(function () { toast('Erreur'); });
+    });
+  }
+
+  /* ── La ligne dépliable, gardée pour la vue d’ensemble d’un projet ───── */
+
   function ckTLigne(t, ecran) {
     var r = ckpRestant(t), ap = ckpAPlanifier(t), pf = ckpPlanifieFutur(t);
     var org = ap > 0
@@ -5390,44 +5543,6 @@
     var s = ckpSignaux(t);
     if (!s.length) return 'Rien ne la presse aujourd’hui.';
     return s.slice(0, 2).map(function (x) { return x.texte; }).join(' · ');
-  }
-
-  /* ── Colonnes : où en est chaque chose ───────────────────────────────── */
-
-  function ckTVueColonnes(l) {
-    var cols = [
-      ['Sans place', function (t) { return ckpAPlanifier(t) > 0; }],
-      ['À estimer', function (t) { return ckpRestant(t) === null; }],
-      ['En cours', function (t) { return t.statut === 'in_progress'; }],
-      ['Chez la cliente', function (t) { return t.statut === 'review'; }],
-      ['Planifié', function () { return true; }]
-    ];
-    var pris = {};
-    return '<div class="ck-cols">' + cols.map(function (c) {
-      var dedans = l.filter(function (t) { return !pris[t.id] && c[1](t); });
-      dedans.forEach(function (t) { pris[t.id] = 1; });
-      var min = dedans.reduce(function (s, t) { return s + (ckpRestant(t) || 0); }, 0);
-      return '<div class="ck-col"><div class="ck-colh"><span class="ck-meta">' + esc(c[0]) + '</span>' +
-        '<span class="ck-colc">' + dedans.length + (min ? ' · ' + esc(ckpDuree(min)) : '') + '</span></div>' +
-        (dedans.length ? dedans.map(ckTCarte).join('') : '<div class="ck-colv">Rien</div>') + '</div>';
-    }).join('') + '</div>';
-  }
-  function ckTCarte(t) {
-    var r = ckpRestant(t);
-    return '<div class="ck-crt" tabindex="0" data-kb onclick="ADM.ckTSetVue(\'liste\');ADM.ckTOuvrir(\'' + esc(t.id) + '\')">' +
-      '<div class="ck-crtt">' + esc(t.titre) + '</div>' +
-      '<div class="ck-crtm">' + ckpPuceQui(t) +
-      (r === null ? '<span class="ck-inc">à estimer</span>' : (r ? '<span class="ck-doux">' + esc(ckpDuree(r)) + '</span>' : '')) + '</div>' +
-      (t.echeance ? '<div class="ck-crte ' + (ckpEnRetard(t) ? 'ck-ret' : '') + '">' +
-        esc(ckpEnRetard(t) ? 'En retard' : ckpQuand(t.echeance)) + '</div>' : '') +
-      '</div>';
-  }
-
-  /* ── Journée : exactement la chronologie de l'Accueil ─────────────────── */
-
-  function ckTVueJournee() {
-    var c = ckpCapaciteDu(ckpAuj());
-    return '<p class="ck-chapo2">' + esc(ckpChapoJournee(c)) + '</p>' + ckpJourneeCorps();
   }
 
   /* ════════════════════════════════════════════════════════════════════════
@@ -7732,7 +7847,8 @@
     var at = (AT_D && AT_D.tasksAll), pr = (PRIO_D && PRIO_D.deadlines), ad = (AT_D && AT_D.deadlines);
     // On interroge d'abord la liste de l'écran où tu te trouves : c'est celle
     // qu'une mise à jour immédiate doit toucher pour que l'affichage bouge.
-    var lists = VIEW === 'alltasks' ? [at, pr, ad] : [pr, at, ad];
+    var ck = CKP.dash && CKP.dash.tasksAll;
+    var lists = VIEW === 'alltasks' ? [at, pr, ad, ck] : VIEW === 'cktaches' ? [ck, pr, at, ad] : [pr, at, ad, ck];
     for (var i = 0; i < lists.length; i++) {
       var l = lists[i];
       if (!Array.isArray(l)) continue;
@@ -7755,6 +7871,7 @@
       : { url: '/api/clients/' + x.key + '/tasks/' + x.id, pid: 'partner', ticket: false };
   }
   function afterDeliverable(key, id) {
+    if (VIEW === 'cktaches') { CKP.pret = false; renderMain(); return; }
     if (VIEW === 'alltasks') {
       var dr = el('at-dr');
       // Le panneau ouvert doit montrer l'envoi qu'on vient de faire.
@@ -7858,6 +7975,7 @@
           var it = taskCtx(key, id);
           if (it) { it.status = 'review'; it.reviewLink = link; it.reviewSentAt = new Date().toISOString(); }
           if (VIEW === 'alltasks') { renderAllTasksBody(); atOpen(key, id); }
+          else if (VIEW === 'cktaches') { CKP.pret = false; renderMain(); }
           else if (it && PRIO_D) { PRIO_TAB = 'waiting'; renderPrioBody(PRIO_D); }
           else { PRIO_TAB = 'waiting'; renderPriorities(); }
         });
@@ -12378,7 +12496,8 @@
     openClient: openClient, tab: tab, subtab: subtab, ffShow: ffShow, saveInfos: saveInfos, saveForfait: saveForfait, forfaitOverrideAdd: forfaitOverrideAdd, forfaitOverrideDel: forfaitOverrideDel, testEmail: testEmail, toggleOffer: toggleOffer, addOffer: addOffer, setBanner: setBanner, setMaintenance: setMaintenance, renameSupport: renameSupport, cloturerProjet: cloturerProjet, rouvrirProjet: rouvrirProjet, addSupportQuick: addSupportQuick, delSupport: delSupport, crAdd: crAdd, crSet: crSet, crCloturer: crCloturer, crRouvrir: crRouvrir, cgToggle: cgToggle, cgNeuve: cgNeuve, pjEdit: pjEdit, crReply: crReply, crDel: crDel, crAddVersion: crAddVersion, crAddVersionLink: crAddVersionLink, crDelVersion: crDelVersion, pjAdd: pjAdd, pjSet: pjSet, pjMove: pjMove, pjDel: pjDel, pjStart: pjStart, pjNotify: pjNotify, pjToggle: pjToggle, deleteClient: deleteClient,
     toggleTicketsSpace: toggleTicketsSpace, ticketStatus: ticketStatus, ticketDue: ticketDue, ticketTime: ticketTime, ticketDelete: ticketDelete, ticketForfait: ticketForfait, ticketProposeDate: ticketProposeDate,
     ckpReste: ckpReste, ckpEstim: ckpEstim, ckpFinir: ckpFinir, ckpPasMaintenant: ckpPasMaintenant, ckpOrdreSysteme: ckpOrdreSysteme,
-    ckTSetVue: ckTSetVue, ckTSetTri: ckTSetTri, ckTSetFiltre: ckTSetFiltre, ckTOuvrir: ckTOuvrir,
+    ckTSetTri: ckTSetTri, ckTSetFiltre: ckTSetFiltre, ckTOuvrir: ckTOuvrir, ckTGrand: ckTGrand, ckMenu: ckMenu,
+    ckTRepondre: ckTRepondre, ckTCloturer: ckTCloturer, ckTSupprimer: ckTSupprimer,
     ckTAEstimer: ckTAEstimer,
     ckLChoisir: ckLChoisir, ckLSemaine: ckLSemaine, ckLPoser: ckLPoser, ckLRetirer: ckLRetirer,
     ckLRegSet: ckLRegSet, ckLRegEnregistrer: ckLRegEnregistrer, ckLRegAnnuler: ckLRegAnnuler,
