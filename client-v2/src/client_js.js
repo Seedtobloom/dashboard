@@ -1095,7 +1095,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
           (partTasks.length ? '<div style="display:grid;gap:0">' +
             partTasks.slice(0,6).map(function(t) {
               var isDone = t.status === 'done';
-              return '<div onclick="cliOpenTaskFromHome(\''+p.id+'\',\''+t.id+'\')" style="display:flex;align-items:center;gap:14px;padding:11px 6px;border-bottom:1px solid var(--bone-d);cursor:pointer;border-radius:6px;transition:background 120ms" onmouseenter="this.style.background=\'var(--bone)\'" onmouseleave="this.style.background=\'transparent\'">' +
+              return '<div tabindex="0" data-kb onclick="cliOpenTaskFromHome(\''+p.id+'\',\''+t.id+'\')" style="display:flex;align-items:center;gap:14px;padding:11px 6px;border-bottom:1px solid var(--bone-d);cursor:pointer;border-radius:6px;transition:background 120ms" onmouseenter="this.style.background=\'var(--bone)\'" onmouseleave="this.style.background=\'transparent\'">' +
                 partDiamond(t.urgency) +
                 '<span style="flex:1;font-family:var(--font-display);font-size:17px;color:var(--terre)'+(isDone?';opacity:0.5;text-decoration:line-through':'')+'">' + esc(t.title) + '</span>' +
                 cliStatusChip(t.status, t.stage) +
@@ -1243,7 +1243,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
         '<div class="cp-ph__cols">' +
           '<div class="cp-ph__left">' +
             cpBuildEditableIntro(p.id, isPart) +
-            (isPart ? (function(){ var rv=partTasks.filter(function(t){return t.status==='review'&&!t.archived;}); if(!rv.length) return ''; var n=rv.length; return '<div onclick="cliOpenTaskFromHome(\''+p.id+'\',\''+rv[0].id+'\')" style="display:flex;align-items:center;gap:12px;padding:14px 18px;border-radius:var(--radius-3);background:#F8F6F2;border:1px solid #CD8F6E;margin-bottom:20px;cursor:pointer">'+cpIcon('check',18,'color:#5A2A11')+'<div style="flex:1"><div style="font-family:var(--font-display);font-size:18px;color:#5A2A11">'+n+' livrable'+(n>1?'s':'')+' attend'+(n>1?'ent':'')+' votre validation</div><div style="font-family:var(--font-micro);font-size:9.5px;letter-spacing:0.06em;text-transform:uppercase;color:#5A2A11;margin-top:2px">À valider chez vous</div></div>'+cpIcon('arrow',15,'color:#5A2A11')+'</div>'; })() : '') +
+            (isPart ? (function(){ var rv=partTasks.filter(function(t){return t.status==='review'&&!t.archived;}); if(!rv.length) return ''; var n=rv.length; return '<div tabindex="0" data-kb onclick="cliOpenTaskFromHome(\''+p.id+'\',\''+rv[0].id+'\')" style="display:flex;align-items:center;gap:12px;padding:14px 18px;border-radius:var(--radius-3);background:#F8F6F2;border:1px solid #CD8F6E;margin-bottom:20px;cursor:pointer">'+cpIcon('check',18,'color:#5A2A11')+'<div style="flex:1"><div style="font-family:var(--font-display);font-size:18px;color:#5A2A11">'+n+' livrable'+(n>1?'s':'')+' attend'+(n>1?'ent':'')+' votre validation</div><div style="font-family:var(--font-micro);font-size:9.5px;letter-spacing:0.06em;text-transform:uppercase;color:#5A2A11;margin-top:2px">À valider chez vous</div></div>'+cpIcon('arrow',15,'color:#5A2A11')+'</div>'; })() : '') +
             (isPart ? '<button onclick="cliNewDemande(\''+p.id+'\')" style="display:flex;align-items:center;justify-content:center;gap:9px;width:100%;max-width:420px;padding:16px 24px;border:none;border-radius:var(--radius-3);background:var(--terre);color:var(--paille);font-family:var(--font-ui);font-size:15px;font-weight:600;cursor:pointer;letter-spacing:0.01em;box-shadow:none;margin-bottom:22px;transition:opacity .15s" onmouseover="this.style.opacity=\'.88\'" onmouseout="this.style.opacity=\'1\'"><span style="font-size:18px;line-height:1">+</span> Nouvelle demande</button>' : '') +
             cpBuildHomeBlocks(p.id) +
             cpSecWrap(p.id, 'prochaine', nextCard) +
@@ -1511,7 +1511,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
           cpAvatar('Cindy','cindy',34) +
           '<div style="line-height:1.2;min-width:0">' +
             '<div style="font-family:var(--font-display);font-style:italic;font-size:16px;color:var(--brume)">Cindy</div>' +
-            '<div style="font-family:var(--font-micro);font-size:9px;color:rgba(242,229,194,0.5);letter-spacing:0.1em;text-transform:uppercase">Votre interlocutrice</div>' +
+            '<div style="font-family:var(--font-micro);font-size:9px;color:rgba(242,229,194,0.62);letter-spacing:0.1em;text-transform:uppercase">Votre interlocutrice</div>' +
           '</div>' +
         '</div>' +
       '</div>' +
@@ -1577,12 +1577,12 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       cpIcon('arrow', 12, 'color:var(--terre-400)') +
       '<span class="cp-ptopbar__title">' + pageTitle + '</span>' +
       '<div class="cp-ptopbar__right">' +
-        (pendingActions > 0 ? '<span style="display:inline-flex;align-items:center;gap:6px;padding:5px 12px;background:#F8F6F2;border:1px solid #CD8F6E;border-radius:999px;font-family:var(--font-micro);font-size:10.5px;font-weight:600;color:#5A2A11;letter-spacing:0.04em;cursor:pointer" onclick="cpOpenFirstPending()" title="Actions en attente">' + cpIcon('zap',12,'color:#5A2A11') + ' ' + pendingActions + ' action' + (pendingActions > 1 ? 's requises' : ' requise') + '</span>' : '') +
+        (pendingActions > 0 ? '<span style="display:inline-flex;align-items:center;gap:6px;padding:5px 12px;background:#F8F6F2;border:1px solid #CD8F6E;border-radius:999px;font-family:var(--font-micro);font-size:10.5px;font-weight:600;color:#5A2A11;letter-spacing:0.04em;cursor:pointer" role="button" tabindex="0" data-kb onclick="cpOpenFirstPending()" title="Actions en attente">' + cpIcon('zap',12,'color:#5A2A11') + ' ' + pendingActions + ' action' + (pendingActions > 1 ? 's requises' : ' requise') + '</span>' : '') +
         (bkUrl ? '<a class="cp-ptopbar__guide" href="' + esc(bkUrl) + '" target="_blank" rel="noreferrer" title="Réserver un créneau">' + cpIcon('calendar',13) + ' Réserver</a>' : '') +
         '<button class="cp-ptopbar__guide" onclick="cpOpenMessages()" title="Une question ? Écrivez à Cindy">' + cpIcon('question',13) + ' Une question ?</button>' +
         '<button class="cp-ptopbar__guide" onclick="cpOpenGuide()" title="Guide">' + cpIcon('info',13) + ' Guide</button>' +
         (accessCode ? '<span class="cp-ptopbar__code">' + cpIcon('lock',13) + ' ' + esc(accessCode) + '</span>' : '') +
-        '<span class="cp-ptopbar__av" style="cursor:pointer" onclick="cpConfirmLogout()" title="Se déconnecter">' + avInitial + '</span>' +
+        '<span class="cp-ptopbar__av" style="cursor:pointer" role="button" tabindex="0" data-kb onclick="cpConfirmLogout()" title="Se déconnecter">' + avInitial + '</span>' +
       '</div>' +
     '</div>';
     // Mobile topbar (hidden on desktop via CSS) — avec guide et déconnexion
@@ -3029,7 +3029,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
         var rows = groups[k].map(function(t){
           return '<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:7px" onmouseover="this.style.background=\'#F8F6F2\'" onmouseout="this.style.background=\'transparent\'">' +
             '<span style="color:'+(isArch?'#5A2A11':'#F8F6F2')+';font-size:13px;flex-shrink:0">'+(isArch?'🗄':'✓')+'</span>' +
-            '<span onclick="'+mkOpen(t.id)+'" style="flex:1;font-size:12px;color:var(--terre,#110704);cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;'+(isArch?'':'text-decoration:line-through;')+'opacity:0.85">'+esc(t.title)+'</span>' +
+            '<span role="button" tabindex="0" data-kb onclick="'+mkOpen(t.id)+'" style="flex:1;font-size:12px;color:var(--terre,#110704);cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;'+(isArch?'':'text-decoration:line-through;')+'opacity:0.85">'+esc(t.title)+'</span>' +
             (t.pole?'<span style="font-size:10px;color:#5A2A11;flex-shrink:0">'+esc(t.pole)+'</span>':'') +
             (t.timeSpentMinutes?'<span style="font-size:11px;color:#5A2A11;flex-shrink:0">'+partFmtH(t.timeSpentMinutes)+'</span>':'') +
             (isArch
@@ -4104,7 +4104,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
         // le clic (sinon le panneau s'ouvrirait) et le glisser (sinon attraper
         // l'icône déplacerait la demande dans le calendrier).
         var dupBtn = '<button draggable="false" onmousedown="event.stopPropagation()" ondragstart="event.preventDefault();event.stopPropagation()" onclick="event.stopPropagation();cliDupliquerDemande(\''+t.id+'\',\''+pid+'\')" title="Dupliquer cette demande" style="margin-left:auto;flex-shrink:0;width:21px;height:21px;border:1px solid rgba(17,7,4,0.12);border-radius:6px;background:rgba(255,255,255,0.85);color:#5A2A11;cursor:pointer;font-size:11px;line-height:1;padding:0;display:flex;align-items:center;justify-content:center">⧉</button>';
-        return '<div draggable="true" ondragstart="cliDragStart(event,\''+t.id+'\')" onclick="event.stopPropagation();cliOpenTaskDrawer(\''+pid+'\',\''+t.id+'\')" style="padding:6px 8px;border-radius:7px;background:'+(isDone?'#F8F6F2':soft)+';cursor:pointer;margin-top:5px;'+(isActive?'box-shadow:none':'')+'">' +
+        return '<div draggable="true" ondragstart="cliDragStart(event,\''+t.id+'\')" tabindex="0" data-kb onclick="event.stopPropagation();cliOpenTaskDrawer(\''+pid+'\',\''+t.id+'\')" style="padding:6px 8px;border-radius:7px;background:'+(isDone?'#F8F6F2':soft)+';cursor:pointer;margin-top:5px;'+(isActive?'box-shadow:none':'')+'">' +
           '<div style="display:flex;align-items:center;gap:5px">' +
             _stIc +
             '<span title="'+esc(t.title)+'" style="flex:1;min-width:0;font-size:13px;font-weight:400;color:'+(isDone?'#F8F6F2':'var(--terre,#110704)')+';overflow:hidden;text-overflow:ellipsis;white-space:nowrap;'+(isDone?'text-decoration:line-through':'')+'">'+esc(t.title)+'</span>' +
@@ -6761,7 +6761,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
       '.cp-sidebar__brand-icon,.cp-sidebar__name{color:'+lt+'}',
       '.cp-sidebar__logo,.cp-sidebar__greeting{color:rgba('+rgb+',.6)}',
       '.cp-cindy__name{color:'+lt+'}.cp-cindy{border-bottom-color:rgba('+rgb+',.1)}',
-      '.cp-nav__label,.cp-nav__sublabel{color:rgba('+rgb+',.45)}',
+      '.cp-nav__label,.cp-nav__sublabel{color:rgba('+rgb+',.62)}',
       '.cp-nav__item{color:rgba('+rgb+',.7)}',
       '.cp-nav__item>svg{color:rgba('+rgb+',.55)}',
       '.cp-nav__item:hover{background:rgba('+rgb+',.08);color:'+lt+'}',
@@ -7828,6 +7828,12 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
       .catch(function(e){ showError(e && e.message === 'revoked' ? 'revoked' : ''); });
   }
 
+  // Clavier : les éléments cliquables qui ne sont pas des boutons (data-kb)
+  // s'activent avec Entrée ou Espace, comme un bouton.
+  document.addEventListener('keydown', function (e) {
+    var t = e.target;
+    if ((e.key === 'Enter' || e.key === ' ') && t && t.hasAttribute && t.hasAttribute('data-kb')) { e.preventDefault(); t.click(); }
+  });
   loadCpColors();
   if (!TOKEN || !API_BASE) { showError(); return; }
   loadClientApp();

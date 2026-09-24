@@ -417,8 +417,8 @@
           '<p class="login__eyebrow">Espace administration</p>' +
           '<h1 class="login__h">Connexion</h1>' +
           '<p class="login__s">Entrez vos deux clés d\'accès pour ouvrir le cockpit.</p>' +
-          '<div class="field"><label>Clé A</label><div class="ifield"><input id="lg-a" class="inp" type="password" autocomplete="off" maxlength="32"><button type="button" class="login__eye" data-t="lg-a" aria-label="Afficher ou masquer">' + EYE_SVG + '</button></div></div>' +
-          '<div class="field"><label>Clé B</label><div class="ifield"><input id="lg-b" class="inp" type="password" autocomplete="off" maxlength="32"><button type="button" class="login__eye" data-t="lg-b" aria-label="Afficher ou masquer">' + EYE_SVG + '</button></div></div>' +
+          '<div class="field"><label for="lg-a">Clé A</label><div class="ifield"><input id="lg-a" class="inp" type="password" autocomplete="off" maxlength="32"><button type="button" class="login__eye" data-t="lg-a" aria-label="Afficher ou masquer">' + EYE_SVG + '</button></div></div>' +
+          '<div class="field"><label for="lg-b">Clé B</label><div class="ifield"><input id="lg-b" class="inp" type="password" autocomplete="off" maxlength="32"><button type="button" class="login__eye" data-t="lg-b" aria-label="Afficher ou masquer">' + EYE_SVG + '</button></div></div>' +
           '<label class="login__remember"><input type="checkbox" id="lg-remember" checked> Rester connectée 30 jours sur cet appareil</label>' +
           '<div class="err" id="lg-err"' + (err ? ' style="display:block"' : '') + '>' + (err ? esc(err) : '') + '</div>' +
           '<button class="btn btn--dark btn--block" id="lg-btn" onclick="ADM.login()">Se connecter</button>' +
@@ -489,11 +489,11 @@
         '<span style="width:22px;height:22px;border-radius:50%;background:rgba(242,229,194,0.16);display:inline-flex;align-items:center;justify-content:center;font-family:var(--font-display);font-style:italic;font-size:15px">' + esc((nm[0] || '?').toUpperCase()) + '</span>' +
         (pr.online ? '<span title="En ligne" style="position:absolute;bottom:-1px;right:-1px;width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 0 2px var(--nuit,#2a1f16)"></span>' : '') +
         '</span>';
-      var head = '<button class="navitem' + (isCur ? ' active' : '') + '" onclick="ADM.navClientTab(\'' + c.key + '\',null)" style="padding-right:6px" title="' + esc(pr.label) + '">' +
+      var head = '<div class="navrow"><button class="navitem' + (isCur ? ' active' : '') + '" onclick="ADM.navClientTab(\'' + c.key + '\',null)" style="padding-right:36px" title="' + esc(pr.label) + '">' +
         av +
         '<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(nm) + '</span>' +
         (c.unread > 0 ? badge(c.unread) : '') +
-        '<span onclick="event.stopPropagation();ADM.navToggleClient(\'' + c.key + '\')" title="' + (open ? 'Replier' : 'Déplier') + '" style="margin-left:auto;padding:2px 7px;opacity:0.55;font-size:15px">' + (open ? '▾' : '▸') + '</span></button>';
+        '</button><button type="button" class="navchev" onclick="ADM.navToggleClient(\'' + c.key + '\')" aria-expanded="' + open + '" aria-label="' + (open ? 'Replier' : 'Déplier') + ' ' + esc(nm) + '" title="' + (open ? 'Replier' : 'Déplier') + '">' + (open ? '▾' : '▸') + '</button></div>';
       var subsHtml = open ? subs.map(function (sub) {
         var on = isCur && TAB === sub[0];
         return '<button class="navitem" onclick="ADM.navClientTab(\'' + c.key + '\',\'' + sub[0] + '\')" style="padding:6px 12px 6px 44px;font-size:15px;' + (on ? 'color:var(--paille)' : 'opacity:0.72') + '">' +
@@ -535,7 +535,7 @@
       '<div class="side__brand"><div class="side__logo" title="Seed to Bloom">' + LOGO_SVG + '</div><div class="s">Administration</div></div>' +
       '<nav class="side__nav" id="side-nav">' + buildNavHtml() + '</nav>' +
       '<div id="nav-timer-slot">' + navTimerHtml() + '</div>' +
-      '<div class="side__foot"><button class="btn btn--outline btn--block btn--sm" style="color:var(--paille);border-color:rgba(242,229,194,0.25)" onclick="ADM.logout()">Déconnexion</button></div>' +
+      '<div class="side__foot"><button class="btn btn--outline btn--block btn--sm" style="background:transparent;color:var(--paille);border-color:rgba(242,229,194,0.25)" onclick="ADM.logout()">Déconnexion</button></div>' +
       '</aside><div class="main" id="main"></div></div>' +
       '<div id="notif-panel" class="notifpanel" style="display:none"></div>' +
       '<button id="notif-fab" class="notiffab" style="display:none" onclick="ADM.notifToggle()" title="Nouvelles tâches de vos clients"></button>';
@@ -643,7 +643,7 @@
       '<div style="font-size:13px;letter-spacing:0.09em;text-transform:uppercase;color:var(--paille);opacity:0.65;margin-bottom:5px">Chrono en cours</div>' +
       '<div id="nav-timer-clock" style="font-family:var(--font-micro);font-variant-numeric:tabular-nums;font-weight:700;font-size:23px;color:var(--paille);letter-spacing:0.02em">' + mtClock(sec) + '</div>' +
       '<div style="font-size:15px;color:var(--paille);opacity:0.85;margin:3px 0 10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(run.title || 'tâche') + '</div>' +
-      '<button class="btn btn--outline btn--block btn--sm" style="color:var(--paille);border-color:rgba(242,229,194,0.3)" onclick="ADM.navTimerPause()">⏸ Mettre en pause</button>' +
+      '<button class="btn btn--outline btn--block btn--sm" style="background:transparent;color:var(--paille);border-color:rgba(242,229,194,0.3)" onclick="ADM.navTimerPause()">⏸ Mettre en pause</button>' +
     '</div>';
   }
   function refreshNavTimer() { var s = el('nav-timer-slot'); if (s) s.innerHTML = navTimerHtml(); }
@@ -1120,13 +1120,13 @@
     var rows = MISSION_LIST.map(function (t, i) {
       return '<div class="setline">' +
         '<span class="setline__dot" style="background:' + MT_DOTS[i % MT_DOTS.length] + '"></span>' +
-        '<input class="inp" id="mt-type-' + i + '" value="' + esc(t) + '">' +
-        '<button class="setline__x" onclick="ADM.missionTypeDel(' + i + ')" title="Retirer">✕</button></div>';
+        '<input class="inp" id="mt-type-' + i + '" value="' + esc(t) + '" aria-label="Type de mission ' + (i + 1) + '">' +
+        '<button class="setline__x" onclick="ADM.missionTypeDel(' + i + ')" title="Retirer" aria-label="Retirer ce type">✕</button></div>';
     }).join('');
     return '<div class="card infocard" style="background:var(--card)"><h3>Types de mission</h3>' +
       '<div class="micro mb" style="text-transform:none;letter-spacing:0;line-height:1.6;color:var(--terre-600)">Ces catégories sont proposées au client quand il crée une tâche, et servent au suivi du temps par type. Modifie, ajoute ou retire selon tes besoins, puis enregistre.</div>' +
       (rows || '<div class="empty">Aucun type. Ajoutez-en un ci-dessous.</div>') +
-      '<div class="setadd"><input class="inp" id="mt-type-new" placeholder="Nouveau type de mission" onkeydown="if(event.key===\'Enter\'){event.preventDefault();ADM.missionTypeAdd();}"><button class="btn btn--outline btn--sm" onclick="ADM.missionTypeAdd()">+ Ajouter</button></div>' +
+      '<div class="setadd"><input class="inp" id="mt-type-new" aria-label="Nouveau type de mission" placeholder="Nouveau type de mission" onkeydown="if(event.key===\'Enter\'){event.preventDefault();ADM.missionTypeAdd();}"><button class="btn btn--outline btn--sm" onclick="ADM.missionTypeAdd()">+ Ajouter</button></div>' +
       '<div class="row row--end mt"><button class="btn btn--dark btn--sm" onclick="ADM.missionTypeSave()">Enregistrer</button></div></div>';
   }
   function renderReglagesBody() { var b = el('regl-body'); if (b) b.innerHTML = missionBody(); }
@@ -1863,7 +1863,7 @@
   function atCalItem(r) {
     var cli = r.kind === 'client';
     var oc = cli ? 'ADM.atOpen(\'' + r.key + '\',\'' + r.id + '\')' : 'ADM.atSetSec(\'entreprise\')';
-    return '<div class="atcal__i' + (cli ? '' : ' atcal__i--perso') + '" title="' + esc((cli ? (r.who ? r.who + ' · ' : '') : 'Mon entreprise · ') + (r.title || '')) + '" onclick="' + oc + '">' + esc(r.title || '') + '</div>';
+    return '<div class="atcal__i' + (cli ? '' : ' atcal__i--perso') + '" title="' + esc((cli ? (r.who ? r.who + ' · ' : '') : 'Mon entreprise · ') + (r.title || '')) + '" tabindex="0" data-kb onclick="' + oc + '">' + esc(r.title || '') + '</div>';
   }
   function atRefresh() { dashGet(true).then(function (d) { AT_D = d; if (VIEW === 'alltasks') renderAllTasksBody(); }).catch(function () {}); }
   function atSetFilter(f) { AT_FILTER = f; renderAllTasksBody(); }
@@ -1929,7 +1929,7 @@
     var oc = 'ADM.atOpen(\'' + x.key + '\',\'' + x.id + '\')';
     var plan = (!x.dueDate && x.status !== 'review' && x.status !== 'waiting_client')
       ? '<input type="date" class="at-plan" id="atp-' + x.id + '"><button class="pbtn pbtn--ok" onclick="ADM.atPlan(\'' + x.key + '\',\'' + x.id + '\')">Planifier</button>' : '';
-    return '<div class="at-task" onclick="' + oc + '"><span class="at-task__st">' + atStIcon(x.status) + '</span>' +
+    return '<div class="at-task" tabindex="0" data-kb onclick="' + oc + '"><span class="at-task__st">' + atStIcon(x.status) + '</span>' +
       '<div class="at-task__b"><div class="at-task__t">' + esc(x.title || 'Tâche') + '</div>' +
       '<div class="at-task__m"><span>' + esc(x.client || '') + '</span><span class="at-otag ' + otag[1] + '">' + otag[0] + '</span>' + atReviewChip(x) + '<span>' + esc(AT_SL[x.status] || 'À faire') + '</span>' + atTimeLbl(x) + atDueLbl(x) + '</div></div>' +
       '<div class="at-act" onclick="event.stopPropagation()">' + plan +
@@ -1997,7 +1997,7 @@
       ['archive', 'Archivées', 'var(--bone-d)'],
     ].map(function (ch) {
       var on = AT_FILTER === ch[0];
-      return '<span class="at-chip' + (on ? ' on' : '') + '" onclick="ADM.atSetFilter(\'' + ch[0] + '\')">' + (ch[2] ? '<i style="background:' + ch[2] + '"></i>' : '') + esc(ch[1]) + '<b style="margin-left:6px;opacity:.55">' + (cs[ch[0]] || 0) + '</b></span>';
+      return '<span class="at-chip' + (on ? ' on' : '') + '" role="button" tabindex="0" data-kb onclick="ADM.atSetFilter(\'' + ch[0] + '\')">' + (ch[2] ? '<i style="background:' + ch[2] + '"></i>' : '') + esc(ch[1]) + '<b style="margin-left:6px;opacity:.55">' + (cs[ch[0]] || 0) + '</b></span>';
     }).join('') + '</div>';
     // Regroupé par urgence
     var listHtml = atListHtml(rows);
@@ -2687,7 +2687,7 @@
       var wnRange = _mon.getDate() + ' – ' + _sun.getDate() + ' ' + _sun.toLocaleDateString('fr-FR', { month: 'long' });
       function wkTaskChip(o) {
         var dragA = (!o.rev && o.id) ? ' draggable="true" ondragstart="ADM.prioDragStart(\'' + o.key + '\',\'' + o.id + '\')" ondragend="ADM.prioDragEnd()"' : '';
-        return '<span class="wtask' + (o.rev ? ' wtask--rev' : '') + '"' + dragA + ' onclick="ADM.openClient(\'' + o.key + '\')"><span>' + esc(o.t) + '</span>' + (o.c ? ' <em>' + esc(o.c) + '</em>' : '') + (o.est ? ' <span class="tchip">' + fmtMin(o.est) + '</span>' : '') + '</span>';
+        return '<span class="wtask' + (o.rev ? ' wtask--rev' : '') + '"' + dragA + ' tabindex="0" data-kb onclick="ADM.openClient(\'' + o.key + '\')"><span>' + esc(o.t) + '</span>' + (o.c ? ' <em>' + esc(o.c) + '</em>' : '') + (o.est ? ' <span class="tchip">' + fmtMin(o.est) + '</span>' : '') + '</span>';
       }
       var wkAgenda = colKeys.map(function (k) {
         var s = dShort(k), items = P2_dayRaw[k] || [];
@@ -2697,11 +2697,11 @@
       }).join('');
       var wkGrid = colKeys.map(function (k) {
         var s = dShort(k), items = P2_dayRaw[k] || [];
-        var body = items.length ? items.map(function (o) { return '<div class="gtask" onclick="ADM.openClient(\'' + o.key + '\')"><div class="gtask__t">' + esc(o.t) + '</div><div class="gtask__m">' + esc(o.c) + '</div></div>'; }).join('') : '<div class="gcol__empty">Rien de prévu</div>';
+        var body = items.length ? items.map(function (o) { return '<div class="gtask" tabindex="0" data-kb onclick="ADM.openClient(\'' + o.key + '\')"><div class="gtask__t">' + esc(o.t) + '</div><div class="gtask__m">' + esc(o.c) + '</div></div>'; }).join('') : '<div class="gcol__empty">Rien de prévu</div>';
         return '<div class="gcol' + (s.today ? ' gcol--today' : '') + '"><div class="gcol__h">' + s.wd + (s.d ? ' ' + s.d : '') + '</div>' + body + '</div>';
       }).join('');
       var wkList = '';
-      colKeys.forEach(function (k) { var s = dShort(k); (P2_dayRaw[k] || []).forEach(function (o) { wkList += '<div class="li' + (s.today ? ' li--today' : '') + '" onclick="ADM.openClient(\'' + o.key + '\')"><span class="li__d">' + s.wd + (s.d ? ' ' + s.d : '') + '</span><span class="li__t">' + esc(o.t) + '</span><span class="li__c">' + esc(o.c) + '</span></div>'; }); });
+      colKeys.forEach(function (k) { var s = dShort(k); (P2_dayRaw[k] || []).forEach(function (o) { wkList += '<div class="li' + (s.today ? ' li--today' : '') + '" tabindex="0" data-kb onclick="ADM.openClient(\'' + o.key + '\')"><span class="li__d">' + s.wd + (s.d ? ' ' + s.d : '') + '</span><span class="li__t">' + esc(o.t) + '</span><span class="li__c">' + esc(o.c) + '</span></div>'; }); });
       if (!wkList) wkList = '<div class="wa__empty" style="padding:8px 2px">Rien de prévu cette semaine.</div>';
       var hasWeek = true;
       var blockWeek =
@@ -2942,7 +2942,7 @@
       '<div class="atrow">' +
         '<input type="checkbox" class="atrow__cb" onchange="ADM.myTaskStatus(\'' + t.id + '\',\'done\')" title="Marquer comme fait">' +
         '<span class="pdot" style="background:' + pc + ';flex-shrink:0"></span>' +
-        '<span class="atrow__t" onclick="ADM.mtToggleRow(\'' + t.id + '\')">' + esc(t.title) + (t.mode ? ' ' + mtModePill(t.mode) : '') + (Array.isArray(t.tags) && t.tags.length ? ' ' + t.tags.map(function (tg) { return mtTagPill(tg); }).join(' ') : '') + '</span>' +
+        '<span class="atrow__t" role="button" tabindex="0" data-kb onclick="ADM.mtToggleRow(\'' + t.id + '\')">' + esc(t.title) + (t.mode ? ' ' + mtModePill(t.mode) : '') + (Array.isArray(t.tags) && t.tags.length ? ' ' + t.tags.map(function (tg) { return mtTagPill(tg); }).join(' ') : '') + '</span>' +
         noteMark +
         // Dans la vue réunie, la ligne dit pour qui elle est ; ailleurs (le
         // tableau, les archives) la question ne se pose pas, on n'affiche rien.
@@ -3080,7 +3080,7 @@
     return '<div class="atrow">' +
       '<input type="checkbox" class="atrow__cb" onchange="ADM.atCloseTask(\'' + x.key + '\',\'' + x.id + '\')" title="Clôturer">' +
       '<span class="pdot" style="background:#2c4a72;flex-shrink:0"></span>' +
-      '<span class="atrow__t" onclick="ADM.mtGoTask(\'' + x.key + '\',\'' + x.id + '\')">' + esc(x.title || 'Tâche') + '</span>' +
+      '<span class="atrow__t" role="button" tabindex="0" data-kb onclick="ADM.mtGoTask(\'' + x.key + '\',\'' + x.id + '\')">' + esc(x.title || 'Tâche') + '</span>' +
       mtWhoPill(r) +
       (x.status === 'in_progress' ? '<span class="micro" style="color:var(--muted);text-transform:none;letter-spacing:0;flex-shrink:0">en cours</span>' : '') +
       (x.dueDate ? '<span style="flex-shrink:0">' + atDueLbl({ dueDate: x.dueDate }) + '</span>' : '') +
@@ -3827,7 +3827,7 @@
     var trames = tramesGet();
     var cards = trames.map(function (t) {
       var secs = trameParse(t.content); var nq = 0; secs.forEach(function (s) { nq += s.questions.length; });
-      return '<div onclick="ADM.trameOpen(\'' + t.id + '\')" style="position:relative;cursor:pointer;background:var(--card);border-radius:16px;padding:20px 22px;display:flex;flex-direction:column">' +
+      return '<div tabindex="0" data-kb onclick="ADM.trameOpen(\'' + t.id + '\')" style="position:relative;cursor:pointer;background:var(--card);border-radius:16px;padding:20px 22px;display:flex;flex-direction:column">' +
         '<button onclick="event.stopPropagation();ADM.trameEditLib(\'' + t.id + '\')" title="Modifier cette trame" style="position:absolute;top:14px;right:14px;border:none;background:var(--bone);border-radius:999px;width:32px;height:32px;cursor:pointer;color:var(--terre-600);font-size:15px;display:grid;place-items:center">✎</button>' +
         '<span style="width:40px;height:40px;border-radius:11px;background:var(--gold-chip);color:var(--terre);display:grid;place-items:center;margin-bottom:13px"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8 10h8M8 14h5"/><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>' +
         '<span style="font-family:\'Alegreya\',Georgia,serif;font-style:italic;font-size:23px;color:var(--terre);line-height:1.12">' + esc(t.title || 'Sans titre') + '</span>' +
@@ -4046,7 +4046,7 @@
         (hasContent && !c.done ? '<button class="ibbtn' + (ml ? '' : ' ibbtn--dark') + '" onclick="event.stopPropagation();ADM.visPresent(\'' + c.id + '\')">Mode appel</button>' : '') +
         icalBtn +
         '<button class="ibbtn" onclick="event.stopPropagation();ADM.visOpen(\'' + c.id + '\')">' + (c.done ? 'Compte-rendu' : 'Détails') + '</button>';
-      return '<div class="viorow' + (soon ? ' viorow--soon' : '') + (past || c.done ? ' viorow--past' : '') + '" style="cursor:pointer" onclick="ADM.visOpen(\'' + c.id + '\')">' +
+      return '<div class="viorow' + (soon ? ' viorow--soon' : '') + (past || c.done ? ' viorow--past' : '') + '" style="cursor:pointer" tabindex="0" data-kb onclick="ADM.visOpen(\'' + c.id + '\')">' +
         '<div class="vio__d"><b>' + esc(dayB.charAt(0).toUpperCase() + dayB.slice(1)) + '</b><span>' + esc(hourS) + '</span></div>' +
         '<span class="vio__a">' + esc(ini) + '</span>' +
         '<div class="vio__m"><div class="vio__t">' + esc(name) + '</div><div class="vio__s" style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">' + esc(catLbl) + (nSteps ? ' · ' + nSteps + ' étape' + (nSteps > 1 ? 's' : '') : '') + tChip + '</div></div>' +
@@ -5281,7 +5281,7 @@
       : (pf ? esc(ckpDuree(pf)) + ' planifiées' + ckTQuandPose(t)
             : (r === null ? '<span class="ck-doux">à estimer d’abord</span>' : '<span class="ck-doux">Rien à poser</span>'));
     var ech = ckpChEcheance(t);
-    return '<div class="ck-tr ' + (CKT.ouverte === t.id ? 'on' : '') + '" onclick="ADM.ckTOuvrir(\'' + esc(t.id) + '\'' +
+    return '<div class="ck-tr ' + (CKT.ouverte === t.id ? 'on' : '') + '" tabindex="0" data-kb onclick="ADM.ckTOuvrir(\'' + esc(t.id) + '\'' +
       (ecran ? ',\'' + ecran + '\'' : '') + ')">' +
       // Regroupée par cliente, la ligne ne redit pas son nom : le groupe le
       // porte. Sans contexte de projet, elle n'écrit rien plutôt que de le
@@ -5431,7 +5431,7 @@
   }
   function ckTCarte(t) {
     var r = ckpRestant(t);
-    return '<div class="ck-crt" onclick="ADM.ckTSetVue(\'liste\');ADM.ckTOuvrir(\'' + esc(t.id) + '\')">' +
+    return '<div class="ck-crt" tabindex="0" data-kb onclick="ADM.ckTSetVue(\'liste\');ADM.ckTOuvrir(\'' + esc(t.id) + '\')">' +
       '<div class="ck-crtt">' + esc(t.titre) + '</div>' +
       '<div class="ck-crtm">' + ckpPuceQui(t) +
       (r === null ? '<span class="ck-inc">à estimer</span>' : (r ? '<span class="ck-doux">' + esc(ckpDuree(r)) + '</span>' : '')) + '</div>' +
@@ -5596,7 +5596,7 @@
         '<div class="ckl-b" style="height:' + hauteur.toFixed(0) + 'px">' + bandePause + trous + blocs + '</div>' +
         '<div class="ckl-f' + (c.depassement && d >= auj ? ' ckl-f--d' : '') + '">' + esc(pied) + '</div></div>';
     }).join('');
-    return '<div class="ckl-gr"><div class="ckl-r" style="height:' + hauteur.toFixed(0) + 'px">' + rail + '</div>' + cols + '</div>';
+    return '<div class="ckl-gr" tabindex="0" role="region" aria-label="Grille de la semaine"><div class="ckl-r" style="height:' + hauteur.toFixed(0) + 'px">' + rail + '</div>' + cols + '</div>';
   }
 
   function ckLBarreSansPlace() {
@@ -5710,8 +5710,9 @@
   }
   function ckLRegAnnuler() { CKL.reg = null; renderCockpitPlanningBody(); }
 
-  function ckLChampReg(champ, valeur, large) {
+  function ckLChampReg(champ, valeur, large, nom) {
     return '<input class="inp ckl-i' + (large ? ' ckl-i--l' : '') + '" value="' + esc(valeur) + '" ' +
+      (nom ? 'aria-label="' + esc(nom) + '" ' : '') +
       'onchange="ADM.ckLRegSet(\'' + champ + '\',this.value)" ' +
       'onkeydown="if(event.key===\'Enter\'){event.preventDefault();this.blur();}">';
   }
@@ -5723,7 +5724,7 @@
     var ouvres = []; for (var k = 1; k <= 7; k++) if (r.days[k] > 0) ouvres.push(k);
     var lignesJours = [1, 2, 3, 4, 5, 6, 7].map(function (dw) {
       return '<div class="ckl-jr"><span>' + esc(ckpMaj(CKP_JOURS[dw % 7])) + '</span>' +
-        ckLChampReg('jour' + dw, r.days[dw] ? ckpDuree(r.days[dw]) : '') + '</div>';
+        ckLChampReg('jour' + dw, r.days[dw] ? ckpDuree(r.days[dw]) : '', false, 'Heures travaillées, ' + ckpMaj(CKP_JOURS[dw % 7])) + '</div>';
     }).join('');
     // L'écart entre les enveloppes et la semaine se DIT, il ne se corrige pas
     // en douce : c'est sa répartition, pas la nôtre.
@@ -5738,7 +5739,7 @@
       var part = totEnv ? (r.env[e[0]] / totEnv * 100) : 0;
       return '<div class="ckl-rl"><span>' + esc(e[1]) + '</span>' +
         '<span class="ckl-ja"><span class="ckl-jab" style="width:' + part.toFixed(1) + '%"></span></span>' +
-        ckLChampReg('env' + e[0], r.env[e[0]] ? ckpDuree(r.env[e[0]]) : '') + '</div>';
+        ckLChampReg('env' + e[0], r.env[e[0]] ? ckpDuree(r.env[e[0]]) : '', false, 'Enveloppe ' + e[1]) + '</div>';
     }).join('');
 
     return '<section class="ck-sec">' + ckpTitre('Ta semaine de référence',
@@ -5748,15 +5749,15 @@
         '<div class="ckl-regc"><div class="ck-meta">Tes journées</div>' + lignesJours +
           '<div class="ckl-tot">' + esc(ckpDuree(totJours)) + ' par semaine, sur ' + ouvres.length + ' jour' + (ouvres.length > 1 ? 's' : '') + '</div></div>' +
         '<div class="ckl-regc"><div class="ck-meta">Tes horaires</div>' +
-          '<div class="ckl-rl"><span>Début</span>' + ckLChampReg('startHour', ckpHM(Math.round(r.startHour * 60))) + '</div>' +
-          '<div class="ckl-rl"><span>Fin</span>' + ckLChampReg('endHour', ckpHM(Math.round(r.endHour * 60))) + '</div>' +
-          '<div class="ckl-rl"><span>Pause, début</span>' + ckLChampReg('lunchStart', ckpHM(Math.round(r.lunchStart * 60))) + '</div>' +
-          '<div class="ckl-rl"><span>Pause, fin</span>' + ckLChampReg('lunchEnd', ckpHM(Math.round(r.lunchEnd * 60))) + '</div>' +
+          '<div class="ckl-rl"><span>Début</span>' + ckLChampReg('startHour', ckpHM(Math.round(r.startHour * 60)), false, 'Début de journée') + '</div>' +
+          '<div class="ckl-rl"><span>Fin</span>' + ckLChampReg('endHour', ckpHM(Math.round(r.endHour * 60)), false, 'Fin de journée') + '</div>' +
+          '<div class="ckl-rl"><span>Pause, début</span>' + ckLChampReg('lunchStart', ckpHM(Math.round(r.lunchStart * 60)), false, 'Début de la pause') + '</div>' +
+          '<div class="ckl-rl"><span>Pause, fin</span>' + ckLChampReg('lunchEnd', ckpHM(Math.round(r.lunchEnd * 60)), false, 'Fin de la pause') + '</div>' +
           '<div class="ckl-note">Ces horaires dessinent la grille et disent ce qui est déjà passé dans la journée.</div></div>' +
         '<div class="ckl-regc"><div class="ck-meta">Tes enveloppes, par semaine</div>' + lignesEnv +
           '<div class="ckl-rl ckl-rl--d"><span>dont messages &amp; mails</span>' +
-            '<span class="ckl-dm">tous les jours à ' + ckLChampReg('msgHeure', ckpHM(r.msgHeure)) +
-            ' pendant ' + ckLChampReg('msgDuree', r.msgDuree ? ckpDuree(r.msgDuree) : '0 min') + '</span>' +
+            '<span class="ckl-dm">tous les jours à ' + ckLChampReg('msgHeure', ckpHM(r.msgHeure), false, 'Heure des messages') +
+            ' pendant ' + ckLChampReg('msgDuree', r.msgDuree ? ckpDuree(r.msgDuree) : '0 min', false, 'Durée des messages') + '</span>' +
             '<b>' + esc(ckpDuree(msgSem)) + '</b></div>' +
           '<div class="ckl-tot">' + esc(motEcart) + '</div></div>' +
       '</div>' +
@@ -5790,7 +5791,7 @@
       'Ce que ça donnerait, avec le travail déjà engagé. À toi de décider ensuite : le cockpit ne te dit ni oui ni non.') +
       '<div class="ckl-proj">' +
         '<div class="ckl-projf"><span>Un projet de</span>' +
-          '<input class="inp ckl-i" type="number" min="0" step="0.5" value="' + esc(CKL.simH) + '" oninput="ADM.ckLSetSimH(this.value)">' +
+          '<input class="inp ckl-i" type="number" aria-label="Heures du projet à absorber" min="0" step="0.5" value="' + esc(CKL.simH) + '" oninput="ADM.ckLSetSimH(this.value)">' +
           '<span>heures à absorber</span>' +
           '<div class="ck-segm">' + Object.keys(H).map(function (k) {
             return '<button class="ck-segb' + (CKL.simHz === k ? ' on' : '') + '" onclick="ADM.ckLSetSimHz(\'' + k + '\')">' + esc(H[k][1]) + '</button>';
@@ -8893,7 +8894,7 @@
        * mode d'échéance, dates) n'apparaît que si on clique sur le crayon :
        * huit champs par jalon rendaient le planning illisible. */
       var edite = !!PJ_ED[j.id];
-      var ligne = '<div class="cgj-l" onclick="ADM.pjEdit(\'' + j.id + '\')" title="' +
+      var ligne = '<div class="cgj-l" tabindex="0" data-kb onclick="ADM.pjEdit(\'' + j.id + '\')" title="' +
         (edite ? 'Replier' : 'Modifier ce jalon') + '">' +
         '<span class="cgj-d">' + esc(r.label || 'Sans date') + '</span>' +
         '<span class="cgj-t">' + esc(j.title || 'Sans titre') + '</span>' +
@@ -9140,19 +9141,19 @@
     if (cr.length) {
       var ouvertes = cr.filter(function (x) { return !x.clotureAt; }).length;
       return ouvertes ? ouvertes + ' création' + (ouvertes > 1 ? 's' : '') + ' en cours'
-                      : '<span style="color:var(--muted)">Toutes les créations sont terminées</span>';
+                      : '<span class="ck-doux">Toutes les créations sont terminées</span>';
     }
     var taches = Array.isArray(c.taches) ? c.taches.filter(function (t) { return !t.archived && t.stage !== 'inbox'; }) : [];
     if (taches.length) {
       var vives = taches.filter(function (t) { return t.status !== 'done'; }).length;
       return vives ? vives + ' tâche' + (vives > 1 ? 's' : '') + ' en cours'
-                   : '<span style="color:var(--muted)">Tout est fait</span>';
+                   : '<span class="ck-doux">Tout est fait</span>';
     }
     var tk = Array.isArray(c.tickets) ? c.tickets.filter(function (t) { return t.status !== 'closed' && t.status !== 'done'; }).length : 0;
-    if (Array.isArray(c.tickets)) return tk ? tk + ' demande' + (tk > 1 ? 's' : '') + ' ouverte' + (tk > 1 ? 's' : '') : '<span style="color:var(--muted)">Aucune demande en cours</span>';
+    if (Array.isArray(c.tickets)) return tk ? tk + ' demande' + (tk > 1 ? 's' : '') + ' ouverte' + (tk > 1 ? 's' : '') : '<span class="ck-doux">Aucune demande en cours</span>';
     var nCr = Array.isArray(c.creations) ? c.creations.length : 0;
     if (nCr) return nCr + ' création' + (nCr > 1 ? 's' : '');
-    return '<span style="color:var(--muted)">Rien de posé pour l’instant</span>';
+    return '<span class="ck-doux">Rien de posé pour l’instant</span>';
   }
   function cliLigneProjet(p) {
     var c = p.content || {};
@@ -10854,7 +10855,7 @@
     function bub(m) {
       var mine = m.from === 'cindy';
       var av = '<span class="aavatar aavatar--' + (mine ? 'cindy' : 'client') + '">' + (mine ? 'C' : admClientInitial()) + '</span>';
-      return '<div class="msg msg--' + (mine ? 'cindy' : 'client') + '">' + av + '<div><div class="bubble"' + (m.pinned ? ' style="box-shadow:inset 0 0 0 1px #e8c98a"' : '') + '>' + (m.pinned ? '<span style="display:inline-block;font-family:var(--font-micro);font-size:15px;font-weight:700;letter-spacing:0.06em;background:#faf1da;color:#6a4a0b;padding:1px 7px;border-radius:999px;margin-bottom:5px">📌 Épinglé</span>' : '') + (q ? hi(m.message, q) : fmtMsg(m.message)) + admMsgAttChips(m.attachments) + '</div><div class="bmeta">' + (mine ? 'Vous' : 'Client') + ' · ' + fmtDT(m.date) + (m.editedAt ? ' · <span style="color:var(--muted)">modifié</span>' : '') + ' · <span style="cursor:pointer;text-decoration:underline" onclick="ADM.pinMsg(\'' + d.id + '\',\'' + m.id + '\',' + (m.pinned ? 'false' : 'true') + ')">' + (m.pinned ? 'détacher' : 'épingler') + '</span>' + (m.id ? ' · <span style="cursor:pointer;text-decoration:underline" onclick="ADM.msgEdit(\'' + d.id + '\',\'' + m.id + '\')">modifier</span>' : '') + (m.id ? ' · <span style="cursor:pointer;text-decoration:underline" onclick="ADM.msgMove(event,\'' + d.id + '\',\'' + m.id + '\')">déplacer</span>' : '') + ' · <span style="cursor:pointer;text-decoration:underline;color:var(--red)" onclick="ADM.delMsg(\'' + d.id + '\',\'' + (m.id || '') + '\',\'' + esc(m.date || '') + '\',\'' + esc(m.from || '') + '\')">supprimer</span>' + ((mine || !m.id) ? '' : ' · <span style="cursor:pointer;text-decoration:underline" onclick="ADM.msgUnread(\'' + d.id + '\',\'' + m.id + '\')">non lu</span>') + '</div></div></div>';
+      return '<div class="msg msg--' + (mine ? 'cindy' : 'client') + '">' + av + '<div><div class="bubble"' + (m.pinned ? ' style="box-shadow:inset 0 0 0 1px #e8c98a"' : '') + '>' + (m.pinned ? '<span style="display:inline-block;font-family:var(--font-micro);font-size:15px;font-weight:700;letter-spacing:0.06em;background:#faf1da;color:#6a4a0b;padding:1px 7px;border-radius:999px;margin-bottom:5px">📌 Épinglé</span>' : '') + (q ? hi(m.message, q) : fmtMsg(m.message)) + admMsgAttChips(m.attachments) + '</div><div class="bmeta">' + (mine ? 'Vous' : 'Client') + ' · ' + fmtDT(m.date) + (m.editedAt ? ' · <span style="color:var(--muted)">modifié</span>' : '') + ' · <span style="cursor:pointer;text-decoration:underline" role="button" tabindex="0" data-kb onclick="ADM.pinMsg(\'' + d.id + '\',\'' + m.id + '\',' + (m.pinned ? 'false' : 'true') + ')">' + (m.pinned ? 'détacher' : 'épingler') + '</span>' + (m.id ? ' · <span style="cursor:pointer;text-decoration:underline" role="button" tabindex="0" data-kb onclick="ADM.msgEdit(\'' + d.id + '\',\'' + m.id + '\')">modifier</span>' : '') + (m.id ? ' · <span style="cursor:pointer;text-decoration:underline" role="button" tabindex="0" data-kb onclick="ADM.msgMove(event,\'' + d.id + '\',\'' + m.id + '\')">déplacer</span>' : '') + ' · <span style="cursor:pointer;text-decoration:underline;color:var(--red)" role="button" tabindex="0" data-kb onclick="ADM.delMsg(\'' + d.id + '\',\'' + (m.id || '') + '\',\'' + esc(m.date || '') + '\',\'' + esc(m.from || '') + '\')">supprimer</span>' + ((mine || !m.id) ? '' : ' · <span style="cursor:pointer;text-decoration:underline" role="button" tabindex="0" data-kb onclick="ADM.msgUnread(\'' + d.id + '\',\'' + m.id + '\')">non lu</span>') + '</div></div></div>';
     }
     var pinned = msgs.filter(function (m) { return m.pinned; });
     var rest = msgs.filter(function (m) { return !m.pinned; });
@@ -11469,7 +11470,7 @@
     (t.steps || []).forEach(function (s) { (s.blocks || []).forEach(function (b) { if (!qnrIsStatic(b.type) && !seen[b.type]) { seen[b.type] = 1; chips.push(typeLbl[b.type] || b.type); } }); });
     var typesHtml = chips.length ? '<div class="tplcard__types">' + chips.slice(0, 6).map(function (c) { return '<span class="tpltype">' + esc(c) + '</span>'; }).join('') + '</div>' : '';
     return '<div class="tplcard">' +
-      '<div class="tplcard__top"><div><div class="tplcard__n" style="cursor:pointer" onclick="ADM.qnrOpen(\'' + t.id + '\')">' + esc(t.name || 'Sans titre') + '</div>' +
+      '<div class="tplcard__top"><div><div class="tplcard__n" style="cursor:pointer" role="button" tabindex="0" data-kb onclick="ADM.qnrOpen(\'' + t.id + '\')">' + esc(t.name || 'Sans titre') + '</div>' +
         '<div class="tplcard__s">' + nQ + ' question' + (nQ > 1 ? 's' : '') + ' · ' + nS + ' section' + (nS > 1 ? 's' : '') + (used ? ' · envoyé ' + used + ' fois' : '') + '</div></div>' +
         '<button class="ibbtn ibbtn--dark" onclick="ADM.qnrAssignOpen(\'' + t.id + '\')">Assigner</button></div>' +
       typesHtml +
@@ -12075,7 +12076,7 @@
       '<div style="height:6px;background:' + esc(col) + '"></div>' +
       '<div style="padding:15px 16px;flex:1;display:flex;flex-direction:column;gap:8px">' +
         '<div class="between" style="align-items:flex-start;gap:8px">' +
-          '<span class="row" style="gap:8px;align-items:center;cursor:pointer" onclick="ADM.prjOpen(\'' + t.id + '\')"><span style="color:' + esc(col) + ';display:flex">' + head + '</span><strong style="font-size:15.5px;line-height:1.3">' + esc(t.name || 'Sans titre') + '</strong></span>' +
+          '<span class="row" style="gap:8px;align-items:center;cursor:pointer" tabindex="0" data-kb onclick="ADM.prjOpen(\'' + t.id + '\')"><span style="color:' + esc(col) + ';display:flex">' + head + '</span><strong style="font-size:15.5px;line-height:1.3">' + esc(t.name || 'Sans titre') + '</strong></span>' +
           '<span style="font-family:var(--font-micro);font-size:13px;text-transform:uppercase;letter-spacing:0.04em;color:#fff;background:' + esc(col) + ';padding:3px 8px;border-radius:999px;white-space:nowrap;flex-shrink:0">' + esc(prjOfferLabel(t.offer)) + '</span>' +
         '</div>' +
         '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:auto">' + wk + nP + ' phase' + (nP > 1 ? 's' : '') + ' · ' + nS + ' étape' + (nS > 1 ? 's' : '') + ' · ' + nD + ' livrable' + (nD > 1 ? 's' : '') + '</div>' +
@@ -12355,5 +12356,11 @@
     msgAttPick: admMsgAttPick, msgAttRemove: admMsgAttRemove,
     qrAdd: qrAdd, qrSet: qrSet, qrDel: qrDel, qrPick: qrPick,
   };
+  // Clavier : les éléments cliquables qui ne sont pas des boutons (data-kb)
+  // s'activent avec Entrée ou Espace, comme un bouton.
+  document.addEventListener('keydown', function (e) {
+    var t = e.target;
+    if ((e.key === 'Enter' || e.key === ' ') && t && t.hasAttribute && t.hasAttribute('data-kb')) { e.preventDefault(); t.click(); }
+  });
   boot();
 })();

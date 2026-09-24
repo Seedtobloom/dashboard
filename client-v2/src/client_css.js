@@ -6,7 +6,7 @@ var CLIENT_CSS = String.raw`/* Client portal — Ecrin Design System — Seed to
      texte clair (Neige) uniquement sur fonds foncés. Marron/beige/bleu majoritaires ;
      Mandarine & Mimosa = accents ponctuels. */
   --terre-900:#110704; --terre-800:#110704; --terre:#110704;
-  --terre-600:#5A2A11; --terre-400:rgba(17,7,4,.5); --terre-200:rgba(17,7,4,.2);
+  --terre-600:#5A2A11; --terre-400:rgba(17,7,4,.64); --terre-200:rgba(17,7,4,.2);
   --nuit-900:#110704; --nuit:#110704; --nuit-700:#1c130a;
   --nuit-500:#5A2A11; --nuit-300:rgba(17,7,4,.5);
   --glycine-50:rgba(205,143,110,.12); --glycine-200:rgba(205,143,110,.22); --glycine:#CD8F6E;
@@ -25,7 +25,7 @@ var CLIENT_CSS = String.raw`/* Client portal — Ecrin Design System — Seed to
   --bg: #ffffff;
   --white: #FFFFFF;
   --text: #110704;
-  --muted: rgba(17,7,4,.55);
+  --muted: rgba(17,7,4,.64);
   --border: rgba(17,7,4,.1);
   --surface: #F8F6F2;
   --sage: #5A2A11;
@@ -99,8 +99,8 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 .cp-cindy__name { font-family: var(--font-display); font-style: italic; font-size: 16px; color: var(--paille); line-height: 1.2; }
 .cp-cindy__role { font-family: var(--font-micro); font-size: 9px; color: rgba(242,229,194,0.6); margin-top: 1px; letter-spacing: 0.1em; text-transform: uppercase; }
 .cp-nav { flex: 1; padding: 18px 14px; display: flex; flex-direction: column; gap: 4px; }
-.cp-nav__label { font-family: var(--font-micro); font-size: 9px; font-weight: 500; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(242,229,194,0.45); padding: 4px 9px 6px; }
-.cp-nav__sublabel { font-family: var(--font-micro); font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase; color: rgba(242,229,194,0.35); padding: 12px 9px 4px; }
+.cp-nav__label { font-family: var(--font-micro); font-size: 9px; font-weight: 500; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(242,229,194,0.62); padding: 4px 9px 6px; }
+.cp-nav__sublabel { font-family: var(--font-micro); font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase; color: rgba(242,229,194,0.62); padding: 12px 9px 4px; }
 .cp-nav__item {
   display: flex; align-items: center; gap: 12px; width: 100%;
   padding: 10px 13px; background: transparent; border: none; cursor: pointer;
@@ -116,7 +116,7 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 .cp-nav__dot { width: 7px; height: 7px; border-radius: 2px; transform: rotate(45deg); flex-shrink: 0; }
 .cp-nav__text { flex: 1; min-width: 0; }
 .cp-nav__title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.cp-nav__status { font-size: 9px; opacity: 0.6; margin-top: 1px; letter-spacing: 0.04em; }
+.cp-nav__status { font-size: 9px; opacity: 0.85; margin-top: 1px; letter-spacing: 0.04em; }
 .cp-nav__badge { background: var(--glycine); color: var(--terre); font-family: var(--font-micro); font-size: 10px; font-weight: 600; padding: 2px 6px; border-radius: 999px; flex-shrink: 0; min-width: 18px; text-align: center; }
 .cp-sidebar__footer { padding: 14px 18px; border-top: 1px solid rgba(242,229,194,0.1); margin-top: auto; display: flex; align-items: center; justify-content: space-between; }
 
@@ -216,7 +216,7 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 .cp-todo { background: var(--brume); border-radius: 22px; padding: clamp(22px, 3vw, 30px); margin-bottom: 22px; }
 .cp-todo__h { display: flex; align-items: baseline; gap: 12px; margin-bottom: 16px; }
 .cp-todo__h h2 { font-family: var(--font-display); font-style: italic; font-size: clamp(24px, 3vw, 32px); color: var(--terre); font-weight: 400; margin: 0; }
-.cp-todo__h .c { font-family: var(--font-micro); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--terre-600); opacity: 0.7; }
+.cp-todo__h .c { font-family: var(--font-micro); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--terre-600); }
 .cp-drow { display: flex; align-items: center; gap: 14px; background: #fff; border-radius: 14px; padding: 13px 16px; margin-bottom: 9px; }
 .cp-drow:last-child { margin-bottom: 0; }
 .cp-drow__ic { width: 38px; height: 38px; border-radius: 10px; background: var(--glycine); color: var(--nuit); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }

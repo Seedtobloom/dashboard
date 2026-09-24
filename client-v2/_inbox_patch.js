@@ -95,7 +95,7 @@
     if (!shown.length) return '<div class="mx-empty" style="margin-top:34px">Aucun message ne contient ce mot.</div>';
     var head = ql ? '<div style="font-family:var(--font-micro);font-size:11px;color:var(--terre-400);text-align:center">'+shown.length+' message'+(shown.length>1?'s':'')+' trouvé'+(shown.length>1?'s':'')+'</div>' : '';
     var pid = pd.project.id;
-    function act(label, fn){ return ' · <span style="cursor:pointer;text-decoration:underline" onclick="'+fn+'">'+label+'</span>'; }
+    function act(label, fn){ return ' · <span style="cursor:pointer;text-decoration:underline" role="button" tabindex="0" data-kb onclick="'+fn+'">'+label+'</span>'; }
     return head + shown.map(function(m){
       var mine = m.author !== 'cindy';
       var body = (m.content ? '<div class="mx-b">'+(q ? stbHi(m.content, q) : fmtMsg(m.content))+'</div>' : '') + stbInboxAtts(m.attachments);
@@ -181,7 +181,7 @@
     var box = document.getElementById('cp-inbox-atts'); if (!box) return;
     var list = window._stbInboxPending || [];
     box.innerHTML = list.map(function(a, i){
-      return '<span style="display:inline-flex;align-items:center;gap:7px;font-family:var(--font-micro);font-size:11px;color:var(--terre);background:var(--brume);border-radius:999px;padding:6px 11px">'+(a.up?'⏳ ':'📎 ')+esc(a.name)+' <span onclick="window.stbInboxAttRemove('+i+')" style="cursor:pointer;font-weight:700;color:var(--terre-400)">×</span></span>';
+      return '<span style="display:inline-flex;align-items:center;gap:7px;font-family:var(--font-micro);font-size:11px;color:var(--terre);background:var(--brume);border-radius:999px;padding:6px 11px">'+(a.up?'⏳ ':'📎 ')+esc(a.name)+' <span role="button" tabindex="0" data-kb onclick="window.stbInboxAttRemove('+i+')" style="cursor:pointer;font-weight:700;color:var(--terre-400)">×</span></span>';
     }).join('');
   };
   window.stbInboxAttRemove = function(i){ (window._stbInboxPending||[]).splice(i,1); window.stbInboxRenderPending(); };

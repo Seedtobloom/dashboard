@@ -91,7 +91,8 @@ textarea.inp{resize:vertical;min-height:64px;font-family:var(--font-body)}
 .side__logo svg{width:100%;height:auto;display:block}
 .side__brand .s{font-family:var(--font-micro);font-size:13px;letter-spacing:0.2em;text-transform:uppercase;color:rgba(242,229,194,0.55);margin-top:2px}
 .side__nav{flex:1;padding:10px 12px;display:flex;flex-direction:column;gap:3px}
-.navgroup__label{font-family:var(--font-micro);font-size:13px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:rgba(242,229,194,0.42);padding:14px 13px 5px}
+.navgroup__label{font-family:var(--font-micro);font-size:13px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:rgba(242,229,194,0.62);padding:14px 13px 5px}
+.navrow{position:relative}.navchev{position:absolute;right:4px;top:50%;transform:translateY(-50%);border:none;background:none;color:rgba(242,229,194,0.78);opacity:0.55;font-size:15px;padding:4px 8px;border-radius:8px;cursor:pointer}.navchev:hover{opacity:1}
 .navitem{display:flex;align-items:center;gap:10px;padding:10px 13px;border-radius:11px;border:none;background:none;color:rgba(242,229,194,0.78);cursor:pointer;text-align:left;width:100%;font-family:var(--font-micro);font-size:13px;letter-spacing:0.05em;text-transform:uppercase;transition:background .15s}
 .navitem:hover{background:rgba(242,229,194,0.08);color:var(--paille)}
 .navitem.active{background:rgba(242,229,194,0.14);color:var(--paille);font-weight:600}
@@ -1463,7 +1464,7 @@ select.cg-in{cursor:pointer}
 .cqa__chip{display:inline-flex;align-items:center;gap:9px;padding:9px 15px;border-radius:999px;font-size:15px;font-weight:600}
 .cqa__chip--v{background:var(--gold-chip);color:var(--gold-ink)}
 .cqa__chip--c{background:#C5DEFF;color:#22436e}
-.cqa__who{font-size:13px;text-transform:uppercase;letter-spacing:.06em;opacity:.7;font-weight:700}
+.cqa__who{font-size:13px;text-transform:uppercase;letter-spacing:.06em;font-weight:700}
 .cl2 .cqa--ok{display:flex;align-items:center;gap:13px;padding:16px 22px}
 .cqa--ok .cqa__ic{background:#3a2716;width:32px;height:32px}
 .cqa--ok .cqa__t{font-family:var(--font-body);font-style:normal;font-size:15px;font-weight:600}
@@ -1958,7 +1959,7 @@ select.cg-in{cursor:pointer}
 .ck-semg{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;margin-top:22px}
 .ck-semn{font-size:13px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:var(--text)}
 .ck-semj--auj .ck-semn{color:var(--terre-600)}
-.ck-semj--p{opacity:.4}
+.ck-semj--p .ck-semn,.ck-semj--p .ck-semt{color:var(--muted)}
 .ck-barre{height:9px;border-radius:999px;background:var(--surface);overflow:hidden;display:flex;margin-top:8px}
 .ck-b-e{background:var(--glycine-900)}
 .ck-b-d{background:var(--red)}
@@ -2341,7 +2342,7 @@ select.cg-in{cursor:pointer}
    aplat de couleur et sans barre sur le côté. */
 .pjc--clos{opacity:.55}
 .pjc-h{display:flex;align-items:center;justify-content:space-between;gap:9px;min-height:20px}
-.pjc-p{font-family:var(--font-micro);font-size:13px;font-weight:500;letter-spacing:0.07em;text-transform:uppercase;color:var(--e);opacity:.62}
+.pjc-p{font-family:var(--font-micro);font-size:13px;font-weight:500;letter-spacing:0.07em;text-transform:uppercase;color:var(--e);opacity:.8}
 .pjc-n{font-family:var(--font-display);font-style:italic;font-size:22px;line-height:1.1;color:var(--e)}
 .pjc-ou{font-size:15px;color:var(--e);line-height:1.4}
 .pjc-ou2{display:block;margin-top:4px;opacity:.72}
@@ -2349,7 +2350,7 @@ select.cg-in{cursor:pointer}
 .pjc-j{height:5px;border-radius:999px;background:color-mix(in srgb,var(--e) 20%,transparent);overflow:hidden;margin-top:7px}
 .pjc-j span{display:block;height:100%;background:var(--e);border-radius:999px}
 .pjc-d{border-top:1px solid color-mix(in srgb,var(--e) 16%,transparent);padding-top:9px;margin-top:2px}
-.pjc .ck-doux,.pjc .ck-ap,.pjc .ck-inc{color:var(--e);opacity:.7}
+.pjc .ck-doux,.pjc .ck-ap,.pjc .ck-inc,.pjc .ck-fl{color:var(--e);opacity:.8}
 .pjc .ck-ch{background:color-mix(in srgb,var(--e) 12%,transparent);color:var(--e)}
 /* Les boutons se posent sur l'aplat : ils empruntent son encre. */
 .pjc .btn--dark{background:var(--e);color:#F8F6F2}
@@ -2357,7 +2358,7 @@ select.cg-in{cursor:pointer}
 .pjc--sombre .btn--dark{background:#F8F6F2;color:#110704}
 .pjc--sombre .btn--outline,.pjc--sombre .btn--danger{background:rgba(248,246,242,.18);color:#F8F6F2}
 .pjc-l{display:flex;justify-content:space-between;gap:10px;font-size:15px;padding:3px 0}
-.pjc-l span{color:var(--e);opacity:.68}
+.pjc-l span{color:var(--e);opacity:.8}
 .pjc-l b{text-align:right;font-weight:600;color:var(--e)}
 .pjc-a{display:flex;gap:7px;flex-wrap:wrap;margin-top:auto;padding-top:9px}
 /* Créations terminées : rangées sous un intertitre, jamais mélangées. */
