@@ -55,6 +55,14 @@
     if (!p || p.type !== 'support' || !Array.isArray(p.creations)) return [];
     return p.creations.filter(function(c){ return c.status !== 'archive'; });
   }
+  // Le fil ouvert est-il clos ? Le projet entier, ou la creation choisie.
+  function stbTopicClos(pd, topic){
+    var p = pd && pd.project; if (!p) return false;
+    if (p.clotureAt) return true;
+    if (!topic || !Array.isArray(p.creations)) return false;
+    var c = p.creations.filter(function(x){ return x.id === topic; })[0];
+    return !!(c && c.clotureAt);
+  }
   function stbTopicMsgs(pd, topic){
     var msgs = pd.messages || [];
     if (topic === undefined || topic === null || !stbSupportCreations(pd).length) return msgs;
@@ -65,8 +73,9 @@
   function stbSubUnread(pd, topicVal){
     return stbTopicMsgs(pd, topicVal).filter(function(m){ return m.author === 'cindy' && m.readByClient === false; }).length;
   }
-  function stbSubPill(pd, label, topicVal, on){
+  function stbSubPill(pd, label, topicVal, on, clos){
     var u = stbSubUnread(pd, topicVal);
+    if (clos) label = label + ' · termine';
     var bg = on ? 'var(--terre)' : 'var(--brume,#C5DEFF)';
     var col = on ? 'var(--paille)' : 'var(--terre-600)';
     return '<button onclick="window.stbInboxSetTopic(\''+pd.project.id+'\',\''+topicVal+'\')" style="padding:5px 12px;border-radius:999px;border:none;cursor:pointer;font-family:var(--font-micro);font-size:11px;font-weight:600;background:'+bg+';color:'+col+'">'+esc(label)+(u?' · '+u:'')+'</button>';
@@ -75,7 +84,7 @@
     var subs = stbSupportCreations(pd);
     if (!subs.length) return '';
     var topic = window._stbInboxTopic || '';
-    var pills = stbSubPill(pd, 'Discussion générale', '', topic === '') + subs.map(function(c){ return stbSubPill(pd, c.name || 'Création', c.id, topic === c.id); }).join('');
+    var pills = stbSubPill(pd, 'Discussion générale', '', topic === '') + subs.map(function(c){ return stbSubPill(pd, c.name || 'Création', c.id, topic === c.id, !!c.clotureAt); }).join('');
     return '<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;padding:11px 16px 3px;border-bottom:1px solid var(--bone-d)"><span style="font-family:var(--font-micro);font-size:9px;letter-spacing:0.08em;text-transform:uppercase;color:var(--terre-400);margin-right:3px">Créations</span>'+pills+'</div>';
   }
   function stbInboxBubbles(pd, q, topic){
@@ -128,7 +137,11 @@
       '</div>'+
       stbSubRow(pd)+
       '<div id="cp-inbox-msgs" class="mx-feed">'+stbInboxBubbles(pd, '', topic)+'</div>'+
-      '<div class="mx-composer">'+
+      (stbTopicClos(pd, topic)
+        ? '<div class="mx-composer" style="padding:14px 16px;font-size:13.5px;color:var(--terre-600)">'+
+            'Cette creation est terminee. Son fil reste consultable, mais on n y ecrit plus.'+
+          '</div>'
+        : '<div class="mx-composer">'+
         '<div class="mx-tools">'+cpMsgToolbar('cp-inbox-input')+'</div>'+
         '<div id="cp-inbox-atts" style="display:flex;flex-wrap:wrap;gap:7px"></div>'+
         '<div class="mx-composer__row">'+
@@ -136,7 +149,7 @@
           '<button class="mx-attach" title="Joindre un fichier" onclick="document.getElementById(\'cp-inbox-file\').click()">'+cpIcon('paperclip',16)+'</button>'+
           '<textarea id="cp-inbox-input" class="mx-input" placeholder="Écris ton message à Cindy…" onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();window.stbInboxSend(\''+p.id+'\');}"></textarea>'+
           '<button class="mx-send" onclick="window.stbInboxSend(\''+p.id+'\')">'+cpIcon('send',15)+' Envoyer</button>'+
-        '</div>'+
+        '</div>')+
     '</div>';
   }
   window.stbInboxSelect = function(pid){
@@ -195,7 +208,10 @@
     if (!v && !atts.length) return;
     var topic = window._stbInboxTopic || '';
     fetch('/api/client/' + TOKEN + '/message', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ projectId: pid, content: v, topic: topic, attachments: atts }) })
-      .then(function(r){ if (!r.ok) throw new Error(); return r.json(); })
+      .then(function(r){
+        if (!r.ok) return r.json().catch(function(){ return {}; }).then(function(e){ throw new Error((e && e.error) || ''); });
+        return r.json();
+      })
       .then(function(res){
         var pd = getPD(pid); if (pd){ if (!Array.isArray(pd.messages)) pd.messages = []; pd.messages.push(res.message); }
         window._stbInboxPending = []; window.stbInboxRenderPending();
@@ -206,7 +222,7 @@
         stbInboxRenderList();
         toast('Message envoyé');
       })
-      .catch(function(){ toast('Erreur, réessayez.'); });
+      .catch(function(e){ toast((e && e.message) || 'Erreur, réessayez.'); });
   };
   // Modifier un de SES propres messages (corriger une faute).
   window.stbInboxMsgEdit = function(pid, id){

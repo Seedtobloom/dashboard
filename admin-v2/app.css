@@ -2189,3 +2189,6 @@ select.cg-in{cursor:pointer}
 .pjc-l span{color:var(--muted)}
 .pjc-l b{text-align:right;font-weight:600}
 .pjc-a{display:flex;gap:7px;flex-wrap:wrap;margin-top:auto;padding-top:9px}
+/* Créations terminées : rangées sous un intertitre, jamais mélangées. */
+.cg-seg{display:flex;align-items:center;gap:9px;font-family:var(--font-micro);font-size:10.5px;letter-spacing:0.09em;text-transform:uppercase;color:var(--muted);margin:22px 0 10px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+.cg-seg__n{min-width:19px;height:19px;padding:0 6px;border-radius:999px;background:var(--surface-2);color:var(--terre-600);display:inline-flex;align-items:center;justify-content:center;font-size:10.5px;font-weight:600}

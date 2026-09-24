@@ -710,6 +710,7 @@ async function buildAppData(env: Env, masterKey: string, data: AnyObj): Promise<
           deliverables: mapDeliverables(obj.livrables),
           creations: Array.isArray(obj.creations) ? obj.creations.map((c: AnyObj) => ({
             id: c.id, name: c.name || '', type: c.type || 'autre', status: c.status || 'a_preparer',
+            clotureAt: c.clotureAt || null,
             dueDate: c.dueDate || null, revisionsMax: typeof c.revisionsMax === 'number' ? c.revisionsMax : 3,
             revExtra: typeof c.revExtra === 'number' ? c.revExtra : 0,
             bannerColor: c.bannerColor || null, createdAt: c.createdAt || null,
@@ -861,11 +862,21 @@ async function handleConversation(
 function estCloture(container: AnyObj | null | undefined): boolean {
   return !!(container && container.clotureAt);
 }
+/* Le fil d'une CRÉATION est une sous-conversation du projet (topic = son id).
+   Clôturer la création archive ce fil-là seulement. */
+function creationClose(container: AnyObj | null | undefined, topic: string): boolean {
+  if (!container || !topic || !Array.isArray(container.creations)) return false;
+  const cr = container.creations.find((c: AnyObj) => String(c && c.id) === topic);
+  return !!(cr && cr.clotureAt);
+}
 async function handleMessage(request: Request, env: Env, masterKey: string, data: AnyObj): Promise<Response> {
   const body = await readJson(request);
   const { container } = resolveProject(getEspace(data), (body.projectId || '').toString());
   if (!container) return json({ error: 'Project not found' }, 404);
   if (estCloture(container)) return json({ error: 'Ce projet est terminé : la conversation est archivée.' }, 409);
+  if (creationClose(container, (body.topic || '').toString())) {
+    return json({ error: 'Cette création est terminée : son fil est archivé.' }, 409);
+  }
   const content = (body.content || '').toString().trim();
   const attachments = msgAttachments(body.attachments);
   if (!content && !attachments.length) return json({ error: 'content is required' }, 400);
@@ -1323,6 +1334,7 @@ async function handleCreationComment(request: Request, env: Env, masterKey: stri
   if (!text) return json({ error: 'content requis' }, 400);
   const cr = findCreation(data, pid, cid);
   if (!cr) return json({ error: 'Création introuvable' }, 404);
+  if (cr.clotureAt) return json({ error: 'Cette création est terminée : son fil est archivé.' }, 409);
   const comment = { id: genId(), author: 'client', text: text.substring(0, 4000), createdAt: nowIso() };
   if (!Array.isArray(cr.comments)) cr.comments = [];
   cr.comments.push(comment);

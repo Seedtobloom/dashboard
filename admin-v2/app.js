@@ -8226,6 +8226,9 @@
             '</span>' +
           '</div>' +
           '<span class="cg-status cg-pill" style="background:' + col + '1f;color:' + col + '">' + esc(crStatusLabel(c.status)) + '</span>' +
+          (c.clotureAt
+            ? '<button class="cg-btn cg-btn--soft" onclick="ADM.crRouvrir(\'' + pid + '\',\'' + c.id + '\')" title="Cette création est terminée depuis le ' + esc(String(c.clotureAt).slice(0, 10).split('-').reverse().join('/')) + '">Rouvrir</button>'
+            : '<button class="cg-btn cg-btn--soft" onclick="ADM.crCloturer(\'' + pid + '\',\'' + c.id + '\')">Clôturer</button>') +
         '</div>' +
         crBannerRow(pid, c) +
         '<div class="cg-cols">' +
@@ -8260,10 +8263,20 @@
       return '<div style="border-top:1px solid var(--line,#eee);margin-top:14px;padding-top:12px">' +
         '<div style="font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--terre-600,#6b533b);margin-bottom:10px;display:flex;align-items:center;gap:7px">' + cgIcon('image', 13) + ' Échanges cliente' + (c.clientNotif ? '<span style="width:8px;height:8px;border-radius:50%;background:#c0533b;display:inline-block"></span>' : '') + '</div>' +
         filesHtml + commentsHtml +
-        '<div class="row" style="gap:8px;margin-top:4px"><input class="cg-in" id="cg-reply-' + c.id + '" placeholder="Répondre à la cliente…" style="flex:1" onkeydown="if(event.key===\'Enter\'){event.preventDefault();ADM.crReply(\'' + pid + '\',\'' + c.id + '\');}"><button class="cg-btn cg-btn--dark" onclick="ADM.crReply(\'' + pid + '\',\'' + c.id + '\')">Répondre</button></div>' +
+        (c.clotureAt
+          ? '<div class="cg-empty">Création terminée : ce fil est archivé. Il reste lisible des deux côtés, mais plus personne n’y écrit.</div>'
+          : '<div class="row" style="gap:8px;margin-top:4px"><input class="cg-in" id="cg-reply-' + c.id + '" placeholder="Répondre à la cliente…" style="flex:1" onkeydown="if(event.key===\'Enter\'){event.preventDefault();ADM.crReply(\'' + pid + '\',\'' + c.id + '\');}"><button class="cg-btn cg-btn--dark" onclick="ADM.crReply(\'' + pid + '\',\'' + c.id + '\')">Répondre</button></div>') +
       '</div>';
     }
-    var listHtml = creations.length ? creations.map(card).join('') : '<div class="cg-empty" style="padding:16px 0">Aucune création pour le moment. Crée la première ci-dessous.</div>';
+    var crVives = creations.filter(function (c) { return !c.clotureAt; });
+    var crClos = creations.filter(function (c) { return !!c.clotureAt; });
+    var listHtml = crVives.length ? crVives.map(card).join('')
+      : '<div class="cg-empty" style="padding:16px 0">' +
+        (crClos.length ? 'Toutes les créations sont terminées.' : 'Aucune création pour le moment. Crée la première ci-dessous.') + '</div>';
+    if (crClos.length) {
+      listHtml += '<div class="cg-seg">Terminées <span class="cg-seg__n">' + crClos.length + '</span></div>' +
+        crClos.map(card).join('');
+    }
     var newcr = '<div class="cg-newcr"><span class="cg-lbl">Nouvelle création</span><input class="cg-in" id="cr-new-' + pid + '" placeholder="ex. Flyer, Carte de visite…" style="flex:1;min-width:180px" onkeydown="if(event.key===\'Enter\'){event.preventDefault();ADM.crAdd(\'' + pid + '\');}"><button class="cg-btn cg-btn--dark" onclick="ADM.crAdd(\'' + pid + '\')">' + cgIcon('plus', 14) + ' Créer</button></div>';
     var unclassed = livr.filter(function (l) { return !l.creationId; });
     var unclassedHtml = unclassed.length ? '<div class="cg-card" style="margin-top:16px"><div class="cg-lbl">Versions non classées (dépôts d\'avant les créations)</div>' + unclassed.map(verRow).join('') + '</div>' : '';
@@ -8626,6 +8639,19 @@
   function crReply(pid, cid) {
     var inp = el('cg-reply-' + cid); var v = ((inp && inp.value) || '').trim(); if (!v) return;
     jpost('/api/clients/' + CURKEY + '/support/' + pid + '/creations/' + cid, { reply: v }, 'PATCH').then(function (r) { if (r.ok) { toast('Réponse envoyée'); refreshClient(); } else toast('Erreur'); }).catch(function () { toast('Erreur'); });
+  }
+  /* Clôturer une création : elle est finie, son fil d'échanges s'archive et
+     elle descend dans « Terminées ». Rien n'est supprimé, et ça se rouvre. */
+  function crCloturer(pid, cid) {
+    admConfirm({ title: 'Clôturer cette création ?',
+      message: 'Elle passe en terminée et descend dans « Terminées ». Son fil d’échanges est archivé : il reste lisible par toi et par ta cliente, mais plus personne n’y écrit. Rien n’est supprimé, et tu peux la rouvrir.',
+      yes: 'Oui, clôturer', no: 'Annuler' }, function () { crSetCloture(pid, cid, true, 'Création terminée · fil archivé'); });
+  }
+  function crRouvrir(pid, cid) { crSetCloture(pid, cid, false, 'Création rouverte'); }
+  function crSetCloture(pid, cid, valeur, msg) {
+    jpost('/api/clients/' + CURKEY + '/support/' + pid + '/creations/' + cid, { cloture: valeur }, 'PATCH')
+      .then(function (r) { if (r.ok) { toast(msg); refreshClient(); } else toast('Erreur'); })
+      .catch(function () { toast('Erreur'); });
   }
   function crDel(pid, cid) {
     admConfirm({ title: 'Supprimer cette création ?', message: 'Les versions rattachées redeviennent « non classées » (non supprimées).', danger: true, yes: 'Oui, supprimer', no: 'Non' }, function () {
@@ -11577,7 +11603,7 @@
   window.ADM = {
     nav: nav, login: login, logout: logout, scan: scan, createClient: createClient, copy: copy, editToken: editToken, navClientTab: navClientTab, navToggleClient: navToggleClient,
     msWeek: msWeek, msFilter: msFilter, msToggleCap: msToggleCap, msMode: msMode, msDaySel: msDaySel, msPlace: msPlace, msDone: msDone, msDelete: msDelete, msNoteOpen: msNoteOpen, msPlanOver: msPlanOver, msPlanLeave: msPlanLeave, msPlanDrop: msPlanDrop, msPlanUnplace: msPlanUnplace, msAutoPlan: msAutoPlan, msOrganizeWeek: msOrganizeWeek, msOrganizeDay: msOrganizeDay, msUnplace: msUnplace, msDragStart: msDragStart, msDragEnd: msDragEnd, msDayOver: msDayOver, msDayLeave: msDayLeave, msDrop: msDrop, msSlotOver: msSlotOver, msDropSlot: msDropSlot, msNewBlock: msNewBlock, msSaveBlock: msSaveBlock, msDeleteBlock: msDeleteBlock, msEst: msEst, msEstH: msEstH, msAddTop: msAddTop, msAddDay: msAddDay,
-    openClient: openClient, tab: tab, subtab: subtab, ffShow: ffShow, saveInfos: saveInfos, saveForfait: saveForfait, forfaitOverrideAdd: forfaitOverrideAdd, forfaitOverrideDel: forfaitOverrideDel, testEmail: testEmail, toggleOffer: toggleOffer, addOffer: addOffer, setBanner: setBanner, setMaintenance: setMaintenance, renameSupport: renameSupport, cloturerProjet: cloturerProjet, rouvrirProjet: rouvrirProjet, addSupport: addSupport, addSupportQuick: addSupportQuick, delSupport: delSupport, crAdd: crAdd, crSet: crSet, crReply: crReply, crDel: crDel, crAddVersion: crAddVersion, crAddVersionLink: crAddVersionLink, crDelVersion: crDelVersion, pjAdd: pjAdd, pjSet: pjSet, pjMove: pjMove, pjDel: pjDel, pjStart: pjStart, pjNotify: pjNotify, pjToggle: pjToggle, deleteClient: deleteClient,
+    openClient: openClient, tab: tab, subtab: subtab, ffShow: ffShow, saveInfos: saveInfos, saveForfait: saveForfait, forfaitOverrideAdd: forfaitOverrideAdd, forfaitOverrideDel: forfaitOverrideDel, testEmail: testEmail, toggleOffer: toggleOffer, addOffer: addOffer, setBanner: setBanner, setMaintenance: setMaintenance, renameSupport: renameSupport, cloturerProjet: cloturerProjet, rouvrirProjet: rouvrirProjet, addSupport: addSupport, addSupportQuick: addSupportQuick, delSupport: delSupport, crAdd: crAdd, crSet: crSet, crCloturer: crCloturer, crRouvrir: crRouvrir, crReply: crReply, crDel: crDel, crAddVersion: crAddVersion, crAddVersionLink: crAddVersionLink, crDelVersion: crDelVersion, pjAdd: pjAdd, pjSet: pjSet, pjMove: pjMove, pjDel: pjDel, pjStart: pjStart, pjNotify: pjNotify, pjToggle: pjToggle, deleteClient: deleteClient,
     toggleTicketsSpace: toggleTicketsSpace, ticketStatus: ticketStatus, ticketDue: ticketDue, ticketTime: ticketTime, ticketDelete: ticketDelete, ticketForfait: ticketForfait, ticketProposeDate: ticketProposeDate,
     ckpReste: ckpReste, ckpEstim: ckpEstim, ckpFinir: ckpFinir, ckpPasMaintenant: ckpPasMaintenant, ckpOrdreSysteme: ckpOrdreSysteme,
     ckTSetVue: ckTSetVue, ckTSetTri: ckTSetTri, ckTSetFiltre: ckTSetFiltre, ckTOuvrir: ckTOuvrir,

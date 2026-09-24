@@ -295,6 +295,14 @@ function resolveProject(esp: AnyObj, projectId: string): { container: AnyObj | n
 function estCloture(container: AnyObj | null | undefined): boolean {
   return !!(container && container.clotureAt);
 }
+/* Le fil d'une CRÉATION est une sous-conversation du projet : les messages
+ * portent topic = id de la création. Clôturer la création archive ce fil-là,
+ * sans toucher au fil général du projet ni aux autres créations. */
+function creationClose(container: AnyObj | null | undefined, topic: string): boolean {
+  if (!container || !topic || !Array.isArray(container.creations)) return false;
+  const cr = container.creations.find((c: AnyObj) => String(c && c.id) === topic);
+  return !!(cr && cr.clotureAt);
+}
 function supportLabel(pid: string): string {
   const n = parseInt(pid, 10) || 1;
   return n > 1 ? 'Support de com ' + n : 'Support de com';
@@ -1016,6 +1024,16 @@ async function handleClientApi(
         cr.clientNotif = false;
       }
       if (body.seen === true) cr.clientNotif = false;
+      // Clôturer une création : elle est finie, son fil d'échanges s'archive.
+      // Rien n'est effacé, et une clôture trop tôt se rouvre.
+      if ('cloture' in body) {
+        if (body.cloture) { if (!cr.clotureAt) cr.clotureAt = nowIso(); }
+        else cr.clotureAt = null;
+      }
+      // On n'écrit pas dans une création close, même par la porte « reply ».
+      if (cr.clotureAt && 'reply' in body && String(body.reply || '').trim()) {
+        return json({ error: 'Cette création est clôturée : son fil est archivé.' }, 409);
+      }
       await saveClient(env, key, data);
       return json(cr);
     }
@@ -1239,6 +1257,9 @@ async function handleAdminMessage(request: Request, env: Env, key: string, data:
   const { container, label } = resolveProject(esp, (body.projectId || '').toString());
   if (!container) return json({ error: 'Projet introuvable' }, 404);
   if (estCloture(container)) return json({ error: 'Ce projet est clôturé : sa conversation est archivée. Rouvre-le pour écrire.' }, 409);
+  if (creationClose(container, (body.topic || '').toString())) {
+    return json({ error: 'Cette création est clôturée : son fil est archivé. Rouvre-la pour écrire.' }, 409);
+  }
   const content = (body.content || '').toString().trim();
   const attachments = msgAttachments(body.attachments);
   if (!content && !attachments.length) return json({ error: 'content requis' }, 400);
