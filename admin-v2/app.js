@@ -640,7 +640,7 @@
     if (!run) return '';
     var sec = run.base + (Date.now() - run.startedAt) / 1000;
     return '<div style="margin:14px 14px 4px;padding:13px 15px;background:rgba(242,229,194,0.12);border-radius:13px">' +
-      '<div style="font-size:15px;letter-spacing:0.09em;text-transform:uppercase;color:var(--paille);opacity:0.65;margin-bottom:5px">Chrono en cours</div>' +
+      '<div style="font-size:13px;letter-spacing:0.09em;text-transform:uppercase;color:var(--paille);opacity:0.65;margin-bottom:5px">Chrono en cours</div>' +
       '<div id="nav-timer-clock" style="font-family:var(--font-micro);font-variant-numeric:tabular-nums;font-weight:700;font-size:23px;color:var(--paille);letter-spacing:0.02em">' + mtClock(sec) + '</div>' +
       '<div style="font-size:15px;color:var(--paille);opacity:0.85;margin:3px 0 10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(run.title || 'tâche') + '</div>' +
       '<button class="btn btn--outline btn--block btn--sm" style="color:var(--paille);border-color:rgba(242,229,194,0.3)" onclick="ADM.navTimerPause()">⏸ Mettre en pause</button>' +
@@ -1389,8 +1389,8 @@
     var bf = taskBrief(x);
     var urg = x.urgency === 'haute' || x.urgency === 'urgent';
     var isProject = x.demandeType === 'project';
-    var projBadge = isProject ? ' <span style="font-family:var(--font-micro);font-size:15px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#7a3a0a;background:#fdf3e8;padding:3px 8px;border-radius:999px;vertical-align:middle">🟠 Nouveau projet · devis</span>' : '';
-    var urgBadge = urg ? ' <span style="font-family:var(--font-micro);font-size:15px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#8a4a2c;background:#F0E2D6;padding:3px 8px;border-radius:999px;vertical-align:middle">Urgent</span>' : '';
+    var projBadge = isProject ? ' <span style="font-family:var(--font-micro);font-size:13px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#7a3a0a;background:#fdf3e8;padding:3px 8px;border-radius:999px;vertical-align:middle">🟠 Nouveau projet · devis</span>' : '';
+    var urgBadge = urg ? ' <span style="font-family:var(--font-micro);font-size:13px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#8a4a2c;background:#F0E2D6;padding:3px 8px;border-radius:999px;vertical-align:middle">Urgent</span>' : '';
     var forfaitTxt = x.forfaitConfigured ? (x.forfaitRemaining <= 0 ? 'forfait épuisé' : 'reste ' + x.forfaitRemaining + ' h') : 'forfait non défini';
     var forfaitCol = x.forfaitConfigured && x.forfaitRemaining <= 0 ? '#8a4a2c' : (x.forfaitConfigured && x.forfaitRemaining <= 2 ? 'var(--orange)' : 'var(--muted)');
     var link = x.clientLink ? '<a class="btn btn--outline btn--sm" href="' + esc(/^https?:\/\//i.test(x.clientLink) ? x.clientLink : 'https://' + x.clientLink) + '" target="_blank" rel="noopener">🔗 Lien</a>' : '';
@@ -1809,7 +1809,7 @@
         '<button class="pbtn" onclick="ADM.myTaskArchive(\'' + t.id + '\',true)">Archiver</button>' +
       '</div>';
     }).join('');
-    return '<details style="margin-top:22px"><summary style="cursor:pointer;font-family:var(--font-micro);font-size:15px;letter-spacing:0.07em;text-transform:uppercase;color:var(--muted);padding:4px 0">Terminées · ' + done.length + '</summary>' +
+    return '<details style="margin-top:22px"><summary style="cursor:pointer;font-family:var(--font-micro);font-size:13px;letter-spacing:0.07em;text-transform:uppercase;color:var(--muted);padding:4px 0">Terminées · ' + done.length + '</summary>' +
       '<div class="card" style="padding:4px 0;margin-top:8px">' + rows + '</div></details>';
   }
   /* ── Calendrier des échéances ─────────────────────────────────────────
@@ -2355,8 +2355,8 @@
         var brief = prioBrief(x, false);
         return '<div class="prow"' + (brief ? ' style="flex-wrap:wrap"' : '') + '>' +
           '<div class="prow__date"><strong>' + fmtDate(x.dueDate) + '</strong><span style="color:' + whenCol(x._d) + '">' + whenLabel(x._d) + '</span></div>' +
-          '<div class="prow__main"><div class="prow__el">' + esc(x.title) + (x.needsRework ? ' <span style="font-family:var(--font-micro);font-size:15px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#3f5a37;background:#e3ecdd;padding:3px 8px;border-radius:999px;vertical-align:middle">↩ Retours reçus · à retravailler</span>' : '') +
-            (x.kind === 'ticket' ? ' <span style="font-family:var(--font-micro);font-size:15px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#6a4a0b;background:#fdf3e8;padding:3px 8px;border-radius:999px;vertical-align:middle">🎫 Ticket</span>' + (x.priority === 'haute' ? ' <span style="font-family:var(--font-micro);font-size:15px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#8a4a2c;background:#F0E2D6;padding:3px 8px;border-radius:999px;vertical-align:middle">Urgent</span>' : '') + (x.status === 'in_progress' ? ' <span style="font-family:var(--font-micro);font-size:15px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#305277;background:#e3edfb;padding:3px 8px;border-radius:999px;vertical-align:middle">En cours</span>' : '') : '') + '</div>' +
+          '<div class="prow__main"><div class="prow__el">' + esc(x.title) + (x.needsRework ? ' <span style="font-family:var(--font-micro);font-size:13px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#3f5a37;background:#e3ecdd;padding:3px 8px;border-radius:999px;vertical-align:middle">↩ Retours reçus · à retravailler</span>' : '') +
+            (x.kind === 'ticket' ? ' <span style="font-family:var(--font-micro);font-size:13px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#6a4a0b;background:#fdf3e8;padding:3px 8px;border-radius:999px;vertical-align:middle">🎫 Ticket</span>' + (x.priority === 'haute' ? ' <span style="font-family:var(--font-micro);font-size:13px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#8a4a2c;background:#F0E2D6;padding:3px 8px;border-radius:999px;vertical-align:middle">Urgent</span>' : '') + (x.status === 'in_progress' ? ' <span style="font-family:var(--font-micro);font-size:13px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#305277;background:#e3edfb;padding:3px 8px;border-radius:999px;vertical-align:middle">En cours</span>' : '') : '') + '</div>' +
             '<div class="prow__meta"><a href="javascript:ADM.openClient(\'' + x.key + '\')">' + esc(x.client) + '</a> · ' + esc(x.projectLabel) + ' · ' + esc(x.kind) + '</div>' + prioClientLink(x, false) + '</div>' +
           (x.id ? '<div class="prow__act">' + prioTimer(x, false) +
             (x.kind === 'ticket' && x.status === 'open' ? '<button class="pbtn" title="Passer le ticket en cours" onclick="ADM.prioTicketStart(\'' + x.key + '\',\'' + x.id + '\')">En cours</button>' : '') +
@@ -2401,7 +2401,7 @@
       }
       function prioChip(kind, cur, lbl, onclick) {
         var on = cur === kind;
-        return '<button onclick="' + onclick + '" style="padding:5px 12px;border-radius:999px;border:1px solid ' + (on ? 'var(--terre)' : 'var(--bone-d)') + ';cursor:pointer;font-family:var(--font-micro);font-size:15px;letter-spacing:0.05em;text-transform:uppercase;background:' + (on ? 'var(--terre)' : 'transparent') + ';color:' + (on ? 'var(--paille)' : 'var(--muted)') + '">' + lbl + '</button>';
+        return '<button onclick="' + onclick + '" style="padding:5px 12px;border-radius:999px;border:1px solid ' + (on ? 'var(--terre)' : 'var(--bone-d)') + ';cursor:pointer;font-family:var(--font-micro);font-size:13px;letter-spacing:0.05em;text-transform:uppercase;background:' + (on ? 'var(--terre)' : 'transparent') + ';color:' + (on ? 'var(--paille)' : 'var(--muted)') + '">' + lbl + '</button>';
       }
       var prioControls = '<div class="row mb" style="gap:6px;flex-wrap:wrap;align-items:center">' +
         '<span class="micro" style="margin-right:2px">Vue</span>' +
@@ -2430,8 +2430,8 @@
           : '';
         return '<div style="display:flex;gap:12px;align-items:flex-start;padding:14px 16px;border-radius:13px;margin-bottom:9px;background:rgba(155,58,46,0.06)">' +
           '<div style="flex:1;min-width:0">' +
-            '<div style="font-weight:600;color:var(--terre);font-size:15px">' + esc(r.name) + (r.taskTitle ? ' <span style="font-family:var(--font-micro);font-size:15px;text-transform:uppercase;letter-spacing:0.03em;color:var(--muted)">(' + esc(r.taskTitle) + ')</span>' : '') + '</div>' +
-            '<div style="font-family:var(--font-micro);font-size:15px;letter-spacing:0.03em;text-transform:uppercase;color:var(--muted);margin-top:3px"><a href="javascript:ADM.openClient(\'' + r.key + '\')">' + esc(r.client) + '</a> · ' + esc(r.projectLabel) + (r.at ? ' · demandé le ' + fmtDate(r.at) : '') + '</div>' +
+            '<div style="font-weight:600;color:var(--terre);font-size:15px">' + esc(r.name) + (r.taskTitle ? ' <span style="font-family:var(--font-micro);font-size:13px;text-transform:uppercase;letter-spacing:0.03em;color:var(--muted)">(' + esc(r.taskTitle) + ')</span>' : '') + '</div>' +
+            '<div style="font-family:var(--font-micro);font-size:13px;letter-spacing:0.03em;text-transform:uppercase;color:var(--muted);margin-top:3px"><a href="javascript:ADM.openClient(\'' + r.key + '\')">' + esc(r.client) + '</a> · ' + esc(r.projectLabel) + (r.at ? ' · demandé le ' + fmtDate(r.at) : '') + '</div>' +
             (r.comment ? '<div style="font-family:var(--font-body);font-style:italic;font-size:15px;color:var(--terre);margin-top:6px;line-height:1.45">« ' + esc(r.comment) + ' »</div>' : '') +
             (r.wishDate ? '<div style="margin-top:7px;font-family:var(--font-micro);font-size:15px;font-weight:700;color:#6a4a0b;background:#fbf5e6;border:none;border-radius:8px;padding:5px 9px;display:inline-block">📅 Souhaitée pour le ' + esc((r.wishDate || '').split('-').reverse().join('/')) + '</div>' : '') +
             filesHtml +
@@ -2552,7 +2552,7 @@
           return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px">' +
             '<div style="font-family:var(--font-micro);font-size:15px;font-weight:700;color:' + (heavy ? '#8a4a2c' : 'var(--terre)') + '">' + hLabel(w.mins) + '</div>' +
             '<div style="width:100%;height:' + barH + 'px;border-radius:5px 5px 0 0;background:' + col + '" title="' + w.count + ' tâche' + (w.count > 1 ? 's' : '') + '"></div>' +
-            '<div style="font-family:var(--font-micro);font-size:15px;letter-spacing:0.04em;text-transform:uppercase;color:var(--muted)">' + esc(w.label) + '</div>' +
+            '<div style="font-family:var(--font-micro);font-size:13px;letter-spacing:0.04em;text-transform:uppercase;color:var(--muted)">' + esc(w.label) + '</div>' +
           '</div>';
         }).join('') +
         '</div>' +
@@ -2576,7 +2576,7 @@
         var bg = r.level === 'high' ? '#F0E2D6' : '#fbf5e6';
         return '<div class="prow" style="background:' + bg + ';border-radius:9px">' +
           '<div class="prow__date"><strong>' + (x.dueDate ? fmtDate(x.dueDate) : '—') + '</strong><span style="color:' + col + ';font-weight:600">' + esc(r.reason) + '</span></div>' +
-          '<div class="prow__main"><div class="prow__el">' + esc(x.title) + (x.kind === 'ticket' ? ' <span style="font-family:var(--font-micro);font-size:15px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#6a4a0b;background:#fdf3e8;padding:3px 8px;border-radius:999px;vertical-align:middle">🎫 Ticket</span>' : '') + '</div><div class="prow__meta"><a href="javascript:ADM.openClient(\'' + x.key + '\')">' + esc(x.client) + '</a> · ' + esc(x.projectLabel) + '</div></div>' +
+          '<div class="prow__main"><div class="prow__el">' + esc(x.title) + (x.kind === 'ticket' ? ' <span style="font-family:var(--font-micro);font-size:13px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#6a4a0b;background:#fdf3e8;padding:3px 8px;border-radius:999px;vertical-align:middle">🎫 Ticket</span>' : '') + '</div><div class="prow__meta"><a href="javascript:ADM.openClient(\'' + x.key + '\')">' + esc(x.client) + '</a> · ' + esc(x.projectLabel) + '</div></div>' +
           '<div class="prow__act">' + (x.project === 'partner' ? prioTimer(x, false) : '') + '<button class="pbtn" onclick="ADM.openClient(\'' + x.key + '\')">Ouvrir</button></div>' +
         '</div>';
       }
@@ -2885,7 +2885,7 @@
   var MT_TIMER = null, MT_INT = null, MT_TASKS = [], MT_CLIENTS = [], MT_EXP = {};
   var MT_TAG_COLORS = [['#E8F1FF', '#2c4a72'], ['#F0E2D6', '#8a4a2c'], ['#f6ecd5', '#8a6414'], ['#eef1e6', '#4f6a46'], ['#EDE5D7', '#5A2A11'], ['#e6ddce', '#8a5c3f']];
   function mtTagColor(name) { var h = 0; for (var i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0; return MT_TAG_COLORS[h % MT_TAG_COLORS.length]; }
-  function mtTagPill(tg) { var c = mtTagColor(tg); return '<span style="font-family:var(--font-micro);font-size:15px;letter-spacing:0.04em;text-transform:uppercase;padding:3px 9px;border-radius:999px;background:' + c[0] + ';color:' + c[1] + '">' + esc(tg) + '</span>'; }
+  function mtTagPill(tg) { var c = mtTagColor(tg); return '<span style="font-family:var(--font-micro);font-size:13px;letter-spacing:0.04em;text-transform:uppercase;padding:3px 9px;border-radius:999px;background:' + c[0] + ';color:' + c[1] + '">' + esc(tg) + '</span>'; }
   // ── Refonte « Studio OS » : mode de travail (axe d'organisation) + énergie ──
   // [clé, libellé, emoji, couleur texte, couleur fond]
   var MT_MODES = [
@@ -2897,7 +2897,7 @@
     ['idee', 'Idée', '💡', '#8a6f2e', '#fbf5e6']
   ];
   function mtMode(m) { for (var i = 0; i < MT_MODES.length; i++) if (MT_MODES[i][0] === m) return MT_MODES[i]; return null; }
-  function mtModePill(m) { var x = mtMode(m); if (!x) return ''; return '<span title="' + x[1] + '" style="font-family:var(--font-micro);font-size:15px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;padding:3px 9px;border-radius:999px;background:' + x[4] + ';color:' + x[3] + '">' + x[2] + ' ' + x[1] + '</span>'; }
+  function mtModePill(m) { var x = mtMode(m); if (!x) return ''; return '<span title="' + x[1] + '" style="font-family:var(--font-micro);font-size:13px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;padding:3px 9px;border-radius:999px;background:' + x[4] + ';color:' + x[3] + '">' + x[2] + ' ' + x[1] + '</span>'; }
   // [clé, emoji, libellé, minutes indicatives]
   var MT_ENERGY = [['quick', '🟢', '10 min', 10], ['short', '🟡', '30 min', 30], ['medium', '🟠', '1 h', 60], ['deep', '🔴', 'Demi-journée', 240]];
   function mtEnergy(e) { for (var i = 0; i < MT_ENERGY.length; i++) if (MT_ENERGY[i][0] === e) return MT_ENERGY[i]; return null; }
@@ -3226,7 +3226,7 @@
     var ss = Array.isArray(t.sessions) ? t.sessions : [];
     if (!ss.length) return '';
     var rows = ss.slice(-8).reverse().map(function (x) { var l = mtFmtSession(x); return l ? '<div style="font-family:var(--font-micro);font-size:15px;color:var(--terre-600);padding:3px 0;font-variant-numeric:tabular-nums">' + l + '</div>' : ''; }).join('');
-    return '<details class="mt" style="margin-top:8px"><summary style="cursor:pointer;font-family:var(--font-micro);font-size:15px;letter-spacing:0.07em;text-transform:uppercase;color:var(--muted);padding:3px 0">Historique du chrono · ' + ss.length + '</summary><div style="padding:4px 0 2px">' + rows + (ss.length > 8 ? '<div class="micro" style="text-transform:none;letter-spacing:0">… et ' + (ss.length - 8) + ' session' + (ss.length - 8 > 1 ? 's' : '') + ' plus ancienne' + (ss.length - 8 > 1 ? 's' : '') + '</div>' : '') + '</div></details>';
+    return '<details class="mt" style="margin-top:8px"><summary style="cursor:pointer;font-family:var(--font-micro);font-size:13px;letter-spacing:0.07em;text-transform:uppercase;color:var(--muted);padding:3px 0">Historique du chrono · ' + ss.length + '</summary><div style="padding:4px 0 2px">' + rows + (ss.length > 8 ? '<div class="micro" style="text-transform:none;letter-spacing:0">… et ' + (ss.length - 8) + ' session' + (ss.length - 8 > 1 ? 's' : '') + ' plus ancienne' + (ss.length - 8 > 1 ? 's' : '') + '</div>' : '') + '</div></details>';
   }
   function mtClock(sec) { sec = Math.round(sec); var h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = sec % 60; function p(n) { return n < 10 ? '0' + n : n; } return (h > 0 ? h + ':' : '') + p(m) + ':' + p(s); }
   function mtDur(sec) { sec = Math.round(sec); if (sec < 60) return sec + ' s'; var h = Math.floor(sec / 3600), m = Math.round((sec % 3600) / 60); return (h > 0 ? h + ' h ' : '') + (m > 0 ? m + ' min' : (h > 0 ? '' : '0 min')); }
@@ -3416,7 +3416,7 @@
     ['autre', 'Autre', '#7a5540', '#f1eee7']
   ];
   function visTypeMeta(t) { for (var i = 0; i < VIS_TYPES.length; i++) if (VIS_TYPES[i][0] === t) return VIS_TYPES[i]; return null; }
-  function visTypeChip(t) { var m = visTypeMeta(t); if (!m) return ''; return '<span style="font-family:var(--font-micro);font-size:15px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;padding:3px 8px;border-radius:999px;background:' + m[3] + ';color:' + m[2] + '">' + m[1] + '</span>'; }
+  function visTypeChip(t) { var m = visTypeMeta(t); if (!m) return ''; return '<span style="font-family:var(--font-micro);font-size:13px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;padding:3px 8px;border-radius:999px;background:' + m[3] + ';color:' + m[2] + '">' + m[1] + '</span>'; }
   function visSetTypeFilter(v) { VIS_TYPEFILTER = v; renderVisiosBody(); }
   function renderVisios() {
     setMain(topbar('') + '<div class="wrap" id="vis-body" style="max-width:none"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
@@ -3862,7 +3862,7 @@
     return '<div class="vis-wrap" style="max-width:760px;margin:0 auto">' +
       '<button class="btn btn--outline btn--sm" onclick="ADM.trameBackLib()">← Bibliothèque</button>' +
       '<div style="background:var(--terre);color:var(--paille);border-radius:18px;padding:22px 26px;margin-top:14px">' +
-        '<div style="font-family:var(--font-micro);font-size:15px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-chip)">Appel en cours</div>' +
+        '<div style="font-family:var(--font-micro);font-size:13px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-chip)">Appel en cours</div>' +
         '<div style="font-family:\'Alegreya\',Georgia,serif;font-style:italic;font-size:28px;margin:7px 0 14px;line-height:1.08">' + esc(t.title || '') + '</div>' +
         '<div style="height:8px;border-radius:99px;background:rgba(240,233,214,.18);overflow:hidden"><span style="display:block;height:100%;width:' + pct + '%;background:var(--gold-chip)"></span></div>' +
         '<div style="font-family:var(--font-micro);font-weight:300;font-size:15px;color:rgba(240,233,214,.72);margin-top:8px">' + done + ' / ' + total + ' questions cochées</div>' +
@@ -3960,7 +3960,7 @@
           '<button onclick="ADM.trameEdSecDel(' + si + ')" title="Supprimer l\'étape" style="border:none;background:none;cursor:pointer;color:var(--muted);width:26px;height:26px;border-radius:7px;display:grid;place-items:center"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg></button>' +
         '</div>' +
         '<textarea oninput="ADM.trameEdField(' + si + ',\'hint\',this.value)" rows="2" placeholder="Repères pour t\'aider (tu ne les lis pas au client)" style="width:100%;box-sizing:border-box;resize:vertical;min-height:46px;border:none;background:var(--bone);border-radius:9px;padding:9px 12px;font-family:var(--font-micro);font-weight:300;font-style:italic;font-size:15px;line-height:1.5;color:var(--muted);outline:none;margin-bottom:13px">' + esc(s.hint) + '</textarea>' +
-        '<div style="font-family:var(--font-micro);font-size:15px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--gold-chip);margin-bottom:8px">Questions à poser</div>' +
+        '<div style="font-family:var(--font-micro);font-size:13px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--gold-chip);margin-bottom:8px">Questions à poser</div>' +
         qs +
         '<button onclick="ADM.trameEdQAdd(' + si + ')" style="border:none;background:none;cursor:pointer;color:var(--terre-600);font-family:var(--font-micro);font-size:15px;font-weight:600;padding:5px 0;display:inline-flex;align-items:center;gap:5px">+ Ajouter une question</button>' +
       '</div>';
@@ -4218,13 +4218,13 @@
         : ((st.title ? '<div style="font-family:var(--font-display);font-style:italic;font-size:27px;color:var(--terre);margin-bottom:16px">' + esc(st.title) + '</div>' : '') + '<div style="font-size:21px;line-height:1.8;color:var(--terre)">' + (st.html || '') + '</div>');
       ov.innerHTML = '<div style="background:#fff;border-radius:20px;max-width:780px;width:100%;max-height:90vh;display:flex;flex-direction:column;box-shadow:none">' +
         '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 24px;border:none">' +
-          '<div style="font-family:var(--font-micro);font-size:15px;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted)">' + esc(c.client || 'Visio') + ' · Étape ' + (i + 1) + ' / ' + steps.length + '</div>' +
+          '<div style="font-family:var(--font-micro);font-size:13px;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted)">' + esc(c.client || 'Visio') + ' · Étape ' + (i + 1) + ' / ' + steps.length + '</div>' +
           '<button id="vp-close" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:24px;line-height:1">×</button>' +
         '</div>' +
         '<div style="height:4px;background:var(--bone-d)"><div style="height:100%;width:' + Math.round((i + 1) / steps.length * 100) + '%;background:var(--terre);transition:width .25s"></div></div>' +
         '<div style="padding:30px 34px;overflow-y:auto;flex:1">' + content + '</div>' +
         '<div style="padding:10px 24px 6px;border:none">' +
-          '<div style="font-family:var(--font-micro);font-size:15px;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);margin-bottom:5px">📝 Vos notes</div>' +
+          '<div style="font-family:var(--font-micro);font-size:13px;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);margin-bottom:5px">📝 Vos notes</div>' +
           '<textarea id="vp-notes" onchange="ADM.visNoteSave(\'' + id + '\',this.value)" placeholder="Notez ce qui se dit pendant l\'appel…" style="width:100%;box-sizing:border-box;min-height:54px;resize:vertical;font-size:15px;line-height:1.5;border:none;border-radius:8px;padding:8px 10px;font-family:inherit;color:var(--terre)">' + esc(c.notes || '') + '</textarea>' +
         '</div>' +
         '<div style="display:flex;justify-content:space-between;gap:10px;padding:14px 24px 16px;border:none">' +
@@ -4687,8 +4687,7 @@
     if (inconnues.length) {
       out.push({ g: 44, ton: 'calme', aller: 'ADM.ckTAEstimer()',
         titre: inconnues.length + ' tâche' + (inconnues.length > 1 ? 's' : '') + ' sans temps estimé',
-        texte: 'Tant qu’on ne sait pas ce qu’elles demandent, la capacité affichée est optimiste. ' +
-          'Le champ est sur chaque ligne : tu peux les dire toutes en une fois.' });
+        texte: 'Tant qu’on ne sait pas, la capacité affichée est optimiste.' });
     }
 
     // Ce qui attend la cliente depuis trop longtemps.
@@ -4774,7 +4773,6 @@
     setMain(topbar('Accueil') +
       '<div class="wrap ck">' +
         '<div class="ck-tete"><div>' +
-          '<div class="ck-meta">Accueil</div>' +
           '<h1 class="ck-h1">Bonjour <span class="ck-accent">Cindy</span></h1></div>' +
           '<div class="ck-date">' + esc(ckpMaj(CKP_JOURS[d.getDay()]) + ' ' + d.getDate() + ' ' + CKP_MOIS[d.getMonth()]) + '</div>' +
         '</div>' +
@@ -4856,30 +4854,41 @@
       ' onclick="event.stopPropagation();ADM.ckLDepuis(\'' + esc(t.id) + '\')">' + esc(libelle) + '</button>';
   }
 
+  /* Le cap du jour : trois cards, dans le même langage que les projets, les
+   * créations et les tâches. Un bloc de texte dense se lisait de haut en bas ;
+   * trois cards se lisent d'un coup d'oeil, et chacune porte ses gestes.
+   * Une tâche en retard prend la Mandarine, les autres la Neige. */
+  function ckpCarteCap(c, i) {
+    var t = c.t, ap = ckpAPlanifier(t), r = ckpRestant(t), pf = ckpPlanifieFutur(t);
+    var retard = ckpEnRetard(t);
+    var lignes = [];
+    lignes.push(['À faire', r === null ? '<span class="ck-inc">à estimer</span>' : (r ? esc(ckpDuree(r)) : 'rien de ton côté')]);
+    if (pf) lignes.push(['Planifié', esc(ckpDuree(pf))]);
+    else if (ap) lignes.push(['Sans place', '<span class="ck-ap">' + esc(ckpDuree(ap)) + '</span>']);
+    if (t.reel) lignes.push(['Déjà passé', esc(ckpDuree(t.reel))]);
+
+    return stbCarteProjet({
+      id: t.id, key: t.key || '', nom: t.titre,
+      teinte: retard ? { bg: '#F5E3D9', e: '#5A2A11', sombre: false }
+                     : { bg: '#F8F6F2', e: '#110704', sombre: false },
+      presta: (i + 1) + ' · ' + (t.qui || '') + (t.ctx ? ' · ' + t.ctx : ''),
+      ou: (retard ? '<span class="ck-ap">En retard. </span>' : '') + esc(c.raison) +
+        (c.raison2 ? '<span class="pjc-ou2">' + esc(c.raison2) + '</span>' : ''),
+      lignes: lignes,
+      ouvrir: ckpOuvrirArg(t),
+      gestes: (r === null ? ckpChampEstim(t, 'cap')
+        : (ap ? ckpPlanifierBtn(t, 'Planifier')
+              : '<button class="btn btn--outline btn--sm" onclick="ADM.ckpPasMaintenant(\'' + esc(t.id) + '\')">Pas maintenant</button>')) +
+        ckpChampFini(t, 'cap')
+    });
+  }
   function ckpSecCap(cap) {
-    var corps = cap.length ? cap.map(function (c, i) {
-      var t = c.t, ap = ckpAPlanifier(t);
-      return '<div class="ck-cap__i ' + (i === 0 ? 'ck-cap__i--1' : '') + '">' +
-        '<div class="ck-cap__n">' + (i + 1) + '</div>' +
-        '<div><div class="ck-cap__h"><span class="ck-titre">' + esc(t.titre) + '</span>' +
-          (ckpEnRetard(t) ? '<span class="ck-puce ck-puce--al">En retard</span>' : '') + '</div>' +
-          '<div class="ck-sub">' + ckpPuceQui(t) + (t.ctx ? '<span class="ck-doux">' + esc(t.ctx) + '</span>' : '') + '</div>' +
-          '<div class="ck-raison"><i>→</i><span>' + esc(c.raison) + '</span></div>' +
-          (c.raison2 ? '<div class="ck-raison2">' + esc(c.raison2) + '</div>' : '') +
-          '<div class="ck-temps">' + ckpPhraseTemps(t) + '</div>' +
-        '</div>' +
-        '<div class="ck-act">' +
-          '<button class="btn btn--dark btn--sm" onclick="' + ckpOuvrirArg(t) + '">Ouvrir</button>' +
-          (ckpRestant(t) === null ? ckpChampEstim(t, 'cap')
-            : (ap ? ckpPlanifierBtn(t, 'Planifier')
-                  : '<button class="btn btn--outline btn--sm" onclick="ADM.ckpPasMaintenant(\'' + esc(t.id) + '\')">Pas maintenant</button>')) +
-          ckpChampFini(t, 'cap') +
-        '</div></div>';
-    }).join('') : '<div class="ck-vide">Aucune tâche ne réclame de décision aujourd’hui.</div>';
-    return '<section class="ck-sec">' + ckpTitre('Ton cap aujourd’hui',
-      'Trois maximum, dans l’ordre, et chacune dit pourquoi elle est là. Le système conseille : tu gardes la main.',
+    var corps = cap.length
+      ? '<div class="pjc-grid">' + cap.map(ckpCarteCap).join('') + '</div>'
+      : '<div class="ck-vide">Aucune tâche ne réclame de décision aujourd’hui.</div>';
+    return '<section class="ck-sec">' + ckpTitre('Ton cap aujourd’hui', '',
       CKP.ordre ? '<button class="btn btn--outline btn--sm" onclick="ADM.ckpOrdreSysteme()">Ordre conseillé</button>' : '') +
-      '<div class="ck-cap">' + corps + '</div></section>';
+      corps + '</section>';
   }
 
   /* Le programme d'une journée : créneaux de tâches, rendez-vous fixes et
@@ -4907,7 +4916,7 @@
       var heure = '<div class="ck-jh"><b>' + ckpHM(x.h) + '</b> → ' + ckpHM(x.fin) + '</div>';
       if (x.type === 'msg') {
         return '<div class="ck-jr ck-jr--msg">' + heure + '<div><div class="ck-jt">Messages &amp; mails</div>' +
-          '<div class="ck-js">Le seul moment où tu ouvres tout. En dehors, rien ne te coupe.</div></div>' +
+          '</div>' +
           '<span class="ck-puce ck-puce--j">' + esc(ckpDuree(x.fin - x.h)) + '</span></div>';
       }
       if (x.type === 'rdv') {
@@ -4943,7 +4952,7 @@
     var l = ckpAttention();
     if (!l.length) return '';
     return '<section class="ck-sec">' + ckpTitre('À ton attention',
-      'Ce qui n’est pas normal, et rien d’autre. Pas de nouveautés, pas de compteurs.') +
+      '') +
       '<div class="ck-att">' + l.map(function (a) {
         var ton = a.g >= 80 ? 'ck-atti--al' : (a.ton === 'calme' ? 'ck-atti--ca' : '');
         return '<div class="ck-atti ' + ton + '">' +
@@ -4967,7 +4976,7 @@
     if (s.inconnu) p += ' Et ' + s.inconnu + ' tâche' + (s.inconnu > 1 ? 's n’ont' : ' n’a') +
       ' pas de temps estimé : le calcul est donc optimiste.';
 
-    return '<section class="ck-sec">' + ckpTitre('Cette semaine', 'Est-ce que mon travail rentre ?') +
+    return '<section class="ck-sec">' + ckpTitre('Cette semaine', '') +
       '<div class="ck-sem">' +
         '<div class="ck-verdict ck-verdict--' + s.verdict + '">' + esc(mot) + '</div>' +
         '<p class="ck-semp">' + esc(p) + '</p>' +
@@ -6049,19 +6058,25 @@
       var restant = arr.reduce(function (s2, p) { return s2 + ckJBilan(p).restant; }, 0);
       var key = (arr[0] && arr[0].key) || '';
       var ouvert = CKJ.neuf === key;
+      /* Le geste de création vit AVEC les supports de com, pas au-dessus de
+       * tous les projets de la cliente : c'est un support qu'on crée, et
+       * c'est là qu'on regarde les siens. La tuile ferme la grille, à sa
+       * place, dans le langage des cards. */
+      var tuile = '<div class="pjc pjc--neuf" style="--bg:#F8F6F2;--e:#110704">' +
+        (ouvert
+          ? '<div class="pjc-n">Nouveau projet de com</div>' +
+            '<input class="inp" id="ckj-neuf-' + esc(key) + '" placeholder="Nom du projet (ex. Lancement printemps)"' +
+            ' onkeydown="if(event.key===\'Enter\'){event.preventDefault();ADM.ckJCreer(\'' + esc(key) + '\');}">' +
+            '<div class="pjc-a"><button class="btn btn--dark btn--sm" onclick="ADM.ckJCreer(\'' + esc(key) + '\')">Créer</button>' +
+            '<button class="btn btn--outline btn--sm" onclick="ADM.ckJNeuf(\'' + esc(key) + '\')">Annuler</button></div>'
+          : '<button class="pjc-neufb" onclick="ADM.ckJNeuf(\'' + esc(key) + '\')">' +
+            '<span class="pjc-neufp">+</span><span>Nouveau projet de com</span></button>') +
+      '</div>';
       return '<div class="ckj-cli">' +
         '<div class="ckj-clih"><span class="ckj-clin">' + esc(c) + '</span>' +
           '<span class="ckj-clim">' + arr.length + ' projet' + (arr.length > 1 ? 's' : '') +
-          (restant ? ' · ' + esc(ckpDuree(restant)) + ' à faire' : '') + '</span>' +
-          '<button class="btn btn--outline btn--sm ckj-clib" onclick="ADM.ckJNeuf(\'' + esc(key) + '\')">' +
-          (ouvert ? 'Annuler' : '+ Projet de com') + '</button></div>' +
-        (ouvert ? '<div class="ckj-neuf">' +
-          '<input class="inp" id="ckj-neuf-' + esc(key) + '" placeholder="Nom du projet (ex. Lancement printemps)" style="flex:1"' +
-          ' onkeydown="if(event.key===\'Enter\'){event.preventDefault();ADM.ckJCreer(\'' + esc(key) + '\');}">' +
-          '<button class="btn btn--dark btn--sm" onclick="ADM.ckJCreer(\'' + esc(key) + '\')">Créer</button>' +
-          '<span class="ck-ts">Il apparaît tout de suite dans son espace, avec son fil de messages.</span>' +
-          '</div>' : '') +
-        '<div class="pjc-grid">' + arr.map(ckJLigne).join('') + '</div></div>';
+          (restant ? ' · ' + esc(ckpDuree(restant)) + ' à faire' : '') + '</span></div>' +
+        '<div class="pjc-grid">' + arr.map(ckJLigne).join('') + tuile + '</div></div>';
     }).join('');
   }
   /* Créer un projet de com depuis l'écran Projets : un champ qui s'ouvre sous
@@ -7117,12 +7132,12 @@
     if (satis) tiles.push(['avis', (Math.round(satis * 10) / 10) + '/5', 'satisfaction']);
     var body = tiles.map(function (t) {
       return '<div style="min-width:130px;padding:6px 20px 6px 0">' +
-        '<div style="display:flex;align-items:center;gap:7px;font-family:var(--font-micro);font-size:15px;letter-spacing:0.06em;text-transform:uppercase;color:var(--glycine-900,#2c4a72);margin-bottom:5px"><span style="display:inline-flex;color:var(--glycine-900,#2c4a72)">' + admIcon(t[0]) + '</span>' + esc(t[2]) + '</div>' +
+        '<div style="display:flex;align-items:center;gap:7px;font-family:var(--font-micro);font-size:13px;letter-spacing:0.06em;text-transform:uppercase;color:var(--glycine-900,#2c4a72);margin-bottom:5px"><span style="display:inline-flex;color:var(--glycine-900,#2c4a72)">' + admIcon(t[0]) + '</span>' + esc(t[2]) + '</div>' +
         '<div style="font-family:var(--font-display);font-style:italic;font-size:30px;color:var(--terre);line-height:1">' + t[1] + '</div>' +
       '</div>';
     }).join('');
     return '<div class="card" style="background:var(--card);border:none;padding:18px 20px;margin-bottom:18px">' +
-      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px"><span style="width:7px;height:7px;border-radius:50%;background:var(--glycine-900,#2c4a72)"></span><span style="font-family:var(--font-micro);font-size:15px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted)">Depuis le 1er janvier ' + year + '</span></div>' +
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px"><span style="width:7px;height:7px;border-radius:50%;background:var(--glycine-900,#2c4a72)"></span><span style="font-family:var(--font-micro);font-size:13px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted)">Depuis le 1er janvier ' + year + '</span></div>' +
       '<div style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:8px 0">' + body + '</div>' +
     '</div>';
   }
@@ -7143,12 +7158,12 @@
     var inactive = col.inactiveCount || 0;
     function tile(icon, big, label, danger) {
       return '<div style="min-width:150px;padding:6px 20px 6px 0">' +
-        '<div style="display:flex;align-items:center;gap:7px;font-family:var(--font-micro);font-size:15px;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);margin-bottom:5px"><span style="display:inline-flex;color:var(--terre-400,#8a7d6b)">' + admIcon(icon) + '</span>' + esc(label) + '</div>' +
+        '<div style="display:flex;align-items:center;gap:7px;font-family:var(--font-micro);font-size:13px;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);margin-bottom:5px"><span style="display:inline-flex;color:var(--terre-400,#8a7d6b)">' + admIcon(icon) + '</span>' + esc(label) + '</div>' +
         '<div style="font-family:var(--font-display);font-style:italic;font-size:28px;color:' + (danger ? '#8a4a2c' : 'var(--terre)') + ';line-height:1">' + big + '</div>' +
       '</div>';
     }
     return '<div class="card" style="background:var(--card);border:none;padding:18px 20px;margin-bottom:18px">' +
-      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px"><span style="width:7px;height:7px;border-radius:50%;background:var(--terre)"></span><span style="font-family:var(--font-micro);font-size:15px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted)">Santé des collaborations</span></div>' +
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px"><span style="width:7px;height:7px;border-radius:50%;background:var(--terre)"></span><span style="font-family:var(--font-micro);font-size:13px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted)">Santé des collaborations</span></div>' +
       '<div style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:8px 0">' +
         tile('mytasks', nYou, 'en attente de toi', false) +
         tile('clients', nThem, 'en attente d\'elles', false) +
@@ -7229,7 +7244,7 @@
     var chargeOver = weekCapH && weekMin > weekCapH * 60;
     function card(icon, big, label, sub, onclick) {
       return '<button onclick="' + onclick + '" style="text-align:left;background:var(--card);border:none;border-radius:14px;padding:15px 16px;cursor:pointer;display:flex;flex-direction:column;gap:4px;transition:box-shadow .14s" onmouseenter="this.style.boxShadow=\'0 3px 14px rgba(28,18,5,0.08)\'" onmouseleave="this.style.boxShadow=\'\'">' +
-        '<span style="display:flex;align-items:center;gap:8px;font-family:var(--font-micro);font-size:15px;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted)"><span style="color:var(--terre-400,#8a7d6b);display:inline-flex">' + admIcon(icon) + '</span>' + esc(label) + '</span>' +
+        '<span style="display:flex;align-items:center;gap:8px;font-family:var(--font-micro);font-size:13px;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted)"><span style="color:var(--terre-400,#8a7d6b);display:inline-flex">' + admIcon(icon) + '</span>' + esc(label) + '</span>' +
         '<span style="font-family:var(--font-display);font-style:italic;font-size:26px;color:var(--terre);line-height:1.05">' + big + '</span>' +
         (sub ? '<span class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted)">' + sub + '</span>' : '') +
       '</button>';
@@ -7245,7 +7260,7 @@
         '<div style="width:96px;height:96px;border-radius:50%;flex-shrink:0;display:grid;place-items:center;background:conic-gradient(' + scoreCol + ' ' + (score * 3.6) + 'deg, var(--bone-d) 0deg)">' +
           '<div style="width:76px;height:76px;border-radius:50%;background:var(--card);display:grid;place-items:center"><div style="font-family:var(--font-display);font-style:italic;font-size:28px;color:' + scoreCol + ';line-height:1">' + score + '</div></div>' +
         '</div>' +
-        '<div style="min-width:0"><div style="font-family:var(--font-micro);font-size:15px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted)">Santé du studio</div>' +
+        '<div style="min-width:0"><div style="font-family:var(--font-micro);font-size:13px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted)">Santé du studio</div>' +
           '<div style="font-family:var(--font-display);font-style:italic;font-size:26px;color:var(--terre)">' + score + ' / 100</div>' +
           '<div style="font-size:15px;color:' + scoreCol + ';font-weight:600;margin-top:2px">' + esc(scoreLbl) + '</div></div>' +
       '</div>' +
@@ -8234,7 +8249,7 @@
       var day = e.at.slice(0, 10);
       if (day !== lastDay) {
         lastDay = day;
-        out += '<div style="font-family:var(--font-micro);font-size:15px;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin:18px 0 8px">' + esc(fmtDate(e.at)) + '</div>';
+        out += '<div style="font-family:var(--font-micro);font-size:13px;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin:18px 0 8px">' + esc(fmtDate(e.at)) + '</div>';
       }
       out += '<div style="display:flex;gap:12px;padding:9px 0;border:none">' +
         '<div style="flex-shrink:0;font-size:16px;width:26px;text-align:center;line-height:1.4">' + e.icon + '</div>' +
@@ -8682,7 +8697,7 @@
         var attHtml = atts.map(function (a) { return '<a class="cg-btn cg-btn--soft" href="/api/clients/' + CURKEY + '/files/' + encodeURIComponent(a.key) + '/download" target="_blank">📎 ' + esc(a.name || 'fichier') + '</a>'; }).join('');
         var lkHtml = l.clientLink ? '<a class="cg-btn cg-btn--soft" href="' + esc(/^https?:\/\//i.test(l.clientLink) ? l.clientLink : 'https://' + l.clientLink) + '" target="_blank" rel="noopener">🔗 Lien</a>' : '';
         fb = '<div style="margin:0 0 8px;padding:11px 13px;background:#fbeae5;border:1px solid #f0d3c9;border-radius:10px">' +
-          '<div style="font-family:var(--font-micro);font-size:15px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#8d2b21;margin-bottom:5px">Retour de la cliente</div>' +
+          '<div style="font-family:var(--font-micro);font-size:13px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#8d2b21;margin-bottom:5px">Retour de la cliente</div>' +
           (l.clientComment ? '<div style="font-size:15px;color:#7a2e1e;white-space:pre-wrap;line-height:1.5">' + esc(l.clientComment) + '</div>' : '') +
           ((attHtml || lkHtml) ? '<div class="cg-btnrow" style="flex-wrap:wrap;margin-top:8px">' + attHtml + lkHtml + '</div>' : '') +
         '</div>';
@@ -8755,7 +8770,7 @@
         }
         return '<a href="' + furl + '" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid var(--bone-d,#eae5dc);border-radius:9px;padding:6px 11px;font-family:var(--font-micro);font-size:15px;color:var(--terre);text-decoration:none">' + cgIcon('download', 12) + esc(f.name || 'fichier') + '</a>';
       }).join('') + '</div>' : '';
-      var commentsHtml = comments.length ? comments.map(function (m) { var mine = m.author === 'cindy'; return '<div style="margin-bottom:8px"><div style="font-family:var(--font-micro);font-size:15px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--muted);margin-bottom:2px">' + (mine ? 'Vous' : 'Cliente') + ' · ' + (m.createdAt ? fmtDT(m.createdAt) : '') + '</div><div style="font-family:var(--font-micro);font-size:15px;line-height:1.5;color:var(--terre);background:' + (mine ? 'var(--brume,#E4F0FF)' : '#F8F6F2') + ';border-radius:10px;padding:8px 12px">' + esc(m.text || '') + '</div></div>'; }).join('') : '';
+      var commentsHtml = comments.length ? comments.map(function (m) { var mine = m.author === 'cindy'; return '<div style="margin-bottom:8px"><div style="font-family:var(--font-micro);font-size:13px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--muted);margin-bottom:2px">' + (mine ? 'Vous' : 'Cliente') + ' · ' + (m.createdAt ? fmtDT(m.createdAt) : '') + '</div><div style="font-family:var(--font-micro);font-size:15px;line-height:1.5;color:var(--terre);background:' + (mine ? 'var(--brume,#E4F0FF)' : '#F8F6F2') + ';border-radius:10px;padding:8px 12px">' + esc(m.text || '') + '</div></div>'; }).join('') : '';
       return '<section class="cg-bloc cg-bloc--ech">' +
         '<div class="cg-lbl">' + cgIcon('chat', 15) + ' Échanges avec ta cliente' +
         (c.clientNotif ? '<span class="cg-nouv"></span>' : '') + '</div>' +
@@ -9706,7 +9721,7 @@
       ? '<div style="display:grid;gap:14px">' + openT.map(card).join('') + '</div>'
       : '<div class="empty">Aucun ticket en cours. La cliente ouvre ses tickets depuis son espace.</div>';
     var histBlock = doneT.length
-      ? '<details style="margin-top:18px"><summary style="cursor:pointer;font-family:var(--font-micro);font-size:15px;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:var(--muted);padding:6px 0">Tickets terminés · ' + doneT.length + '</summary>' +
+      ? '<details style="margin-top:18px"><summary style="cursor:pointer;font-family:var(--font-micro);font-size:13px;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:var(--muted);padding:6px 0">Tickets terminés · ' + doneT.length + '</summary>' +
         '<div style="display:grid;gap:14px;margin-top:12px">' + doneT.map(card).join('') + '</div></details>'
       : '';
     var mh = parseFloat(d.content.monthlyHours) || 0;
@@ -9915,7 +9930,7 @@
     var th0 = moveId ? '<th style="background:var(--terre);padding:12px 8px;width:1%;white-space:nowrap;border-top-left-radius:13px"></th>' : '';
     var head = '<tr>' + th0 + cols.map(function (c, i) {
       var rnd = (i === 0 && !moveId ? 'border-top-left-radius:13px;' : '') + (i === cols.length - 1 ? 'border-top-right-radius:13px;' : '');
-      return '<th style="background:var(--terre);color:var(--paille);font-family:var(--font-micro);font-size:15px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:12px 15px;vertical-align:middle;text-align:' + (i === 0 ? 'center' : 'left') + ';' + rnd + '">' + esc(c || '') + '</th>';
+      return '<th style="background:var(--terre);color:var(--paille);font-family:var(--font-micro);font-size:13px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:12px 15px;vertical-align:middle;text-align:' + (i === 0 ? 'center' : 'left') + ';' + rnd + '">' + esc(c || '') + '</th>';
     }).join('') + '</tr>';
     var bodyR = dataRows.map(function (row, ri) {
       var even = (zebre !== false) && ri % 2 === 1, last = ri === dataRows.length - 1;
@@ -9985,7 +10000,7 @@
       var attHtml = atts ? '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:7px">📎 ' + atts + ' pièce' + (atts > 1 ? 's' : '') + ' jointe' + (atts > 1 ? 's' : '') + '</div>' : '';
       var due10 = esc((t.dueDate || '').slice(0, 10));
       return '<div class="card" style="background:#f6ece3;max-width:760px;margin-bottom:10px">' +
-        '<div style="display:flex;align-items:baseline;gap:9px;flex-wrap:wrap"><span style="font-family:var(--font-micro);font-size:15px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--gold-ink);background:var(--gold-chip);padding:3px 9px;border-radius:999px">À analyser</span><span style="font-weight:600;color:var(--terre)">' + esc(t.title || 'Demande') + '</span></div>' +
+        '<div style="display:flex;align-items:baseline;gap:9px;flex-wrap:wrap"><span style="font-family:var(--font-micro);font-size:13px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--gold-ink);background:var(--gold-chip);padding:3px 9px;border-radius:999px">À analyser</span><span style="font-weight:600;color:var(--terre)">' + esc(t.title || 'Demande') + '</span></div>' +
         metaHtml + msgHtml + attHtml +
         '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">' +
           '<button class="btn btn--dark btn--sm" onclick="ADM.ptDemandeTriage(\'' + t.id + '\',\'accept\')">✓ Accepter → tâche</button>' +
@@ -10013,7 +10028,7 @@
         ? '<button class="btn btn--outline btn--sm" onclick="ADM.taskArchive(\'' + t.id + '\',false)">Restaurer</button>'
         : (t.status === 'done' ? '<button class="btn btn--outline btn--sm" onclick="ADM.taskArchive(\'' + t.id + '\',true)">Archiver</button>' : '');
       var hair = 'height:1px;background:var(--bone-d);margin:18px 0;opacity:0.7';
-      var pill = '<span style="display:inline-block;font-family:var(--font-micro);font-size:15px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:' + stCol + ';background:' + stBg + ';padding:4px 11px;border-radius:999px">' + stLbl + '</span>';
+      var pill = '<span style="display:inline-block;font-family:var(--font-micro);font-size:13px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:' + stCol + ';background:' + stBg + ';padding:4px 11px;border-radius:999px">' + stLbl + '</span>';
       // Chip carrée à icône (état) — jamais de point
       var stIcon = { todo: '<circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 2"/>', in_progress: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>', review: '<path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/>', done: '<path d="M20 6 9 17l-5-5"/>' }[t.status] || '<circle cx="12" cy="12" r="9"/>';
       var stChip = '<span class="tkchip" style="background:' + stBg + '"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="' + stCol + '" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">' + stIcon + '</svg></span>';
@@ -10139,7 +10154,7 @@
         '<div style="' + hair + '"></div>' +
         commentsBlock('partner', t) +
         '<div style="' + hair + '"></div>' +
-        '<details><summary style="cursor:pointer;font-family:var(--font-micro);font-size:15px;letter-spacing:0.07em;text-transform:uppercase;color:var(--muted);padding:2px 0">Plus d\'options</summary>' +
+        '<details><summary style="cursor:pointer;font-family:var(--font-micro);font-size:13px;letter-spacing:0.07em;text-transform:uppercase;color:var(--muted);padding:2px 0">Plus d\'options</summary>' +
           '<div class="row mt" style="align-items:center;gap:10px"><span class="micro">Temps passé</span><input class="inp" type="number" style="width:80px" value="' + (t.timeSpentMinutes || 0) + '" title="ajuster les minutes" onchange="ADM.taskTime(\'' + t.id + '\',this.value)"><span class="micro">min</span></div>' +
           sessionsBlock(t) +
           '<div class="row mt" style="align-items:center;gap:12px;flex-wrap:wrap">' +
@@ -10166,7 +10181,7 @@
           '<div class="pjc-grid">' + list.map(function (t) { return ptCarte(t, d); }).join('') + '</div></section>';
       }).join('');
     }
-    var archHtml = archived.length ? '<details style="margin-top:18px"><summary style="cursor:pointer;font-family:var(--font-micro);font-size:15px;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);padding:6px 0">Tâches archivées · ' + archived.length + '</summary><div class="pjc-grid" style="margin-top:12px">' + archived.map(function (t) { return ptCarte(t, d); }).join('') + '</div></details>' : '';
+    var archHtml = archived.length ? '<details style="margin-top:18px"><summary style="cursor:pointer;font-family:var(--font-micro);font-size:13px;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);padding:6px 0">Tâches archivées · ' + archived.length + '</summary><div class="pjc-grid" style="margin-top:12px">' + archived.map(function (t) { return ptCarte(t, d); }).join('') + '</div></details>' : '';
     return inboxBanner + grid + archHtml;
   }
   /* La card d'une tâche : ce qu'on a besoin de savoir sans l'ouvrir. Même
@@ -10352,7 +10367,7 @@
           '<div style="font-size:15px;color:var(--terre);line-height:1.45">' + mtLinkify(c.text || '') + '</div>' +
         '</div></div>';
     }).join('') : '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-bottom:8px">Aucun échange pour l\'instant.</div>';
-    var flag = t.clientCommentNotif ? '<span style="font-family:var(--font-micro);font-size:15px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#2c4a72;background:#E8F1FF;padding:3px 8px;border-radius:999px;margin-left:8px">Nouveau</span>' : '';
+    var flag = t.clientCommentNotif ? '<span style="font-family:var(--font-micro);font-size:13px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#2c4a72;background:#E8F1FF;padding:3px 8px;border-radius:999px;margin-left:8px">Nouveau</span>' : '';
     return '<div><div class="micro" style="margin-bottom:9px">Échanges sur la tâche' + flag + '</div>' + cs +
       '<div class="row mt" style="gap:8px"><input class="inp" style="flex:1" id="cm-' + t.id + '" placeholder="Répondre au client…" onkeydown="if(event.key===\'Enter\')ADM.taskComment(\'' + pid + '\',\'' + t.id + '\')"><button class="btn btn--dark btn--sm" onclick="ADM.taskComment(\'' + pid + '\',\'' + t.id + '\')">Envoyer</button></div></div>';
   }
@@ -10877,7 +10892,7 @@
     });
     var pop = document.createElement('div'); pop.id = 'adm-msgmove';
     pop.style.cssText = 'position:fixed;z-index:99999;background:#fff;border:none;border-radius:12px;box-shadow:0 16px 40px -12px rgba(28,18,5,0.32);padding:6px;max-height:340px;overflow-y:auto;min-width:240px';
-    pop.innerHTML = '<div style="font-family:var(--font-micro);font-size:15px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:6px 9px 4px">Déplacer vers…</div>' +
+    pop.innerHTML = '<div style="font-family:var(--font-micro);font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:6px 9px 4px">Déplacer vers…</div>' +
       targets.map(function (t) { return '<button type="button" onmousedown="event.preventDefault()" onclick="ADM.msgMoveTo(\'' + fromPid + '\',\'' + msgId + '\',\'' + t.pid + '\',\'' + esc(t.topic) + '\')" style="display:block;width:100%;text-align:left;border:none;background:none;padding:7px 9px;border-radius:7px;cursor:pointer;font-size:15px;color:var(--terre)" onmouseover="this.style.background=\'#f4eee2\'" onmouseout="this.style.background=\'none\'">' + esc(t.label) + '</button>'; }).join('');
     document.body.appendChild(pop);
     var x = (ev && ev.clientX) || 200, y = (ev && ev.clientY) || 200;
@@ -10937,7 +10952,7 @@
     if (!creations.length) return '';
     var active = ADM_CHAT_TOPIC[d.id] || '';
     var pills = chatSubPill(d, 'Discussion générale', '', active === '') + creations.map(function (c) { return chatSubPill(d, c.name || 'Création', c.id, active === c.id); }).join('');
-    return '<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:18px 0 12px;padding-top:16px;border-top:1px solid var(--line,rgba(65,47,33,.13))"><span style="font-family:var(--font-micro);font-size:15px;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-right:3px">Créations</span>' + pills + '</div>';
+    return '<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:18px 0 12px;padding-top:16px;border-top:1px solid var(--line,rgba(65,47,33,.13))"><span style="font-family:var(--font-micro);font-size:13px;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-right:3px">Créations</span>' + pills + '</div>';
   }
   function chatSetTopic(pid, topic) {
     ADM_CHAT_TOPIC[pid] = topic;
@@ -11702,7 +11717,7 @@
       QNR_BLOCKS.map(function (bt) { return '<option value="' + bt[0] + '">' + esc(bt[2] + '  ' + bt[1]) + '</option>'; }).join('') + '</select>';
     return '<div class="card" style="background:var(--card);padding:14px 15px;margin-bottom:14px;border:none;border-radius:12px">' +
       '<div class="row" style="gap:8px;align-items:center;margin-bottom:10px">' +
-        '<span style="font-family:var(--font-micro);font-size:15px;color:var(--muted);flex-shrink:0;text-transform:uppercase;letter-spacing:0.04em">Étape ' + (idx + 1) + '</span>' +
+        '<span style="font-family:var(--font-micro);font-size:13px;color:var(--muted);flex-shrink:0;text-transform:uppercase;letter-spacing:0.04em">Étape ' + (idx + 1) + '</span>' +
         '<input class="inp" value="' + esc(s.title || '') + '" placeholder="Titre de l\'étape (ex. Votre projet)" style="flex:1;font-weight:600" onchange="ADM.qnrStepSet(\'' + t.id + '\',\'' + s.id + '\',\'title\',this.value)">' +
         '<button class="pbtn" title="Monter"' + (idx === 0 ? ' disabled style="opacity:0.3"' : '') + ' onclick="ADM.qnrStepMove(\'' + t.id + '\',\'' + s.id + '\',-1)">↑</button>' +
         '<button class="pbtn" title="Descendre"' + (idx === total - 1 ? ' disabled style="opacity:0.3"' : '') + ' onclick="ADM.qnrStepMove(\'' + t.id + '\',\'' + s.id + '\',1)">↓</button>' +
@@ -11929,12 +11944,12 @@
       var desc = (t.description || '').trim();
       body =
         '<div style="height:8px;border-radius:999px;background:' + esc(col) + ';width:60px;margin-bottom:22px"></div>' +
-        '<div style="font-family:var(--font-micro);font-size:15px;letter-spacing:0.16em;text-transform:uppercase;color:' + esc(col) + ';margin-bottom:11px">Questionnaire</div>' +
+        '<div style="font-family:var(--font-micro);font-size:13px;letter-spacing:0.16em;text-transform:uppercase;color:' + esc(col) + ';margin-bottom:11px">Questionnaire</div>' +
         '<h1 style="font-family:var(--font-display);font-style:italic;font-size:32px;line-height:1.1;margin:0 0 18px">' + esc(t.name || 'Questionnaire') + '</h1>' +
         (desc
           ? '<div style="font-size:17px;line-height:1.75;color:var(--terre-600);white-space:pre-wrap">' + esc(desc) + '</div>'
           : '<div style="font-size:15px;line-height:1.7;color:var(--terre-600)">Prends un moment pour y répondre : tes réponses sont enregistrées automatiquement, tu peux revenir quand tu veux.</div>') +
-        '<div style="display:flex;align-items:center;gap:14px;margin-top:22px;font-family:var(--font-micro);font-size:15px;letter-spacing:0.05em;text-transform:uppercase;color:var(--muted)"><span>' + nS + ' étape' + (nS > 1 ? 's' : '') + '</span><span>·</span><span>' + nQ + ' question' + (nQ > 1 ? 's' : '') + '</span></div>' +
+        '<div style="display:flex;align-items:center;gap:14px;margin-top:22px;font-family:var(--font-micro);font-size:13px;letter-spacing:0.05em;text-transform:uppercase;color:var(--muted)"><span>' + nS + ' étape' + (nS > 1 ? 's' : '') + '</span><span>·</span><span>' + nQ + ' question' + (nQ > 1 ? 's' : '') + '</span></div>' +
         '<button class="btn btn--sm" style="margin-top:26px;background:' + esc(col) + ';color:#fff;border-color:' + esc(col) + '" onclick="ADM.qnrPreviewStart()">Commencer →</button>';
     } else {
       if (QNR_PREV_STEP >= steps.length) QNR_PREV_STEP = steps.length - 1;
@@ -12054,7 +12069,7 @@
       '<div style="padding:15px 16px;flex:1;display:flex;flex-direction:column;gap:8px">' +
         '<div class="between" style="align-items:flex-start;gap:8px">' +
           '<span class="row" style="gap:8px;align-items:center;cursor:pointer" onclick="ADM.prjOpen(\'' + t.id + '\')"><span style="color:' + esc(col) + ';display:flex">' + head + '</span><strong style="font-size:15.5px;line-height:1.3">' + esc(t.name || 'Sans titre') + '</strong></span>' +
-          '<span style="font-family:var(--font-micro);font-size:15px;text-transform:uppercase;letter-spacing:0.04em;color:#fff;background:' + esc(col) + ';padding:3px 8px;border-radius:999px;white-space:nowrap;flex-shrink:0">' + esc(prjOfferLabel(t.offer)) + '</span>' +
+          '<span style="font-family:var(--font-micro);font-size:13px;text-transform:uppercase;letter-spacing:0.04em;color:#fff;background:' + esc(col) + ';padding:3px 8px;border-radius:999px;white-space:nowrap;flex-shrink:0">' + esc(prjOfferLabel(t.offer)) + '</span>' +
         '</div>' +
         '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:auto">' + wk + nP + ' phase' + (nP > 1 ? 's' : '') + ' · ' + nS + ' étape' + (nS > 1 ? 's' : '') + ' · ' + nD + ' livrable' + (nD > 1 ? 's' : '') + '</div>' +
       '</div>' +
