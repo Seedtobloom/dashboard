@@ -4431,7 +4431,15 @@
       reel: Math.round((Number(t.timeSpentSeconds) || 0) / 60) || Math.round(Number(t.timeSpentMinutes) || 0),
       restant: (typeof t.restMinutes === 'number') ? t.restMinutes : null,
       debloque: t.unblocks || '',
-      slots: Array.isArray(t.slots) ? t.slots : []
+      slots: Array.isArray(t.slots) ? t.slots : [],
+      // Ce que la tâche PORTE : le brief de la cliente, ses échanges, ses
+      // fichiers. Ouvrir une tâche sans ça obligeait à aller le chercher.
+      brief: t.content || '',
+      blocks: Array.isArray(t.blocks) ? t.blocks : [],
+      table: (t.table && typeof t.table === 'object') ? t.table : null,
+      fichiers: Array.isArray(t.attachments) ? t.attachments : [],
+      lien: t.clientLink || '',
+      echanges: Array.isArray(t.comments) ? t.comments : []
     };
   }
   // Tout le travail vivant, terminé COMPRIS : un projet a besoin de ce qui est
@@ -5191,12 +5199,43 @@
 
   /* ── Liste : quatre colonnes, pas une de plus ─────────────────────────── */
 
+  /* Les tâches se regroupent par cliente : une longue liste mélangée obligeait
+   * à relire le nom de la cliente sur chaque ligne pour savoir de quoi on
+   * parle. Le nom porte le groupe, et chaque groupe dit ce qu'il lui reste.
+   * L'ordre des groupes suit celui des tâches : la plus urgente donne le ton,
+   * donc le tri choisi en haut continue de commander. */
+  function ckTParCliente(l) {
+    var ordre = [], par = {};
+    l.forEach(function (t) {
+      var c = t.qui || 'Sans cliente';
+      if (!par[c]) { par[c] = []; ordre.push(c); }
+      par[c].push(t);
+    });
+    return ordre.map(function (c) { return { qui: c, taches: par[c] }; });
+  }
   function ckTVueListe(l) {
-    return '<div class="ck-tbl">' +
-      '<div class="ck-th"><span>Tâche</span><span>Travail restant</span><span>Organisation</span><span>Échéance</span><span></span></div>' +
-      (l.length ? l.map(function (t) { return ckTLigne(t); }).join('')
-        : '<div class="ck-vide">Rien ici. Ce n’est pas un écran vide, c’est une bonne nouvelle.</div>') +
-      '</div>';
+    if (!l.length) {
+      return '<div class="ck-tbl"><div class="ck-vide">Rien ici. Ce n’est pas un écran vide, c’est une bonne nouvelle.</div></div>';
+    }
+    // Les titres de colonnes une seule fois, en tête : les répéter à chaque
+    // groupe ajoutait cinq lignes de bruit à un écran qu'on veut aéré.
+    var entete = '<div class="ck-tbl ck-tbl--th"><div class="ck-th"><span>Tâche</span>' +
+      '<span>Travail restant</span><span>Organisation</span><span>Échéance</span><span></span></div></div>';
+    return entete + ckTParCliente(l).map(function (g) {
+      var connus = g.taches.filter(function (t) { return ckpRestant(t) !== null; });
+      var restant = connus.reduce(function (s2, t) { return s2 + ckpRestant(t); }, 0);
+      var sansPlace = connus.reduce(function (s2, t) { return s2 + (ckpAPlanifier(t) || 0); }, 0);
+      var aEstimer = g.taches.length - connus.length;
+      return '<section class="ckt-g">' +
+        '<div class="ckt-gh"><span class="ckt-gn">' + esc(g.qui) + '</span>' +
+          '<span class="ckt-gm">' + g.taches.length + ' tâche' + (g.taches.length > 1 ? 's' : '') +
+          (restant ? ' · ' + esc(ckpDuree(restant)) + ' à faire' : '') +
+          (sansPlace ? ' · ' + esc(ckpDuree(sansPlace)) + ' sans place' : '') +
+          (aEstimer ? ' · ' + aEstimer + ' à estimer' : '') + '</span></div>' +
+        '<div class="ck-tbl">' +
+          g.taches.map(function (t) { return ckTLigne(t, 'grp'); }).join('') +
+        '</div></section>';
+    }).join('');
   }
   function ckTLigne(t, ecran) {
     var r = ckpRestant(t), ap = ckpAPlanifier(t), pf = ckpPlanifieFutur(t);
@@ -5207,7 +5246,10 @@
     var ech = ckpChEcheance(t);
     return '<div class="ck-tr ' + (CKT.ouverte === t.id ? 'on' : '') + '" onclick="ADM.ckTOuvrir(\'' + esc(t.id) + '\'' +
       (ecran ? ',\'' + ecran + '\'' : '') + ')">' +
-      '<div><div class="ck-eb">' + esc(t.qui + (t.ctx ? ' · ' + t.ctx : '')) + '</div>' +
+      // Regroupée par cliente, la ligne ne redit pas son nom : le groupe le
+      // porte. Sans contexte de projet, elle n'écrit rien plutôt que de le
+      // répéter.
+      '<div><div class="ck-eb">' + esc(ecran === 'grp' ? (t.ctx || '') : (t.qui + (t.ctx ? ' · ' + t.ctx : ''))) + '</div>' +
         '<div class="ck-tt">' + esc(t.titre) + '</div></div>' +
       // Quand le temps n'a jamais été dit, on ne se contente pas de l'écrire :
       // on pose le champ ICI. Le dire était jusqu'ici caché derrière un clic
@@ -5272,11 +5314,56 @@
           ckpPlanifierBtn(t, 'Poser un créneau', 'margin-top:10px') +
         '</div>' +
       '</div>' +
+      ckTContenu(t) +
       '<div class="ck-pp">' +
         '<button class="btn btn--dark btn--sm" onclick="' + ckpOuvrirArg(t) + '">Ouvrir</button>' +
         ckpChampFini(t, 'pan') +
         '<span class="ck-ppq">' + esc(ckTPourquoi(t)) + '</span>' +
       '</div></div>';
+  }
+  /* Ce que la tâche porte : le brief de la cliente, ce qui s'est dit dessus,
+   * et les fichiers qui vont avec. Ouvrir une tâche ne montrait que des
+   * durées : pour savoir CE QU'IL Y A À FAIRE il fallait aller le chercher
+   * ailleurs. Le brief est rendu par ptBlocksHtml et briefTableHtml, les
+   * mêmes que la fiche cliente : un seul rendu du brief, pas deux. */
+  function ckTContenu(t) {
+    var blocs = [];
+    var aBrief = (t.blocks && t.blocks.length) || t.table || (t.brief && String(t.brief).trim());
+    if (aBrief) {
+      // ptBlocksHtml pose déjà son propre intitulé : en ajouter un au-dessus
+      // écrivait « le brief » deux fois de suite.
+      var avecBlocs = !!(t.blocks && t.blocks.length);
+      var corps = avecBlocs
+        ? ptBlocksHtml({ blocks: t.blocks }, t.key, 'Le brief de ta cliente')
+        : (t.brief ? '<div class="ckt-bt">' + admRichSafe(t.brief) + '</div>' : '');
+      blocs.push([avecBlocs ? '' : 'Le brief de ta cliente', corps + (t.table ? briefTableHtml(t.table) : '')]);
+    }
+    var ech = t.echanges || [];
+    if (ech.length) {
+      blocs.push(['Ce qui s’est dit', ech.slice().reverse().map(function (m) {
+        var mien = m.author === 'cindy';
+        var att = (m.attachments || []).map(function (a) {
+          return '<a class="ckt-f" href="/api/clients/' + esc(t.key) + '/files/' + encodeURIComponent(a.key) + '/download" target="_blank" rel="noopener">' + esc(a.name || 'fichier') + '</a>';
+        }).join('');
+        return '<div class="ckt-m' + (mien ? ' ckt-m--moi' : '') + '">' +
+          '<div class="ck-ts">' + (mien ? 'Toi' : 'Ta cliente') + (m.at ? ' · ' + esc(fmtDT(m.at)) : '') + '</div>' +
+          (m.text ? '<div class="ckt-mt">' + esc(m.text) + '</div>' : '') +
+          (att ? '<div class="ckt-fs">' + att + '</div>' : '') + '</div>';
+      }).join('')]);
+    }
+    var fs = t.fichiers || [];
+    if (fs.length || t.lien) {
+      blocs.push(['Les fichiers',
+        '<div class="ckt-fs">' + fs.map(function (a) {
+          return '<a class="ckt-f" href="/api/clients/' + esc(t.key) + '/files/' + encodeURIComponent(a.key) + '/download" target="_blank" rel="noopener">' + esc(a.name || 'fichier') + '</a>';
+        }).join('') +
+        (t.lien ? '<a class="ckt-f" href="' + esc(/^https?:\/\//i.test(t.lien) ? t.lien : 'https://' + t.lien) + '" target="_blank" rel="noopener">Le lien qu’elle a donné</a>' : '') +
+        '</div>']);
+    }
+    if (!blocs.length) return '';
+    return '<div class="ckt-c">' + blocs.map(function (b) {
+      return '<section class="ckt-cs">' + (b[0] ? '<div class="ck-meta">' + esc(b[0]) + '</div>' : '') + b[1] + '</section>';
+    }).join('') + '</div>';
   }
   // Pourquoi cette tâche est là où elle est. Toujours dicible : si on ne sait
   // pas l'expliquer, c'est que le classement n'a pas de sens.

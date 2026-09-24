@@ -2224,6 +2224,32 @@ select.cg-in{cursor:pointer}
 .cpj__a{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end}
 @media(max-width:900px){.cpj{grid-template-columns:1fr;gap:8px}.cpj__a{justify-content:flex-start}}
 .cpj-note{font-size:13px;color:var(--muted);line-height:1.5;margin:10px 0 12px;max-width:72ch}
+/* Tâches regroupées par cliente : le nom porte le groupe, et chaque groupe
+   dit ce qu'il lui reste. Les groupes respirent, pour qu'on les distingue
+   sans avoir à lire. */
+.ck-tbl--th{padding-bottom:0;margin-bottom:10px;background:transparent}
+/* Le contenu d'une tâche dans son panneau : le brief, les échanges, les
+   fichiers. Trois blocs sur la Neige, au même langage que le reste. */
+.ckt-c{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-top:18px}
+.ckt-cs{background:var(--card);border-radius:16px;padding:16px 18px;min-width:0}
+/* Ces blocs sont clairs, posés sur le panneau sombre : leurs intitulés et
+   leurs textes reprennent l'encre foncée, sinon ils disparaissent. */
+.ck-pan .ckt-cs .ck-meta,.ck-pan .ckt-cs .micro,.ckt-cs .ck-meta,.ckt-cs .micro{color:var(--cuivre);margin-bottom:10px}
+.ckt-cs,.ckt-cs div,.ckt-cs span,.ckt-cs b{color:var(--ebene)}
+.ckt-cs .ck-ts{color:rgba(17,7,4,.6)}
+.ckt-cs>div:first-child{margin-top:0!important}
+.ckt-bt{font-size:13.5px;line-height:1.6;color:var(--text);white-space:pre-wrap}
+.ckt-m{margin-bottom:11px}
+.ckt-mt{font-size:13.5px;line-height:1.55;color:var(--text);background:var(--bone);border-radius:12px;padding:9px 13px;margin-top:4px;white-space:pre-wrap}
+.ckt-m--moi .ckt-mt{background:var(--surface-2)}
+.ckt-fs{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+.ckt-f{display:inline-flex;align-items:center;gap:6px;background:var(--bone);border-radius:10px;padding:7px 12px;font-family:var(--font-micro);font-size:12px;color:var(--cuivre);text-decoration:none}
+.ckt-f:hover{background:var(--surface-2)}
+.ckt-g{margin-bottom:30px}
+.ckt-gh{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;padding:0 24px 9px}
+.ckt-gn{font-family:var(--font-display);font-style:italic;font-size:22px;color:var(--terre)}
+.ckt-gm{font-family:var(--font-micro);font-size:11px;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted)}
+
 /* Projets regroupés par cliente : le nom porte le groupe, pas chaque ligne. */
 .ckj-cli{margin-bottom:18px}
 .ckj-clih{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;padding:0 24px 8px}

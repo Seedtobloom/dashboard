@@ -2174,6 +2174,17 @@ async function handleDashboard(env: Env): Promise<Response> {
             // Pièces jointes et lien de la cliente : absents de cette liste au
             // départ, ils disparaissaient donc du panneau de tâche.
             attachments: tf.atts, attCount: tf.atts.length, clientLink: tf.clientLink,
+            // Les échanges de la tâche : sans eux, ouvrir une tâche ne disait
+            // pas ce que la cliente avait écrit dessus. On borne (les vingt
+            // derniers, texte tronqué) : ce tableau part dans CHAQUE charge.
+            comments: (Array.isArray(t.comments) ? t.comments : []).slice(-20).map((c: AnyObj) => ({
+              author: c.author === 'client' ? 'client' : 'cindy',
+              text: String(c.text || '').slice(0, 1500),
+              at: String(c.createdAt || ''),
+              attachments: (Array.isArray(c.attachments) ? c.attachments : [])
+                .map((a: AnyObj) => ({ name: String(a.name || 'fichier').slice(0, 120), key: String(a.key || a.fileKey || '').slice(0, 300) }))
+                .filter((a: AnyObj) => a.key),
+            })),
             blocks: Array.isArray(t.blocks) ? t.blocks : [],
             table: (t.table && typeof t.table === 'object') ? t.table : null,
             reviewSentAt: (hist2.length ? hist2[hist2.length - 1].at : '') || '',
