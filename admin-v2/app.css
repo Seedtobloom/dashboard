@@ -2148,3 +2148,21 @@ select.cg-in{cursor:pointer}
 .ck .ck-pan .btn--outline:hover{background:rgba(230,229,178,.18)}
 .ck .ck-pan .btn--dark{background:var(--paille);color:var(--ebene)}
 .ck .ck-ple{margin:6px 0 4px}
+
+/* ── Ses projets : une liste, segmentée, sur la fiche cliente ─────────────
+   Pas de barre sur le côté : c'est le titre de segment qui sépare. */
+.cpj-card{max-width:1100px}
+.cpj-seg{margin-top:18px}
+.cpj-seg:first-of-type{margin-top:10px}
+.cpj-seg__t{display:flex;align-items:center;gap:9px;font-family:var(--font-micro);font-size:10.5px;letter-spacing:0.09em;text-transform:uppercase;color:var(--muted);padding-bottom:8px;border-bottom:1px solid var(--border);margin-bottom:4px}
+.cpj-seg__n{min-width:19px;height:19px;padding:0 6px;border-radius:999px;background:var(--surface-2);color:var(--terre-600);display:inline-flex;align-items:center;justify-content:center;font-size:10.5px;font-weight:600}
+.cpj-vide{font-size:13.5px;color:var(--muted);padding:12px 2px}
+.cpj{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1.3fr) auto;gap:16px;align-items:center;padding:14px 2px;border-bottom:1px solid var(--border)}
+.cpj:last-child{border-bottom:none}
+.cpj--clos{opacity:.66}
+.cpj__n{font-size:15.5px;color:var(--terre);min-width:0}
+.cpj__p{font-family:var(--font-micro);font-size:10.5px;letter-spacing:0.07em;text-transform:uppercase;color:var(--muted);margin-top:4px}
+.cpj__o{font-size:13.5px;color:var(--text);min-width:0}
+.cpj__a{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end}
+@media(max-width:900px){.cpj{grid-template-columns:1fr;gap:8px}.cpj__a{justify-content:flex-start}}
+.cpj-note{font-size:13px;color:var(--muted);line-height:1.5;margin:10px 0 12px;max-width:72ch}

@@ -7876,46 +7876,24 @@
 
   // Vue d'ensemble (onglet par défaut, style maquette) : là où on en est + activité récente.
   function apercuTab() {
+    // Ne calcule plus que ce qui s'affiche ici : les messages non lus et le
+    // fil d'activité. L'avancement, la prochaine échéance et le forfait sont
+    // déjà dits par les tuiles du haut ; l'état de chaque projet, par la liste
+    // « Ses projets ». Les recalculer ici, c'était trois fois le même chiffre.
     var doms = (CUR.domains || []).concat(CUR.supports || []);
-    var main = doms.filter(function (x) { return x.isActive !== false && x.content; })[0] || doms.filter(function (x) { return x.content; })[0];
-    var cur = '', next = '', pend = 0, unread = 0, nextDue = '', forfaitTxt = '', recent = [];
-    function keepDue(dd) { if (dd && (!nextDue || dd < nextDue)) nextDue = dd; }
+    var unread = 0, recent = [];
     doms.forEach(function (d) {
       unread += d.unread || 0;
       var c = d.content || {};
       (c.livrables || []).forEach(function (l) {
-        if (l.status === 'a_valider') pend++;
-        if (l.status !== 'valide') keepDue(l.dueDate || l.dueAt || '');
         if (l.createdAt) recent.push({ at: l.createdAt, t: 'Livrable envoyé · ' + (l.name || ''), s: 'Livrable' });
       });
-      (c.suivi || []).forEach(function (s) { if (s.status !== 'done' && !s.completedAt) keepDue(s.dueDate || s.date || ''); });
       (c.taches || []).forEach(function (t) {
         if (t.archived) return;
-        if (t.status !== 'done' && !t.completedAt) keepDue(t.dueDate || '');
         if (t.createdAt) recent.push({ at: t.createdAt, t: (t.title || 'Tâche'), s: 'Demande créée' });
         if (t.completedAt) recent.push({ at: t.completedAt, t: (t.title || 'Tâche'), s: 'Terminé' });
       });
-      if (d.forfait && d.forfait.configured && typeof d.forfait.remaining === 'number') {
-        forfaitTxt = (d.forfait.remaining < 0 ? 'dépassé de ' + fmtHrs(-d.forfait.remaining) : fmtHrs(d.forfait.remaining) + ' restant');
-      }
     });
-    if (main && main.content) {
-      var suivi = main.content.suivi || main.content.taches || [];
-      var ip = suivi.filter(function (s) { return s.status === 'in_progress'; })[0];
-      var up = suivi.filter(function (s) { return s.status === 'upcoming' || s.status === 'todo'; })[0];
-      if (ip) cur = ip.title || ip.label || '';
-      if (up) next = up.title || up.label || '';
-    }
-    var mainLbl = main ? (DOMAIN_LABELS[main.id] || main.label || '') : '';
-    var ovRows = '';
-    if (mainLbl) ovRows += '<div class="ov"><span class="ov__k">Projet</span><span class="ov__v">' + esc(mainLbl) + '</span></div>';
-    if (cur) ovRows += '<div class="ov"><span class="ov__k">En cours</span><span class="ov__v">' + esc(cur) + '</span></div>';
-    if (next) ovRows += '<div class="ov"><span class="ov__k">Ensuite</span><span class="ov__v">' + esc(next) + '</span></div>';
-    if (nextDue) ovRows += '<div class="ov"><span class="ov__k">Échéance</span><span class="ov__v">' + esc(fmtDate(nextDue)) + '</span></div>';
-    if (forfaitTxt) ovRows += '<div class="ov"><span class="ov__k">Forfait</span><span class="ov__v">' + esc(forfaitTxt) + '</span></div>';
-    if (!ovRows) ovRows = '<div class="ov"><span class="ov__k">Statut</span><span class="ov__v">Collaboration en cours</span></div>';
-    var note = pend ? '<div class="ovnote">' + pend + ' livrable' + (pend > 1 ? 's' : '') + ' attend' + (pend > 1 ? 'ent' : '') + ' ta validation.</div>' : '';
-    var overview = '<div class="ovcard"><h2>Là où on en est</h2>' + ovRows + note + '</div>';
     var pr = presence(CUR.lastSeen);
     var acts = '';
     if (unread) acts += '<div class="inrow inrow--recu"><span class="inrow__ic"><svg viewBox="0 0 24 24" style="width:16px;height:16px" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 5h16v11H9l-4 3v-3H4z"/></svg></span><div class="inrow__m"><div class="inrow__t">' + unread + ' message' + (unread > 1 ? 's' : '') + ' non lu' + (unread > 1 ? 's' : '') + '</div><div class="inrow__s">Messagerie</div></div></div>';
@@ -7925,7 +7903,7 @@
     });
     acts += '<div class="inrow"><span class="inrow__ic"><svg viewBox="0 0 24 24" style="width:16px;height:16px" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2"/></svg></span><div class="inrow__m"><div class="inrow__t">' + esc(pr.label) + '</div><div class="inrow__s">Dernière connexion</div></div></div>';
     var activity = '<div class="ovcard"><h2>Activité récente</h2>' + acts + '</div>';
-    return '<div class="ovgrid">' + overview + activity + '</div>' + supportsCard();
+    return projetsCard() + activity;
   }
   function renderTab() {
     var body = el('tabbody'); if (!body) return;
@@ -8488,25 +8466,104 @@
     jpost('/api/clients/' + CURKEY + '/planning', body, 'PATCH').then(function (r2) { if (r2.ok) { toast(val ? 'Départ fixé' : 'Dates en relatif'); } else { toast('Erreur'); refreshClient(); } }).catch(function () { toast('Erreur'); refreshClient(); });
   }
   function pjNotify(pid, jid, cid) { var body = { projectId: pid, notify: true }; if (cid) body.creationId = cid; jpost('/api/clients/' + CURKEY + '/planning/' + jid, body, 'PATCH').then(function (r) { if (r.ok) toast('Cliente prévenue ✉'); else toast('Erreur'); }).catch(function () { toast('Erreur'); }); }
-  function supportsCard() {
-    var rows = (CUR.supports || []).map(function (s) {
-      var nm = (s.content && s.content.name) || '';
-      var nCr = (s.content && Array.isArray(s.content.creations)) ? s.content.creations.length : 0;
-      // Clôturé : le projet reste là, entièrement consultable, mais il ne
-      // bouge plus. C'est un état, pas une disparition.
-      var clos = !!s.clotureAt;
-      return '<div class="file" style="gap:10px' + (clos ? ';opacity:.72' : '') + '"><input class="inp" value="' + esc(nm) + '" placeholder="' + esc(s.label) + '" onchange="ADM.renameSupport(\'' + s.pid + '\',this.value)" style="flex:1" title="Nom du projet de com"' + (clos ? ' disabled' : '') + '>' +
-        (clos ? '<span class="micro" style="color:var(--muted);white-space:nowrap">Terminé le ' + esc(String(s.clotureAt).slice(0, 10).split('-').reverse().join('/')) + '</span>'
-              : '<span class="micro" style="color:var(--muted);white-space:nowrap">' + nCr + ' création' + (nCr > 1 ? 's' : '') + '</span>') +
-        '<button class="btn btn--dark btn--sm" onclick="ADM.tab(\'' + s.id + '\')">Ouvrir</button>' +
-        (clos ? '<button class="btn btn--outline btn--sm" onclick="ADM.rouvrirSupport(\'' + s.pid + '\')">Rouvrir</button>'
-              : '<button class="btn btn--outline btn--sm" onclick="ADM.cloturerSupport(\'' + s.pid + '\')">Clôturer</button>') +
-        '<button class="btn btn--danger btn--sm" onclick="ADM.delSupport(\'' + s.pid + '\')">Suppr.</button></div>';
-    }).join('');
-    return '<div class="card infocard" style="background:var(--card)"><h3><span class="infocard__dot" style="background:#35608f"></span>Mes créations (supports de com)</h3>' +
-      '<div class="micro mb">Chaque projet de com regroupe une ou plusieurs <b>créations</b>. Crée-le ici, puis clique <b>Ouvrir</b> pour gérer ses créations et leurs versions. Un projet créé apparaît <b>tout de suite</b> dans l\'espace de ta cliente, avec son fil de messages. Quand il est fini, <b>Clôturer</b> l\'archive sans rien effacer.</div>' +
-      (rows || '<div class="empty">Aucun projet de com pour ce client.</div>') +
-      '<div class="row mt"><input class="inp" id="new-support-name" placeholder="Nom du projet de com (ex. Lancement printemps)" style="flex:1"><button class="btn btn--dark btn--sm" onclick="ADM.addSupport()">+ Nouveau projet</button></div></div>';
+  /* ════════════════════════════════════════════════════════════════════════
+     SES PROJETS — une seule liste, segmentée.
+
+     Les projets d'une cliente s'affichaient à trois endroits : les onglets du
+     haut, la phrase « Là où on en est », et une carte « Mes créations »
+     rangée dans les Réglages. Trois endroits, trois façons de les nommer, et
+     aucun ne disait comment clôturer.
+
+     Ici : EN COURS d'abord, TERMINÉS ensuite, toutes prestations confondues,
+     avec les mêmes trois gestes sur chaque ligne — ouvrir, clôturer, et pour
+     un projet de com, supprimer.
+     ════════════════════════════════════════════════════════════════════════ */
+  function cliProjets() {
+    return (CUR.domains || []).map(function (d) {
+      return { id: d.id, pid: null, nom: DOMAIN_LABELS[d.id] || d.label || 'Projet',
+        presta: DOMAIN_LABELS[d.id] || d.label || '', content: d.content || {},
+        clos: !!d.clotureAt, clotureAt: d.clotureAt || null, unread: d.unread || 0,
+        visible: d.isActive !== false, support: false };
+    }).concat((CUR.supports || []).map(function (sp) {
+      return { id: sp.id, pid: sp.pid, nom: (sp.content && sp.content.name) || sp.label || 'Projet de com',
+        presta: 'Support de com', content: sp.content || {},
+        clos: !!sp.clotureAt, clotureAt: sp.clotureAt || null, unread: sp.unread || 0,
+        visible: sp.isActive !== false, support: true };
+    }));
+  }
+  // Où ça en est, dit avec ce que le projet porte vraiment.
+  function cliOuEnEst(p) {
+    var c = p.content || {};
+    var suivi = Array.isArray(c.suivi) ? c.suivi : [];
+    if (suivi.length) {
+      var faites = suivi.filter(function (x) { return x.status === 'done'; }).length;
+      var cur = suivi.filter(function (x) { return x.status !== 'done'; })[0];
+      return (cur ? esc(cur.title || 'Étape sans titre') : 'Toutes les étapes sont faites') +
+        '<div class="micro" style="color:var(--muted)">étape ' + Math.min(faites + 1, suivi.length) + ' sur ' + suivi.length + '</div>';
+    }
+    var taches = Array.isArray(c.taches) ? c.taches.filter(function (t) { return !t.archived && t.stage !== 'inbox'; }) : [];
+    if (taches.length) {
+      var vives = taches.filter(function (t) { return t.status !== 'done'; }).length;
+      return vives ? vives + ' tâche' + (vives > 1 ? 's' : '') + ' en cours'
+                   : '<span style="color:var(--muted)">Tout est fait</span>';
+    }
+    var tk = Array.isArray(c.tickets) ? c.tickets.filter(function (t) { return t.status !== 'closed' && t.status !== 'done'; }).length : 0;
+    if (Array.isArray(c.tickets)) return tk ? tk + ' demande' + (tk > 1 ? 's' : '') + ' ouverte' + (tk > 1 ? 's' : '') : '<span style="color:var(--muted)">Aucune demande en cours</span>';
+    var nCr = Array.isArray(c.creations) ? c.creations.length : 0;
+    if (nCr) return nCr + ' création' + (nCr > 1 ? 's' : '');
+    return '<span style="color:var(--muted)">Rien de posé pour l’instant</span>';
+  }
+  function cliLigneProjet(p) {
+    var arg = p.support ? '\'' + esc(p.pid) + '\',true' : '\'' + esc(p.id) + '\',false';
+    return '<div class="cpj' + (p.clos ? ' cpj--clos' : '') + '">' +
+      '<div class="cpj__n">' + esc(p.nom) +
+        '<div class="cpj__p">' + esc(p.presta) +
+          (!p.visible ? ' · <span style="color:var(--gold-chip)">masqué pour elle</span>' : '') +
+          (p.unread ? ' · <b>' + p.unread + ' non lu' + (p.unread > 1 ? 's' : '') + '</b>' : '') + '</div></div>' +
+      '<div class="cpj__o">' + (p.clos
+        ? '<span class="micro" style="color:var(--muted)">Terminé le ' + esc(String(p.clotureAt).slice(0, 10).split('-').reverse().join('/')) + '</span>'
+        : cliOuEnEst(p)) + '</div>' +
+      '<div class="cpj__a">' +
+        '<button class="btn btn--dark btn--sm" onclick="ADM.tab(\'' + esc(p.id) + '\')">Ouvrir</button>' +
+        (p.clos ? '<button class="btn btn--outline btn--sm" onclick="ADM.rouvrirProjet(' + arg + ')">Rouvrir</button>'
+                : '<button class="btn btn--outline btn--sm" onclick="ADM.cloturerProjet(' + arg + ')">Clôturer</button>') +
+        (p.support ? '<button class="btn btn--danger btn--sm" onclick="ADM.delSupport(\'' + esc(p.pid) + '\')">Suppr.</button>' : '') +
+      '</div></div>';
+  }
+  function projetsCard() {
+    var l = cliProjets();
+    var vifs = l.filter(function (p) { return !p.clos; });
+    var clos = l.filter(function (p) { return p.clos; });
+    var bloc = function (titre, arr, vide) {
+      return '<div class="cpj-seg"><div class="cpj-seg__t">' + esc(titre) +
+        '<span class="cpj-seg__n">' + arr.length + '</span></div>' +
+        (arr.length ? arr.map(cliLigneProjet).join('') : '<div class="cpj-vide">' + esc(vide) + '</div>') + '</div>';
+    };
+    return '<div class="card infocard cpj-card" style="background:var(--card)">' +
+      '<h3><span class="infocard__dot" style="background:#35608f"></span>Ses projets</h3>' +
+      bloc('En cours', vifs, 'Aucun projet en cours pour cette cliente.') +
+      (clos.length ? bloc('Terminés', clos, '') : '') +
+      '<div class="cpj-seg"><div class="cpj-seg__t">Créer un projet de com</div>' +
+        '<p class="cpj-note">Il apparaît <b>tout de suite</b> dans son espace, avec son fil de messages. Quand il est fini, « Clôturer » l’archive sans rien effacer.</p>' +
+        '<div class="row"><input class="inp" id="new-support-name" placeholder="Nom du projet (ex. Lancement printemps)" style="flex:1">' +
+        '<button class="btn btn--dark btn--sm" onclick="ADM.addSupport()">+ Nouveau projet</button></div></div>' +
+      '</div>';
+  }
+  /* Clôturer : un seul geste pour tous les projets. Les supports ont leur
+     route (00X), les autres passent par celle des offres — mais la question
+     posée et l'effet sont les mêmes. */
+  function cloturerProjet(id, estSupport) {
+    admConfirm({ title: 'Clôturer ce projet ?',
+      message: 'Il passe en terminé. Sa conversation est archivée : elle reste lisible par toi et par ta cliente, mais plus personne ne peut y écrire. Rien n’est supprimé, et tu peux le rouvrir.',
+      yes: 'Oui, clôturer', no: 'Annuler' }, function () { cliCloture(id, estSupport, true, 'Projet clôturé · conversation archivée'); });
+  }
+  function rouvrirProjet(id, estSupport) { cliCloture(id, estSupport, false, 'Projet rouvert'); }
+  function cliCloture(id, estSupport, valeur, msg) {
+    var url = estSupport ? '/api/clients/' + CURKEY + '/support/' + id : '/api/clients/' + CURKEY + '/offer';
+    var body = estSupport ? { cloture: valeur } : { projectId: id, cloture: valeur };
+    jpost(url, body, 'PATCH').then(function (r) {
+      if (r.ok) { toast(msg); refreshClient(); } else toast('Erreur');
+    }).catch(function () { toast('Erreur'); });
   }
   function renameSupport(pid, name) { jpost('/api/clients/' + CURKEY + '/support/' + pid, { name: name }, 'PATCH').then(function (r) { if (r.ok) { toast('Nom enregistré'); loadClient(); } else toast('Erreur'); }); }
   function addSupport() {
@@ -8518,23 +8575,6 @@
   }
   // Ajout rapide d'un support de com depuis la carte « Offres / espaces ».
   function addSupportQuick() { jpost('/api/clients/' + CURKEY + '/supports', { name: 'Support de com' }).then(function (r) { if (r.ok) { toast('Projet de com créé · déjà visible dans son espace'); loadClient(); } else toast('Erreur'); }).catch(function () { toast('Erreur'); }); }
-  /* Clôturer : le projet est fini. La conversation est ARCHIVÉE, pas effacée —
-     elle reste entièrement lisible des deux côtés, mais plus personne n'y
-     écrit. Réversible : une clôture faite trop tôt se rouvre. */
-  function cloturerSupport(pid) {
-    admConfirm({ title: 'Clôturer ce projet de com ?',
-      message: 'Le projet passe en terminé. Sa conversation est archivée : elle reste lisible par toi et par ta cliente, mais plus personne ne peut y écrire. Rien n’est supprimé, et tu peux le rouvrir.',
-      yes: 'Oui, clôturer', no: 'Annuler' }, function () {
-      jpost('/api/clients/' + CURKEY + '/support/' + pid, { cloture: true }, 'PATCH').then(function (r) {
-        if (r.ok) { toast('Projet clôturé · conversation archivée'); refreshClient(); } else toast('Erreur');
-      }).catch(function () { toast('Erreur'); });
-    });
-  }
-  function rouvrirSupport(pid) {
-    jpost('/api/clients/' + CURKEY + '/support/' + pid, { cloture: false }, 'PATCH').then(function (r) {
-      if (r.ok) { toast('Projet rouvert'); refreshClient(); } else toast('Erreur');
-    }).catch(function () { toast('Erreur'); });
-  }
   function delSupport(pid) {
     admConfirm({ title: 'Supprimer ce projet de com ?', message: 'Le projet et tout son contenu (créations, versions, messages) seront effacés, définitivement. Pour un projet simplement terminé, utilise « Clôturer » : tout reste lisible.', yes: 'Oui, supprimer', no: 'Non', danger: true }, function () {
       api('/api/clients/' + CURKEY + '/support/' + pid, { method: 'DELETE' }).then(function (r) { if (r.ok) { toast('Projet supprimé'); refreshClient(); } else toast('Erreur'); });
@@ -11503,7 +11543,7 @@
   window.ADM = {
     nav: nav, login: login, logout: logout, scan: scan, createClient: createClient, copy: copy, editToken: editToken, navClientTab: navClientTab, navToggleClient: navToggleClient,
     msWeek: msWeek, msFilter: msFilter, msToggleCap: msToggleCap, msMode: msMode, msDaySel: msDaySel, msPlace: msPlace, msDone: msDone, msDelete: msDelete, msNoteOpen: msNoteOpen, msPlanOver: msPlanOver, msPlanLeave: msPlanLeave, msPlanDrop: msPlanDrop, msPlanUnplace: msPlanUnplace, msAutoPlan: msAutoPlan, msOrganizeWeek: msOrganizeWeek, msOrganizeDay: msOrganizeDay, msUnplace: msUnplace, msDragStart: msDragStart, msDragEnd: msDragEnd, msDayOver: msDayOver, msDayLeave: msDayLeave, msDrop: msDrop, msSlotOver: msSlotOver, msDropSlot: msDropSlot, msNewBlock: msNewBlock, msSaveBlock: msSaveBlock, msDeleteBlock: msDeleteBlock, msEst: msEst, msEstH: msEstH, msAddTop: msAddTop, msAddDay: msAddDay,
-    openClient: openClient, tab: tab, subtab: subtab, ffShow: ffShow, saveInfos: saveInfos, saveForfait: saveForfait, forfaitOverrideAdd: forfaitOverrideAdd, forfaitOverrideDel: forfaitOverrideDel, testEmail: testEmail, toggleOffer: toggleOffer, addOffer: addOffer, setBanner: setBanner, setMaintenance: setMaintenance, renameSupport: renameSupport, cloturerSupport: cloturerSupport, rouvrirSupport: rouvrirSupport, addSupport: addSupport, addSupportQuick: addSupportQuick, delSupport: delSupport, crAdd: crAdd, crSet: crSet, crReply: crReply, crDel: crDel, crAddVersion: crAddVersion, crAddVersionLink: crAddVersionLink, crDelVersion: crDelVersion, pjAdd: pjAdd, pjSet: pjSet, pjMove: pjMove, pjDel: pjDel, pjStart: pjStart, pjNotify: pjNotify, pjToggle: pjToggle, deleteClient: deleteClient,
+    openClient: openClient, tab: tab, subtab: subtab, ffShow: ffShow, saveInfos: saveInfos, saveForfait: saveForfait, forfaitOverrideAdd: forfaitOverrideAdd, forfaitOverrideDel: forfaitOverrideDel, testEmail: testEmail, toggleOffer: toggleOffer, addOffer: addOffer, setBanner: setBanner, setMaintenance: setMaintenance, renameSupport: renameSupport, cloturerProjet: cloturerProjet, rouvrirProjet: rouvrirProjet, addSupport: addSupport, addSupportQuick: addSupportQuick, delSupport: delSupport, crAdd: crAdd, crSet: crSet, crReply: crReply, crDel: crDel, crAddVersion: crAddVersion, crAddVersionLink: crAddVersionLink, crDelVersion: crDelVersion, pjAdd: pjAdd, pjSet: pjSet, pjMove: pjMove, pjDel: pjDel, pjStart: pjStart, pjNotify: pjNotify, pjToggle: pjToggle, deleteClient: deleteClient,
     toggleTicketsSpace: toggleTicketsSpace, ticketStatus: ticketStatus, ticketDue: ticketDue, ticketTime: ticketTime, ticketDelete: ticketDelete, ticketForfait: ticketForfait, ticketProposeDate: ticketProposeDate,
     ckpReste: ckpReste, ckpEstim: ckpEstim, ckpFinir: ckpFinir, ckpPasMaintenant: ckpPasMaintenant, ckpOrdreSysteme: ckpOrdreSysteme,
     ckTSetVue: ckTSetVue, ckTSetTri: ckTSetTri, ckTSetFiltre: ckTSetFiltre, ckTOuvrir: ckTOuvrir,

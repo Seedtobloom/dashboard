@@ -594,6 +594,7 @@ async function buildAppData(env: Env, masterKey: string, data: AnyObj): Promise<
     projects.push({
       project: {
         id: 'partner',
+        clotureAt: pc.clotureAt || null,
         type: 'partenaire',
         projectTitle: 'Accompagnement créatif',
         clientName: name,
@@ -637,6 +638,7 @@ async function buildAppData(env: Env, masterKey: string, data: AnyObj): Promise<
     projects.push({
       project: {
         id: 'website',
+        clotureAt: sw.clotureAt || null,
         type: 'site',
         projectTitle: 'Site web',
         clientName: name,
@@ -661,6 +663,7 @@ async function buildAppData(env: Env, masterKey: string, data: AnyObj): Promise<
     projects.push({
       project: {
         id: 'branding',
+        clotureAt: iv.clotureAt || null,
         type: 'identite',
         projectTitle: 'Identité visuelle',
         clientName: name,
@@ -733,6 +736,7 @@ async function buildAppData(env: Env, masterKey: string, data: AnyObj): Promise<
     projects.push({
       project: {
         id: 'maintenance',
+        clotureAt: ms.clotureAt || null,
         type: 'maintenance',
         projectTitle: (ms.name && String(ms.name).trim()) || 'Tickets & maintenance',
         clientName: name,

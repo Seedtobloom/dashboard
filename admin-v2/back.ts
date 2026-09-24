@@ -733,8 +733,20 @@ async function handleClientApi(
     const body = await readJson(request);
     const { container, label } = resolveProject(esp, (body.projectId || '').toString());
     if (!container) return json({ error: 'Offre introuvable' }, 404);
+    // Clôturer seul : le projet est fini, sa conversation s'archive, et sa
+    // visibilité ne change pas — la cliente continue de tout relire.
+    if ('cloture' in body && !('isActive' in body)) {
+      if (body.cloture) { if (!container.clotureAt) container.clotureAt = nowIso(); }
+      else container.clotureAt = null;
+      await saveClient(env, key, data);
+      return json({ ok: true, clotureAt: container.clotureAt || null });
+    }
     const wasActive = container.isActive === true;
     container.isActive = body.isActive === true;
+    if ('cloture' in body) {
+      if (body.cloture) { if (!container.clotureAt) container.clotureAt = nowIso(); }
+      else container.clotureAt = null;
+    }
     await saveClient(env, key, data);
     // Moment clé : l'offre devient visible côté client → on le prévient.
     if (!wasActive && container.isActive) {
@@ -1134,7 +1146,7 @@ function buildClientDetail(_env: Env, key: string, data: AnyObj): AnyObj {
   const domains: AnyObj[] = [];
   for (const ext of Object.keys(DOMAINS)) {
     const obj = getDomainObj(esp, DOMAINS[ext].internal);
-    if (obj) domains.push({ id: ext, label: DOMAINS[ext].label, content: obj, unread: unreadAdmin(obj), isActive: obj.isActive !== false, forfait: ext === 'partner' ? forfaitState(obj) : null });
+    if (obj) domains.push({ id: ext, label: DOMAINS[ext].label, content: obj, unread: unreadAdmin(obj), isActive: obj.isActive !== false, clotureAt: obj.clotureAt || null, forfait: ext === 'partner' ? forfaitState(obj) : null });
   }
   const sd = esp.supportsDeCom && esp.supportsDeCom[0];
   const supports: AnyObj[] = [];
