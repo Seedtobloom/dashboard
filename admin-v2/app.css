@@ -68,12 +68,12 @@ textarea.inp{resize:vertical;min-height:64px;font-family:var(--font-body)}
 .err{display:none;color:var(--red);font-size:15px;text-align:center;background:rgba(155,58,46,0.08);padding:9px;border-radius:10px}
 
 /* buttons */
-.btn{display:inline-flex;align-items:center;gap:7px;justify-content:center;padding:8px 14px;border-radius:10px;border:none;cursor:pointer;font-family:var(--font-micro);font-size:13px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;background:var(--glycine);color:var(--terre);transition:filter .15s,transform .15s}
+.btn{display:inline-flex;align-items:center;gap:7px;justify-content:center;padding:5px 13px;border-radius:9px;border:none;cursor:pointer;font-family:var(--font-micro);font-size:15px;font-weight:600;line-height:1.2;letter-spacing:0;background:var(--glycine);color:var(--terre);transition:filter .15s,transform .15s}
 .btn:hover{filter:brightness(0.97);transform:translateY(-1px)}
 .btn:disabled{opacity:0.55;cursor:default;transform:none}
 .btn--dark{background:var(--terre);color:var(--paille)}
 .btn--outline{background:var(--surface-2);color:var(--terre)}
-.btn--sm{padding:6px 11px;font-size:13px}
+.btn--sm{padding:4px 11px;font-size:15px}
 .btn--danger{background:rgba(155,58,46,0.10);color:var(--red)}
 .btn--block{width:100%}
 
@@ -1187,7 +1187,7 @@ select.cg-in{cursor:pointer}
 .cg-ver__n{flex:1;min-width:0;font-family:var(--font-micro);font-size:15px;font-weight:500;color:var(--terre);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .cg-ver__a{display:flex;align-items:center;gap:5px;flex-shrink:0}
 .cg-btnrow{display:flex;gap:8px;margin-top:4px;align-items:center}
-.cg-btn{font-family:var(--font-micro);font-size:13px;font-weight:600;letter-spacing:.03em;text-transform:uppercase;padding:7px 12px;border-radius:10px;border:none;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:7px;text-decoration:none}
+.cg-btn{font-family:var(--font-micro);font-size:15px;font-weight:600;line-height:1.2;letter-spacing:0;padding:5px 12px;border-radius:10px;border:none;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:7px;text-decoration:none}
 .cg-btn--dark{background:var(--nuit);color:#f6efe6}
 .cg-btn--soft{background:#fff;color:var(--terre);box-shadow:inset 0 0 0 1px var(--bone-d)}
 .cg-btn--icon{padding:7px 9px}
@@ -1750,7 +1750,7 @@ select.cg-in{cursor:pointer}
 /* ═══════════ Questionnaires & Visios — maquette ═══════════ */
 .secmark2{font-family:var(--font-body);font-size:13px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--terre-400);margin:24px 0 12px}
 .secmark2:first-child{margin-top:0}
-.ibbtn{font-family:var(--font-body);font-size:13px;font-weight:700;letter-spacing:0.03em;text-transform:uppercase;padding:6px 11px;border-radius:999px;border:none;cursor:pointer;background:var(--beige);color:var(--terre);flex-shrink:0}
+.ibbtn{font-family:var(--font-body);font-size:15px;font-weight:600;letter-spacing:0;padding:5px 12px;border-radius:999px;border:none;cursor:pointer;background:var(--beige);color:var(--terre);flex-shrink:0}
 .ibbtn--dark{background:var(--terre);color:var(--paille)}
 .ibbtn--del{color:#9a4a2a}
 .ibbtn--cal{background:var(--glycine);color:var(--glycine-900)}
@@ -2341,7 +2341,7 @@ select.cg-in{cursor:pointer}
    aplat de couleur et sans barre sur le côté. */
 .pjc--clos{opacity:.55}
 .pjc-h{display:flex;align-items:center;justify-content:space-between;gap:9px;min-height:20px}
-.pjc-p{font-family:var(--font-micro);font-size:13px;font-weight:600;letter-spacing:0.11em;text-transform:uppercase;color:var(--e);opacity:.74}
+.pjc-p{font-family:var(--font-micro);font-size:13px;font-weight:500;letter-spacing:0.07em;text-transform:uppercase;color:var(--e);opacity:.62}
 .pjc-n{font-family:var(--font-display);font-style:italic;font-size:22px;line-height:1.1;color:var(--e)}
 .pjc-ou{font-size:15px;color:var(--e);line-height:1.4}
 .pjc-ou2{display:block;margin-top:4px;opacity:.72}
