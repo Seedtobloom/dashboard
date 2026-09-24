@@ -2375,3 +2375,58 @@ select.cg-in{cursor:pointer}
 .ck-pli[open]>summary{display:none}
 .ck-capgrid .pjc-p{text-transform:none;letter-spacing:0;font-weight:500}
 .ck-capgrid .pjc-a{align-items:center}
+
+/* ── Tableau de bord (maquette validée) — palette seule ── */
+.tdb{display:flex;flex-direction:column;gap:40px;padding-top:48px}
+.tdb .num{font-variant-numeric:lining-nums tabular-nums}
+.tdb-tete{display:flex;flex-direction:column;gap:10px}
+.tdb-meta{font-size:15px;color:var(--muted)}
+.tdb-h1{margin:0;font-family:var(--font-display);font-style:italic;font-weight:400;font-size:48px;line-height:1.05;letter-spacing:-0.01em;color:#110704}
+.tdb-sous{margin:0;font-size:17px;color:#5A2A11}
+.tdb-cap{margin-top:10px;display:flex;flex-direction:column;gap:8px}
+.tdb-capb{height:10px;border-radius:99px;background:#E4D9C5;overflow:hidden}
+.tdb-capb i{display:block;height:10px;background:#110704}
+.tdb-capl{display:flex;justify-content:space-between;font-size:13px;color:var(--muted)}
+.tdb-kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.tdb-card{background:#fff;border-radius:18px;padding:24px 26px;display:flex;flex-direction:column;gap:6px;box-shadow:0 0 0 1px rgba(17,7,4,.06),0 1px 2px rgba(17,7,4,.05);color:#110704}
+.tdb-card--alerte{background:#C5DEFF;box-shadow:none}
+.tdb-k{font-size:15px;font-weight:600}
+.tdb-v{font-family:var(--font-display);font-style:italic;font-size:44px;line-height:1;margin:6px 0 4px;font-variant-numeric:lining-nums tabular-nums}
+.tdb-t{font-size:15px}
+.tdb-c{font-size:13px;color:var(--muted);font-variant-numeric:lining-nums tabular-nums}
+.tdb-card--alerte .tdb-c{color:rgba(17,7,4,.8)}
+.tdb-lien{align-self:flex-start;margin-top:10px;border:none;background:none;padding:0;min-height:24px;font:inherit;font-size:15px;font-weight:600;color:#5A2A11;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.tdb-lien:hover{color:#110704}
+.tdb-sous .tdb-lien{margin:0;font-size:17px}
+.tdb-act{margin-top:10px}
+.tdb-btn{font:inherit;font-size:15px;font-weight:600;color:#F8F6F2;background:#110704;border:none;border-radius:999px;padding:11px 20px;min-height:44px;cursor:pointer}
+.tdb-btn--clair{color:#110704;background:#F8F6F2}
+.tdb-panel{background:#fff;border-radius:18px;padding:26px 30px;box-shadow:0 0 0 1px rgba(17,7,4,.06);color:#110704}
+.tdb-panel h2{margin:0 0 14px;font-family:var(--font-display);font-style:italic;font-weight:400;font-size:30px}
+.tdb-fl{display:grid;grid-template-columns:260px 110px 110px minmax(0,1fr) 190px;gap:24px;align-items:center;padding:16px 0;border-top:1px solid rgba(17,7,4,.08);font-size:15px}
+.tdb-fl--h{border-top:none;padding:0 0 10px;font-size:13px;color:var(--muted)}
+.tdb-fl--h span:last-child,.tdb-fe{text-align:right}
+.tdb-fl--vide{display:block;color:var(--muted)}
+.tdb-fn{font-size:16px;font-weight:600}
+.tdb-fs{font-size:13px;color:var(--muted);margin-top:2px}
+.tdb-fu{font-weight:600}
+.tdb-fe{color:var(--muted)}
+.tdb-fe b{color:#110704;font-weight:600}
+.tdb-fb{position:relative;height:8px;border-radius:99px;background:#E4D9C5;overflow:hidden}
+.tdb-fb i{display:block;height:8px;background:#110704}
+.tdb-fb em{position:absolute;right:0;top:0;height:8px;background:#CD8F6E}
+.tdb-bas{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:16px}
+.tdb-bas .tdb-panel h2{margin:0}
+.tdb-pp{margin:6px 0 0;font-size:15px;color:#5A2A11}
+.tdb-bars{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;margin-top:12px}
+.tdb-bar{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:8px;height:230px;color:var(--muted);font-size:15px;font-weight:500}
+.tdb-bar i{display:block;width:56px;min-height:2px;border-radius:8px 8px 3px 3px;background:#E4D9C5}
+.tdb-bar span{font-size:13px;font-weight:400}
+.tdb-bar--cur{color:#110704;font-weight:600}
+.tdb-bar--cur i{background:#110704}
+.tdb-bar--cur span{font-weight:600}
+.tdb-panel--sombre{background:#110704;color:#F8F6F2;box-shadow:none;display:flex;flex-direction:column;gap:10px}
+.tdb-panel--sombre h2{color:#C5DEFF}
+.tdb-sp{margin:0;font-size:16px;line-height:1.5}
+.tdb-ss{margin:0;font-size:15px;line-height:1.5;color:rgba(242,229,194,.78)}
+.tdb-panel--sombre .tdb-act{margin-top:auto}

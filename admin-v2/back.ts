@@ -2392,6 +2392,10 @@ async function handleKpi(env: Env): Promise<Response> {
   let estMin = 0, realMin = 0, estCount = 0, horsForfait = 0, deliverablesSent = 0;
   // Santé des collaborations : temps avant validation + clientes inactives.
   let valSum = 0, valCount = 0, activeCount = 0, inactiveCount = 0;
+  // Les mêmes mesures, mois par mois, pour que le tableau de bord compare au
+  // mois précédent au lieu d'afficher un chiffre sans repère.
+  const estByMonth: AnyObj = {};   // 'AAAA-MM' → { est, real, n } (mois de clôture)
+  const valByMonth: AnyObj = {};   // 'AAAA-MM' → { sum, n } en ms (mois de validation)
   const nowMs = Date.now();
   const lastSeenMs = (v: unknown): number => { if (typeof v === 'number') return v > 1e11 ? v : v * 1000; const p = Date.parse(String(v || '')); return isNaN(p) ? 0 : p; };
   for (const ci of idx) {
@@ -2414,7 +2418,12 @@ async function handleKpi(env: Env): Promise<Response> {
       if (l && (l.fileKey || l.reviewLink)) deliverablesSent++;
       if (l && l.status === 'valide' && l.createdAt && l.validatedAt) {
         const dt = Date.parse(l.validatedAt) - Date.parse(l.createdAt);
-        if (dt > 0) { valSum += dt; valCount++; }
+        if (dt > 0) {
+          valSum += dt; valCount++;
+          const vm = String(l.validatedAt).slice(0, 7);
+          const v = valByMonth[vm] || (valByMonth[vm] = { sum: 0, n: 0 });
+          v.sum += dt; v.n++;
+        }
       }
     });
     let cDone = 0, cMin = 0, cOpen = 0;
@@ -2431,6 +2440,7 @@ async function handleKpi(env: Env): Promise<Response> {
         if (min > 0) { const _pl = (t.pole || 'Autre').toString().slice(0, 40); poleTime[_pl] = (poleTime[_pl] || 0) + min; }
         if (t.estMinutes > 0 && min > 0) {
           estMin += t.estMinutes; realMin += min; estCount++;
+          if (when) { const e = estByMonth[when] || (estByMonth[when] = { est: 0, real: 0, n: 0 }); e.est += t.estMinutes; e.real += min; e.n++; }
           const pole = (t.pole || 'Autre').toString().slice(0, 40);
           const p = poleReal[pole] || (poleReal[pole] = { est: 0, real: 0, count: 0 });
           p.est += t.estMinutes; p.real += min; p.count++;
@@ -2455,7 +2465,7 @@ async function handleKpi(env: Env): Promise<Response> {
   const poles = Object.keys(poleReal).map((k) => ({ pole: k, est: poleReal[k].est, real: poleReal[k].real, count: poleReal[k].count })).sort((a, b) => b.real - a.real);
   const timeByType = Object.keys(poleTime).map((k) => ({ type: k, minutes: poleTime[k] })).sort((a, b) => b.minutes - a.minutes);
   const avgValidationDays = valCount ? Math.round(valSum / valCount / 86400000 * 10) / 10 : 0;
-  return json({ tasksByMonth, minutesByMonth, byClient, forfaits, totals: { done: totalDone, minutes: totalMinutes, open: totalOpen, clients: byClient.length, deliverablesSent, horsForfait }, profitability: { estMin, realMin, estCount, poles }, timeByType, collaboration: { avgValidationDays, valCount, inactiveCount, activeCount } });
+  return json({ tasksByMonth, minutesByMonth, estByMonth, valByMonth, byClient, forfaits, totals: { done: totalDone, minutes: totalMinutes, open: totalOpen, clients: byClient.length, deliverablesSent, horsForfait }, profitability: { estMin, realMin, estCount, poles }, timeByType, collaboration: { avgValidationDays, valCount, inactiveCount, activeCount } });
 }
 
 /* ─────────── Tâches personnelles de l'admin ─────────── */

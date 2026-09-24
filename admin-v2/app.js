@@ -7103,15 +7103,16 @@
     toast('Export CSV téléchargé');
   }
   var KPI_D = null;
-  var KPI_DASH = {}, KPI_VIS = {}, KPI_AVIS = {};
+  var KPI_DASH = {}, KPI_VIS = {}, KPI_AVIS = {}, KPI_PLAN = {};
   function renderKpi() {
     setMain(topbar('Tableau de bord') + '<div class="wrap"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
     Promise.all([
       api('/api/kpi').then(function (r) { return r.json(); }).catch(function () { return {}; }),
       dashGet().catch(function () { return {}; }),
       api('/api/visios').then(function (r) { return r.json(); }).catch(function () { return {}; }),
-      api('/api/avis').then(function (r) { return r.json(); }).catch(function () { return {}; })
-    ]).then(function (res) { KPI_D = res[0] || {}; KPI_DASH = res[1] || {}; KPI_VIS = res[2] || {}; KPI_AVIS = res[3] || {}; renderKpiBody(KPI_D); }).catch(showError);
+      api('/api/avis').then(function (r) { return r.json(); }).catch(function () { return {}; }),
+      api('/api/admin/planning').then(function (r) { return r.json(); }).catch(function () { return {}; })
+    ]).then(function (res) { KPI_D = res[0] || {}; KPI_DASH = res[1] || {}; KPI_VIS = res[2] || {}; KPI_AVIS = res[3] || {}; KPI_PLAN = res[4] || {}; renderKpiBody(KPI_D); }).catch(showError);
   }
   // KPIs plaisir : le bilan valorisant depuis le 1er janvier.
   function kpiPlaisirHtml() {
@@ -7269,91 +7270,164 @@
       '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:22px">' + cards + '</div>';
   }
   function hexA(hex, a) { var h = String(hex || '').replace('#', ''); if (h.length !== 6) return 'rgba(94,63,160,' + a + ')'; return 'rgba(' + parseInt(h.slice(0, 2), 16) + ',' + parseInt(h.slice(2, 4), 16) + ',' + parseInt(h.slice(4, 6), 16) + ',' + a + ')'; }
-  // Tableau de bord — mise en page exacte de la maquette : 4 tuiles,
-  // Santé des projets, Ce qui a besoin de toi, Accès rapide. Données réelles.
+  // Tableau de bord (maquette validée le 24/09/2026) : le mois en une phrase,
+  // trois indicateurs comparés à une référence, les forfaits, 6 mois de temps
+  // travaillé, la satisfaction. Les actions du jour restent dans le cockpit.
   function renderKpiBody(d) {
-    var dash = KPI_DASH || {};
-    var today = new Date(); today.setHours(0, 0, 0, 0);
-    function dd(s) { var t = new Date(s); t.setHours(0, 0, 0, 0); return Math.round((t - today) / 86400000); }
-    function iso(dt) { return dt.getFullYear() + '-' + ('0' + (dt.getMonth() + 1)).slice(-2) + '-' + ('0' + dt.getDate()).slice(-2); }
-    function hL(m) { m = Math.round(m || 0); if (!m) return '0'; if (m < 60) return m + ' min'; var h = Math.floor(m / 60), r = m % 60; return h + 'h' + (r ? ('' + (r < 10 ? '0' : '') + r) : ''); }
-    var dls = dash.deadlines || [];
-    var mine = dls.filter(function (x) { return x.status !== 'waiting_client' && x.status !== 'review'; });
-    var pv = dash.pendingValidation || [];
-    // ── 4 tuiles ──
-    var clientSet = {}; mine.forEach(function (x) { if (x.status !== 'done') clientSet[x.key] = 1; });
-    var nProj = Object.keys(clientSet).length || (d.byClient || []).length;
-    // occupation de la semaine (5 j ouvrés)
-    var weekMin = 0, cur = new Date(today), seen = 0;
-    while (seen < 5) { var dow = cur.getDay(); if (dow !== 0 && dow !== 6) { var di = iso(cur); mine.forEach(function (x) { if ((x.dueDate || '').slice(0, 10) === di && x.status !== 'done') weekMin += (x.estMinutes > 0 ? x.estMinutes : 45); }); seen++; } cur.setDate(cur.getDate() + 1); }
-    var weekCapH = dash.weeklyCapacity || 0;
-    var occPct = weekCapH ? Math.min(100, Math.round(weekMin / 60 / weekCapH * 100)) : 0;
-    // écart estimé → réel
-    var pr = d.profitability || {};
-    var ratio = pr.estMin > 0 ? Math.round(pr.realMin / pr.estMin * 100) : 0;
-    var ecart = ratio - 100;
-    // satisfaction
+    d = d || {};
+    var dash = KPI_DASH || {}, plan = KPI_PLAN || {};
+    var now = new Date(), auj = new Date(now); auj.setHours(0, 0, 0, 0);
+    var MOIS = CKP_MOIS;
+    function ymOf(dt) { return dt.getFullYear() + '-' + ('0' + (dt.getMonth() + 1)).slice(-2); }
+    function moisDecale(n) { return new Date(auj.getFullYear(), auj.getMonth() + n, 1); }
+    function nomMois(dt) { return MOIS[dt.getMonth()]; }
+    function maj(t) { return t.charAt(0).toUpperCase() + t.slice(1); }
+    // Durées au format de la maquette : « 32 h », « 5 h 30 », « 45 min ».
+    function hh(min) {
+      min = Math.round(min || 0);
+      if (min < 60) return min + ' min';
+      var h = Math.floor(min / 60), m = min % 60;
+      return h + ' h' + (m ? ' ' + ('0' + m).slice(-2) : '');
+    }
+    function pctTxt(n) { return (n > 0 ? '+' : (n < 0 ? '−' : '')) + Math.abs(n) + ' %'; }
+    function jours(ms) { return String(Math.round(ms / 86400000 * 10) / 10).replace('.', ','); }
+
+    // ── Le mois : temps travaillé et capacité (réglages de la semaine) ──
+    var cur = ymOf(auj), prevD = moisDecale(-1), prev = ymOf(prevD);
+    var mbm = d.minutesByMonth || {};
+    var minCur = mbm[cur] || 0, minPrev = mbm[prev] || 0;
+    var joursPlan = plan.days || {};
+    var dernier = new Date(auj.getFullYear(), auj.getMonth() + 1, 0).getDate();
+    var capMois = 0, capReste = 0;
+    for (var j = 1; j <= dernier; j++) {
+      var dj = new Date(auj.getFullYear(), auj.getMonth(), j);
+      var m = Math.max(0, Math.round(Number(joursPlan[dj.getDay() || 7])) || 0);
+      capMois += m; if (j >= auj.getDate()) capReste += m;
+    }
+    var h1 = maj(nomMois(auj)) + ' : ' + hh(minCur) + ' travaillées' + (capMois ? ' sur ' + hh(capMois) : '');
+    var comp = '';
+    if (minPrev) {
+      var diff = minCur - minPrev;
+      comp = diff > 0 ? hh(diff) + ' de plus qu’en ' + nomMois(prevD)
+        : (diff < 0 ? hh(-diff) + ' de moins qu’en ' + nomMois(prevD) + ' pour l’instant' : 'Autant qu’en ' + nomMois(prevD));
+    }
+    var sous = capMois
+      ? (comp ? maj(comp) + ', et ' : maj('')) + hh(capReste) + ' encore disponibles d’ici le ' + dernier + '.'
+      : (comp ? maj(comp) + '. ' : '') + '<button class="tdb-lien" onclick="ADM.nav(\'ckplanning\')">Règle ta semaine</button> pour voir ta capacité du mois.';
+    var pctMois = capMois ? Math.min(100, Math.round(minCur / capMois * 100)) : 0;
+    var hm = ('0' + now.getHours()).slice(-2) + ' h ' + ('0' + now.getMinutes()).slice(-2);
+
+    // ── Indicateur 1 : estimations (3 derniers mois, comparés mois par mois) ──
+    var ebm = d.estByMonth || {}, fen = [moisDecale(-2), moisDecale(-1), auj];
+    var eTot = 0, rTot = 0, eMois = [];
+    fen.forEach(function (dt) {
+      var x = ebm[ymOf(dt)];
+      if (x && x.est > 0) { eTot += x.est; rTot += x.real; eMois.push([nomMois(dt), Math.round((x.real / x.est - 1) * 100)]); }
+    });
+    var carteEstim;
+    if (eTot > 0) {
+      var ecart = Math.round((rTot / eTot - 1) * 100);
+      var phraseE = ecart > 5 ? 'Le travail réel dépasse ce que tu avais prévu.'
+        : (ecart < -5 ? 'Tu termines plus vite que prévu.' : 'Tes estimations tombent juste.');
+      var tendance = '';
+      if (eMois.length >= 2) {
+        var dv = eMois[eMois.length - 1][1] - eMois[0][1];
+        tendance = ' : ' + (dv > 3 ? 'l’écart grandit.' : (dv < -3 ? 'l’écart se resserre.' : 'c’est stable.'));
+      }
+      carteEstim = '<div class="tdb-v">' + pctTxt(ecart) + '</div><div class="tdb-t">' + phraseE + '</div>' +
+        '<div class="tdb-c">' + eMois.map(function (x) { return maj(x[0]) + ' ' + pctTxt(x[1]); }).join(' · ').replace(/ · (\S)/g, function (m0, c) { return ' · ' + c.toLowerCase(); }) + tendance + '</div>' +
+        '<button class="tdb-lien" onclick="ADM.nav(\'temps\')">Voir par type de mission</button>';
+    } else {
+      carteEstim = '<div class="tdb-v">À suivre</div><div class="tdb-t">Aucune tâche terminée avec une estimation sur les 3 derniers mois.</div>' +
+        '<button class="tdb-lien" onclick="ADM.nav(\'cktaches\')">Estimer mes tâches</button>';
+    }
+
+    // ── Indicateur 2 : délai de validation des clientes ──
+    var vbm = d.valByMonth || {};
+    function moyVal(ns) { var s0 = 0, n0 = 0; ns.forEach(function (n) { var x = vbm[ymOf(moisDecale(n))]; if (x) { s0 += x.sum; n0 += x.n; } }); return n0 ? s0 / n0 : 0; }
+    var vNow = moyVal([-2, -1, 0]), vAvant = moyVal([-5, -4, -3]);
+    var pv = (dash.pendingValidation || []).slice().sort(function (x, y) { return String(x.createdAt || '') < String(y.createdAt || '') ? -1 : 1; });
+    var lienVal = '';
+    if (pv.length) {
+      var depuis = pv[0].createdAt ? Math.max(0, Math.round((auj - new Date(pv[0].createdAt)) / 86400000)) : 0;
+      lienVal = '<button class="tdb-lien" onclick="ADM.openClient(\'' + esc(pv[0].key) + '\')">' + pv.length + ' livrable' + (pv.length > 1 ? 's' : '') + ' attend' + (pv.length > 1 ? 'ent' : '') + (depuis ? ' depuis ' + depuis + ' j' : '') + '</button>';
+    }
+    var carteVal = vNow
+      ? '<div class="tdb-v">' + jours(vNow) + ' j</div><div class="tdb-t">Délai moyen avant qu’une cliente valide.</div>' +
+        '<div class="tdb-c">' + (vAvant ? 'Les 3 mois d’avant : ' + jours(vAvant) + ' j. ' + (vNow < vAvant - 43200000 ? 'Ça s’améliore.' : (vNow > vAvant + 43200000 ? 'Ça se rallonge.' : 'C’est stable.')) : 'Premier trimestre mesuré.') + '</div>' + lienVal
+      : '<div class="tdb-v">À suivre</div><div class="tdb-t">Aucun livrable validé sur les 3 derniers mois.</div>' + lienVal;
+
+    // ── Indicateur 3 + tableau : forfaits du mois ──
+    var fs = (d.forfaits || []).filter(function (f) { return f && f.configured; });
+    var overs = fs.filter(function (f) { return f.over > 0; }).sort(function (x, y) { return y.over - x.over; });
+    var carteForf = '<div class="tdb-card' + (overs.length ? ' tdb-card--alerte' : '') + '"><div class="tdb-k">Forfaits du mois</div>' +
+      '<div class="tdb-v">' + overs.length + ' dépassé' + (overs.length > 1 ? 's' : '') + '</div>' +
+      (overs.length
+        ? '<div class="tdb-t">' + esc(overs[0].client || '') + ' : ' + hh(overs[0].over * 60) + ' hors forfait en ' + nomMois(auj) + (overs.length > 1 ? ', et ' + (overs.length - 1) + ' autre' + (overs.length > 2 ? 's' : '') : '') + '.</div>' +
+          '<div class="tdb-c">À facturer ou à reporter, selon ton contrat.</div>' +
+          '<div class="tdb-act"><button class="tdb-btn" onclick="ADM.openClient(\'' + esc(overs[0].key) + '\')">Voir le forfait</button></div>'
+        : '<div class="tdb-t">' + (fs.length ? 'Tous tes forfaits tiennent ce mois-ci.' : 'Aucun forfait configuré.') + '</div>') +
+      '</div>';
+    var lignesF = fs.map(function (f) {
+      var dispo = f.available || 0, used = f.used || 0;
+      var pct = dispo > 0 ? Math.min(100, Math.round(used / dispo * 100)) : 100;
+      var depasse = f.over > 0 ? Math.min(100, Math.round(f.over / Math.max(used, 0.01) * 100)) : 0;
+      var etat = f.over > 0 ? '<b>' + hh(f.over * 60) + ' hors forfait</b>'
+        : (f.remaining <= 0 ? 'Forfait épuisé' : hh(f.remaining * 60) + ' restantes');
+      return '<div class="tdb-fl"><div><div class="tdb-fn">' + esc(f.client || '') + '</div><div class="tdb-fs">Partenaire créative</div></div>' +
+        '<div class="num">' + hh(dispo * 60) + '</div><div class="num tdb-fu">' + hh(used * 60) + '</div>' +
+        '<div class="tdb-fb"><i style="width:' + pct + '%"></i>' + (depasse ? '<em style="width:' + depasse + '%"></em>' : '') + '</div>' +
+        '<div class="num tdb-fe">' + etat + '</div></div>';
+    }).join('') || '<div class="tdb-fl tdb-fl--vide">Aucun forfait configuré.</div>';
+
+    // ── Temps travaillé, 6 derniers mois ──
+    var six = [-5, -4, -3, -2, -1, 0].map(function (n) { var dt = moisDecale(n); return { dt: dt, min: mbm[ymOf(dt)] || 0, cur: n === 0 }; });
+    var maxMin = Math.max(capMois, Math.max.apply(null, six.map(function (x) { return x.min; })), 1);
+    var pic = six.reduce(function (a0, x) { return x.min > a0.min ? x : a0; }, six[0]);
+    var phrasePic = !pic.min ? 'Aucun temps saisi sur la période.'
+      : (pic.cur ? 'Ce mois-ci est déjà ton mois le plus chargé.' : maj(nomMois(pic.dt)) + ' reste ton mois le plus chargé.');
+    var barres = six.map(function (x) {
+      var ab = ['Janv.', 'Févr.', 'Mars', 'Avr.', 'Mai', 'Juin', 'Juil.', 'Août', 'Sept.', 'Oct.', 'Nov.', 'Déc.'][x.dt.getMonth()];
+      return '<div class="tdb-bar' + (x.cur ? ' tdb-bar--cur' : '') + '"><div class="num">' + hh(x.min) + '</div>' +
+        '<i style="height:' + Math.round(x.min / maxMin * 170) + 'px"></i><span>' + ab + (x.cur ? ' (en cours)' : '') + '</span></div>';
+    }).join('');
+
+    // ── Satisfaction ──
     var bilans = (KPI_AVIS && KPI_AVIS.bilans) || [];
     var rated = bilans.filter(function (b) { return b.rating > 0; });
-    var satis = rated.length ? Math.round(rated.reduce(function (s, b) { return s + b.rating; }, 0) / rated.length * 10) / 10 : 0;
-    var kts =
-      '<button class="kt kt--link" onclick="ADM.nav(\'clients\')"><div class="kt__v">' + nProj + '</div><div class="kt__l">Projets en cours</div><span class="kt__d kt__d--flat">' + nProj + ' cliente' + (nProj > 1 ? 's' : '') + ' active' + (nProj > 1 ? 's' : '') + '</span></button>' +
-      '<div class="kt"><div class="kt__v">' + (weekCapH ? occPct + ' %' : '—') + '</div><div class="kt__l">Taux d\'occupation</div>' + (weekCapH ? '<div class="kt__bar"><i style="width:' + occPct + '%"></i></div><span class="kt__d kt__d--flat" style="margin-top:9px">' + hL(weekMin) + ' / ' + weekCapH + ' h</span>' : '<span class="kt__d kt__d--flat">capacité non réglée</span>') + '</div>' +
-      '<button class="kt kt--link" onclick="ADM.nav(\'temps\')"><div class="kt__v">' + (pr.estCount ? (ecart >= 0 ? '+' : '') + ecart + ' %' : '—') + '</div><div class="kt__l">Écart estimé → réel</div><span class="kt__d ' + (pr.estCount ? (ecart > 10 ? 'kt__d--attn' : 'kt__d--up') : 'kt__d--flat') + '">' + (pr.estCount ? (ecart > 10 ? 'tu dépasses tes estimations' : 'dans tes clous') : 'note tes estimations') + '</span></button>' +
-      '<button class="kt kt--link" onclick="ADM.nav(\'avis\')"><div class="kt__v">' + (satis ? String(satis).replace('.', ',') : '—') + '</div><div class="kt__l">Satisfaction · / 5</div><span class="kt__d kt__d--up">' + rated.length + ' avis</span></button>';
-    // ── Santé des projets (covers) ──
-    var byClient = (d.byClient || []).slice(0, 6);
-    var covers = byClient.map(function (c) {
-      var tot = (c.tasksDone || 0) + (c.openTasks || 0);
-      var pct = tot ? Math.round(c.tasksDone / tot * 100) : 0;
-      var mineC = mine.filter(function (x) { return x.key === c.key && x.status !== 'done'; }).sort(function (a, b) { return (a.dueDate || '9') < (b.dueDate || '9') ? -1 : 1; });
-      var nx = mineC[0];
-      var cat = (nx && nx.projectLabel) ? nx.projectLabel : 'Projet';
-      var enCours = nx ? '<div class="cline"><span class="k">En cours</span>' + esc(nx.title || '') + '</div>' : '';
-      var ech = '';
-      if (nx && nx.dueDate) { var n = dd(nx.dueDate); ech = '<div class="cline"><span class="k">Échéance</span>' + esc(fmtDate(nx.dueDate)) + (n < 0 ? ' · ' + (-n) + ' j de retard' : (n === 0 ? " · aujourd'hui" : ' · dans ' + n + ' j')) + '</div>'; }
-      return '<button class="cc" onclick="ADM.openClient(\'' + c.key + '\')"><div class="cc__top"><span class="cc__cat">' + esc(cat) + '</span><span class="cc__pct">' + pct + '%</span></div>' +
-        '<span class="cc__t">' + esc(c.client || '') + '</span><div class="cbar"><i style="width:' + pct + '%"></i></div>' + enCours + ech + '</button>';
-    }).join('') || '<div class="empty" style="grid-column:1/-1">Aucun projet partenaire actif.</div>';
-    // ── Ce qui a besoin de toi (att) ──
-    var attItems = [];
-    mine.filter(function (x) { return x.dueDate && dd(x.dueDate) < 0 && x.status !== 'done'; })
-      .sort(function (a, b) { return dd(a.dueDate) - dd(b.dueDate); }).slice(0, 3).forEach(function (x) {
-        var late = -dd(x.dueDate);
-        attItems.push(['warn', esc(x.title || 'Tâche') + ' · en retard', esc(x.client || '') + ' · ' + late + ' j de retard', 'Ouvrir', "ADM.openClient('" + x.key + "')"]);
-      });
-    pv.slice(0, 2).forEach(function (l) {
-      var since = l.createdAt ? Math.max(0, -dd(l.createdAt)) : 0;
-      attItems.push(['file', esc(l.name || 'Livrable') + ' en attente de validation', 'chez ' + esc(l.client || 'la cliente') + (since ? ' depuis ' + since + ' j' : ''), 'Relancer', "ADM.openClient('" + l.key + "')"]);
-    });
-    var nInboxTdb = (dash.inbox || []).length;
-    if (nInboxTdb) attItems.push(['inbox', nInboxTdb + ' demande' + (nInboxTdb > 1 ? 's' : '') + ' à analyser', 'dans l\'Inbox', 'Ouvrir', "ADM.nav('inbox')"]);
-    attItems = attItems.slice(0, 5);
-    var ICN = { warn: '<path d="M12 8v5M12 16h0M12 3l9 16H3z"/>', file: '<path d="M14 3v4a1 1 0 0 0 1 1h4M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z"/>', inbox: '<path d="M4 5h16v11H9l-4 3v-3H4z"/>' };
-    var attHtml = attItems.length ? attItems.map(function (a) {
-      return '<div class="att"><span class="att__ic"><svg viewBox="0 0 24 24" style="width:16px;height:16px" fill="none" stroke="currentColor" stroke-width="1.7">' + (ICN[a[0]] || '') + '</svg></span>' +
-        '<div class="att__m"><div class="att__t">' + a[1] + '</div><div class="att__s">' + a[2] + '</div></div>' +
-        '<button class="att__b" onclick="' + a[4] + '">' + a[3] + '</button></div>';
-    }).join('') : '<div class="att"><span class="att__ic att__ic--ok"><svg viewBox="0 0 24 24" style="width:16px;height:16px" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l4 4 10-10"/></svg></span><div class="att__m"><div class="att__t">Tout est à jour</div><div class="att__s">rien n\'attend de toi</div></div></div>';
-    // ── Accès rapide (syn) ──
-    var doneMonth = 0; var ymNow = iso(today).slice(0, 7);
-    Object.keys(d.tasksByMonth || {}).forEach(function (k) { if (k === ymNow) doneMonth += d.tasksByMonth[k]; });
-    var nInc = (typeof INC !== 'undefined' && Array.isArray(INC)) ? INC.length : 0;
-    var syn =
-      '<button class="syn" onclick="ADM.nav(\'temps\')"><span class="syn__ic" style="background:var(--gold-chip);color:var(--gold-ink)"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9 2h6"/></svg></span><span class="syn__m"><span class="syn__l">Temps &amp; rentabilité</span><span class="syn__s">estimé vs réel</span></span><span class="syn__v">' + (pr.estCount ? (ecart >= 0 ? '+' : '') + ecart + '%' : '—') + '</span><span class="syn__arrow">→</span></button>' +
-      '<button class="syn" onclick="ADM.nav(\'done\')"><span class="syn__ic" style="background:var(--glycine);color:var(--glycine-900)"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M20 6L9 17l-5-5"/></svg></span><span class="syn__m"><span class="syn__l">Réalisé</span><span class="syn__s">terminés ce mois</span></span><span class="syn__v">' + doneMonth + '</span><span class="syn__arrow">→</span></button>' +
-      '<button class="syn" onclick="ADM.nav(\'avis\')"><span class="syn__ic" style="background:var(--gold-soft);color:var(--gold-ink)"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M12 3l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9 6.8 19.1l1-5.8L3.5 9.2l5.9-.9z"/></svg></span><span class="syn__m"><span class="syn__l">Avis</span><span class="syn__s">satisfaction · ' + rated.length + ' avis</span></span><span class="syn__v">' + (satis ? String(satis).replace('.', ',') : '—') + '</span><span class="syn__arrow">→</span></button>' +
-      '<button class="syn' + (nInc ? ' syn--attn' : '') + '" onclick="ADM.nav(\'incidents\')"><span class="syn__ic" style="background:var(--gold-chip);color:var(--gold-ink)"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 9v4M12 17h0M10.3 3.9L2.4 18a2 2 0 0 0 1.7 3h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg></span><span class="syn__m"><span class="syn__l">Incidents</span><span class="syn__s">à traiter</span></span><span class="syn__v">' + nInc + '</span><span class="syn__arrow">→</span></button>';
-    var html = '<div class="wrap">' +
-      '<div class="clhead"><div><p class="hello">Tableau de bord</p><p class="hello__s">Le pilotage de ton activité : projets, charge, et ce qui a besoin de toi.</p></div></div>' +
-      '<div class="kts">' + kts + '</div>' +
-      '<section class="panel panel--card" style="margin-bottom:15px"><div class="panel__h"><h2>Santé des projets</h2></div><div class="covers">' + covers + '</div></section>' +
-      '<div class="bento">' +
-        '<section class="panel panel--card"><div class="panel__h"><h2>Ce qui a besoin de toi</h2>' + (attItems.length ? '<span class="n">' + attItems.length + '</span>' : '') + '</div>' + attHtml + '</section>' +
-        '<section class="panel panel--card"><div class="panel__h"><h2>Accès rapide</h2></div><p class="tnote" style="margin-top:0">Le pouls de chaque zone. Clique pour entrer dans le détail.</p><div class="synth">' + syn + '</div></section>' +
-      '</div>' +
+    var satis = rated.length ? Math.round(rated.reduce(function (s0, b) { return s0 + b.rating; }, 0) / rated.length * 10) / 10 : 0;
+    var ancienne = fs.slice().filter(function (f) { return f.start; }).sort(function (x, y) { return x.start < y.start ? -1 : 1; })[0];
+    var depuisMois = ancienne ? (auj.getFullYear() * 12 + auj.getMonth()) - (Number(ancienne.start.slice(0, 4)) * 12 + Number(ancienne.start.slice(5, 7)) - 1) : 0;
+    var carteSat = rated.length
+      ? '<p class="tdb-sp">' + String(satis).replace('.', ',') + ' / 5 sur ' + rated.length + ' avis.</p>' +
+        '<div class="tdb-act"><button class="tdb-btn tdb-btn--clair" onclick="ADM.nav(\'avis\')">Voir les avis</button></div>'
+      : '<p class="tdb-sp">Pas encore d’avis.</p>' +
+        (ancienne && depuisMois > 0 ? '<p class="tdb-ss">' + esc(ancienne.client || '') + ' travaille avec toi depuis ' + depuisMois + ' mois : c’est le bon moment pour un bilan.</p>'
+          : '<p class="tdb-ss">Un bilan en fin de projet t’aide à ajuster tes offres.</p>') +
+        '<div class="tdb-act"><button class="tdb-btn tdb-btn--clair" onclick="' + (ancienne ? 'ADM.navClientTab(\'' + esc(ancienne.key) + '\',\'bilanavis\')' : 'ADM.nav(\'avis\')') + '">Demander un bilan</button></div>';
+
+    var html = '<div class="wrap tdb">' +
+      '<header class="tdb-tete">' +
+        '<div class="tdb-meta">Tableau de bord · données du ' + auj.getDate() + ' ' + nomMois(auj) + ', ' + hm + '</div>' +
+        '<h1 class="tdb-h1 num">' + esc(h1) + '</h1>' +
+        '<p class="tdb-sous">' + sous + '</p>' +
+        (capMois ? '<div class="tdb-cap"><div class="tdb-capb"><i style="width:' + pctMois + '%"></i></div>' +
+          '<div class="tdb-capl num"><span>Travaillé ' + hh(minCur) + '</span><span>Capacité du mois ' + hh(capMois) + '</span></div></div>' : '') +
+      '</header>' +
+      '<section class="tdb-kpis" aria-label="Indicateurs">' +
+        '<div class="tdb-card"><div class="tdb-k">Tes estimations</div>' + carteEstim + '</div>' +
+        '<div class="tdb-card"><div class="tdb-k">Validations clientes</div>' + carteVal + '</div>' +
+        carteForf +
+      '</section>' +
+      '<section class="tdb-panel"><h2>Forfaits du mois</h2>' +
+        '<div class="tdb-fl tdb-fl--h"><span>Cliente</span><span>Prévu</span><span>Utilisé</span><span>Consommation</span><span>État</span></div>' +
+        lignesF + '</section>' +
+      '<section class="tdb-bas">' +
+        '<div class="tdb-panel"><h2>Temps travaillé, 6 derniers mois</h2><p class="tdb-pp">' + phrasePic + '</p><div class="tdb-bars">' + barres + '</div></div>' +
+        '<div class="tdb-panel tdb-panel--sombre"><h2>Satisfaction</h2>' + carteSat + '</div>' +
+      '</section>' +
     '</div>';
-    setMain(topbar('') + html);
+    setMain(html);
   }
 
   // ═══════════ Temps & rentabilité (maquette) ═══════════
