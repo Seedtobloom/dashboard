@@ -312,7 +312,7 @@
         _appvBannerShown = true;
         var b = document.createElement('div');
         b.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);bottom:20px;z-index:99999;background:var(--terre,#110704);color:var(--paille,#F0E9D6);border-radius:999px;padding:12px 18px;display:flex;align-items:center;gap:14px;box-shadow:0 6px 24px rgba(28,18,5,0.25);font-family:var(--font-body,sans-serif);font-size:15px';
-        b.innerHTML = '<span>✨ Une nouvelle version est disponible.</span><button style="border:none;cursor:pointer;background:var(--paille,#F0E9D6);color:var(--terre,#110704);font-weight:700;border-radius:999px;padding:8px 16px;font-family:inherit;font-size:15px">Recharger</button>';
+        b.innerHTML = '<span>Une nouvelle version est disponible.</span><button style="border:none;cursor:pointer;background:var(--paille,#F0E9D6);color:var(--terre,#110704);font-weight:700;border-radius:999px;padding:8px 16px;font-family:inherit;font-size:15px">Recharger</button>';
         b.querySelector('button').onclick = function () { location.reload(true); };
         document.body.appendChild(b);
       }
@@ -460,10 +460,6 @@
       // l'ancien « Mes tâches » (le travail de la boîte) : c'était la même
       // question posée à deux endroits, qu'il fallait croiser de tête.
       ['Mon travail', [['cockpit', 'Accueil'], ['cktaches', 'Tâches'], ['ckplanning', 'Planning'], ['ckprojets', 'Projets'], ['inbox', 'Inbox'], ['questionnaires', 'Questionnaires'], ['visios', 'Visios'], ['plannings', 'Plannings éditoriaux']]],
-      // Remplacés par les quatre écrans ci-dessus. Gardés le temps de vérifier
-      // qu'ils ne servent plus : « Ma semaine » reste le seul endroit où
-      // s'ouvre une tâche Seed to Bloom.
-      ['Anciens écrans', [['priorities', 'Priorités'], ['alltasks', 'Toutes les tâches'], ['semaine', 'Ma semaine']]],
       ['Pilotage', [['kpi', 'Tableau de bord'], ['temps', 'Temps & rentabilité'], ['done', 'Réalisé'], ['avis', 'Avis'], ['incidents', 'Incidents']]],
       ['Configuration', [['projtpl', 'Modèles de projets'], ['reglages', 'Réglages']]],
     ];
@@ -493,7 +489,7 @@
         av +
         '<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(nm) + '</span>' +
         (c.unread > 0 ? badge(c.unread) : '') +
-        '</button><button type="button" class="navchev" onclick="ADM.navToggleClient(\'' + c.key + '\')" aria-expanded="' + open + '" aria-label="' + (open ? 'Replier' : 'Déplier') + ' ' + esc(nm) + '" title="' + (open ? 'Replier' : 'Déplier') + '">' + (open ? '▾' : '▸') + '</button></div>';
+        '</button><button type="button" class="navchev" onclick="ADM.navToggleClient(\'' + c.key + '\')" aria-expanded="' + open + '" aria-label="' + (open ? 'Replier' : 'Déplier') + ' ' + esc(nm) + '" title="' + (open ? 'Replier' : 'Déplier') + '">' + (open ? IC_BAS_V : IC_DROITE_V) + '</button></div>';
       var subsHtml = open ? subs.map(function (sub) {
         var on = isCur && TAB === sub[0];
         return '<button class="navitem" onclick="ADM.navClientTab(\'' + c.key + '\',\'' + sub[0] + '\')" style="padding:6px 12px 6px 44px;font-size:15px;' + (on ? 'color:var(--paille)' : 'opacity:0.72') + '">' +
@@ -613,7 +609,7 @@
     }).join('');
     return '<div style="display:flex;justify-content:space-between;align-items:center;padding:14px 15px;border:none">' +
       '<strong style="font-family:var(--font-display);font-style:italic;font-size:19px;color:var(--terre);font-weight:400">À traiter</strong>' +
-      '<button onclick="ADM.notifToggle()" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:20px;line-height:1">×</button></div>' +
+      '<button aria-label="Fermer" onclick="ADM.notifToggle()" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:20px;line-height:1">' + IC_X + '</button></div>' +
       '<div style="max-height:60vh;overflow-y:auto">' + commentRows + reworkRows + rows + '</div>';
   }
   function notifToggle() { NOTIF_OPEN = !NOTIF_OPEN; paintNotif(); }
@@ -709,14 +705,11 @@
     if (VIEW !== 'questionnaires') { var qd = el('qnr-drawer'); if (qd) qd.remove(); var qb = el('qnr-drawer-bk'); if (qb) qb.remove(); QNR_SEL = null; }
     if (VIEW !== 'projtpl') { var pd = el('prj-drawer'); if (pd) pd.remove(); var pb = el('prj-drawer-bk'); if (pb) pb.remove(); PRJ_SEL = null; }
     if (VIEW === 'inbox') return renderInbox();
-    if (VIEW === 'priorities') return renderPriorities();
-    if (VIEW === 'alltasks') return renderAllTasks();
     if (VIEW === 'done') return renderDone();
     if (VIEW === 'cockpit') return renderCockpit();
     if (VIEW === 'cktaches') return renderCockpitTaches();
     if (VIEW === 'ckplanning') return renderCockpitPlanning();
     if (VIEW === 'ckprojets') return renderCockpitProjets();
-    if (VIEW === 'semaine') return renderMaSemaine();
     if (VIEW === 'visios') return renderVisios();
     if (VIEW === 'plannings') return renderPlannings();
     if (VIEW === 'questionnaires') return renderQuestionnaires();
@@ -731,6 +724,19 @@
     if (VIEW === 'avis') return renderAvis();
     if (VIEW === 'reglages') return renderReglages();
   }
+  /* Icônes dessinées, un seul trait : elles remplacent les caractères
+   * (×, ↑, ✎, ▶…) qui changeaient d'allure d'une police à l'autre. */
+  function icone(d, t) { return '<svg width="' + (t || 16) + '" height="' + (t || 16) + '" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px">' + d + '</svg>'; }
+  var IC_X = icone('<path d="M4 4l8 8M12 4l-8 8"/>');
+  var IC_HAUT = icone('<path d="M8 13V3M4 7l4-4 4 4"/>');
+  var IC_BAS = icone('<path d="M8 3v10M4 9l4 4 4-4"/>');
+  var IC_CRAYON = icone('<path d="M10.5 2.5l3 3L6 13H3v-3z"/>');
+  var IC_LECTURE = icone('<path d="M5 3l8 5-8 5z"/>');
+  var IC_REGLAGE = icone('<circle cx="8" cy="8" r="2.2"/><path d="M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2M3.4 3.4l1.4 1.4M11.2 11.2l1.4 1.4M3.4 12.6l1.4-1.4M11.2 4.8l1.4-1.4"/>');
+  var IC_BAS_V = icone('<path d="M4 6l4 4 4-4"/>', 14);
+  var IC_HAUT_V = icone('<path d="M4 10l4-4 4 4"/>', 14);
+  var IC_DROITE_V = icone('<path d="M6 4l4 4-4 4"/>', 14);
+  var IC_LIEN = icone('<path d="M6.5 9.5l3-3M7 4.5l1.2-1.2a2.5 2.5 0 013.5 3.5L10.5 8M9 11.5l-1.2 1.2a2.5 2.5 0 01-3.5-3.5L5.5 8"/>', 14);
   function topbar(title, right, subtitle) {
     return '<div class="topbar"><div class="topbar__head"><h1>' + esc(title) + '</h1>' +
       (subtitle ? '<div class="topbar__sub">' + esc(subtitle) + '</div>' : '') +
@@ -975,7 +981,7 @@
       return '<div class="card" style="padding:14px 16px;margin-bottom:10px;background:var(--card)">' +
         '<div class="row" style="gap:8px;align-items:center;margin-bottom:8px">' +
           '<input class="inp" value="' + esc(r.label || '') + '" placeholder="Titre (ex. Relance douce, Accusé de réception…)" style="flex:1;font-weight:600" onchange="ADM.qrSet(\'' + r.id + '\',\'label\',this.value)">' +
-          '<button class="pbtn" style="color:#8d2b21" onclick="ADM.qrDel(\'' + r.id + '\')">Suppr.</button>' +
+          '<button class="pbtn" style="color:#5A2A11" onclick="ADM.qrDel(\'' + r.id + '\')">Suppr.</button>' +
         '</div>' +
         '<textarea class="inp" placeholder="Le texte du message…" style="width:100%;box-sizing:border-box;min-height:80px;resize:vertical;font-size:15px;line-height:1.5" onchange="ADM.qrSet(\'' + r.id + '\',\'text\',this.value)">' + esc(r.text || '') + '</textarea>' +
       '</div>';
@@ -983,7 +989,7 @@
     b.innerHTML = '<div class="card infocard" style="background:var(--card)"><h3>Réponses rapides</h3>' +
       '<div class="micro mb" style="text-transform:none;letter-spacing:0;line-height:1.6;color:var(--terre-600)">Tes messages récurrents, prêts à insérer en un clic depuis la messagerie (bouton ⚡). Ils ne sont visibles que par toi.</div>' +
       (rows || '<div class="empty" style="margin-bottom:10px">Aucune réponse rapide. Crée ton premier modèle (ex. « Accusé de réception », « Relance douce »).</div>') +
-      '<button class="btn btn--outline btn--sm" style="margin-top:4px" onclick="ADM.qrAdd()">+ Ajouter une réponse</button></div>';
+      '<button class="btn btn--outline btn--sm" style="margin-top:4px" onclick="ADM.qrAdd()">Ajouter une réponse</button></div>';
   }
   function qrSave() { jpost('/api/quick-replies', { replies: QREPLIES }, 'PATCH').then(function (r) { if (!r.ok) toast('Erreur d\'enregistrement'); }).catch(function () { toast('Erreur'); }); }
   function qrAdd() { QREPLIES.push({ id: 'qr' + Date.now().toString(36), label: '', text: '' }); qrSave(); renderQuickRepliesBody(); }
@@ -1095,7 +1101,7 @@
         '<div class="row" style="gap:8px;flex-wrap:wrap;align-items:center">' +
           '<label class="micro" style="display:flex;align-items:center;gap:5px;text-transform:none;letter-spacing:0">Du <input class="inp" type="date" id="cg-from-' + i + '" value="' + esc(h.from || '') + '" style="width:auto"></label>' +
           '<label class="micro" style="display:flex;align-items:center;gap:5px;text-transform:none;letter-spacing:0">au <input class="inp" type="date" id="cg-to-' + i + '" value="' + esc(h.to || '') + '" style="width:auto"></label>' +
-          '<button class="btn btn--danger btn--sm" style="margin-left:auto" onclick="ADM.congesDel(' + i + ')" title="Retirer">✕</button>' +
+          '<button class="btn btn--danger btn--sm" style="margin-left:auto" onclick="ADM.congesDel(' + i + ')" title="Retirer">' + IC_X + '</button>' +
         '</div>' +
         '<input class="inp mt" id="cg-msg-' + i + '" value="' + esc(h.message || '') + '" placeholder="Message affiché au client (ex. Je serai en congés, réponses à mon retour)" style="width:100%;box-sizing:border-box">' +
       '</div>';
@@ -1103,7 +1109,7 @@
     b.innerHTML = '<div class="card infocard" style="background:var(--card)"><h3>Congés du studio</h3>' +
       '<div class="micro mb" style="text-transform:none;letter-spacing:0;line-height:1.6;color:var(--terre-600)">Ajoute tes périodes de congés. Un bandeau s\'affiche en haut de l\'espace de <b>tous tes clients</b> pendant la période (et jusqu\'à 30 jours avant, en « À venir »). Laisse le message vide pour un texte par défaut.</div>' +
       (rows || '<div class="empty">Aucun congé programmé.</div>') +
-      '<div class="row mt" style="gap:8px"><button class="btn btn--outline btn--sm" onclick="ADM.congesAdd()">+ Ajouter une période</button>' +
+      '<div class="row mt" style="gap:8px"><button class="btn btn--outline btn--sm" onclick="ADM.congesAdd()">Ajouter une période</button>' +
         '<button class="btn btn--dark btn--sm" style="margin-left:auto" onclick="ADM.congesSave()">Enregistrer</button></div></div>';
   }
   function congesAdd() { HOLIDAYS = congesReadInputs(); HOLIDAYS.push({ id: '', from: '', to: '', message: '' }); renderCongesBody(); }
@@ -1121,12 +1127,12 @@
       return '<div class="setline">' +
         '<span class="setline__dot" style="background:' + MT_DOTS[i % MT_DOTS.length] + '"></span>' +
         '<input class="inp" id="mt-type-' + i + '" value="' + esc(t) + '" aria-label="Type de mission ' + (i + 1) + '">' +
-        '<button class="setline__x" onclick="ADM.missionTypeDel(' + i + ')" title="Retirer" aria-label="Retirer ce type">✕</button></div>';
+        '<button class="setline__x" onclick="ADM.missionTypeDel(' + i + ')" title="Retirer" aria-label="Retirer ce type">' + IC_X + '</button></div>';
     }).join('');
     return '<div class="card infocard" style="background:var(--card)"><h3>Types de mission</h3>' +
       '<div class="micro mb" style="text-transform:none;letter-spacing:0;line-height:1.6;color:var(--terre-600)">Ces catégories sont proposées au client quand il crée une tâche, et servent au suivi du temps par type. Modifie, ajoute ou retire selon tes besoins, puis enregistre.</div>' +
       (rows || '<div class="empty">Aucun type. Ajoutez-en un ci-dessous.</div>') +
-      '<div class="setadd"><input class="inp" id="mt-type-new" aria-label="Nouveau type de mission" placeholder="Nouveau type de mission" onkeydown="if(event.key===\'Enter\'){event.preventDefault();ADM.missionTypeAdd();}"><button class="btn btn--outline btn--sm" onclick="ADM.missionTypeAdd()">+ Ajouter</button></div>' +
+      '<div class="setadd"><input class="inp" id="mt-type-new" aria-label="Nouveau type de mission" placeholder="Nouveau type de mission" onkeydown="if(event.key===\'Enter\'){event.preventDefault();ADM.missionTypeAdd();}"><button class="btn btn--outline btn--sm" onclick="ADM.missionTypeAdd()">Ajouter</button></div>' +
       '<div class="row row--end mt"><button class="btn btn--dark btn--sm" onclick="ADM.missionTypeSave()">Enregistrer</button></div></div>';
   }
   function renderReglagesBody() { var b = el('regl-body'); if (b) b.innerHTML = missionBody(); }
@@ -1147,7 +1153,7 @@
       '<div class="row mt" style="gap:8px;flex-wrap:wrap;align-items:center">' +
         '<button class="btn btn--dark btn--sm" onclick="ADM.calSave()">Enregistrer</button>' +
         '<button class="btn btn--outline btn--sm" onclick="ADM.calTest()">Tester la connexion</button>' +
-        (on ? '<button class="btn btn--outline btn--sm" style="margin-left:auto;color:#8d2b21" onclick="ADM.calDisconnect()">Déconnecter</button>' : '') +
+        (on ? '<button class="btn btn--outline btn--sm" style="margin-left:auto;color:#5A2A11" onclick="ADM.calDisconnect()">Déconnecter</button>' : '') +
       '</div>' +
       '<div id="cal-test" class="micro mt" style="text-transform:none;letter-spacing:0"></div>' +
     '</div>';
@@ -1166,8 +1172,8 @@
     api('/api/calendar/test', { method: 'POST' }).then(function (r) { return r.json(); }).then(function (d) {
       var box2 = el('cal-test'); if (!box2) return;
       if (d.ok) box2.innerHTML = '<span style="color:var(--green);font-weight:600">✓ Connecté</span> · calendrier utilisé : <b>' + esc(d.chosen || '') + '</b>' + (d.calendars && d.calendars.length > 1 ? ' <span style="color:var(--muted)">(disponibles : ' + d.calendars.map(esc).join(', ') + ')</span>' : '');
-      else box2.innerHTML = '<span style="color:#8d2b21;font-weight:600">✗ ' + esc(d.error || 'Connexion impossible') + '</span>';
-    }).catch(function () { var box2 = el('cal-test'); if (box2) box2.innerHTML = '<span style="color:#8d2b21">Erreur réseau</span>'; });
+      else box2.innerHTML = '<span style="color:#5A2A11;font-weight:600">✗ ' + esc(d.error || 'Connexion impossible') + '</span>';
+    }).catch(function () { var box2 = el('cal-test'); if (box2) box2.innerHTML = '<span style="color:#5A2A11">Erreur réseau</span>'; });
   }
   function calDisconnect() {
     admConfirm({ title: 'Déconnecter iCloud ?', message: 'Tes identifiants seront supprimés du serveur. Tes événements iCloud ne s\'afficheront plus dans Visios.', yes: 'Déconnecter', no: 'Annuler', danger: true }, function () {
@@ -1316,7 +1322,7 @@
     } else if (it.type === 'validated') {
       body = '<div style="font-size:15px;font-weight:600;color:var(--terre);margin-top:5px">' + esc(x.name || 'Livrable') + '</div>' + (x.taskTitle ? '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:3px">Tâche : ' + esc(x.taskTitle) + '</div>' : '');
     } else if (it.type === 'revision') {
-      var rlink = x.clientLink ? '<div style="margin-top:8px"><a class="btn btn--outline btn--sm" href="' + esc(/^https?:\/\//i.test(x.clientLink) ? x.clientLink : 'https://' + x.clientLink) + '" target="_blank" rel="noopener">🔗 Lien de la cliente</a></div>' : '';
+      var rlink = x.clientLink ? '<div style="margin-top:8px"><a class="btn btn--outline btn--sm" href="' + esc(/^https?:\/\//i.test(x.clientLink) ? x.clientLink : 'https://' + x.clientLink) + '" target="_blank" rel="noopener">Lien de la cliente</a></div>' : '';
       var rwish = x.wishDate ? '<div style="margin-top:7px;font-family:var(--font-micro);font-size:15px;font-weight:700;color:#6a4a0b;background:#fbf5e6;border:none;border-radius:8px;padding:6px 10px;display:inline-block">📅 Nouvelle version souhaitée pour le ' + esc((x.wishDate || '').split('-').reverse().join('/')) + '</div>' : '';
       body = '<div style="font-size:15px;font-weight:600;color:var(--terre);margin-top:5px">' + esc(x.name || 'Livrable') + '</div>' +
         (x.projectLabel ? '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:3px">' + esc(x.projectLabel) + '</div>' : '') +
@@ -1328,7 +1334,7 @@
       var tidArg = x.taskId ? '\'' + x.taskId + '\'' : 'null';
       var resendArgs = '\'' + x.key + '\',\'' + (x.project || 'partner') + '\',' + cidArg + ',' + tidArg + ',\'' + x.id + '\'';
       var resendBtns = '<button class="btn btn--dark btn--sm" onclick="ADM.inboxResend(' + resendArgs + ')">↩ Renvoyer une version (fichier)</button>' +
-        '<button class="btn btn--outline btn--sm" onclick="ADM.inboxResendLink(' + resendArgs + ')">🔗 Renvoyer un lien</button>';
+        '<button class="btn btn--outline btn--sm" onclick="ADM.inboxResendLink(' + resendArgs + ')">Renvoyer un lien</button>';
       return inboxChrome(it, body, resendBtns + openBtn + seenBtn, '#a8432f');
     }
     return inboxChrome(it, body, openBtn + seenBtn, '');
@@ -1393,7 +1399,7 @@
     var urgBadge = urg ? ' <span style="font-family:var(--font-micro);font-size:13px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#8a4a2c;background:#F0E2D6;padding:3px 8px;border-radius:999px;vertical-align:middle">Urgent</span>' : '';
     var forfaitTxt = x.forfaitConfigured ? (x.forfaitRemaining <= 0 ? 'forfait épuisé' : 'reste ' + x.forfaitRemaining + ' h') : 'forfait non défini';
     var forfaitCol = x.forfaitConfigured && x.forfaitRemaining <= 0 ? '#8a4a2c' : (x.forfaitConfigured && x.forfaitRemaining <= 2 ? 'var(--orange)' : 'var(--muted)');
-    var link = x.clientLink ? '<a class="btn btn--outline btn--sm" href="' + esc(/^https?:\/\//i.test(x.clientLink) ? x.clientLink : 'https://' + x.clientLink) + '" target="_blank" rel="noopener">🔗 Lien</a>' : '';
+    var link = x.clientLink ? '<a class="btn btn--outline btn--sm" href="' + esc(/^https?:\/\//i.test(x.clientLink) ? x.clientLink : 'https://' + x.clientLink) + '" target="_blank" rel="noopener">Ajouter un lien</a>' : '';
     var body =
       '<div style="font-size:16px;font-weight:650;color:var(--terre);margin-top:5px">' + esc(x.title || 'Sans titre') + urgBadge + projBadge +
         '<span style="float:right;font-family:var(--font-micro);font-size:15px;font-weight:600;color:' + forfaitCol + '">' + esc(forfaitTxt) + '</span>' +
@@ -1413,7 +1419,7 @@
       '<button class="btn btn--dark btn--sm" onclick="ADM.inboxTriage(\'' + x.key + '\',\'' + x.id + '\',\'accept\')">✓ Accepter → tâche</button>' +
       '<button class="btn btn--outline btn--sm" onclick="ADM.inboxTriage(\'' + x.key + '\',\'' + x.id + '\',\'hors_forfait\')">Hors forfait</button>' +
       '<button class="btn btn--outline btn--sm" onclick="ADM.inboxProposeDate(\'' + x.key + '\',\'' + x.id + '\',\'' + esc((x.dueDate || '').slice(0, 10)) + '\')">📅 Proposer une date</button>' +
-      '<button class="btn btn--outline btn--sm" style="margin-left:auto;color:#8d2b21" onclick="ADM.inboxTriage(\'' + x.key + '\',\'' + x.id + '\',\'refuse\')">Refuser</button>' +
+      '<button class="btn btn--outline btn--sm" style="margin-left:auto;color:#5A2A11" onclick="ADM.inboxTriage(\'' + x.key + '\',\'' + x.id + '\',\'refuse\')">Refuser</button>' +
       '<button class="pbtn" onclick="ADM.inboxDrawer(\'' + it.type + '\',\'' + x.key + '\',\'' + x.id + '\')">Ouvrir la fiche</button>';
     return inboxChrome(it, body, actions, urg ? '#8a4a2c' : '');
   }
@@ -1464,7 +1470,7 @@
     if (x.dueDate) meta.push('📅 Souhaité : <strong style="color:var(--terre)">' + esc((x.dueDate || '').split('-').reverse().join('/')) + '</strong>');
     if (x.createdAt) meta.push('🕐 ' + esc(fmtDate(x.createdAt)));
     if (x.forfaitConfigured) meta.push(x.forfaitRemaining <= 0 ? 'Forfait épuisé' : 'Reste ' + x.forfaitRemaining + ' h');
-    var link = x.clientLink ? '<a class="btn btn--outline btn--sm" href="' + esc(/^https?:\/\//i.test(x.clientLink) ? x.clientLink : 'https://' + x.clientLink) + '" target="_blank" rel="noopener">🔗 Lien de la cliente</a>' : '';
+    var link = x.clientLink ? '<a class="btn btn--outline btn--sm" href="' + esc(/^https?:\/\//i.test(x.clientLink) ? x.clientLink : 'https://' + x.clientLink) + '" target="_blank" rel="noopener">Lien de la cliente</a>' : '';
     // Actions selon le type (chaque action ferme le panneau puis agit)
     var C = 'ADM.inboxDrawerClose();';
     var acts = '';
@@ -1473,9 +1479,9 @@
         '<button class="btn btn--dark btn--sm" onclick="' + C + 'ADM.inboxTriage(\'' + x.key + '\',\'' + x.id + '\',\'accept\')">✓ Accepter → tâche</button>' +
         '<button class="btn btn--outline btn--sm" onclick="' + C + 'ADM.inboxTriage(\'' + x.key + '\',\'' + x.id + '\',\'hors_forfait\')">Hors forfait</button>' +
         '<button class="btn btn--outline btn--sm" onclick="' + C + 'ADM.inboxProposeDate(\'' + x.key + '\',\'' + x.id + '\',\'' + esc((x.dueDate || '').slice(0, 10)) + '\')">📅 Proposer une date</button>' +
-        '<button class="btn btn--outline btn--sm" style="color:#8d2b21" onclick="' + C + 'ADM.inboxTriage(\'' + x.key + '\',\'' + x.id + '\',\'refuse\')">Refuser</button>';
+        '<button class="btn btn--outline btn--sm" style="color:#5A2A11" onclick="' + C + 'ADM.inboxTriage(\'' + x.key + '\',\'' + x.id + '\',\'refuse\')">Refuser</button>';
     } else {
-      if (type === 'ticket') acts += '<button class="btn btn--dark btn--sm" onclick="' + C + 'ADM.prioTicketStart(\'' + x.key + '\',\'' + x.id + '\')">▶ Commencer</button>';
+      if (type === 'ticket') acts += '<button class="btn btn--dark btn--sm" onclick="' + C + 'ADM.prioTicketStart(\'' + x.key + '\',\'' + x.id + '\')">Commencer</button>';
       var seenArgs = '\'' + type + '\',\'' + x.key + '\',\'' + x.id + '\'' + ((type === 'validated' || type === 'revision') ? ',\'' + (x.project || 'partner') + '\'' : '');
       acts += '<button class="btn btn--outline btn--sm" onclick="' + C + 'ADM.inboxSeen(' + seenArgs + ')">Marquer vu</button>';
     }
@@ -1485,7 +1491,7 @@
         chip +
         '<div style="flex:1;min-width:0"><div class="micro" style="text-transform:uppercase;letter-spacing:0.05em;font-weight:700;color:' + cfg.ic + '">' + cfg.label + '</div>' +
           '<div style="font-family:var(--font-display);font-style:italic;font-size:20px;color:var(--terre);line-height:1.15">' + esc(x.client || '') + '</div></div>' +
-        '<button onclick="ADM.inboxDrawerClose()" style="background:none;border:none;cursor:pointer;font-size:22px;color:var(--muted);line-height:1;flex-shrink:0">✕</button>' +
+        '<button aria-label="Fermer" onclick="ADM.inboxDrawerClose()" style="background:none;border:none;cursor:pointer;font-size:22px;color:var(--muted);line-height:1;flex-shrink:0">' + IC_X + '</button>' +
       '</div>' +
       '<div style="padding:6px 22px 90px">' +
         '<div style="font-size:18px;font-weight:650;color:var(--terre);line-height:1.3;margin-bottom:12px">' + esc(title) + '</div>' +
@@ -2030,7 +2036,7 @@
       : (bf.text ? mtLinkify(bf.text) : '');
     var briefTbl = bf.table ? '<div style="white-space:normal">' + briefTableHtml(x.table) + '</div>' : '';
     var brief = (briefBody + briefTbl) || '<span style="color:var(--muted)">Pas de brief renseigné pour cette tâche.</span>';
-    var link = x.clientLink ? '<div style="margin-top:12px"><a href="' + esc(/^https?:\/\//i.test(x.clientLink) ? x.clientLink : 'https://' + x.clientLink) + '" target="_blank" rel="noopener" style="font-family:var(--font-micro);font-size:15px;color:var(--terre-600)">🔗 Lien déposé par la cliente</a></div>' : '';
+    var link = x.clientLink ? '<div style="margin-top:12px"><a href="' + esc(/^https?:\/\//i.test(x.clientLink) ? x.clientLink : 'https://' + x.clientLink) + '" target="_blank" rel="noopener" style="font-family:var(--font-micro);font-size:15px;color:var(--terre-600)">Lien déposé par la cliente</a></div>' : '';
     // Lien de révision : celui que TU envoies à la cliente. Il était stocké et
     // transmis, mais affiché nulle part : une fois envoyé, impossible de le
     // retrouver depuis la tâche. Seul le lien reçu DE la cliente l'était.
@@ -2062,7 +2068,7 @@
     var resx = taskRes(x);
     var envoi = x.archived ? '' :
       '<button class="btn btn--outline btn--sm" title="Envoyer un fichier à la cliente" onclick="ADM.prioAddDlv(\'' + key + '\',\'' + x.id + '\',\'' + resx.pid + '\')">📎 Fichier</button>' +
-      '<button class="btn btn--outline btn--sm" title="Envoyer un livrable sous forme de lien" onclick="ADM.prioAddDlvLink(\'' + key + '\',\'' + x.id + '\',\'' + resx.pid + '\')">🔗 Lien</button>' +
+      '<button class="btn btn--outline btn--sm" title="Envoyer un livrable sous forme de lien" onclick="ADM.prioAddDlvLink(\'' + key + '\',\'' + x.id + '\',\'' + resx.pid + '\')">Ajouter un lien</button>' +
       (resx.ticket ? '' :
         '<button class="btn btn--outline btn--sm" title="Envoyer le lien de révision (la tâche passe en « à valider »)" onclick="ADM.prioSendReview(\'' + key + '\',\'' + x.id + '\',\'' + esc((x.reviewLink || '').replace(/'/g, "\\'")) + '\')">Lien de révision</button>');
     // Saisie du temps passé directement depuis ce panneau (sans ouvrir la fiche).
@@ -2085,7 +2091,7 @@
         '<span style="flex:1;min-width:0;font-size:15px;color:var(--terre)">' + esc(mLbl(e.month)) + '</span>' +
         (e.at ? '<span class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted)">saisi le ' + esc(fmtDate(e.at)) + '</span>' : '<span class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted)">chrono</span>') +
         '<b style="font-variant-numeric:tabular-nums;min-width:56px;text-align:right">' + hm2(e.minutes) + '</b>' +
-        (e.id ? '<button class="pbtn" title="Retirer cette saisie" onclick="ADM.atDelEntry(\'' + key + '\',\'' + x.id + '\',\'' + esc(e.id) + '\')">✕</button>' : '') +
+        (e.id ? '<button class="pbtn" title="Retirer cette saisie" onclick="ADM.atDelEntry(\'' + key + '\',\'' + x.id + '\',\'' + esc(e.id) + '\')">' + IC_X + '</button>' : '') +
       '</div>';
     }).join('');
     var totalMin = ents.reduce(function (a, e) { return a + e.minutes; }, 0);
@@ -2107,7 +2113,7 @@
         '<button class="btn btn--dark btn--sm" onclick="ADM.atAddEntry(\'' + key + '\',\'' + x.id + '\')">Ajouter</button>' +
       '</div>';
     el('at-dr-in').innerHTML =
-      '<div class="at-dr__top"><button class="at-dr__x" onclick="ADM.atClose()">✕</button>' +
+      '<div class="at-dr__top"><button aria-label="Fermer" class="at-dr__x" onclick="ADM.atClose()">' + IC_X + '</button>' +
         '<button class="at-dr__w" id="at-dr-w" title="Élargir ou réduire le panneau" onclick="ADM.atWide()">' + (AT_WIDE ? '⤡ Réduire' : '⤢ Élargir') + '</button>' +
         '<div class="at-dr__meta">' + esc(otag) + ' · ' + esc(x.client || '') + '</div>' +
         '<div class="at-dr__t">' + esc(x.title || 'Tâche') + '</div>' +
@@ -2144,7 +2150,7 @@
    * client (le paquet envoyé là-bas en est expurgé côté serveur). */
   function atNoteInner(x) {
     var n = (x.studioNote || '').trim();
-    var lien = '<button onclick="ADM.atEditNote(\'' + x.key + '\',\'' + x.id + '\')" style="background:none;border:none;color:var(--muted);font-size:15px;cursor:pointer;padding:3px 0;text-decoration:underline">' + (n ? 'Modifier' : '+ Ajouter une note') + '</button>';
+    var lien = '<button onclick="ADM.atEditNote(\'' + x.key + '\',\'' + x.id + '\')" style="background:none;border:none;color:var(--muted);font-size:15px;cursor:pointer;padding:3px 0;text-decoration:underline">' + (n ? 'Modifier' : 'Ajouter une note') + '</button>';
     return (n ? '<div style="font-size:15px;color:#5e4a2e;white-space:pre-wrap;line-height:1.55;background:var(--card);border-radius:11px;padding:11px 14px;margin-bottom:4px">' + mtLinkify(n) + '</div>' : '') + lien;
   }
   function atEditNote(key, id) {
@@ -2290,7 +2296,7 @@
         var l = (x.clientLink || '').trim();
         if (!l) return '';
         var u = /^https?:\/\//i.test(l) ? l : 'https://' + l;
-        return '<div style="margin-top:4px;font-size:15px;display:flex;align-items:center;gap:6px"><span style="flex-shrink:0;opacity:0.6">🔗</span><a href="' + esc(u) + '" target="_blank" rel="noopener" style="color:' + (dark ? 'rgba(242,229,194,0.95)' : 'var(--glycine-900)') + ';overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="Lien déposé par le client">' + esc(l.replace(/^https?:\/\//i, '').slice(0, 60)) + '</a></div>';
+        return '<div style="margin-top:4px;font-size:15px;display:flex;align-items:center;gap:6px"><span style="flex-shrink:0;opacity:0.6">' + IC_LIEN + '</span><a href="' + esc(u) + '" target="_blank" rel="noopener" style="color:' + (dark ? 'rgba(242,229,194,0.95)' : 'var(--glycine-900)') + ';overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="Lien déposé par le client">' + esc(l.replace(/^https?:\/\//i, '').slice(0, 60)) + '</a></div>';
       }
       function prioBrief(x, dark) {
         var bf = taskBrief(x);
@@ -2335,7 +2341,7 @@
           var tsec = x.timeSpentSeconds || (x.timeSpentMinutes || 0) * 60;
           var tcol = dark ? 'rgba(242,229,194,0.85)' : 'var(--terre)';
           var tclock = '<span title="Temps passé sur ce ticket" style="font-family:var(--font-micro);font-variant-numeric:tabular-nums;font-weight:700;font-size:15px;color:' + tcol + ';min-width:54px;text-align:right">' + mtClock(tsec) + '</span>';
-          var tedit = '<button class="pbtn" title="Saisir le temps passé sur ce ticket" onclick="ADM.prioSetTime(\'' + x.key + '\',\'' + x.id + '\',' + tsec + ',\'ticket\',\'' + (x.project || 'maintenance') + '\')">✎</button>';
+          var tedit = '<button class="pbtn" title="Saisir le temps passé sur ce ticket" onclick="ADM.prioSetTime(\'' + x.key + '\',\'' + x.id + '\',' + tsec + ',\'ticket\',\'' + (x.project || 'maintenance') + '\')">' + IC_CRAYON + '</button>';
           return '<span style="display:inline-flex;align-items:center;gap:5px">' + tclock + tedit + '</span>';
         }
         if (x.project !== 'partner') return '';
@@ -2345,9 +2351,9 @@
         var clock = '<span id="pt-timer-' + x.id + '" title="Temps passé sur cette tâche" style="font-family:var(--font-micro);font-variant-numeric:tabular-nums;font-weight:700;font-size:15px;color:' + col + ';min-width:54px;text-align:right">' + mtClock(sec) + '</span>';
         var btn = run
           ? '<button class="pbtn" style="color:var(--orange)" title="Mettre le chrono en pause" onclick="ADM.ptPause(\'' + x.id + '\')">⏸</button>'
-          : '<button class="pbtn" title="Démarrer le chrono" onclick="ADM.ptStart(\'' + x.id + '\',\'' + x.key + '\')">▶</button>';
+          : '<button class="pbtn" title="Démarrer le chrono" onclick="ADM.ptStart(\'' + x.id + '\',\'' + x.key + '\')">' + IC_LECTURE + '</button>';
         // Saisie manuelle du temps (désactivée pendant que le chrono tourne).
-        var edit = run ? '' : '<button class="pbtn" title="Saisir le temps à la main" onclick="ADM.prioSetTime(\'' + x.key + '\',\'' + x.id + '\',' + (x.timeSpentSeconds || 0) + ')">✎</button>';
+        var edit = run ? '' : '<button class="pbtn" title="Saisir le temps à la main" onclick="ADM.prioSetTime(\'' + x.key + '\',\'' + x.id + '\',' + (x.timeSpentSeconds || 0) + ')">' + IC_CRAYON + '</button>';
         return '<span style="display:inline-flex;align-items:center;gap:5px">' + clock + btn + edit + '</span>';
       }
       function prow(x) {
@@ -2361,8 +2367,8 @@
           (x.id ? '<div class="prow__act">' + prioTimer(x, false) +
             (x.kind === 'ticket' && x.status === 'open' ? '<button class="pbtn" title="Passer le ticket en cours" onclick="ADM.prioTicketStart(\'' + x.key + '\',\'' + x.id + '\')">En cours</button>' : '') +
             (x.project === 'partner' ? '<button class="pbtn" title="Envoyer un lien de révision au client" onclick="ADM.prioSendReview(\'' + x.key + '\',\'' + x.id + '\')">Révision</button>' : '') +
-            (x.project === 'partner' ? '<button class="pbtn" title="Déposer un livrable (fichier)" onclick="ADM.prioAddDlv(\'' + x.key + '\',\'' + x.id + '\')">+ Livrable</button>' : '') +
-            (x.project === 'partner' ? '<button class="pbtn" title="Déposer un livrable sous forme de lien" onclick="ADM.prioAddDlvLink(\'' + x.key + '\',\'' + x.id + '\')">🔗 Lien</button>' : '') +
+            (x.project === 'partner' ? '<button class="pbtn" title="Déposer un livrable (fichier)" onclick="ADM.prioAddDlv(\'' + x.key + '\',\'' + x.id + '\')">Ajouter un livrable</button>' : '') +
+            (x.project === 'partner' ? '<button class="pbtn" title="Déposer un livrable sous forme de lien" onclick="ADM.prioAddDlvLink(\'' + x.key + '\',\'' + x.id + '\')">Ajouter un lien</button>' : '') +
             '<button class="pbtn pbtn--ok" title="Marquer fait" onclick="ADM.prioDone(\'' + x.key + '\',\'' + x.project + '\',\'' + x.kind + '\',\'' + x.id + '\')">Fait</button>' +
             (x.kind === 'tâche' || x.kind === 'ticket'
               ? '<button class="pbtn" title="Proposer un report que la cliente devra accepter" onclick="ADM.prioProposeDate(\'' + x.key + '\',\'' + x.id + '\',\'' + iso + '\',\'' + x.kind + '\')">Proposer report</button>'
@@ -2424,7 +2430,7 @@
         var atts = Array.isArray(r.attachments) ? r.attachments : [];
         var filesHtml = (atts.length || r.clientLink)
           ? '<div style="margin-top:8px"><div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-bottom:4px">Fichiers redéposés par la cliente</div><div style="display:flex;flex-wrap:wrap;gap:7px">' +
-            (r.clientLink ? '<a class="btn btn--outline btn--sm" href="' + esc(/^https?:\/\//i.test(r.clientLink) ? r.clientLink : 'https://' + r.clientLink) + '" target="_blank" rel="noopener">🔗 ' + esc(r.clientLink.replace(/^https?:\/\//i, '').slice(0, 50)) + '</a>' : '') +
+            (r.clientLink ? '<a class="btn btn--outline btn--sm" href="' + esc(/^https?:\/\//i.test(r.clientLink) ? r.clientLink : 'https://' + r.clientLink) + '" target="_blank" rel="noopener">' + IC_LIEN + ' ' + esc(r.clientLink.replace(/^https?:\/\//i, '').slice(0, 50)) + '</a>' : '') +
             atts.map(function (a) { return '<a class="btn btn--outline btn--sm" href="/api/clients/' + r.key + '/files/' + encodeURIComponent(a.key) + '/download" target="_blank">📎 ' + esc(a.name || 'fichier') + '</a>'; }).join('') +
           '</div></div>'
           : '';
@@ -2437,7 +2443,7 @@
             filesHtml +
           '</div>' +
           '<div class="prow__act" style="flex-shrink:0">' +
-            ((r.project === 'partner' && r.taskId) ? '<button class="pbtn pbtn--ok" title="Déposer la nouvelle version" onclick="ADM.prioAddDlv(\'' + r.key + '\',\'' + r.taskId + '\')">+ Nouvelle version</button>' : '') +
+            ((r.project === 'partner' && r.taskId) ? '<button class="pbtn pbtn--ok" title="Déposer la nouvelle version" onclick="ADM.prioAddDlv(\'' + r.key + '\',\'' + r.taskId + '\')">Nouvelle version</button>' : '') +
             '<button class="pbtn" onclick="ADM.openClient(\'' + r.key + '\')">Ouvrir</button>' +
             '<button class="pbtn" title="Classer cette révision (déjà traitée)" onclick="ADM.revResolve(\'' + r.key + '\',\'' + r.id + '\',\'' + (r.project || 'partner') + '\')">✓ Traité</button>' +
           '</div>' +
@@ -2465,7 +2471,7 @@
         var reviewUrl = (isReview && x.reviewLink) ? (/^https?:\/\//i.test(x.reviewLink) ? x.reviewLink : 'https://' + x.reviewLink) : '';
         var linkBtn = reviewUrl ? '<a class="pbtn" href="' + esc(reviewUrl) + '" target="_blank" rel="noopener" title="Ouvrir le lien de révision">Ouvrir</a>' : '';
         // Lien affiché en clair (cliquable) pour le retrouver d'un coup d'œil.
-        var linkLine = reviewUrl ? '<div style="margin-top:4px;font-size:15px;display:flex;align-items:center;gap:6px"><span style="flex-shrink:0;opacity:0.6">🔗</span><a href="' + esc(reviewUrl) + '" target="_blank" rel="noopener" style="color:var(--glycine-900);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(x.reviewLink) + '</a></div>' : '';
+        var linkLine = reviewUrl ? '<div style="margin-top:4px;font-size:15px;display:flex;align-items:center;gap:6px"><span style="flex-shrink:0;opacity:0.6">' + IC_LIEN + '</span><a href="' + esc(reviewUrl) + '" target="_blank" rel="noopener" style="color:var(--glycine-900);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(x.reviewLink) + '</a></div>' : '';
         // Temps passé : on affiche le même chrono que sur les révisions
         // (temps + ▶ + ✎) sur les livrables/étapes en attente. Pour un livrable,
         // la cible est la tâche sous-jacente (taskId), pas le livrable lui-même.
@@ -2481,10 +2487,10 @@
         var _ageC = s >= 20 ? 'wage--hot' : (s >= 10 ? 'wage--warm' : (s > 0 ? 'wage--cool' : ''));
         var _ageChip = s > 0 ? '<span class="wage ' + _ageC + '">' + s + ' j' + (s >= 5 ? ' · à relancer' : '') + '</span>' : '';
         var _chip = isReview ? '<span class="wchip wchip--rev">Révision à faire</span>' : (isStep ? '<span class="wchip wchip--step">Étape</span>' : '<span class="wchip wchip--liv">Livrable</span>');
-        var _linkLine = reviewUrl ? '<div class="wc__link">🔗 <a href="' + esc(reviewUrl) + '" target="_blank" rel="noopener" style="color:var(--glycine-900)">' + esc(x.reviewLink) + '</a></div>' : '';
+        var _linkLine = reviewUrl ? '<div class="wc__link">' + IC_LIEN + ' <a href="' + esc(reviewUrl) + '" target="_blank" rel="noopener" style="color:var(--glycine-900)">' + esc(x.reviewLink) + '</a></div>' : '';
         var _acts = timerHtml + linkBtn +
-          (isReview ? '<button class="pbtn" title="Déposer un livrable (fichier)" onclick="ADM.prioAddDlv(\'' + x.key + '\',\'' + x.id + '\')">+ Livrable</button>' : '') +
-          (isReview ? '<button class="pbtn" title="Déposer un livrable sous forme de lien" onclick="ADM.prioAddDlvLink(\'' + x.key + '\',\'' + x.id + '\')">🔗 Lien</button>' : '') +
+          (isReview ? '<button class="pbtn" title="Déposer un livrable (fichier)" onclick="ADM.prioAddDlv(\'' + x.key + '\',\'' + x.id + '\')">Ajouter un livrable</button>' : '') +
+          (isReview ? '<button class="pbtn" title="Déposer un livrable sous forme de lien" onclick="ADM.prioAddDlvLink(\'' + x.key + '\',\'' + x.id + '\')">Ajouter un lien</button>' : '') +
           (isReview ? '<button class="pbtn pbtn--ok" title="Valider toi-même et marquer terminé" onclick="ADM.prioDone(\'' + x.key + '\',\'' + x.project + '\',\'' + x.kind + '\',\'' + x.id + '\')">Valider</button>' : '') +
           (w.kind === 'dlv' ? '<button class="pbtn pbtn--ok" title="Clôturer sans attendre la cliente" onclick="ADM.prioCloseDlv(\'' + x.key + '\',\'' + (x.project || 'partner') + '\',\'' + x.id + '\',\'' + (x.taskId || '') + '\')">Clôturer</button>' : '') +
           (isStep ? '<button class="pbtn pbtn--ok" title="Marquer terminé sans attendre la cliente" onclick="ADM.prioDone(\'' + x.key + '\',\'' + (x.project || 'partner') + '\',\'step\',\'' + x.id + '\')">Clôturer</button>' : '') +
@@ -2646,7 +2652,7 @@
       P2_week.forEach(function (x) { var pd = ((x.doDate || x.dueDate) || '').slice(0, 10); p2DayPush(pd, p2Drow(x, false, null, true)); p2RawPush(pd, { t: x.title, c: x.client || x.projectLabel || '', rev: false, key: x.key, id: x.id, kind: x.kind, est: x.estMinutes }); });
       (revs || []).forEach(function (r) {
         var wk = (r.wishDate || '').slice(0, 10);
-        var acts = (r.taskId ? '<button class="pbtn pbtn--ok" title="Déposer la nouvelle version" onclick="ADM.prioAddDlv(\'' + r.key + '\',\'' + r.taskId + '\')">+ Nouvelle version</button>' : '') + '<button class="pbtn" onclick="ADM.openClient(\'' + r.key + '\')">Ouvrir</button>' + '<button class="pbtn" title="Classer cette révision (déjà traitée)" onclick="ADM.revResolve(\'' + r.key + '\',\'' + r.id + '\',\'' + (r.project || 'partner') + '\')">✓ Traité</button>';
+        var acts = (r.taskId ? '<button class="pbtn pbtn--ok" title="Déposer la nouvelle version" onclick="ADM.prioAddDlv(\'' + r.key + '\',\'' + r.taskId + '\')">Nouvelle version</button>' : '') + '<button class="pbtn" onclick="ADM.openClient(\'' + r.key + '\')">Ouvrir</button>' + '<button class="pbtn" title="Classer cette révision (déjà traitée)" onclick="ADM.revResolve(\'' + r.key + '\',\'' + r.id + '\',\'' + (r.project || 'partner') + '\')">✓ Traité</button>';
         var row = '<div class="drow"><div class="drow__d"><b>' + (wk ? fmtDate(wk) : '—') + '</b><span style="color:#8d5a2b;font-weight:700;opacity:1">souhaitée</span></div>' +
           '<div><div class="drow__t">' + esc(r.name || r.taskTitle || 'Révision') + ' <span class="rvtag">Révision</span></div><div class="drow__m">' + esc(r.projectLabel || '') + ' · ' + esc(r.client || '') + (r.comment ? ' · « ' + esc(String(r.comment).slice(0, 70)) + ' »' : '') + '</div></div>' +
           '<div class="rowacts">' + acts + '</div></div>';
@@ -2807,8 +2813,8 @@
         var iso = (x.dueDate || '').slice(0, 10);
         return '<div class="prow__act">' + prioTimer(x, true) +
           (x.project === 'partner' ? '<button class="pbtn" title="Envoyer un lien de révision" onclick="ADM.prioSendReview(\'' + x.key + '\',\'' + x.id + '\')">Révision</button>' : '') +
-          (x.project === 'partner' ? '<button class="pbtn" title="Déposer un livrable (fichier)" onclick="ADM.prioAddDlv(\'' + x.key + '\',\'' + x.id + '\')">+ Livrable</button>' : '') +
-          (x.project === 'partner' ? '<button class="pbtn" title="Déposer un livrable sous forme de lien" onclick="ADM.prioAddDlvLink(\'' + x.key + '\',\'' + x.id + '\')">🔗 Lien</button>' : '') +
+          (x.project === 'partner' ? '<button class="pbtn" title="Déposer un livrable (fichier)" onclick="ADM.prioAddDlv(\'' + x.key + '\',\'' + x.id + '\')">Ajouter un livrable</button>' : '') +
+          (x.project === 'partner' ? '<button class="pbtn" title="Déposer un livrable sous forme de lien" onclick="ADM.prioAddDlvLink(\'' + x.key + '\',\'' + x.id + '\')">Ajouter un lien</button>' : '') +
           (x.kind === 'ticket' && x.status === 'open' ? '<button class="pbtn" onclick="ADM.prioTicketStart(\'' + x.key + '\',\'' + x.id + '\')">En cours</button>' : '') +
           '<button class="pbtn pbtn--ok" title="Marquer fait" onclick="ADM.prioDone(\'' + x.key + '\',\'' + x.project + '\',\'' + x.kind + '\',\'' + x.id + '\')">Fait</button>' +
           '</div>';
@@ -2978,7 +2984,7 @@
       '<span id="mt-timer-' + t.id + '" style="font-family:var(--font-micro);font-variant-numeric:tabular-nums;font-weight:700;font-size:15px;color:' + (running ? 'var(--green, #456039)' : 'var(--terre)') + '">' + mtClock(sec) + '</span>' +
       (running
         ? '<button class="pbtn" onclick="ADM.mtPause(\'' + t.id + '\')">⏸ Pause</button>'
-        : '<button class="pbtn" onclick="ADM.mtStart(\'' + t.id + '\')">▶ Démarrer</button>') +
+        : '<button class="pbtn" onclick="ADM.mtStart(\'' + t.id + '\')">Lancer le chrono</button>') +
     '</div>';
   }
   /* ── Ce que j'ai à faire, rangé par échéance ──────────────────────────
@@ -3112,7 +3118,7 @@
       return '<div style="display:flex;align-items:center;gap:8px;padding:3px 0">' +
         '<input type="checkbox"' + (s.done ? ' checked' : '') + ' onchange="ADM.mtSubToggle(\'' + t.id + '\',\'' + s.id + '\')" style="width:15px;height:15px;cursor:pointer">' +
         '<span style="flex:1;font-size:15px;color:var(--terre-600)' + (s.done ? ';text-decoration:line-through;opacity:0.6' : '') + '">' + esc(s.text) + '</span>' +
-        '<button onclick="ADM.mtSubDel(\'' + t.id + '\',\'' + s.id + '\')" style="background:none;border:none;color:#8d2b21;cursor:pointer;font-size:15px;line-height:1">×</button>' +
+        '<button aria-label="Retirer" onclick="ADM.mtSubDel(\'' + t.id + '\',\'' + s.id + '\')" style="background:none;border:none;color:#5A2A11;cursor:pointer;font-size:15px;line-height:1">' + IC_X + '</button>' +
       '</div>';
     }).join('');
     return '<div style="margin-top:8px">' + rows +
@@ -3314,7 +3320,7 @@
     return admSerializeRich(d);
   }
   function mtNoteInner(t) {
-    var editLink = '<button onclick="ADM.mtEditNote(\'' + t.id + '\')" style="background:none;border:none;color:var(--muted);font-size:15px;cursor:pointer;padding:2px 0;text-decoration:underline">' + (t.notes ? 'Modifier la note' : '+ Ajouter une note ou un lien') + '</button>';
+    var editLink = '<button onclick="ADM.mtEditNote(\'' + t.id + '\')" style="background:none;border:none;color:var(--muted);font-size:15px;cursor:pointer;padding:2px 0;text-decoration:underline">' + (t.notes ? 'Modifier la note' : 'Ajouter une note ou un lien') + '</button>';
     return (t.notes ? '<div style="font-size:15px;color:#5e4a2e;white-space:pre-wrap;line-height:1.5;margin-bottom:2px">' + mtLinkify(t.notes) + '</div>' : '') + editLink;
   }
   function mtEditNote(id) {
@@ -3833,7 +3839,7 @@
     var cards = trames.map(function (t) {
       var secs = trameParse(t.content); var nq = 0; secs.forEach(function (s) { nq += s.questions.length; });
       return '<div tabindex="0" data-kb onclick="ADM.trameOpen(\'' + t.id + '\')" style="position:relative;cursor:pointer;background:var(--card);border-radius:16px;padding:20px 22px;display:flex;flex-direction:column">' +
-        '<button onclick="event.stopPropagation();ADM.trameEditLib(\'' + t.id + '\')" title="Modifier cette trame" style="position:absolute;top:14px;right:14px;border:none;background:var(--bone);border-radius:999px;width:32px;height:32px;cursor:pointer;color:var(--terre-600);font-size:15px;display:grid;place-items:center">✎</button>' +
+        '<button onclick="event.stopPropagation();ADM.trameEditLib(\'' + t.id + '\')" title="Modifier cette trame" style="position:absolute;top:14px;right:14px;border:none;background:var(--bone);border-radius:999px;width:32px;height:32px;cursor:pointer;color:var(--terre-600);font-size:15px;display:grid;place-items:center">' + IC_CRAYON + '</button>' +
         '<span style="width:40px;height:40px;border-radius:11px;background:var(--gold-chip);color:var(--terre);display:grid;place-items:center;margin-bottom:13px"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8 10h8M8 14h5"/><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>' +
         '<span style="font-family:\'Alegreya\',Georgia,serif;font-style:italic;font-size:23px;color:var(--terre);line-height:1.12">' + esc(t.title || 'Sans titre') + '</span>' +
         '<span style="font-family:var(--font-micro);font-weight:300;font-size:15px;color:var(--muted);margin-top:6px">' + secs.length + ' étape' + (secs.length > 1 ? 's' : '') + ' · ' + nq + ' question' + (nq > 1 ? 's' : '') + '</span>' +
@@ -3842,13 +3848,13 @@
     }).join('');
     return '<div class="vis-wrap" style="max-width:900px;margin:0 auto">' +
       '<div style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap"><div><p class="hello" style="margin:0">Trames d\'appel</p><p class="hello__s" style="margin:6px 0 0">Tes canevas de questions réutilisables. Ouvre-en un avant un appel, puis coche et note pendant la visio.</p></div>' +
-      '<button class="btn btn--dark btn--sm" onclick="ADM.trameNew()">+ Nouvelle trame</button></div>' +
+      '<button class="btn btn--dark btn--sm" onclick="ADM.trameNew()">Nouvelle trame</button></div>' +
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:22px">' + cards + '</div></div>';
   }
   function visTrameCallHtml(id) {
     var t = tramesGet().filter(function (x) { return x.id === id; })[0];
     if (!t) { VIS_TRAME_OPEN = null; return visTramesHtml(); }
-    if (CALL_TRAME_EDIT) { CALL_TRAME_SEL = id; return '<div class="vis-wrap" style="max-width:760px;margin:0 auto"><button class="btn btn--outline btn--sm" style="margin-bottom:12px" onclick="ADM.trameBackLib()">← Bibliothèque</button>' + callTrame() + '</div>'; }
+    if (CALL_TRAME_EDIT) { CALL_TRAME_SEL = id; return '<div class="vis-wrap" style="max-width:760px;margin:0 auto"><button class="btn btn--outline btn--sm" style="margin-bottom:12px" onclick="ADM.trameBackLib()">Bibliothèque</button>' + callTrame() + '</div>'; }
     var secs = trameParse(t.content);
     var total = 0, done = 0;
     secs.forEach(function (s, si) { s.questions.forEach(function (q, qi) { total++; var a = VIS_TRAME_ANS[id + '_' + si + '_' + qi]; if (a && a.c) done++; }); });
@@ -3865,13 +3871,13 @@
         (s.hint ? '<div style="font-family:var(--font-micro);font-weight:300;font-size:15px;color:var(--muted);font-style:italic;margin:0 0 13px 37px;line-height:1.55">' + esc(s.hint) + '</div>' : '') + qs + '</div>';
     }).join('');
     return '<div class="vis-wrap" style="max-width:760px;margin:0 auto">' +
-      '<button class="btn btn--outline btn--sm" onclick="ADM.trameBackLib()">← Bibliothèque</button>' +
+      '<button class="btn btn--outline btn--sm" onclick="ADM.trameBackLib()">Bibliothèque</button>' +
       '<div style="background:var(--terre);color:var(--paille);border-radius:18px;padding:22px 26px;margin-top:14px">' +
         '<div style="font-family:var(--font-micro);font-size:13px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-chip)">Appel en cours</div>' +
         '<div style="font-family:\'Alegreya\',Georgia,serif;font-style:italic;font-size:28px;margin:7px 0 14px;line-height:1.08">' + esc(t.title || '') + '</div>' +
         '<div style="height:8px;border-radius:99px;background:rgba(240,233,214,.18);overflow:hidden"><span style="display:block;height:100%;width:' + pct + '%;background:var(--gold-chip)"></span></div>' +
         '<div style="font-family:var(--font-micro);font-weight:300;font-size:15px;color:rgba(240,233,214,.72);margin-top:8px">' + done + ' / ' + total + ' questions cochées</div>' +
-        '<button class="btn btn--sm" style="margin-top:15px;background:var(--gold-chip);color:var(--terre);border:none;font-weight:600" onclick="ADM.trameEditToggle()">✎ Modifier cette trame</button></div>' +
+        '<button class="btn btn--sm" style="margin-top:15px;background:var(--gold-chip);color:var(--terre);border:none;font-weight:600" onclick="ADM.trameEditToggle()">Modifier cette trame</button></div>' +
       body + '</div>';
   }
   // Surligne les passages entre guillemets « … » = ce que Cindy dit à l'oral.
@@ -3953,26 +3959,26 @@
         return '<div style="display:flex;gap:9px;align-items:flex-start;margin-bottom:8px">' +
           '<span style="margin-top:10px;color:var(--gold-chip);flex-shrink:0;font-size:17px">«</span>' +
           '<textarea oninput="ADM.trameEdQ(' + si + ',' + qi + ',this.value)" rows="1" placeholder="Ce que tu dis / demandes au client…" style="flex:1;min-width:0;box-sizing:border-box;resize:vertical;min-height:40px;border:none;background:var(--bone);border-radius:9px;padding:9px 12px;font-family:\'Alegreya\',Georgia,serif;font-size:18px;line-height:1.35;color:var(--terre);outline:none;box-shadow:inset 0 0 0 1px var(--bone-d)">' + esc(q) + '</textarea>' +
-          '<button onclick="ADM.trameEdQDel(' + si + ',' + qi + ')" title="Supprimer la question" style="margin-top:7px;flex-shrink:0;border:none;background:none;cursor:pointer;color:var(--muted);width:26px;height:26px;border-radius:7px;display:grid;place-items:center;font-size:15px">✕</button>' +
+          '<button onclick="ADM.trameEdQDel(' + si + ',' + qi + ')" title="Supprimer la question" style="margin-top:7px;flex-shrink:0;border:none;background:none;cursor:pointer;color:var(--muted);width:26px;height:26px;border-radius:7px;display:grid;place-items:center;font-size:15px">' + IC_X + '</button>' +
         '</div>';
       }).join('');
       return '<div style="background:var(--card);border-radius:15px;padding:15px 17px;margin-bottom:13px">' +
         '<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">' +
           '<span style="width:27px;height:27px;border-radius:50%;background:var(--terre-600);color:var(--paille);font-family:var(--font-micro);font-size:15px;font-weight:700;display:grid;place-items:center;flex-shrink:0">' + (si + 1) + '</span>' +
           '<input value="' + esc(s.title) + '" oninput="ADM.trameEdField(' + si + ',\'title\',this.value)" placeholder="Titre de l\'étape" style="flex:1;min-width:0;border:none;outline:none;background:var(--bone);border-radius:8px;padding:9px 12px;font-family:\'Alegreya\',Georgia,serif;font-size:20px;font-weight:500;color:var(--terre)">' +
-          '<button onclick="ADM.trameEdSecMove(' + si + ',-1)" title="Monter" style="border:none;background:none;cursor:pointer;color:var(--muted);width:24px;height:26px;font-size:15px">↑</button>' +
-          '<button onclick="ADM.trameEdSecMove(' + si + ',1)" title="Descendre" style="border:none;background:none;cursor:pointer;color:var(--muted);width:24px;height:26px;font-size:15px">↓</button>' +
+          '<button onclick="ADM.trameEdSecMove(' + si + ',-1)" title="Monter" style="border:none;background:none;cursor:pointer;color:var(--muted);width:24px;height:26px;font-size:15px">' + IC_HAUT + '</button>' +
+          '<button onclick="ADM.trameEdSecMove(' + si + ',1)" title="Descendre" style="border:none;background:none;cursor:pointer;color:var(--muted);width:24px;height:26px;font-size:15px">' + IC_BAS + '</button>' +
           '<button onclick="ADM.trameEdSecDel(' + si + ')" title="Supprimer l\'étape" style="border:none;background:none;cursor:pointer;color:var(--muted);width:26px;height:26px;border-radius:7px;display:grid;place-items:center"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg></button>' +
         '</div>' +
         '<textarea oninput="ADM.trameEdField(' + si + ',\'hint\',this.value)" rows="2" placeholder="Repères pour t\'aider (tu ne les lis pas au client)" style="width:100%;box-sizing:border-box;resize:vertical;min-height:46px;border:none;background:var(--bone);border-radius:9px;padding:9px 12px;font-family:var(--font-micro);font-weight:300;font-style:italic;font-size:15px;line-height:1.5;color:var(--muted);outline:none;margin-bottom:13px">' + esc(s.hint) + '</textarea>' +
         '<div style="font-family:var(--font-micro);font-size:13px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--gold-chip);margin-bottom:8px">Questions à poser</div>' +
         qs +
-        '<button onclick="ADM.trameEdQAdd(' + si + ')" style="border:none;background:none;cursor:pointer;color:var(--terre-600);font-family:var(--font-micro);font-size:15px;font-weight:600;padding:5px 0;display:inline-flex;align-items:center;gap:5px">+ Ajouter une question</button>' +
+        '<button onclick="ADM.trameEdQAdd(' + si + ')" style="border:none;background:none;cursor:pointer;color:var(--terre-600);font-family:var(--font-micro);font-size:15px;font-weight:600;padding:5px 0;display:inline-flex;align-items:center;gap:5px">Ajouter une question</button>' +
       '</div>';
     }).join('');
     return '<div>' + titleInput + body +
-      '<button class="btn btn--outline btn--sm" style="width:100%;margin-top:2px" onclick="ADM.trameEdSecAdd()">+ Ajouter une étape</button>' +
-      '<div class="row" style="gap:8px;margin-top:18px"><button class="btn btn--dark btn--sm" onclick="ADM.trameEditToggle()">✓ Terminé</button><button class="btn btn--outline btn--sm" style="color:#8d2b21;margin-left:auto" onclick="ADM.trameDel(\'' + cur.id + '\')">Supprimer la trame</button></div>' +
+      '<button class="btn btn--outline btn--sm" style="width:100%;margin-top:2px" onclick="ADM.trameEdSecAdd()">Ajouter une étape</button>' +
+      '<div class="row" style="gap:8px;margin-top:18px"><button class="btn btn--dark btn--sm" onclick="ADM.trameEditToggle()">✓ Terminé</button><button class="btn btn--outline btn--sm" style="color:#5A2A11;margin-left:auto" onclick="ADM.trameDel(\'' + cur.id + '\')">Supprimer la trame</button></div>' +
     '</div>';
   }
   function callTrame() {
@@ -3984,7 +3990,7 @@
     var opts = trames.map(function (t) { return '<option value="' + t.id + '"' + (t.id === CALL_TRAME_SEL ? ' selected' : '') + '>' + esc(t.title || 'Sans titre') + '</option>'; }).join('');
     return '<div style="background:#fff;border-radius:14px;padding:14px 16px">' +
       '<div class="row" style="gap:8px;align-items:center;margin-bottom:12px"><select class="inp" style="flex:1;font-size:15px" onchange="ADM.trameSel(this.value)">' + opts + '</select>' +
-        '<button class="btn btn--outline btn--sm" title="Éditer" onclick="ADM.trameEditToggle()">✎</button>' +
+        '<button class="btn btn--outline btn--sm" title="Éditer" onclick="ADM.trameEditToggle()">' + IC_CRAYON + '</button>' +
         '<button class="btn btn--outline btn--sm" title="Nouvelle trame" onclick="ADM.trameNew()">+</button></div>' +
       '<div style="font-family:var(--font-micro);font-size:15px;color:var(--muted);margin-bottom:10px;display:flex;align-items:center;gap:6px;flex-wrap:wrap"><span style="background:#F0E2D6;color:var(--terre);font-weight:600;border-radius:4px;padding:1px 5px">« … »</span> ce que tu dis · <span style="font-style:italic">gris = tes repères / mots du client (à ne pas dire)</span></div>' +
       '<div style="max-height:calc(100vh - 250px);overflow:auto;padding-right:4px">' + trameRender(cur.content) + '</div>' +
@@ -4013,7 +4019,7 @@
       '</button>';
     }).join('') || '<div style="font-family:var(--font-micro);font-size:15px;color:var(--muted);padding:14px 6px">Aucune note pour le moment.</div>';
     var list = '<aside style="background:#F8F6F2;border-radius:16px;padding:10px;align-self:start">' +
-      '<button class="btn btn--dark btn--block btn--sm" onclick="ADM.callNoteNew()" style="margin-bottom:8px">+ Nouvelle note</button>' + items + '</aside>';
+      '<button class="btn btn--dark btn--block btn--sm" onclick="ADM.callNoteNew()" style="margin-bottom:8px">Nouvelle note</button>' + items + '</aside>';
     var editor = cur
       ? '<div style="background:#fff;border-radius:16px;padding:18px 20px">' + callEditor(cur) + '</div>'
       : '<div style="background:#fff;border-radius:16px;padding:60px 26px;text-align:center;color:var(--muted);font-family:var(--font-micro);font-size:15px">Crée une note pour préparer et suivre ton appel.<br>L\'anti-sèche reste affichée à droite.</div>';
@@ -4116,7 +4122,7 @@
     } else calbar = '';
     var typeFilters = '<div class="clfilters" style="margin-bottom:12px"><button class="chip' + (VIS_TYPEFILTER === 'all' ? ' on' : '') + '" onclick="ADM.visSetTypeFilter(\'all\')">Toutes</button>' +
       VIS_TYPES.map(function (t) { var n = VISIOS.cards.filter(function (c) { return (c.visioType || 'autre') === t[0]; }).length; return n ? '<button class="chip' + (VIS_TYPEFILTER === t[0] ? ' on' : '') + '" onclick="ADM.visSetTypeFilter(\'' + t[0] + '\')">' + esc(t[1]) + ' · ' + n + '</button>' : ''; }).join('') + '</div>';
-    var addBar = '<div class="qbar"><div class="clfilters"><button class="ibbtn" onclick="ADM.visAdd(\'suivi\')">+ Cliente suivie</button><button class="ibbtn" onclick="ADM.visAdd(\'nouveau\')">+ Nouveau contact</button></div></div>' + typeFilters;
+    var addBar = '<div class="qbar"><div class="clfilters"><button class="ibbtn" onclick="ADM.visAdd(\'suivi\')">Suivre un client</button><button class="ibbtn" onclick="ADM.visAdd(\'nouveau\')">Nouveau contact</button></div></div>' + typeFilters;
     var up = upItems.length ? upItems.map(function (x) { return x.h; }).join('') : '<div class="empty">Aucune visio à venir. Planifie ton prochain rendez-vous.</div>';
     var pa = pastItems.length ? '<div class="secmark2" style="margin-top:26px;color:var(--terre)">Passées</div>' + byMonth(pastItems) : '';
     return calbar + addBar + '<div class="secmark2">À venir</div>' + up + agendaSection + pa;
@@ -4153,12 +4159,12 @@
       return '<div style="display:flex;align-items:center;gap:8px;padding:3px 0">' +
         '<input type="checkbox"' + (q.done ? ' checked' : '') + ' onchange="ADM.visQToggle(\'' + c.id + '\',\'' + q.id + '\')" style="width:15px;height:15px;cursor:pointer;flex-shrink:0">' +
         '<input class="inp" value="' + esc(q.text) + '" onchange="ADM.visQSet(\'' + c.id + '\',\'' + q.id + '\',this.value)" style="flex:1' + (q.done ? ';text-decoration:line-through;opacity:0.6' : '') + '">' +
-        '<button onclick="ADM.visQDel(\'' + c.id + '\',\'' + q.id + '\')" style="background:none;border:none;color:#8d2b21;cursor:pointer;font-size:15px;line-height:1;flex-shrink:0">×</button>' +
+        '<button aria-label="Retirer" onclick="ADM.visQDel(\'' + c.id + '\',\'' + q.id + '\')" style="background:none;border:none;color:#5A2A11;cursor:pointer;font-size:15px;line-height:1;flex-shrink:0">' + IC_X + '</button>' +
       '</div>';
     }).join('');
     return '<div style="position:sticky;top:0;background:var(--bg,#faf7f1);z-index:4;padding:14px 22px;border:none;display:flex;align-items:center;gap:10px;flex-wrap:wrap">' +
-        '<button onclick="ADM.visCloseDrawer()" class="btn btn--outline btn--sm">← Fermer</button>' +
-        (hasContent ? '<button onclick="ADM.visPresent(\'' + c.id + '\')" class="btn btn--dark btn--sm">▶ Lancer le déroulé</button>' : '') +
+        '<button onclick="ADM.visCloseDrawer()" class="btn btn--outline btn--sm">Fermer</button>' +
+        (hasContent ? '<button onclick="ADM.visPresent(\'' + c.id + '\')" class="btn btn--dark btn--sm">Lancer le déroulé</button>' : '') +
         '<span style="margin-left:auto"></span>' +
         '<label class="checkbox"><input type="checkbox"' + (c.done ? ' checked' : '') + ' onchange="ADM.visSet(\'' + c.id + '\',\'done\',this.checked)"> Fait</label>' +
         '<button onclick="ADM.visDel(\'' + c.id + '\')" class="btn btn--danger btn--sm">Suppr.</button>' +
@@ -4173,9 +4179,9 @@
           (c.date ? '<button class="btn btn--outline btn--sm" title="Ajouter ce rendez-vous à ton calendrier iCloud (visible dans Spark)" onclick="ADM.visPushICloud(\'' + c.id + '\')">' + (c.icalPushed ? '✓ Dans iCloud : réajouter' : '＋ Ajouter à iCloud') + '</button>' : '') + '</div>' +
         '<div class="field" style="margin-bottom:20px"><label>Lien pour rejoindre la visio</label><input class="inp" style="width:100%;box-sizing:border-box" value="' + esc(c.meetingUrl || '') + '" placeholder="https://kmeet.infomaniak.com/… (colle le lien de ta salle)" onchange="ADM.visSet(\'' + c.id + '\',\'meetingUrl\',this.value)"><div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:4px">Un bouton « Rejoindre » apparaîtra sur la visio.</div></div>' +
         tplOpts +
-        '<div class="between" style="margin-bottom:10px"><h3 style="margin:0">Déroulé</h3><button class="btn btn--outline btn--sm" onclick="ADM.visStepAdd(\'' + c.id + '\')">+ Étape</button></div>' +
+        '<div class="between" style="margin-bottom:10px"><h3 style="margin:0">Déroulé</h3><button class="btn btn--outline btn--sm" onclick="ADM.visStepAdd(\'' + c.id + '\')">Ajouter une étape</button></div>' +
         (stepsHtml || '<div class="empty" style="margin-bottom:10px">Ajoute des étapes pour construire ton déroulé (accueil, besoins, présentation…).</div>') +
-        '<button class="btn btn--outline btn--sm" style="margin:2px 0 26px" onclick="ADM.visStepAdd(\'' + c.id + '\')">+ Ajouter une étape</button>' +
+        '<button class="btn btn--outline btn--sm" style="margin:2px 0 26px" onclick="ADM.visStepAdd(\'' + c.id + '\')">Ajouter une étape</button>' +
         '<h3 style="margin:0 0 10px">Questions à poser</h3>' + qsHtml +
         '<div class="row" style="gap:6px;margin:6px 0 26px"><input class="inp" id="vis-q-' + c.id + '" placeholder="+ Ajouter une question" style="flex:1;min-width:140px" onkeydown="if(event.key===\'Enter\'){event.preventDefault();ADM.visQAdd(\'' + c.id + '\');}"><button class="pbtn" onclick="ADM.visQAdd(\'' + c.id + '\')">Ajouter</button></div>' +
         '<h3 style="margin:0 0 8px">Mes retours / notes</h3>' +
@@ -4187,9 +4193,9 @@
       '<div class="row" style="gap:8px;align-items:center;margin-bottom:8px">' +
         '<span style="font-family:var(--font-micro);font-size:15px;color:var(--muted);flex-shrink:0">Étape ' + (idx + 1) + '</span>' +
         '<input class="inp" value="' + esc(s.title || '') + '" placeholder="Titre de l\'étape (ex. Accueil, Besoins…)" style="flex:1;font-weight:600" onchange="ADM.visStepSet(\'' + c.id + '\',\'' + s.id + '\',\'title\',this.value)">' +
-        '<button class="pbtn" title="Monter"' + (idx === 0 ? ' disabled style="opacity:0.3"' : '') + ' onclick="ADM.visStepMove(\'' + c.id + '\',\'' + s.id + '\',-1)">↑</button>' +
-        '<button class="pbtn" title="Descendre"' + (idx === total - 1 ? ' disabled style="opacity:0.3"' : '') + ' onclick="ADM.visStepMove(\'' + c.id + '\',\'' + s.id + '\',1)">↓</button>' +
-        '<button class="pbtn" style="color:#8d2b21" title="Supprimer l\'étape" onclick="ADM.visStepDel(\'' + c.id + '\',\'' + s.id + '\')">×</button>' +
+        '<button class="pbtn" title="Monter"' + (idx === 0 ? ' disabled style="opacity:0.3"' : '') + ' onclick="ADM.visStepMove(\'' + c.id + '\',\'' + s.id + '\',-1)">' + IC_HAUT + '</button>' +
+        '<button class="pbtn" title="Descendre"' + (idx === total - 1 ? ' disabled style="opacity:0.3"' : '') + ' onclick="ADM.visStepMove(\'' + c.id + '\',\'' + s.id + '\',1)">' + IC_BAS + '</button>' +
+        '<button class="pbtn" style="color:#5A2A11" title="Supprimer l\'étape" onclick="ADM.visStepDel(\'' + c.id + '\',\'' + s.id + '\')">' + IC_X + '</button>' +
       '</div>' +
       visRichEditor('visstep__' + c.id + '__' + s.id, s.html || '', "ADM.visSaveEditor(this)", 120) +
     '</div>';
@@ -4224,7 +4230,7 @@
       ov.innerHTML = '<div style="background:#fff;border-radius:20px;max-width:780px;width:100%;max-height:90vh;display:flex;flex-direction:column;box-shadow:none">' +
         '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 24px;border:none">' +
           '<div style="font-family:var(--font-micro);font-size:13px;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted)">' + esc(c.client || 'Visio') + ' · Étape ' + (i + 1) + ' / ' + steps.length + '</div>' +
-          '<button id="vp-close" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:24px;line-height:1">×</button>' +
+          '<button aria-label="Fermer" id="vp-close" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:24px;line-height:1">' + IC_X + '</button>' +
         '</div>' +
         '<div style="height:4px;background:var(--bone-d)"><div style="height:100%;width:' + Math.round((i + 1) / steps.length * 100) + '%;background:var(--terre);transition:width .25s"></div></div>' +
         '<div style="padding:30px 34px;overflow-y:auto;flex:1">' + content + '</div>' +
@@ -4233,8 +4239,8 @@
           '<textarea id="vp-notes" onchange="ADM.visNoteSave(\'' + id + '\',this.value)" placeholder="Notez ce qui se dit pendant l\'appel…" style="width:100%;box-sizing:border-box;min-height:54px;resize:vertical;font-size:15px;line-height:1.5;border:none;border-radius:8px;padding:8px 10px;font-family:inherit;color:var(--terre)">' + esc(c.notes || '') + '</textarea>' +
         '</div>' +
         '<div style="display:flex;justify-content:space-between;gap:10px;padding:14px 24px 16px;border:none">' +
-          '<button id="vp-prev" class="btn btn--outline"' + (i === 0 ? ' disabled style="opacity:0.4"' : '') + '>← Précédent</button>' +
-          '<button id="vp-next" class="btn btn--dark">' + (i >= steps.length - 1 ? 'Terminer' : 'Suite →') + '</button>' +
+          '<button id="vp-prev" class="btn btn--outline"' + (i === 0 ? ' disabled style="opacity:0.4"' : '') + '>Précédent</button>' +
+          '<button id="vp-next" class="btn btn--dark">' + (i >= steps.length - 1 ? 'Terminer' : 'Suite') + '</button>' +
         '</div>' +
       '</div>';
       ov.querySelector('#vp-close').onclick = close;
@@ -4318,7 +4324,7 @@
   function visApplyTpl(id, tplId) { var c = visCard(id), t = visTpl(tplId); if (!c || !t) return; if (!Array.isArray(c.steps)) c.steps = []; if (!Array.isArray(c.questions)) c.questions = []; (t.steps || []).forEach(function (s, i) { c.steps.push({ id: 's' + Date.now().toString(36) + i, title: s.title || '', html: s.html || '' }); }); (t.questions || []).forEach(function (q, i) { c.questions.push({ id: 'q' + Date.now().toString(36) + i, text: q.text, done: false }); }); visSave(); renderVisiosBody(); renderVisDrawer(); }
   // ── Modèles : un déroulé réutilisable (mêmes étapes) ──
   function visTemplatesHtml() {
-    var add = '<div class="row row--end mb"><button class="btn btn--dark btn--sm" onclick="ADM.visTplAdd()">+ Nouveau modèle</button></div>';
+    var add = '<div class="row row--end mb"><button class="btn btn--dark btn--sm" onclick="ADM.visTplAdd()">Nouveau modèle</button></div>';
     var list = VISIOS.templates.length ? VISIOS.templates.map(visTplHtml).join('') : '<div class="empty">Aucun modèle. Crée un déroulé réutilisable (ex. « Appel découverte ») que tu appliqueras ensuite à tes visios.</div>';
     return add + list;
   }
@@ -4329,19 +4335,19 @@
         '<div class="row" style="gap:8px;align-items:center;margin-bottom:6px">' +
           '<span style="font-family:var(--font-micro);font-size:15px;color:var(--muted);flex-shrink:0">Étape ' + (idx + 1) + '</span>' +
           '<input class="inp" value="' + esc(s.title || '') + '" placeholder="Titre de l\'étape" style="flex:1;font-weight:600" onchange="ADM.visTplStepSet(\'' + t.id + '\',\'' + s.id + '\',\'title\',this.value)">' +
-          '<button class="pbtn" title="Monter"' + (idx === 0 ? ' disabled style="opacity:0.3"' : '') + ' onclick="ADM.visTplStepMove(\'' + t.id + '\',\'' + s.id + '\',-1)">↑</button>' +
-          '<button class="pbtn" title="Descendre"' + (idx === steps.length - 1 ? ' disabled style="opacity:0.3"' : '') + ' onclick="ADM.visTplStepMove(\'' + t.id + '\',\'' + s.id + '\',1)">↓</button>' +
-          '<button class="pbtn" style="color:#8d2b21" onclick="ADM.visTplStepDel(\'' + t.id + '\',\'' + s.id + '\')">×</button>' +
+          '<button class="pbtn" title="Monter"' + (idx === 0 ? ' disabled style="opacity:0.3"' : '') + ' onclick="ADM.visTplStepMove(\'' + t.id + '\',\'' + s.id + '\',-1)">' + IC_HAUT + '</button>' +
+          '<button class="pbtn" title="Descendre"' + (idx === steps.length - 1 ? ' disabled style="opacity:0.3"' : '') + ' onclick="ADM.visTplStepMove(\'' + t.id + '\',\'' + s.id + '\',1)">' + IC_BAS + '</button>' +
+          '<button aria-label="Retirer" class="pbtn" style="color:#5A2A11" onclick="ADM.visTplStepDel(\'' + t.id + '\',\'' + s.id + '\')">' + IC_X + '</button>' +
         '</div>' +
         visRichEditor('vistplstep__' + t.id + '__' + s.id, s.html || '', "ADM.visSaveEditor(this)", 110) +
       '</div>';
     }).join('');
     var qs = (t.questions || []).map(function (q) {
-      return '<div style="display:flex;align-items:center;gap:8px;padding:3px 0"><input class="inp" value="' + esc(q.text) + '" onchange="ADM.visTplQSet(\'' + t.id + '\',\'' + q.id + '\',this.value)" style="flex:1"><button onclick="ADM.visTplQDel(\'' + t.id + '\',\'' + q.id + '\')" style="background:none;border:none;color:#8d2b21;cursor:pointer;font-size:15px;line-height:1;flex-shrink:0">×</button></div>';
+      return '<div style="display:flex;align-items:center;gap:8px;padding:3px 0"><input class="inp" value="' + esc(q.text) + '" onchange="ADM.visTplQSet(\'' + t.id + '\',\'' + q.id + '\',this.value)" style="flex:1"><button aria-label="Retirer" onclick="ADM.visTplQDel(\'' + t.id + '\',\'' + q.id + '\')" style="background:none;border:none;color:#5A2A11;cursor:pointer;font-size:15px;line-height:1;flex-shrink:0">' + IC_X + '</button></div>';
     }).join('');
     return '<div class="card" style="background:var(--card);padding:16px 18px;margin-bottom:12px">' +
       '<div class="row" style="gap:8px;align-items:center"><input class="inp" value="' + esc(t.name || '') + '" placeholder="Nom du modèle (ex. Appel découverte)" style="flex:1;font-weight:600" onchange="ADM.visTplSet(\'' + t.id + '\',\'name\',this.value)"><button class="btn btn--danger btn--sm" onclick="ADM.visTplDel(\'' + t.id + '\')">Suppr.</button></div>' +
-      '<div class="between" style="margin:14px 0 8px"><span class="micro">Déroulé</span><button class="btn btn--outline btn--sm" onclick="ADM.visTplStepAdd(\'' + t.id + '\')">+ Étape</button></div>' + stepsHtml +
+      '<div class="between" style="margin:14px 0 8px"><span class="micro">Déroulé</span><button class="btn btn--outline btn--sm" onclick="ADM.visTplStepAdd(\'' + t.id + '\')">Ajouter une étape</button></div>' + stepsHtml +
       '<div class="micro" style="margin:14px 0 5px">Questions</div>' + qs +
       '<div class="row" style="gap:6px;margin-top:6px"><input class="inp" id="vis-tq-' + t.id + '" placeholder="+ Ajouter une question" style="flex:1;min-width:140px" onkeydown="if(event.key===\'Enter\'){event.preventDefault();ADM.visTplQAdd(\'' + t.id + '\');}"><button class="pbtn" onclick="ADM.visTplQAdd(\'' + t.id + '\')">Ajouter</button></div>' +
     '</div>';
@@ -4860,7 +4866,7 @@
     return '<span class="ck-puce ' + (t.src === 'perso' ? 'ck-puce--int' : 'ck-puce--cli') + '">' + esc(t.qui) + '</span>';
   }
   function ckpOuvrirArg(t) {
-    return t.src === 'perso' ? 'ADM.nav(\'semaine\')' : 'ADM.openClient(\'' + esc(t.key) + '\')';
+    return t.src === 'perso' ? 'ADM.ckTVoir(\'' + esc(t.id) + '\')' : 'ADM.openClient(\'' + esc(t.key) + '\')';
   }
   // Un seul bouton « poser un créneau », écrit une fois : il emmène au
   // Planning avec la tâche DÉJÀ en main, pour n'avoir plus qu'à choisir le
@@ -5108,6 +5114,8 @@
     if (ecran === 'projets') { CKT.ouverte = CKT.ouverte === id ? null : id; renderCockpitProjetsBody(); return; }
     CKT.ouverte = id; renderCockpitTaches();
   }
+  // Ouvrir une tâche précise depuis un autre écran (l'Accueil, par exemple).
+  function ckTVoir(id) { CKT.ouverte = id; CKT.grand = false; CKT.filtre = 'tout'; nav('cktaches'); }
   function ckTGrand(v) { CKT.grand = !!v; renderCockpitTaches(); window.scrollTo(0, 0); }
 
   function ckTListe() {
@@ -5173,12 +5181,28 @@
           (CKT.filtre !== 'tout' ? '<button class="ckt-rac" onclick="ADM.ckTSetFiltre(\'' + CKT.filtre + '\')">Tout voir</button>' : '') +
         '</div>' + tri + '</div>' +
         (l.length
-          ? '<div class="ckt-corps"><div class="ckt-groupes">' + ckTParCliente(l).map(ckTGroupe).join('') + '</div>' +
+          ? '<div class="ckt-corps"><div class="ckt-groupes">' + ckTParCliente(l).map(ckTGroupe).join('') + ckTAjoutStb() + '</div>' +
               ckTPanneauDroit(ouverte) + '</div>'
-          : '<div class="ck-vide">Rien ici. Ce n’est pas un écran vide, c’est une bonne nouvelle.</div>') +
+          : '<div class="ck-vide">Rien ici. Ce n’est pas un écran vide, c’est une bonne nouvelle.</div>' + ckTAjoutStb()) +
       '</div>');
   }
 
+  // Les tâches de Seed to Bloom se créent ici : c'était le rôle des anciens
+  // écrans « Toutes les tâches » et « Ma semaine », retirés du menu.
+  function ckTAjoutStb() {
+    return '<details class="ckt-ajout"><summary>Ajouter une tâche Seed to Bloom</summary>' +
+      '<div class="ckt-ajout__f"><input class="inp" id="ckt-stb" aria-label="Titre de la tâche" placeholder="Préparer la newsletter" ' +
+      'onkeydown="if(event.key===\'Enter\'){event.preventDefault();ADM.ckTCreerStb();}">' +
+      '<button class="pjc-lien" onclick="ADM.ckTCreerStb()">Enregistrer</button></div></details>';
+  }
+  function ckTCreerStb() {
+    var champ = el('ckt-stb'), v = champ ? (champ.value || '').trim() : '';
+    if (!v) { if (champ) champ.focus(); return; }
+    jpost('/api/admin/tasks', { title: v }).then(function (r) { return r.ok ? r.json() : null; }).then(function (t) {
+      if (!t) { toast('Erreur'); return; }
+      toast('Tâche ajoutée'); CKT.ouverte = t.id || null; CKT.filtre = 'tout'; ckTRecharger();
+    }).catch(function () { toast('Erreur'); });
+  }
   function ckTGroupe(g) {
     var restant = g.taches.reduce(function (s, t) { return s + (ckpRestant(t) || 0); }, 0);
     var stb = g.qui === 'Seed to Bloom';
@@ -5244,7 +5268,7 @@
         PT_TIMER && PT_TIMER.id === t.id ? 'ADM.ptPause(\'' + i + '\')' : 'ADM.ptStart(\'' + i + '\',\'' + k + '\')']);
       items.push(['Ajouter un lien', 'ADM.prioAddDlvLink(\'' + k + '\',\'' + i + '\',\'' + p + '\')']);
     }
-    items.push([t.src === 'perso' ? 'Ouvrir dans Ma semaine' : 'Ouvrir dans la fiche client', ckpOuvrirArg(t)]);
+    if (t.src !== 'perso') items.push(['Ouvrir dans la fiche client', ckpOuvrirArg(t)]);
     if (t.statut === 'review') items.push(['Clôturer sans attendre le client', 'ADM.ckTCloturer(\'' + i + '\')']);
     var del = t.src === 'ticket' ? '' : '<hr><button role="menuitem" class="ckm-i ckm-i--del" onclick="ADM.ckTSupprimer(\'' + i + '\')">Supprimer…</button>';
     return '<div class="ckm' + (vers === 'haut' ? ' ckm--haut' : '') + '">' +
@@ -5434,7 +5458,7 @@
         : (r ? '<b>' + esc(ckpDuree(r)) + '</b> à faire' : '<span class="ck-doux">rien de mon côté</span>')) + '</div>' +
       '<div>' + org + '</div>' +
       '<div>' + ech + '</div>' +
-      '<div class="ck-tra">' + ckTEtat(t) + '<span class="ck-chev">' + (CKT.ouverte === t.id ? '▴' : '▾') + '</span></div>' +
+      '<div class="ck-tra">' + ckTEtat(t) + '<span class="ck-chev">' + (CKT.ouverte === t.id ? IC_HAUT_V : IC_BAS_V) + '</span></div>' +
       '</div>' + (CKT.ouverte === t.id ? ckTPanneau(t) : '');
   }
   function ckTQuandPose(t) {
@@ -5701,9 +5725,9 @@
     var l = ckLSansPlace();
     var lundi = ckLJours()[0] || ckpAuj();
     var nav = '<div class="ckl-nav">' +
-      '<button class="btn btn--outline btn--sm" onclick="ADM.ckLSemaine(-1)"' + (CKL.off ? '' : ' disabled') + '>← Semaine précédente</button>' +
+      '<button class="btn btn--outline btn--sm" onclick="ADM.ckLSemaine(-1)"' + (CKL.off ? '' : ' disabled') + '>Semaine précédente</button>' +
       '<span class="ckl-navl">' + esc(CKL.off === 0 ? 'Cette semaine' : (CKL.off === 1 ? 'La semaine prochaine' : 'Semaine du ' + ckpJourCourt(lundi))) + '</span>' +
-      '<button class="btn btn--outline btn--sm" onclick="ADM.ckLSemaine(1)">Semaine suivante →</button></div>';
+      '<button class="btn btn--outline btn--sm" onclick="ADM.ckLSemaine(1)">Semaine suivante</button></div>';
     if (!l.length) {
       return nav + '<div class="ckl-sp ckl-sp--v">Tout ce qui a un temps connu a une place. Rien à poser.</div>';
     }
@@ -5906,15 +5930,14 @@
 
   function renderCockpitPlanning() {
     if (CKP.pret) return renderCockpitPlanningBody();
-    setMain(topbar('Planning') + '<div class="wrap"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
+    setMain('<div class="wrap"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
     ckpCharger(renderCockpitPlanningBody);
   }
   function renderCockpitPlanningBody() {
     var s = ckpSemaine();
     var jour = ckpJoursSemaine().length ? Math.round(ckpEnv('cliente') + ckpEnv('stb') + ckpEnv('marge')) : 0;
-    setMain(topbar('Planning') +
-      '<div class="wrap ck">' +
-        '<div class="ck-tete"><div><div class="ck-meta">Planning</div>' +
+    setMain('<div class="wrap ck">' +
+        '<div class="ck-tete"><div>' +
           '<h1 class="ck-h1">Ta <span class="ck-accent">semaine</span></h1></div>' +
           '<div class="ck-date">' + esc(ckpDuree(jour) + ' par semaine, dont ' +
             ckpDuree(ckpMargeJour() * (ckpJoursSemaine().length || 5)) + ' de marge') + '</div></div>' +
@@ -6237,7 +6260,7 @@
       CKJ.onglet = onglets.some(function (o) { return o[0] === def; }) ? def : onglets[0][0];
     }
     var tn = ckTeinte({ presta2: p.prestation });
-    return '<button class="btn btn--outline btn--sm" onclick="ADM.ckJFermer()">← Tous les projets</button>' +
+    return '<button class="btn btn--outline btn--sm" onclick="ADM.ckJFermer()">Tous les projets</button>' +
       '<div class="ckj-band' + (tn.sombre ? ' ckj-band--sombre' : '') +
         '" style="--bg:' + tn.bg + ';--e:' + tn.e + '">' +
       '<div class="ck-tete"><div>' +
@@ -6687,8 +6710,8 @@
     var capBar = '<div class="mss-cap">' +
       '<span class="mss-cap__bar"><i style="width:' + Math.min(100, pct) + '%;background:' + (over ? 'var(--gold-chip)' : 'var(--terre)') + '"></i></span>' +
       '<span class="mss-cap__t">' + (weekAvail ? '<b>' + msHours(weekPlanned) + '</b> planifié · ' + msHours(Math.max(0, marge)) + ' de marge' : '<b>' + msHours(weekPlanned) + '</b> planifié') + '</span>' +
-      '<button class="mss-cap__cfg" onclick="ADM.msToggleCap()" title="Régler mes disponibilités">⚙</button></div>';
-    var newBlockBtn = '<button class="mss-newblock" onclick="ADM.msNewBlock()" title="Créer un bloc de temps (écrit sur ton iCloud)">＋ Bloc de temps</button>';
+      '<button class="mss-cap__cfg" onclick="ADM.msToggleCap()" title="Régler mes disponibilités">' + IC_REGLAGE + '</button></div>';
+    var newBlockBtn = '<button class="mss-newblock" onclick="ADM.msNewBlock()" title="Créer un bloc de temps (écrit sur ton iCloud)">Ajouter un bloc de temps</button>';
     var bar = '<div class="mss-bar">' + seg + newBlockBtn + nav + capBar + '</div>';
     // Éditeur des disponibilités par jour — masqué par défaut, ouvert via le ⚙.
     var capEdit = MS_CAPOPEN ? '<div class="mss-capedit"><div class="mss-capedit__row">' +
@@ -6703,7 +6726,7 @@
         '<span class="mss-ptask__dot" style="background:' + msCatColor(cls) + '"></span>' +
         '<span class="mss-ptask__t">' + nm + '</span>' + late +
         '<span class="mss-ptask__min">' + (t.estMinutes ? msDur2(t.estMinutes) : '—') + '</span>' +
-        '<button class="mss-ptask__x" title="' + (t._src === 'client' ? 'Retirer du planning' : 'Supprimer') + '" onclick="ADM.msDelete(\'' + t.id + '\')">×</button>' +
+        '<button class="mss-ptask__x" title="' + (t._src === 'client' ? 'Retirer du planning' : 'Supprimer') + '" onclick="ADM.msDelete(\'' + t.id + '\')">' + IC_X + '</button>' +
       '</div>';
     }
     // ── Bloc de temps iCloud = CONTENANT (agenda du jour). On y dépose des tâches. ──
@@ -6718,7 +6741,7 @@
       var used = it.tasks.reduce(function (s, t) { return s + (t.estMinutes || 0); }, 0), dur = it.end - it.start, over = used > dur, pct = dur ? Math.min(100, Math.round(used / dur * 100)) : 0;
       var right = vis ? '<span class="mss-block__tag">Visio</span>' + join
         : '<span class="mss-block__cap' + (over ? ' over' : '') + '" title="Temps estimé de tes tâches / durée du bloc">' + (used ? msDur2(used) : '0') + ' / ' + msDur2(dur) + '</span>';
-      var del = e.href ? '<button class="mss-block__del" title="Supprimer ce bloc (aussi dans iCloud)" onclick="event.stopPropagation();ADM.msDeleteBlock(\'' + diso + '\',\'' + key + '\')">×</button>' : '';
+      var del = e.href ? '<button class="mss-block__del" title="Supprimer ce bloc (aussi dans iCloud)" onclick="event.stopPropagation();ADM.msDeleteBlock(\'' + diso + '\',\'' + key + '\')">' + IC_X + '</button>' : '';
       var bar = vis ? '' : '<div class="mss-block__bar' + (over ? ' over' : '') + '"><i style="width:' + pct + '%"></i></div>';
       return '<div class="mss-slot"><div class="mss-slot__time">' + msMinToH(it.start) + '</div>' +
         '<div class="mss-block mss-block--' + (vis ? 'visio' : 'work') + '" ondragover="ADM.msSlotOver(event,this)" ondragleave="ADM.msDayLeave(this)" ondrop="ADM.msDropSlot(event,\'' + diso + '\',\'' + key + '\',this)">' +
@@ -6742,7 +6765,7 @@
           '<button class="mss-task__note' + (t.notes ? ' has' : '') + '" title="' + (t.notes ? 'Note' : 'Ajouter une note') + '" onclick="ADM.msNoteOpen(\'' + t.id + '\')">' + (t.notes ? '📝' : '＋') + '</button>' +
           '<input class="inp" type="number" min="0" step="0.25" value="' + (t.estMinutes ? (Math.round(t.estMinutes / 60 * 100) / 100) : '') + '" placeholder="h" title="Temps estimé (heures)" onchange="ADM.msEstH(\'' + t.id + '\',this.value)">' +
           '<select class="inp" title="Déplacer sur un autre jour" onchange="ADM.msPlace(\'' + t.id + '\',this.value)">' + msDaySelect(days, (t.doDate || '').slice(0, 10)) + '</select>' +
-          '<button class="mss-task__x" title="' + (t._src === 'client' ? 'Retirer du planning' : 'Supprimer') + '" onclick="ADM.msDelete(\'' + t.id + '\')">×</button>' +
+          '<button class="mss-task__x" title="' + (t._src === 'client' ? 'Retirer du planning' : 'Supprimer') + '" onclick="ADM.msDelete(\'' + t.id + '\')">' + IC_X + '</button>' +
         '</div>' +
       '</div>';
     }
@@ -6757,7 +6780,7 @@
       var tHtml = it.tasks.map(tblock).join('');
       var used = it.tasks.reduce(function (s, t) { return s + (t.estMinutes || 0); }, 0), dur = it.end - it.start, over = used > dur, pct = dur ? Math.min(100, Math.round(used / dur * 100)) : 0;
       var right = vis ? join : '<span class="mss-block__cap' + (over ? ' over' : '') + '" title="Estimé de tes tâches / durée du bloc">' + (used ? msDur2(used) : '0') + '/' + msDur2(dur) + '</span>';
-      var del = e.href ? '<button class="mss-block__del" title="Supprimer ce bloc (aussi dans iCloud)" onclick="event.stopPropagation();ADM.msDeleteBlock(\'' + diso + '\',\'' + key + '\')">×</button>' : '';
+      var del = e.href ? '<button class="mss-block__del" title="Supprimer ce bloc (aussi dans iCloud)" onclick="event.stopPropagation();ADM.msDeleteBlock(\'' + diso + '\',\'' + key + '\')">' + IC_X + '</button>' : '';
       var bar = (vis || !it.tasks.length) ? '' : '<div class="mss-block__bar' + (over ? ' over' : '') + '"><i style="width:' + pct + '%"></i></div>';
       return '<div class="mss-block mss-block--' + (vis ? 'visio' : 'work') + ' mss-block--wk" ondragover="ADM.msSlotOver(event,this)" ondragleave="ADM.msDayLeave(this)" ondrop="ADM.msDropSlot(event,\'' + diso + '\',\'' + key + '\',this)">' +
         '<div class="mss-block__h"><span class="mss-block__ic">' + ic + '</span>' +
@@ -6796,7 +6819,7 @@
         '<div class="mss-rail__tasks" ondragover="ADM.msDayOver(event,this)" ondragleave="ADM.msDayLeave(this)" ondrop="ADM.msUnplace(event,this)">' +
         (railTasks.length ? railTasks.slice(0, 80).map(chip).join('') : '<div class="mss-empty">Tout est calé 🌿</div>') + '</div>' +
         '<div class="mss-rail__add"><input class="inp" id="ms-add-title" placeholder="+ ajouter une tâche" onkeydown="if(event.key===\'Enter\'){event.preventDefault();ADM.msAddTop();}"><input class="inp" id="ms-add-est" type="number" min="0" step="0.25" placeholder="h" title="Temps estimé (heures)"></div>' +
-        '<button class="mss-rail__auto" onclick="ADM.msOrganizeDay()">✨ Organise ma journée</button></aside>';
+        '<button class="mss-rail__auto" onclick="ADM.msOrganizeDay()">Organiser ma journée</button></aside>';
       grid = allDayBanner + hint + '<div class="mss-plan"><div class="mss-agenda">' + agenda + '</div>' + rail + '</div>';
     } else {
       // ═══ SEMAINE : bandeau « à caler » + 5 jours pleine largeur ═══
@@ -6805,7 +6828,7 @@
       var backlog = active.filter(function (t) { if (t.mode === 'idee') return false; if (t.status === 'review' || t.status === 'waiting_client') return false; var dd = (t.doDate || '').slice(0, 10); return !dd || dd < w0; }).sort(msPrioSort);
       var wplan = '<div class="mss-wplan"><div class="mss-wplan__h"><div class="mss-wplan__ht">' +
         '<h3>À caler cette semaine</h3><p>Dépose une tâche dans un bloc de temps, ou laisse-moi la ranger dans le bon projet.</p></div>' +
-        '<button class="mss-wplan__auto" onclick="ADM.msOrganizeWeek()">✨ Organise ma semaine</button></div>' +
+        '<button class="mss-wplan__auto" onclick="ADM.msOrganizeWeek()">Organiser ma semaine</button></div>' +
         '<div class="mss-wplan__tasks" ondragover="ADM.msDayOver(event,this)" ondragleave="ADM.msDayLeave(this)" ondrop="ADM.msUnplace(event,this)">' +
         (backlog.length ? backlog.slice(0, 80).map(chip).join('') : '<div class="mss-empty">Tout est placé 🌿</div>') + '</div>' +
         '<div class="mss-wplan__add"><input class="inp" id="ms-add-title" placeholder="+ ajouter une tâche" onkeydown="if(event.key===\'Enter\'){event.preventDefault();ADM.msAddTop();}"><input class="inp" id="ms-add-est" type="number" min="0" step="0.25" placeholder="h" title="Temps estimé (heures)"><button class="mss-wplan__addbtn" onclick="ADM.msAddTop()">Ajouter</button></div>' +
@@ -6837,7 +6860,7 @@
       grid = wplan + '<div class="mss-week">' + days.map(dayCard).join('') + '</div>';
     }
     var header = '<div class="mss-head"><div><p class="mss-head__t">Ma semaine</p><p class="mss-head__s">Ce qui compte d\'abord, puis le reste — sans surcharger tes journées.</p></div>' +
-      '<a class="mss-head__link" href="#" onclick="event.preventDefault();ADM.nav(\'mytasks\')">Toutes mes tâches →</a></div>';
+      '<a class="mss-head__link" href="#" onclick="event.preventDefault();ADM.nav(\'mytasks\')">Toutes mes tâches</a></div>';
     var html = '<div class="wrap mssem">' + header + focus + bar + capEdit + grid + '</div>';
     setMain(topbar('') + html);
   }
@@ -7120,7 +7143,7 @@
       '<div class="admconfirm__title">Note · ' + esc(t.title || 'Tâche') + '</div>' +
       '<textarea id="ms-note-ta" class="inp" style="width:100%;box-sizing:border-box;min-height:120px;resize:vertical;margin-top:12px;font-size:15px;line-height:1.5" placeholder="Tes notes sur cette tâche (rappels, détails, liens…)">' + esc(t.notes || '') + '</textarea>' +
       '<div class="admconfirm__row" style="margin-top:14px">' +
-        (t.notes ? '<button class="btn btn--outline btn--sm" data-clear style="margin-right:auto;color:#8d2b21">Effacer</button>' : '') +
+        (t.notes ? '<button class="btn btn--outline btn--sm" data-clear style="margin-right:auto;color:#5A2A11">Effacer</button>' : '') +
         '<button class="btn btn--outline btn--sm" data-no>Annuler</button>' +
         '<button class="btn btn--sm" data-yes style="background:var(--terre);color:#fff">Enregistrer</button>' +
       '</div></div>';
@@ -8156,7 +8179,7 @@
 
   /* ── Clients ── */
   function renderClients() {
-    var right = '<button class="btn btn--outline btn--sm" onclick="ADM.scan()" title="Reconstruit la liste : rattrape les clientes / demandes qui ne remontent pas (ex. une demande créée côté cliente).">🔄 Retrouver mes clientes</button><button class="btn" onclick="ADM.nav(\'newclient\')">+ Nouveau client</button>';
+    var right = '<button class="btn btn--outline btn--sm" onclick="ADM.scan()" title="Reconstruit la liste : rattrape les clientes / demandes qui ne remontent pas (ex. une demande créée côté cliente).">🔄 Retrouver mes clientes</button><button class="btn" onclick="ADM.nav(\'newclient\')">Nouveau client</button>';
     setMain(topbar('Clients', right) + '<div class="wrap"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
     // On récupère aussi le tableau de bord pour la vue rapide : forfaits + projets en cours par client.
     Promise.all([
@@ -8252,7 +8275,7 @@
   function renderNewClient() {
     var domBoxes = [['partner', 'Partenaire créative'], ['website', 'Site web'], ['branding', 'Identité visuelle'], ['supports', 'Supports de com']]
       .map(function (d) { return '<label class="checkbox"><input type="checkbox" id="nc-dom-' + d[0] + '"> ' + d[1] + '</label>'; }).join('');
-    setMain(topbar('Nouveau client', '<button class="btn btn--outline btn--sm" onclick="ADM.nav(\'clients\')">← Clients</button>') +
+    setMain(topbar('Nouveau client', '<button class="btn btn--outline btn--sm" onclick="ADM.nav(\'clients\')">Clients</button>') +
       '<div class="wrap"><div class="card" style="max-width:620px">' +
       '<h3>Coordonnées</h3>' +
       '<div class="grid grid--2">' +
@@ -8352,7 +8375,7 @@
     var cdhead = '<div class="cdhead"><span class="cdhead__a">' + esc(_cdInit) + '</span>' +
       '<div class="cdhead__m"><div class="cdhead__n">' + esc(nm) + '</div><div class="cdhead__p">' + esc(_cdProj) + '</div></div>' +
       '<span class="cdhead__pres"><i class="' + (_cdPr.online ? 'on' : '') + '"></i>' + esc(_cdPr.label) + '</span></div>';
-    setMain(topbar('', visioBtn + '<button class="btn btn--outline btn--sm" onclick="ADM.nav(\'clients\')">← Clients</button>') +
+    setMain(topbar('', visioBtn + '<button class="btn btn--outline btn--sm" onclick="ADM.nav(\'clients\')">Clients</button>') +
       '<div class="wrap cl2">' + cdhead + clientAlerts() + '<div class="tabs">' + tabsHtml + '</div><div id="tabbody"></div></div>');
     renderTab();
   }
@@ -8583,9 +8606,9 @@
         '<div class="row" style="gap:8px;align-items:center;margin-bottom:8px">' +
           '<select class="inp" style="width:auto" onchange="ADM.qnSet(\'' + d.id + '\',\'' + q.id + '\',\'type\',this.value)">' + sel + '</select>' +
           '<input class="inp" value="' + esc(q.label || '') + '" placeholder="' + (isSec ? 'Titre de la section (ex. Priorités business)' : 'Votre question') + '" style="flex:1;font-weight:600" onchange="ADM.qnSet(\'' + d.id + '\',\'' + q.id + '\',\'label\',this.value)">' +
-          '<button class="pbtn" title="Monter"' + (idx === 0 ? ' disabled style="opacity:0.3"' : '') + ' onclick="ADM.qnMove(\'' + d.id + '\',\'' + q.id + '\',-1)">↑</button>' +
-          '<button class="pbtn" title="Descendre"' + (idx === items.length - 1 ? ' disabled style="opacity:0.3"' : '') + ' onclick="ADM.qnMove(\'' + d.id + '\',\'' + q.id + '\',1)">↓</button>' +
-          '<button class="pbtn" style="color:#8d2b21" onclick="ADM.qnDel(\'' + d.id + '\',\'' + q.id + '\')">×</button>' +
+          '<button class="pbtn" title="Monter"' + (idx === 0 ? ' disabled style="opacity:0.3"' : '') + ' onclick="ADM.qnMove(\'' + d.id + '\',\'' + q.id + '\',-1)">' + IC_HAUT + '</button>' +
+          '<button class="pbtn" title="Descendre"' + (idx === items.length - 1 ? ' disabled style="opacity:0.3"' : '') + ' onclick="ADM.qnMove(\'' + d.id + '\',\'' + q.id + '\',1)">' + IC_BAS + '</button>' +
+          '<button aria-label="Retirer" class="pbtn" style="color:#5A2A11" onclick="ADM.qnDel(\'' + d.id + '\',\'' + q.id + '\')">' + IC_X + '</button>' +
         '</div>' +
         '<textarea class="inp" placeholder="Aide / précisions (exemples…), optionnel" style="width:100%;box-sizing:border-box;min-height:40px;resize:vertical;font-size:15px" onchange="ADM.qnSet(\'' + d.id + '\',\'' + q.id + '\',\'help\',this.value)">' + esc(q.help || '') + '</textarea>' +
         (withOpts ? '<div style="margin-top:8px"><div class="micro" style="text-transform:none;letter-spacing:0;margin-bottom:3px">Choix proposés (une ligne = un choix)</div><textarea class="inp" style="width:100%;box-sizing:border-box;min-height:64px;resize:vertical;font-size:15px" placeholder="Mariage\nChef à domicile\nBuffets…" onchange="ADM.qnSetOptions(\'' + d.id + '\',\'' + q.id + '\',this.value)">' + esc((q.options || []).join('\n')) + '</textarea></div>' : '') +
@@ -8600,8 +8623,8 @@
         '<div class="row" style="gap:8px;flex-wrap:wrap">' +
           (items.length ? '<button class="btn btn--outline btn--sm" onclick="ADM.qnPreview(\'' + d.id + '\')">👁 Prévisualiser</button>' : '') +
           '<button class="btn btn--outline btn--sm" onclick="ADM.qnBulk(\'' + d.id + '\')">📋 Coller</button>' +
-          '<button class="btn btn--outline btn--sm" onclick="ADM.qnAdd(\'' + d.id + '\',\'section\')">+ Section</button>' +
-          '<button class="btn btn--dark btn--sm" onclick="ADM.qnAdd(\'' + d.id + '\',\'long\')">+ Question</button>' +
+          '<button class="btn btn--outline btn--sm" onclick="ADM.qnAdd(\'' + d.id + '\',\'section\')">Ajouter une section</button>' +
+          '<button class="btn btn--dark btn--sm" onclick="ADM.qnAdd(\'' + d.id + '\',\'long\')">Ajouter une question</button>' +
         '</div>' +
       '</div>' +
       '<div class="field mt"><label>Titre du questionnaire (affiché à la cliente)</label><input class="inp" value="' + esc(title) + '" placeholder="Ex. Questionnaire de démarrage, Questionnaire final…" onchange="ADM.qnSetTitle(\'' + d.id + '\',this.value)"></div>' +
@@ -8871,9 +8894,9 @@
       var atts = Array.isArray(l.clientAttachments) ? l.clientAttachments : [];
       if ((l.status === 'refuse' || l.status === 'revision') && (l.clientComment || atts.length || l.clientLink)) {
         var attHtml = atts.map(function (a) { return '<a class="cg-btn cg-btn--soft" href="/api/clients/' + CURKEY + '/files/' + encodeURIComponent(a.key) + '/download" target="_blank">📎 ' + esc(a.name || 'fichier') + '</a>'; }).join('');
-        var lkHtml = l.clientLink ? '<a class="cg-btn cg-btn--soft" href="' + esc(/^https?:\/\//i.test(l.clientLink) ? l.clientLink : 'https://' + l.clientLink) + '" target="_blank" rel="noopener">🔗 Lien</a>' : '';
+        var lkHtml = l.clientLink ? '<a class="cg-btn cg-btn--soft" href="' + esc(/^https?:\/\//i.test(l.clientLink) ? l.clientLink : 'https://' + l.clientLink) + '" target="_blank" rel="noopener">Ajouter un lien</a>' : '';
         fb = '<div style="margin:0 0 8px;padding:11px 13px;background:#fbeae5;border:1px solid #f0d3c9;border-radius:10px">' +
-          '<div style="font-family:var(--font-micro);font-size:13px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#8d2b21;margin-bottom:5px">Retour de la cliente</div>' +
+          '<div style="font-family:var(--font-micro);font-size:13px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#5A2A11;margin-bottom:5px">Retour de la cliente</div>' +
           (l.clientComment ? '<div style="font-size:15px;color:#7a2e1e;white-space:pre-wrap;line-height:1.5">' + esc(l.clientComment) + '</div>' : '') +
           ((attHtml || lkHtml) ? '<div class="cg-btnrow" style="flex-wrap:wrap;margin-top:8px">' + attHtml + lkHtml + '</div>' : '') +
         '</div>';
@@ -8894,7 +8917,7 @@
       var ouvert = CG_OPEN.id === c.id;
       if (!ouvert) return cgCarte(c, vs, crRevUsed, crRevMax);
       return '<section class="cg-card">' +
-        '<button class="btn btn--outline btn--sm" style="margin-bottom:14px" onclick="ADM.cgToggle(\'' + c.id + '\')">← Toutes les créations</button>' +
+        '<button class="btn btn--outline btn--sm" style="margin-bottom:14px" onclick="ADM.cgToggle(\'' + c.id + '\')">Toutes les créations</button>' +
         // Un titre, puis les réglages rangés dans leur bloc. Tout tenait sur
         // une ligne : nom, catégorie, statut, deux compteurs et un bouton,
         // sans hiérarchie ni libellé. On ne savait plus quoi regarder.
@@ -8983,7 +9006,7 @@
     var entete = '<div class="cg-tete"><div><h3 style="margin:0">Créations</h3>' +
       '</div>' +
       '<button class="btn ' + (CG_OPEN.neuve ? 'btn--outline' : 'btn--dark') + ' btn--sm" onclick="ADM.cgNeuve()">' +
-      (CG_OPEN.neuve ? 'Annuler' : '+ Nouvelle création') + '</button></div>';
+      (CG_OPEN.neuve ? 'Annuler' : 'Nouvelle création') + '</button></div>';
 
     var grille = crVives.length
       ? '<div class="pjc-grid">' + crVives.map(function (c) { return card(c); }).join('') + '</div>'
@@ -9079,7 +9102,7 @@
           '<option value="en_cours"' + (j.status === 'en_cours' ? ' selected' : '') + '>En cours</option>' +
           '<option value="fait"' + (j.status === 'fait' ? ' selected' : '') + '>Fait</option>' +
         '</select>' +
-        '<span class="cgj-x">' + (edite ? '▴' : '✎') + '</span>' +
+        '<span class="cgj-x">' + (edite ? IC_HAUT : IC_CRAYON) + '</span>' +
       '</div>';
       if (!edite) {
         return '<div class="cg-jal">' +
@@ -9520,7 +9543,7 @@
     var addBtns = addable.map(function (a) { return '<button class="btn btn--outline btn--sm" onclick="ADM.addOffer(\'' + a[0] + '\')">+ ' + a[1] + '</button>'; }).join('');
     // « Support de com » : offre à part (on peut en avoir plusieurs), ajoutée
     // ici pour qu'elle soit cochable comme les autres, puis renommable.
-    addBtns += '<button class="btn btn--outline btn--sm" onclick="ADM.addSupportQuick()">+ Support de com</button>';
+    addBtns += '<button class="btn btn--outline btn--sm" onclick="ADM.addSupportQuick()">Nouveau support de com</button>';
     var addSection = '<div class="mt" style="border:none;padding-top:12px">' +
       '<div class="micro mb">Ajouter une offre</div>' +
       '<div class="row" style="gap:8px;flex-wrap:wrap">' + addBtns + '</div>' +
@@ -9834,11 +9857,11 @@
         '<select class="inp" id="ws-day-' + i + '" style="width:auto">' + opts + '</select>' +
         '<label class="micro" style="display:flex;align-items:center;gap:5px;text-transform:none;letter-spacing:0">de <input class="inp" type="time" id="ws-from-' + i + '" value="' + esc(s.from || '') + '" style="width:auto"></label>' +
         '<label class="micro" style="display:flex;align-items:center;gap:5px;text-transform:none;letter-spacing:0">à <input class="inp" type="time" id="ws-to-' + i + '" value="' + esc(s.to || '') + '" style="width:auto"></label>' +
-        '<button class="btn btn--danger btn--sm" style="margin-left:auto" onclick="ADM.wsDel(' + i + ')" title="Retirer">✕</button>' +
+        '<button class="btn btn--danger btn--sm" style="margin-left:auto" onclick="ADM.wsDel(' + i + ')" title="Retirer">' + IC_X + '</button>' +
       '</div>';
     }).join('');
     return (rows || '<div class="micro" style="color:var(--muted);margin-bottom:8px">Aucun créneau défini.</div>') +
-      '<div class="row mt" style="gap:8px"><button class="btn btn--outline btn--sm" onclick="ADM.wsAdd()">+ Ajouter un créneau</button>' +
+      '<div class="row mt" style="gap:8px"><button class="btn btn--outline btn--sm" onclick="ADM.wsAdd()">Ajouter un créneau</button>' +
       '<button class="btn btn--dark btn--sm" style="margin-left:auto" onclick="ADM.wsSave()">Enregistrer</button></div>';
   }
   function wsRepaint() { var c = el('ws-card'); if (c) c.innerHTML = workSlotsCard(); }
@@ -9875,7 +9898,7 @@
       var tkClock = '<span id="tk-timer-' + t.id + '" title="Temps passé sur ce ticket" style="font-family:var(--font-micro);font-variant-numeric:tabular-nums;font-weight:700;font-size:16px;color:' + (tkRun ? 'var(--green)' : 'var(--terre)') + ';min-width:74px;text-align:center">' + mtClock(tkSec) + '</span>';
       var tkBtn = tkRun
         ? '<button class="btn btn--outline btn--sm" style="color:var(--orange);border-color:#f0d8b0" onclick="ADM.tkPause(\'' + t.id + '\')">⏸ Pause</button>'
-        : '<button class="btn btn--outline btn--sm" onclick="ADM.tkStart(\'' + t.id + '\')">▶ Démarrer</button>';
+        : '<button class="btn btn--outline btn--sm" onclick="ADM.tkStart(\'' + t.id + '\')">Lancer le chrono</button>';
       var work = done
         ? '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:16px"><select class="inp" style="width:auto" onchange="ADM.ticketStatus(\'' + t.id + '\',this.value)">' + opts + '</select><span class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted)">résolu' + (t.resolvedAt ? ' le ' + fmtDate(t.resolvedAt) : '') + '</span><span style="margin-left:auto;display:flex;align-items:center;gap:6px"><span class="micro" style="text-transform:none;letter-spacing:0">temps passé</span><input class="inp" type="number" min="0" style="width:70px" value="' + (t.timeSpentMinutes || 0) + '" onchange="ADM.ticketTime(\'' + t.id + '\',this.value)"><span class="micro">min</span></span></div>'
         : '<div style="background:var(--surface-2);border-radius:13px;padding:14px 16px;margin-top:16px"><div class="micro" style="margin-bottom:9px">Où en est ce ticket ?</div>' +
@@ -9967,7 +9990,7 @@
       if (b.type === 'file') { var dl = b.fileKey ? ('/api/clients/' + CK + '/files/' + encodeURIComponent(b.fileKey) + '/download') : '#'; return '<div style="margin:6px 0"><a class="btn btn--outline btn--sm" href="' + dl + '" target="_blank">📎 ' + esc(b.name || 'fichier') + '</a></div>'; }
       if (b.type === 'image') { var iu = b.fileKey ? ('/api/clients/' + CK + '/files/' + encodeURIComponent(b.fileKey) + '/download') : ''; return iu ? '<div style="margin:8px 0"><a href="' + iu + '" target="_blank" rel="noopener"><img src="' + iu + '" alt="' + esc(b.name || '') + '" style="max-width:100%;max-height:380px;border-radius:8px;display:block"></a></div>' : ''; }
       if (b.type === 'link') { var lu = b.url || ''; return '<div style="margin:6px 0">' + (b.text ? '<strong>' + esc(b.text) + '</strong> ' : '') + (lu ? '<a href="' + esc(/^https?:\/\//i.test(lu) ? lu : 'https://' + lu) + '" target="_blank" rel="noopener" style="color:var(--glycine-900)">' + esc(lu) + '</a>' : '') + '</div>'; }
-      if (b.type === 'embed') { var eu = b.url || ''; return eu ? '<div style="margin:6px 0"><a href="' + esc(eu) + '" target="_blank" rel="noopener" style="color:var(--glycine-900)">▶ ' + esc(eu) + '</a></div>' : ''; }
+      if (b.type === 'embed') { var eu = b.url || ''; return eu ? '<div style="margin:6px 0"><a href="' + esc(eu) + '" target="_blank" rel="noopener" style="color:var(--glycine-900)">' + IC_LECTURE + ' ' + esc(eu) + '</a></div>' : ''; }
       if (b.type === 'table') {
         var rows = Array.isArray(b.rows) ? b.rows : [];
         if (!rows.length) return '';
@@ -10190,7 +10213,7 @@
           '<button class="btn btn--dark btn--sm" onclick="ADM.ptDemandeTriage(\'' + t.id + '\',\'accept\')">✓ Accepter → tâche</button>' +
           '<button class="btn btn--outline btn--sm" onclick="ADM.ptDemandeTriage(\'' + t.id + '\',\'hors_forfait\')">Hors forfait</button>' +
           '<button class="btn btn--outline btn--sm" onclick="ADM.inboxProposeDate(\'' + CURKEY + '\',\'' + t.id + '\',\'' + due10 + '\')">📅 Proposer une date</button>' +
-          '<button class="btn btn--outline btn--sm" style="margin-left:auto;color:#8d2b21" onclick="ADM.ptDemandeTriage(\'' + t.id + '\',\'refuse\')">Refuser</button>' +
+          '<button class="btn btn--outline btn--sm" style="margin-left:auto;color:#5A2A11" onclick="ADM.ptDemandeTriage(\'' + t.id + '\',\'refuse\')">Refuser</button>' +
         '</div></div>';
     }
     var inboxBanner = inboxN ? '<div style="max-width:760px;margin-bottom:16px"><div class="micro" style="text-transform:none;letter-spacing:0;color:var(--gold-ink);font-weight:600;margin-bottom:9px">📨 ' + inboxN + ' demande' + (inboxN > 1 ? 's' : '') + ' en attente d\'analyse</div>' + inboxTasks.map(ptDemandeCard).join('') + '</div>' : '';
@@ -10203,7 +10226,7 @@
       var chrono = '<span id="pt-timer-' + t.id + '" title="Temps passé" style="font-family:var(--font-micro);font-variant-numeric:tabular-nums;font-weight:700;font-size:16px;letter-spacing:0.02em;color:' + ptColor + ';min-width:74px;text-align:center">' + mtClock(pbase) + '</span>';
       var chBtn = prun
         ? '<button class="btn btn--outline btn--sm" style="color:#8a4a2c;border-color:#e8cbb0" onclick="ADM.ptPause(\'' + t.id + '\')">⏸ Pause</button>'
-        : '<button class="btn btn--outline btn--sm" onclick="ADM.ptStart(\'' + t.id + '\')">▶ Démarrer</button>';
+        : '<button class="btn btn--outline btn--sm" onclick="ADM.ptStart(\'' + t.id + '\')">Lancer le chrono</button>';
       var stCol = { todo: '#5A2A11', in_progress: '#5A2A11', review: '#3d1c0b', done: '#7a5540' }[t.status] || '#5A2A11';
       var stLbl = { todo: 'À faire', in_progress: 'En cours', review: 'À valider', done: 'Terminé' }[t.status] || t.status;
       var stBg = { todo: '#EFE6D6', in_progress: '#E8F1FF', review: '#CD8F6E', done: '#EDE5D7' }[t.status] || '#EFE6D6';
@@ -10247,7 +10270,7 @@
           '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:9px">' + pill + monthChip + dueTag + dlvBadge + '</div>' +
         '</div></div>' +
         '<div style="display:flex;gap:7px;flex-shrink:0">' +
-          '<button class="btn btn--outline btn--sm" title="Corriger le temps passé et le mois où il compte dans le forfait" onclick="ADM.ptTimePrompt(\'' + t.id + '\')">🗓 Temps &amp; mois</button>' +
+          '<button class="btn btn--outline btn--sm" title="Corriger le temps passé et le mois où il compte dans le forfait" onclick="ADM.ptTimePrompt(\'' + t.id + '\')">Temps et mois</button>' +
           '<button class="btn btn--outline btn--sm" onclick="ADM.taskEditOpen(\'' + t.id + '\')">Modifier</button>' +
           '<button class="btn btn--outline btn--sm" title="Créer une copie de cette tâche (brief compris)" onclick="ADM.taskDuplicate(\'' + t.id + '\')">Dupliquer</button>' + archBtn +
           '<button class="btn btn--danger btn--sm" onclick="ADM.taskDelete(\'' + t.id + '\')">Suppr.</button>' +
@@ -10264,7 +10287,7 @@
       var be = ptBriefElements(t);
       var beHtml = (be.link || be.files.length) ? '<div style="margin-top:14px"><div class="micro" style="margin-bottom:7px">Lien & fichiers du client</div>' +
         '<div style="display:flex;flex-wrap:wrap;gap:7px">' +
-        (be.link ? '<a class="btn btn--outline btn--sm" href="' + esc(/^https?:\/\//i.test(be.link) ? be.link : 'https://' + be.link) + '" target="_blank" rel="noopener">🔗 ' + esc(be.link.replace(/^https?:\/\//i, '').slice(0, 60)) + '</a>' : '') +
+        (be.link ? '<a class="btn btn--outline btn--sm" href="' + esc(/^https?:\/\//i.test(be.link) ? be.link : 'https://' + be.link) + '" target="_blank" rel="noopener">' + IC_LIEN + ' ' + esc(be.link.replace(/^https?:\/\//i, '').slice(0, 60)) + '</a>' : '') +
         be.files.map(function (f) { return '<a class="btn btn--outline btn--sm" href="/api/clients/' + CURKEY + '/files/' + encodeURIComponent(f.key) + '/download" target="_blank">📎 ' + esc(f.name || 'fichier') + '</a>'; }).join('') +
         '</div></div>' : '';
       // Tableau rempli par le client (lecture seule côté admin).
@@ -10474,11 +10497,11 @@
         '<strong style="font-family:var(--font-micro);font-size:15px;letter-spacing:0.04em;color:var(--terre)">V' + (i + 1) + '</strong> ' + esc(l.name) + ' ' + pill(l.status, stLbl[l.status] || l.status) +
         (l.createdAt ? ' <span class="micro" style="letter-spacing:0.02em">' + fmtDate(l.createdAt) + '</span>' : '') +
         (l.clientComment ? '<div class="muted" style="font-size:15px;font-style:italic;margin-top:2px">« ' + esc(l.clientComment) + ' »</div>' : '') + '</span>' +
-        (l.fileKey ? '<a class="btn btn--outline btn--sm" href="/api/clients/' + CURKEY + '/files/' + encodeURIComponent(l.fileKey) + '/download">↓</a>' : '') +
-        (l.reviewLink ? '<a class="btn btn--outline btn--sm" href="' + esc(/^https?:\/\//i.test(l.reviewLink) ? l.reviewLink : 'https://' + l.reviewLink) + '" target="_blank" rel="noopener">🔗 Ouvrir</a>' : '') +
+        (l.fileKey ? '<a aria-label="Télécharger" class="btn btn--outline btn--sm" href="/api/clients/' + CURKEY + '/files/' + encodeURIComponent(l.fileKey) + '/download">' + IC_BAS + '</a>' : '') +
+        (l.reviewLink ? '<a class="btn btn--outline btn--sm" href="' + esc(/^https?:\/\//i.test(l.reviewLink) ? l.reviewLink : 'https://' + l.reviewLink) + '" target="_blank" rel="noopener">Ouvrir le lien</a>' : '') +
         '<button class="btn btn--danger btn--sm" onclick="ADM.delDeliverable(\'' + l.id + '\')">Retirer</button></div>';
     }).join('');
-    var vlabel = ls.length ? '+ Nouvelle version' : '+ Livrable';
+    var vlabel = ls.length ? 'Nouvelle version' : 'Ajouter un livrable';
     return '<div>' +
       '<div class="micro" style="margin-bottom:10px">Versions du livrable' + (ls.length ? ' · ' + ls.length : '') + '</div>' +
       (rows ? '<div style="display:flex;flex-direction:column;gap:8px">' + rows + '</div>' : '<div class="micro muted" style="text-transform:none;letter-spacing:0;padding:2px 0 4px">Aucun livrable déposé pour l\'instant.</div>') +
@@ -10723,7 +10746,7 @@
           '<input class="inp" id="ben-value" style="width:120px" placeholder="Valeur">' +
           '<input class="inp" type="date" style="width:auto" id="ben-date">' +
           '<input class="inp" id="ben-note" placeholder="Note (optionnel)">' +
-          '<button class="btn btn--sm" onclick="ADM.beneficeAdd()">+ Ajouter</button>' +
+          '<button class="btn btn--sm" onclick="ADM.beneficeAdd()">Ajouter</button>' +
         '</div></div>';
   }
   function bilanRequest() {
@@ -11192,7 +11215,7 @@
     body.innerHTML =
       '<div class="card">' +
         '<div class="between"><h3>Fichiers de la cliente</h3>' +
-          '<button class="btn btn--dark btn--sm" onclick="ADM.docUploadToggle()">+ Déposer un document</button></div>' +
+          '<button class="btn btn--dark btn--sm" onclick="ADM.docUploadToggle()">Déposer un document</button></div>' +
         '<div id="up-panel" style="display:none;background:var(--surface-2,#f4efe6);border-radius:12px;padding:14px 16px;margin-top:12px">' +
           '<div class="row" style="flex-wrap:wrap;gap:10px;align-items:center">' +
             '<select class="inp" id="up-proj" style="width:auto">' + opts + '</select>' +
@@ -11249,9 +11272,9 @@
       '<div class="docrow__m"><div class="docrow__n">' + esc(f.name) + (f.locked ? ' <span class="pill pill--done">verrouillé</span>' : '') + '</div>' +
         '<div class="docrow__meta"><span class="pill">' + esc(f.context || 'Espace') + '</span>' + (f.source === 'client' ? ' <span class="pill pill--a_valider">déposé cliente</span>' : '') + (when ? ' <span class="micro" style="color:var(--muted);text-transform:none;letter-spacing:0">' + when + '</span>' : '') + '</div></div>' +
       '<div class="docrow__act">' +
-        '<a class="btn btn--outline btn--sm" href="' + url + '" target="_blank" title="Télécharger">↓</a>' +
+        '<a class="btn btn--outline btn--sm" href="' + url + '" target="_blank" title="Télécharger">' + IC_BAS + '</a>' +
         (pid ? '<button class="btn btn--outline btn--sm" onclick="ADM.lockDoc(\'' + ek + '\',\'' + pid + '\',' + (f.locked ? 'false' : 'true') + ')" title="' + (f.locked ? 'Déverrouiller' : 'Verrouiller pour la cliente') + '">' + (f.locked ? '🔓' : '🔒') + '</button>' : '') +
-        '<button class="btn btn--danger btn--sm" onclick="ADM.delDoc(\'' + ek + '\')" title="Supprimer">✕</button>' +
+        '<button class="btn btn--danger btn--sm" onclick="ADM.delDoc(\'' + ek + '\')" title="Supprimer">' + IC_X + '</button>' +
       '</div>' +
     '</div>';
   }
@@ -11545,16 +11568,17 @@
                 ['cliente', 'Chez la cliente', nWait],
                 ['acocher', 'À mettre à jour', nStale],
                 ['termines', 'Terminés', nDone]];
-    var bar = '<div class="qbar" style="gap:8px;flex-wrap:wrap">' + tabs.map(function (t) {
-      return '<button class="btn btn--sm ' + (PLAN_FILTER === t[0] ? 'btn--dark' : 'btn--outline') + '" onclick="ADM.planSetFilter(\'' + t[0] + '\')">' + esc(t[1]) + (t[2] ? ' · ' + t[2] : '') + '</button>';
-    }).join('') + '</div>';
+    // Des filtres, pas des boutons : le même contrôle groupé que partout ailleurs.
+    var bar = '<div class="qbar"><div class="ck-segm" role="group" aria-label="Filtrer les plannings">' + tabs.map(function (t) {
+      return '<button class="ck-segb' + (PLAN_FILTER === t[0] ? ' on' : '') + '" aria-pressed="' + (PLAN_FILTER === t[0]) + '" onclick="ADM.planSetFilter(\'' + t[0] + '\')">' + esc(t[1]) + (t[2] ? ' · ' + t[2] : '') + '</button>';
+    }).join('') + '</div></div>';
     if (!all.length) { body.innerHTML = bar + '<div class="empty">Aucun planning prévisionnel pour l\'instant. Ils se remplissent depuis la fiche d\'une cliente, sous-onglet « Planning ».</div>'; return; }
     if (!list.length) { body.innerHTML = bar + '<div class="empty">Rien dans cette sélection.</div>'; return; }
     body.innerHTML = bar + list.map(planCardHtml).join('');
   }
   function planCardHtml(x, surPage) {
     var pl = x.pl, si = x.si;
-    var OWN = { studio: ['🎨 Toi', '#eef3f6', '#305277'], cliente: ['👤 Cliente', '#F0E2D6', '#8a4a2c'], les_deux: ['🤝 Vous deux', '#eef1ec', '#3f5a37'] };
+    var OWN = { studio: ['Toi', '#eef3f6', '#305277'], cliente: ['Cliente', '#F0E2D6', '#8a4a2c'], les_deux: ['Vous deux', '#eef1ec', '#3f5a37'] };
     // Sur la page projet on est déjà chez la cliente et dans le projet : répéter
     // les deux noms n'apprend rien. Le titre devient le fil concerné.
     var title = surPage
@@ -11629,7 +11653,7 @@
         '<button class="subtab' + (QNR_TAB === 'reponses' ? ' active' : '') + '" onclick="ADM.qnrSetTab(\'reponses\')">Réponses' + (nRep ? ' · ' + nRep : '') + '</button>' +
       '</div>';
     if (QNR_TAB === 'reponses') { body.innerHTML = head + qnrRepView(); return; }
-    var bar = '<div class="qbar"><p style="font-family:var(--font-body);font-size:15px;color:var(--muted);margin:0">Crée un modèle, envoie-le, et retrouve les réponses dans l\'onglet « Réponses ».</p><div style="display:flex;gap:8px;align-items:center"><button class="btn btn--outline btn--sm" onclick="ADM.qnrImportJson()">Importer (JSON)</button><button class="btn btn--dark btn--sm" onclick="ADM.qnrAdd()">+ Nouveau modèle</button></div></div>';
+    var bar = '<div class="qbar"><p style="font-family:var(--font-body);font-size:15px;color:var(--muted);margin:0">Crée un modèle, envoie-le, et retrouve les réponses dans l\'onglet « Réponses ».</p><div style="display:flex;gap:8px;align-items:center"><button class="btn btn--outline btn--sm" onclick="ADM.qnrImportJson()">Importer (JSON)</button><button class="btn btn--dark btn--sm" onclick="ADM.qnrAdd()">Nouveau modèle</button></div></div>';
     var list = active.length
       ? active.map(qnrTplCardHtml).join('')
       : '<div class="empty">Aucun questionnaire pour l\'instant. Crée ton premier modèle (ex. « Questions de démarrage », « Brief branding »), puis envoie-le à une ou plusieurs clientes.</div>';
@@ -11875,8 +11899,8 @@
     var colorDots = swatches.map(function (col) { return '<button title="' + esc(col) + '" onclick="ADM.qnrSet(\'' + t.id + '\',\'color\',\'' + col + '\')" style="width:22px;height:22px;border-radius:50%;background:' + col + ';border:2px solid ' + ((t.color || cm[2]) === col ? 'var(--terre)' : 'transparent') + ';cursor:pointer"></button>'; }).join('');
     var stepsHtml = (t.steps || []).map(function (s, i) { return qnrStepHtml(t, s, i, (t.steps || []).length); }).join('');
     return '<div style="position:sticky;top:0;background:var(--bg,#faf7f1);z-index:4;padding:14px 22px;border:none;display:flex;align-items:center;gap:10px;flex-wrap:wrap">' +
-        '<button onclick="ADM.qnrCloseDrawer()" class="btn btn--outline btn--sm">← Fermer</button>' +
-        '<button onclick="ADM.qnrSmartImport(\'' + t.id + '\')" class="btn btn--sm" title="Coller un texte et le mettre en forme automatiquement">✨ Mettre en forme un texte</button>' +
+        '<button onclick="ADM.qnrCloseDrawer()" class="btn btn--outline btn--sm">Fermer</button>' +
+        '<button onclick="ADM.qnrSmartImport(\'' + t.id + '\')" class="btn btn--sm" title="Coller un texte et le mettre en forme automatiquement">Mettre en forme un texte</button>' +
         '<button onclick="ADM.qnrPreview(\'' + t.id + '\')" class="btn btn--sm">👁 Aperçu</button>' +
         '<button onclick="ADM.qnrAssignOpen(\'' + t.id + '\')" class="btn btn--dark btn--sm">Envoyer à une cliente</button>' +
         '<span style="margin-left:auto"></span>' +
@@ -11889,23 +11913,23 @@
           '<span class="row" style="gap:8px;align-items:center"><span class="micro">Catégorie</span>' + catSel + '</span>' +
           '<span class="row" style="gap:6px;align-items:center"><span class="micro">Couleur</span>' + colorDots + '</span>' +
         '</div>' +
-        '<div class="between" style="margin-bottom:12px;flex-wrap:wrap;gap:8px"><h3 style="margin:0">Étapes & questions</h3><span class="row" style="gap:8px"><button class="btn btn--sm" title="Rendre toutes les questions obligatoires et activer la réponse Autre" onclick="ADM.qnrBulkRequire(\'' + t.id + '\')">⚡ Tout obligatoire + Autre</button><button class="btn btn--outline btn--sm" onclick="ADM.qnrStepAdd(\'' + t.id + '\')">+ Étape</button></span></div>' +
+        '<div class="between" style="margin-bottom:12px;flex-wrap:wrap;gap:8px"><h3 style="margin:0">Étapes & questions</h3><span class="row" style="gap:8px"><button class="btn btn--sm" title="Rendre toutes les questions obligatoires et activer la réponse Autre" onclick="ADM.qnrBulkRequire(\'' + t.id + '\')">⚡ Tout obligatoire + Autre</button><button class="btn btn--outline btn--sm" onclick="ADM.qnrStepAdd(\'' + t.id + '\')">Ajouter une étape</button></span></div>' +
         (stepsHtml || '<div class="empty" style="margin-bottom:10px">Ajoute une étape, puis des questions à l\'intérieur.</div>') +
-        '<button class="btn btn--outline btn--sm" style="margin-top:6px" onclick="ADM.qnrStepAdd(\'' + t.id + '\')">+ Ajouter une étape</button>' +
+        '<button class="btn btn--outline btn--sm" style="margin-top:6px" onclick="ADM.qnrStepAdd(\'' + t.id + '\')">Ajouter une étape</button>' +
       '</div>';
   }
   function qnrStepHtml(t, s, idx, total) {
     var blocks = Array.isArray(s.blocks) ? s.blocks : [];
     var blocksHtml = blocks.map(function (b, i) { return qnrBlockHtml(t, s, b, i, blocks.length); }).join('');
-    var addSel = '<select class="inp" style="width:auto" onchange="if(this.value){ADM.qnrBlockAdd(\'' + t.id + '\',\'' + s.id + '\',this.value);this.value=\'\';}"><option value="">+ Ajouter une question…</option>' +
+    var addSel = '<select class="inp" style="width:auto" onchange="if(this.value){ADM.qnrBlockAdd(\'' + t.id + '\',\'' + s.id + '\',this.value);this.value=\'\';}"><option value="">Ajouter une question…</option>' +
       QNR_BLOCKS.map(function (bt) { return '<option value="' + bt[0] + '">' + esc(bt[2] + '  ' + bt[1]) + '</option>'; }).join('') + '</select>';
     return '<div class="card" style="background:var(--card);padding:14px 15px;margin-bottom:14px;border:none;border-radius:12px">' +
       '<div class="row" style="gap:8px;align-items:center;margin-bottom:10px">' +
         '<span style="font-family:var(--font-micro);font-size:13px;color:var(--muted);flex-shrink:0;text-transform:uppercase;letter-spacing:0.04em">Étape ' + (idx + 1) + '</span>' +
         '<input class="inp" value="' + esc(s.title || '') + '" placeholder="Titre de l\'étape (ex. Votre projet)" style="flex:1;font-weight:600" onchange="ADM.qnrStepSet(\'' + t.id + '\',\'' + s.id + '\',\'title\',this.value)">' +
-        '<button class="pbtn" title="Monter"' + (idx === 0 ? ' disabled style="opacity:0.3"' : '') + ' onclick="ADM.qnrStepMove(\'' + t.id + '\',\'' + s.id + '\',-1)">↑</button>' +
-        '<button class="pbtn" title="Descendre"' + (idx === total - 1 ? ' disabled style="opacity:0.3"' : '') + ' onclick="ADM.qnrStepMove(\'' + t.id + '\',\'' + s.id + '\',1)">↓</button>' +
-        '<button class="pbtn" style="color:#8d2b21" title="Supprimer l\'étape" onclick="ADM.qnrStepDel(\'' + t.id + '\',\'' + s.id + '\')">×</button>' +
+        '<button class="pbtn" title="Monter"' + (idx === 0 ? ' disabled style="opacity:0.3"' : '') + ' onclick="ADM.qnrStepMove(\'' + t.id + '\',\'' + s.id + '\',-1)">' + IC_HAUT + '</button>' +
+        '<button class="pbtn" title="Descendre"' + (idx === total - 1 ? ' disabled style="opacity:0.3"' : '') + ' onclick="ADM.qnrStepMove(\'' + t.id + '\',\'' + s.id + '\',1)">' + IC_BAS + '</button>' +
+        '<button class="pbtn" style="color:#5A2A11" title="Supprimer l\'étape" onclick="ADM.qnrStepDel(\'' + t.id + '\',\'' + s.id + '\')">' + IC_X + '</button>' +
       '</div>' +
       '<input class="inp" value="' + esc(s.help || '') + '" placeholder="Sous-titre / consigne de l\'étape (optionnel)" style="width:100%;box-sizing:border-box;font-size:15px;margin-bottom:12px" onchange="ADM.qnrStepSet(\'' + t.id + '\',\'' + s.id + '\',\'help\',this.value)">' +
       (blocksHtml || '<div class="micro muted" style="text-transform:none;letter-spacing:0;padding:2px 0 10px">Aucune question dans cette étape.</div>') +
@@ -11921,9 +11945,9 @@
     var head = '<div class="row" style="gap:6px;align-items:center;margin-bottom:7px">' +
       typeSel +
       '<span style="margin-left:auto"></span>' +
-      '<button class="pbtn" title="Monter"' + (idx === 0 ? ' disabled style="opacity:0.3"' : '') + ' onclick="ADM.qnrBlockMove(\'' + t.id + '\',\'' + s.id + '\',\'' + b.id + '\',-1)">↑</button>' +
-      '<button class="pbtn" title="Descendre"' + (idx === total - 1 ? ' disabled style="opacity:0.3"' : '') + ' onclick="ADM.qnrBlockMove(\'' + t.id + '\',\'' + s.id + '\',\'' + b.id + '\',1)">↓</button>' +
-      '<button class="pbtn" style="color:#8d2b21" title="Supprimer" onclick="ADM.qnrBlockDel(\'' + t.id + '\',\'' + s.id + '\',\'' + b.id + '\')">×</button>' +
+      '<button class="pbtn" title="Monter"' + (idx === 0 ? ' disabled style="opacity:0.3"' : '') + ' onclick="ADM.qnrBlockMove(\'' + t.id + '\',\'' + s.id + '\',\'' + b.id + '\',-1)">' + IC_HAUT + '</button>' +
+      '<button class="pbtn" title="Descendre"' + (idx === total - 1 ? ' disabled style="opacity:0.3"' : '') + ' onclick="ADM.qnrBlockMove(\'' + t.id + '\',\'' + s.id + '\',\'' + b.id + '\',1)">' + IC_BAS + '</button>' +
+      '<button class="pbtn" style="color:#5A2A11" title="Supprimer" onclick="ADM.qnrBlockDel(\'' + t.id + '\',\'' + s.id + '\',\'' + b.id + '\')">' + IC_X + '</button>' +
     '</div>';
     var labelField = '<input class="inp" value="' + esc(b.label || '') + '" placeholder="' + (isStat ? (b.type === 'title' ? 'Titre de la section' : 'Votre texte / consigne') : 'Intitulé de la question') + '" style="width:100%;box-sizing:border-box;font-weight:' + (isStat ? '600' : '500') + '" onchange="ADM.qnrBlockSet(\'' + t.id + '\',\'' + s.id + '\',\'' + b.id + '\',\'label\',this.value)">';
     var extra = '';
@@ -12029,7 +12053,7 @@
     var hasContent = (t.steps || []).some(function (s) { return (s.title || '').trim() || (s.blocks || []).length; });
     var ov = document.createElement('div'); ov.className = 'admconfirm';
     ov.innerHTML = '<div class="admconfirm__box" style="max-width:600px;text-align:left">' +
-      '<div class="admconfirm__title">✨ Mettre en forme un texte</div>' +
+      '<div class="admconfirm__title">Mettre en forme un texte</div>' +
       '<div class="admconfirm__msg">Colle ton texte brut, je le transforme en questionnaire structuré. Astuce : un titre en MAJUSCULES ou finissant par « : » crée une étape ; une ligne finissant par « ? » devient une question ; des lignes à puces (- ou •) juste en dessous deviennent ses options.</div>' +
       '<textarea id="qnr-import-txt" class="inp" style="width:100%;box-sizing:border-box;min-height:220px;resize:vertical;font-size:15px;line-height:1.5;font-family:var(--font-micro,monospace)" placeholder="VOTRE PROJET&#10;Quel est le nom de votre entreprise ?&#10;Décrivez votre activité en quelques mots ?&#10;&#10;VOS PRÉFÉRENCES&#10;Quels styles vous attirent ? (plusieurs réponses)&#10;- Épuré&#10;- Chaleureux&#10;- Audacieux&#10;Votre budget ?&#10;Votre adresse e-mail ?"></textarea>' +
       (hasContent ? '<label class="checkbox" style="margin-top:10px;font-size:15px"><input type="checkbox" id="qnr-import-replace"> Remplacer le contenu existant (sinon, ajouté à la fin)</label>' : '') +
@@ -12081,7 +12105,7 @@
     // Même encadré que côté cliente, pour que l'aperçu dise la vérité.
     if (b.type === 'paragraph') return '<div style="font-size:16px;color:var(--nuit,#1c1205);line-height:1.65;background:rgba(197,222,255,0.36);border-radius:14px;padding:15px 17px;margin:14px 0 18px;white-space:pre-wrap">' + esc(b.label || '') + '</div>';
     var num = (typeof qnum === 'number' && qnum > 0) ? '<div class="micro" style="color:var(--terre-600);margin-bottom:7px">Question ' + qnum + '</div>' : '';
-    var lab = num + '<div style="font-weight:600;font-size:17.5px;line-height:1.45">' + esc(b.label || 'Question') + (b.required ? ' <span style="color:#8d2b21">*</span>' : '') + '</div>' + (b.help ? '<div style="font-size:15px;color:var(--muted);line-height:1.6;margin-top:6px;white-space:pre-wrap">' + esc(b.help) + '</div>' : '');
+    var lab = num + '<div style="font-weight:600;font-size:17.5px;line-height:1.45">' + esc(b.label || 'Question') + (b.required ? ' <span style="color:#5A2A11">*</span>' : '') + '</div>' + (b.help ? '<div style="font-size:15px;color:var(--muted);line-height:1.6;margin-top:6px;white-space:pre-wrap">' + esc(b.help) + '</div>' : '');
     // Aperçu interactif : tu peux cocher / écrire pour tester (rien n'est enregistré).
     var f = '';
     var inpBox = 'width:100%;box-sizing:border-box;background:#fff;border:1.5px solid var(--bone-d);border-radius:10px;padding:12px 14px;font-family:inherit;font-size:16px';
@@ -12134,7 +12158,7 @@
           ? '<div style="font-size:17px;line-height:1.75;color:var(--terre-600);white-space:pre-wrap">' + esc(desc) + '</div>'
           : '<div style="font-size:15px;line-height:1.7;color:var(--terre-600)">Prends un moment pour y répondre : tes réponses sont enregistrées automatiquement, tu peux revenir quand tu veux.</div>') +
         '<div style="display:flex;align-items:center;gap:14px;margin-top:22px;font-family:var(--font-micro);font-size:13px;letter-spacing:0.05em;text-transform:uppercase;color:var(--muted)"><span>' + nS + ' étape' + (nS > 1 ? 's' : '') + '</span><span>·</span><span>' + nQ + ' question' + (nQ > 1 ? 's' : '') + '</span></div>' +
-        '<button class="btn btn--sm" style="margin-top:26px;background:' + esc(col) + ';color:#fff;border-color:' + esc(col) + '" onclick="ADM.qnrPreviewStart()">Commencer →</button>';
+        '<button class="btn btn--sm" style="margin-top:26px;background:' + esc(col) + ';color:#fff;border-color:' + esc(col) + '" onclick="ADM.qnrPreviewStart()">Commencer</button>';
     } else {
       if (QNR_PREV_STEP >= steps.length) QNR_PREV_STEP = steps.length - 1;
       var s = steps[QNR_PREV_STEP];
@@ -12150,8 +12174,8 @@
       var _pqn = 0;
       var fields = (s.blocks || []).map(function (b) { var n = qnrIsStatic(b.type) ? 0 : (++_pqn); return qnrFieldPreview(b, n); }).join('') || '<div class="micro muted" style="text-transform:none;letter-spacing:0">Aucune question dans cette étape.</div>';
       var nav = '<div style="display:flex;gap:10px;margin-top:18px">' +
-        (!isFirst ? '<button class="btn btn--outline btn--sm" onclick="ADM.qnrPreviewNav(-1)">← Précédent</button>' : '') +
-        (!isLast ? '<button class="btn btn--sm" style="flex:1;background:' + esc(col) + ';color:#fff;border-color:' + esc(col) + '" onclick="ADM.qnrPreviewNav(1)">Suivant →</button>'
+        (!isFirst ? '<button class="btn btn--outline btn--sm" onclick="ADM.qnrPreviewNav(-1)">Précédent</button>' : '') +
+        (!isLast ? '<button class="btn btn--sm" style="flex:1;background:' + esc(col) + ';color:#fff;border-color:' + esc(col) + '" onclick="ADM.qnrPreviewNav(1)">Suivant</button>'
                  : '<button class="btn btn--sm" style="flex:1;background:' + esc(col) + ';color:#fff;border-color:' + esc(col) + '" data-no>Fin de l\'aperçu ✓</button>') + '</div>';
       var testHint = '<div style="font-size:15px;line-height:1.5;color:var(--terre-600);margin-bottom:16px;padding:12px 15px;background:var(--card);border:none;border-radius:11px">Aperçu interactif : tu peux cocher et écrire pour tester, rien n\'est enregistré.</div>';
       body = progress + whyBlock + testHint +
@@ -12224,7 +12248,7 @@
   function prjCountDeliv(t) { var n = 0; (t.phases || []).forEach(function (p) { n += (p.deliverables || []).length; }); return n; }
 
   function renderProjTpl() {
-    var right = '<button class="btn btn--dark btn--sm" onclick="ADM.prjAdd()">+ Nouveau modèle</button> <button class="btn btn--outline btn--sm" onclick="ADM.prjSeed()" title="Créer les 3 scénarios prêts à l\'emploi (Site, Identité, Support)">Modèles de départ</button>';
+    var right = '<button class="btn btn--dark btn--sm" onclick="ADM.prjAdd()">Nouveau modèle</button> <button class="btn btn--outline btn--sm" onclick="ADM.prjSeed()" title="Créer les 3 scénarios prêts à l\'emploi (Site, Identité, Support)">Modèles de départ</button>';
     setMain(topbar('Modèles de projets', right, 'Un scénario = des phases, des étapes (cliente / studio / validation) et des livrables. Crée-le une fois, instancie-le dans l\'espace d\'une cliente.') + '<div class="wrap" id="prj-body"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
     if (!NAV_CLIENTS.length) { clientsGet().then(function (d) { NAV_CLIENTS = d.clients || []; }).catch(function () {}); }
     if (PRJ_LOADED) { renderPrjBody(); return; }
@@ -12263,7 +12287,7 @@
         '<span style="margin-left:auto;display:flex;gap:4px">' +
           '<button class="pbtn" title="Dupliquer" onclick="ADM.prjDup(\'' + t.id + '\')">⧉</button>' +
           '<button class="pbtn" title="' + (t.archived ? 'Désarchiver' : 'Archiver') + '" onclick="ADM.prjArchive(\'' + t.id + '\')">' + (t.archived ? '↩' : '🗄') + '</button>' +
-          '<button class="pbtn" style="color:#8d2b21" title="Supprimer" onclick="ADM.prjDel(\'' + t.id + '\')">×</button>' +
+          '<button class="pbtn" style="color:#5A2A11" title="Supprimer" onclick="ADM.prjDel(\'' + t.id + '\')">' + IC_X + '</button>' +
         '</span>' +
       '</div>' +
     '</div>';
@@ -12308,7 +12332,7 @@
     var colorDots = swatches.map(function (c) { return '<button title="' + esc(c) + '" onclick="ADM.prjSet(\'' + t.id + '\',\'color\',\'' + c + '\')" style="width:22px;height:22px;border-radius:50%;background:' + c + ';border:2px solid ' + (col === c ? 'var(--terre)' : 'transparent') + ';cursor:pointer"></button>'; }).join('');
     var phasesHtml = (t.phases || []).map(function (p, i) { return prjPhaseHtml(t, p, i, (t.phases || []).length); }).join('');
     return '<div style="position:sticky;top:0;background:var(--bg,#faf7f1);z-index:4;padding:14px 22px;border:none;display:flex;align-items:center;gap:10px;flex-wrap:wrap">' +
-        '<button onclick="ADM.prjCloseDrawer()" class="btn btn--outline btn--sm">← Fermer</button>' +
+        '<button onclick="ADM.prjCloseDrawer()" class="btn btn--outline btn--sm">Fermer</button>' +
         '<button onclick="ADM.prjAssignOpen(\'' + t.id + '\')" class="btn btn--dark btn--sm">Instancier dans un espace</button>' +
         '<span style="margin-left:auto"></span>' +
         '<button onclick="ADM.prjDel(\'' + t.id + '\')" class="btn btn--danger btn--sm">Suppr.</button>' +
@@ -12326,21 +12350,21 @@
         '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-bottom:16px;display:flex;gap:14px;flex-wrap:wrap">' +
           PRJ_STEP_TYPES.map(function (m) { return '<span class="row" style="gap:5px;align-items:center"><span style="color:' + m[2] + ';display:flex">' + admIcon(m[3]) + '</span>' + esc(m[1]) + '</span>'; }).join('') +
         '</div>' +
-        '<div class="between" style="margin-bottom:12px;flex-wrap:wrap;gap:8px"><h3 style="margin:0">Phases</h3><button class="btn btn--outline btn--sm" onclick="ADM.prjPhaseAdd(\'' + t.id + '\')">+ Phase</button></div>' +
+        '<div class="between" style="margin-bottom:12px;flex-wrap:wrap;gap:8px"><h3 style="margin:0">Phases</h3><button class="btn btn--outline btn--sm" onclick="ADM.prjPhaseAdd(\'' + t.id + '\')">Ajouter une phase</button></div>' +
         (phasesHtml || '<div class="empty" style="margin-bottom:10px">Ajoute une phase (ex. « Stratégie », « Maquette »), puis des étapes et des livrables à l\'intérieur.</div>') +
       '</div>';
   }
   function prjPhaseHtml(t, p, i, total) {
     var stepsHtml = (p.steps || []).map(function (s) { return prjStepHtml(t, p, s); }).join('');
     var delivHtml = (p.deliverables || []).map(function (d) { return prjDelivHtml(t, p, d); }).join('');
-    var up = i > 0 ? '<button class="pbtn" title="Monter" onclick="ADM.prjPhaseMove(\'' + t.id + '\',\'' + p.id + '\',-1)">↑</button>' : '';
-    var down = i < total - 1 ? '<button class="pbtn" title="Descendre" onclick="ADM.prjPhaseMove(\'' + t.id + '\',\'' + p.id + '\',1)">↓</button>' : '';
+    var up = i > 0 ? '<button class="pbtn" title="Monter" onclick="ADM.prjPhaseMove(\'' + t.id + '\',\'' + p.id + '\',-1)">' + IC_HAUT + '</button>' : '';
+    var down = i < total - 1 ? '<button class="pbtn" title="Descendre" onclick="ADM.prjPhaseMove(\'' + t.id + '\',\'' + p.id + '\',1)">' + IC_BAS + '</button>' : '';
     return '<div class="card" style="padding:14px;margin-bottom:14px;border:none;border-radius:12px;background:var(--card)">' +
       '<div class="row" style="gap:8px;align-items:center;margin-bottom:8px">' +
         '<span class="micro" style="background:var(--terre);color:#fff;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">' + (i + 1) + '</span>' +
         '<input class="inp" value="' + esc(p.title || '') + '" placeholder="Nom de la phase (ex. Maquette page d\'accueil)" style="flex:1;font-weight:600" onchange="ADM.prjPhaseSet(\'' + t.id + '\',\'' + p.id + '\',\'title\',this.value)">' +
         up + down +
-        '<button class="pbtn" style="color:#8d2b21" title="Supprimer la phase" onclick="ADM.prjPhaseDel(\'' + t.id + '\',\'' + p.id + '\')">×</button>' +
+        '<button class="pbtn" style="color:#5A2A11" title="Supprimer la phase" onclick="ADM.prjPhaseDel(\'' + t.id + '\',\'' + p.id + '\')">' + IC_X + '</button>' +
       '</div>' +
       '<input class="inp" value="' + esc(p.help || '') + '" placeholder="Sous-titre / repère de calendrier (optionnel, ex. Sem. 3)" style="width:100%;box-sizing:border-box;font-size:15px;margin-bottom:10px" onchange="ADM.prjPhaseSet(\'' + t.id + '\',\'' + p.id + '\',\'help\',this.value)">' +
       '<div class="micro" style="margin-bottom:6px">Étapes</div>' +
@@ -12350,7 +12374,7 @@
       '</div>' +
       '<div class="micro" style="margin-bottom:6px">Livrables</div>' +
       (delivHtml || '<div class="micro muted" style="text-transform:none;letter-spacing:0;margin-bottom:6px">Aucun livrable.</div>') +
-      '<button class="pbtn" style="margin-top:2px" onclick="ADM.prjDelivAdd(\'' + t.id + '\',\'' + p.id + '\')">+ Livrable</button>' +
+      '<button class="pbtn" style="margin-top:2px" onclick="ADM.prjDelivAdd(\'' + t.id + '\',\'' + p.id + '\')">Ajouter un livrable</button>' +
     '</div>';
   }
   function prjStepHtml(t, p, s) {
@@ -12363,7 +12387,7 @@
       typeSel +
       '<input class="inp" type="number" min="0" value="' + esc(s.estMinutes || 0) + '" title="Temps estimé (min)" style="width:64px;font-size:15px" onchange="ADM.prjStepSet(\'' + t.id + '\',\'' + p.id + '\',\'' + s.id + '\',\'estMinutes\',this.value)">' +
       '<span class="micro" style="text-transform:none">min</span>' +
-      '<button class="pbtn" style="color:#8d2b21" title="Supprimer" onclick="ADM.prjStepDel(\'' + t.id + '\',\'' + p.id + '\',\'' + s.id + '\')">×</button>' +
+      '<button class="pbtn" style="color:#5A2A11" title="Supprimer" onclick="ADM.prjStepDel(\'' + t.id + '\',\'' + p.id + '\',\'' + s.id + '\')">' + IC_X + '</button>' +
     '</div>';
   }
   function prjDelivHtml(t, p, d) {
@@ -12372,7 +12396,7 @@
       '<input class="inp" value="' + esc(d.name || '') + '" placeholder="Nom du livrable (ex. Maquette Figma accueil)" style="flex:1;font-size:15px" onchange="ADM.prjDelivSet(\'' + t.id + '\',\'' + p.id + '\',\'' + d.id + '\',\'name\',this.value)">' +
       '<span class="micro" style="text-transform:none;letter-spacing:0">révisions</span>' +
       '<input class="inp" type="number" min="0" max="20" value="' + esc(d.revisionsIncluded || 0) + '" title="Révisions incluses" style="width:60px;font-size:15px" onchange="ADM.prjDelivSet(\'' + t.id + '\',\'' + p.id + '\',\'' + d.id + '\',\'revisionsIncluded\',this.value)">' +
-      '<button class="pbtn" style="color:#8d2b21" title="Supprimer" onclick="ADM.prjDelivDel(\'' + t.id + '\',\'' + p.id + '\',\'' + d.id + '\')">×</button>' +
+      '<button class="pbtn" style="color:#5A2A11" title="Supprimer" onclick="ADM.prjDelivDel(\'' + t.id + '\',\'' + p.id + '\',\'' + d.id + '\')">' + IC_X + '</button>' +
     '</div>';
   }
   function prjPhaseOf(t, pid) { return (t.phases || []).filter(function (p) { return p.id === pid; })[0] || null; }
@@ -12497,7 +12521,7 @@
     toggleTicketsSpace: toggleTicketsSpace, ticketStatus: ticketStatus, ticketDue: ticketDue, ticketTime: ticketTime, ticketDelete: ticketDelete, ticketForfait: ticketForfait, ticketProposeDate: ticketProposeDate,
     ckpReste: ckpReste, ckpEstim: ckpEstim, ckpFinir: ckpFinir, ckpPasMaintenant: ckpPasMaintenant, ckpOrdreSysteme: ckpOrdreSysteme,
     ckTSetTri: ckTSetTri, ckTSetFiltre: ckTSetFiltre, ckTOuvrir: ckTOuvrir, ckTGrand: ckTGrand, ckMenu: ckMenu,
-    ckTRepondre: ckTRepondre, ckTCloturer: ckTCloturer, ckTSupprimer: ckTSupprimer,
+    ckTRepondre: ckTRepondre, ckTCloturer: ckTCloturer, ckTSupprimer: ckTSupprimer, ckTCreerStb: ckTCreerStb, ckTVoir: ckTVoir,
     ckTAEstimer: ckTAEstimer,
     ckLChoisir: ckLChoisir, ckLSemaine: ckLSemaine, ckLPoser: ckLPoser, ckLRetirer: ckLRetirer,
     ckLRegSet: ckLRegSet, ckLRegEnregistrer: ckLRegEnregistrer, ckLRegAnnuler: ckLRegAnnuler,
