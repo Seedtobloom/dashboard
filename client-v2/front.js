@@ -8764,13 +8764,24 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
         '<div class="cp-msg__date">'+who+' · '+fmtDate(m.createdAt)+'</div></div>'+
       '</div>';
     }).join('') : '<div class="cp-empty">Aucun message pour le moment. Ecrivez a Cindy !</div>';
+    // Projet termine : la conversation reste entierement lisible, mais elle est
+    // archivee. On retire le champ plutot que de laisser ecrire pour rien.
+    var clos = !!(pd && pd.project && pd.project.clotureAt);
+    var pied = clos
+      ? '<div class="cp-empty" style="border-top:1px solid rgba(17,7,4,.08);margin-top:4px">'+
+          'Ce projet est termine. Cette conversation est archivee : elle reste consultable, '+
+          'mais on n y ecrit plus. Pour une nouvelle demande, ouvrez un nouveau projet ou '+
+          'ecrivez a Cindy depuis un autre espace.'+
+        '</div>'
+      : '<div class="cp-msg-form">'+
+          '<textarea id="stb-msg-input" placeholder="Ecrivez votre message..."></textarea>'+
+          '<div class="cp-msg-form__row"><button class="cp-btn" onclick="window.stbSendMsg(\''+pid+'\')">'+cpIcon('send',15)+' Envoyer</button></div>'+
+        '</div>';
     return '<div class="cp-card">'+
-      '<div class="cp-card__hd"><span class="cp-card__title">Messages</span></div>'+
+      '<div class="cp-card__hd"><span class="cp-card__title">Messages</span>'+
+        (clos ? '<span class="cp-chip">Projet termine</span>' : '')+'</div>'+
       '<div class="cp-msgs" id="stb-msgs">'+bubbles+'</div>'+
-      '<div class="cp-msg-form">'+
-        '<textarea id="stb-msg-input" placeholder="Ecrivez votre message..."></textarea>'+
-        '<div class="cp-msg-form__row"><button class="cp-btn" onclick="window.stbSendMsg(\''+pid+'\')">'+cpIcon('send',15)+' Envoyer</button></div>'+
-      '</div>'+
+      pied+
     '</div>';
   }
   // Garde-fou : neutralise la messagerie globale V1 (chat par projet uniquement).
@@ -8794,7 +8805,12 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     var v = ((inp && inp.value) || '').trim();
     if (!v) return;
     fetch('/api/client/' + TOKEN + '/message', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ projectId: pid, content: v }) })
-      .then(function(r){ if(!r.ok) throw new Error(); return r.json(); })
+      .then(function(r){
+        if (!r.ok) return r.json().catch(function(){ return {}; }).then(function(e){
+          throw new Error((e && e.error) || '');
+        });
+        return r.json();
+      })
       .then(function(res){
         var pd = getPD(pid);
         if (pd) { if (!Array.isArray(pd.messages)) pd.messages = []; pd.messages.push(res.message); }
@@ -8803,7 +8819,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
         var box = document.getElementById('stb-msgs'); if (box) box.scrollTop = box.scrollHeight;
         toast('Message envoye');
       })
-      .catch(function(){ toast('Erreur, reessayez.'); });
+      .catch(function(e){ toast((e && e.message) || 'Erreur, reessayez.'); });
   };
 
 /* ── Greffe v2 : livrables validables par projet ────────────────────────────

@@ -285,6 +285,16 @@ function resolveProject(esp: AnyObj, projectId: string): { container: AnyObj | n
   if (sm) return { container: getSupportObj(esp, sm[1]), folder: `supportsDeCom/${sm[1]}`, label: supportLabel(sm[1]) };
   return { container: null, folder: '', label: '' };
 }
+/* ── Projet clôturé ───────────────────────────────────────────────────────
+ * Clôturer, ce n'est pas supprimer. Le projet est fini : plus personne n'y
+ * écrit, mais TOUT reste lisible — la conversation, les créations, les
+ * versions. La suppression, elle, existe toujours à côté et efface vraiment.
+ * Une seule règle, lue par les deux espaces : sans ça, le studio pourrait
+ * écrire dans un fil où la cliente ne peut plus répondre.
+ * Réversible : une clôture faite trop tôt se rouvre. */
+function estCloture(container: AnyObj | null | undefined): boolean {
+  return !!(container && container.clotureAt);
+}
 function supportLabel(pid: string): string {
   const n = parseInt(pid, 10) || 1;
   return n > 1 ? 'Support de com ' + n : 'Support de com';
@@ -939,8 +949,13 @@ async function handleClientApi(
     if ('name' in body) o.name = (body.name == null ? '' : String(body.name)).slice(0, 80).trim();
     // Date de départ (T0) du planning éditorial (optionnelle : sinon dates relatives).
     if ('planningStart' in body) o.planningStart = body.planningStart ? String(body.planningStart).slice(0, 10) : null;
+    if ('cloture' in body) {
+      // On n'écrase pas une date de clôture déjà posée : c'est un repère daté.
+      if (body.cloture) { if (!o.clotureAt) o.clotureAt = nowIso(); }
+      else o.clotureAt = null;
+    }
     await saveClient(env, key, data);
-    return json({ ok: true, name: o.name });
+    return json({ ok: true, name: o.name, clotureAt: o.clotureAt || null });
   }
   if (supm && method === 'DELETE') {
     const sd2 = esp.supportsDeCom && esp.supportsDeCom[0];
@@ -1125,7 +1140,7 @@ function buildClientDetail(_env: Env, key: string, data: AnyObj): AnyObj {
   const supports: AnyObj[] = [];
   if (sd) for (const pid of Object.keys(sd).sort()) {
     const o = getSupportObj(esp, pid);
-    if (o) supports.push({ id: 'support-' + pid, pid, label: (o.name && o.name.trim()) || supportLabel(pid), content: o, unread: unreadAdmin(o), isActive: o.isActive !== false });
+    if (o) supports.push({ id: 'support-' + pid, pid, label: (o.name && o.name.trim()) || supportLabel(pid), content: o, unread: unreadAdmin(o), isActive: o.isActive !== false, clotureAt: o.clotureAt || null });
   }
   return {
     key,
@@ -1211,6 +1226,7 @@ async function handleAdminMessage(request: Request, env: Env, key: string, data:
   const esp = getEspace(data);
   const { container, label } = resolveProject(esp, (body.projectId || '').toString());
   if (!container) return json({ error: 'Projet introuvable' }, 404);
+  if (estCloture(container)) return json({ error: 'Ce projet est clôturé : sa conversation est archivée. Rouvre-le pour écrire.' }, 409);
   const content = (body.content || '').toString().trim();
   const attachments = msgAttachments(body.attachments);
   if (!content && !attachments.length) return json({ error: 'content requis' }, 400);
@@ -1990,7 +2006,8 @@ async function handleDashboard(env: Env): Promise<Response> {
       }));
       projets.push({
         key: ci.key, client: who, projectId, projectLabel: label, prestation,
-        actif: container.isActive !== false,
+        actif: container.isActive !== false && !estCloture(container),
+        clotureAt: container.clotureAt || null,
         etapes,
       });
     };

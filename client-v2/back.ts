@@ -699,6 +699,7 @@ async function buildAppData(env: Env, masterKey: string, data: AnyObj): Promise<
         project: {
           id: 'support-' + pid,
           type: 'support',
+          clotureAt: obj.clotureAt || null,
           projectTitle: (obj.name && obj.name.trim()) || ((parseInt(pid, 10) || 1) > 1 ? 'Support de com ' + (parseInt(pid, 10) || 1) : 'Support de com'),
           clientName: name,
           status: obj.maintenance ? 'maintenance' : 'in_progress',
@@ -849,10 +850,18 @@ async function handleConversation(
 }
 
 // Chat par projet : POST /message {projectId, content} -> append au chat du domaine
+/* Clôturer n'est pas supprimer : le projet est fini, la conversation reste
+   entièrement lisible, mais plus personne n'y écrit. La même règle vaut côté
+   studio — sinon la cliente lirait une réponse à laquelle elle ne peut pas
+   répondre. */
+function estCloture(container: AnyObj | null | undefined): boolean {
+  return !!(container && container.clotureAt);
+}
 async function handleMessage(request: Request, env: Env, masterKey: string, data: AnyObj): Promise<Response> {
   const body = await readJson(request);
   const { container } = resolveProject(getEspace(data), (body.projectId || '').toString());
   if (!container) return json({ error: 'Project not found' }, 404);
+  if (estCloture(container)) return json({ error: 'Ce projet est terminé : la conversation est archivée.' }, 409);
   const content = (body.content || '').toString().trim();
   const attachments = msgAttachments(body.attachments);
   if (!content && !attachments.length) return json({ error: 'content is required' }, 400);

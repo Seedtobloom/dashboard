@@ -93,7 +93,12 @@ section('4. Admin — vues du menu ↔ fonctions de rendu');
   if (!missingFn.length) ok('toutes les fonctions de rendu existent');
   else fail(missingFn.length + ' vue(s) sans fonction de rendu', missingFn);
   // chaque clé de menu (groupes de nav) est routée
-  const navBlock = app.slice(app.indexOf('var groups = ['), app.indexOf('var groups = [') + 900);
+  // Le bloc entier, jusqu'à sa fermeture : une fenêtre de taille fixe laissait
+  // tomber les derniers groupes dès qu'on ajoutait une ligne au menu, et le
+  // contrôle accusait alors des écrans parfaitement atteignables.
+  const navStart = app.indexOf('var groups = [');
+  const navEnd = app.indexOf('\n    ];', navStart);
+  const navBlock = app.slice(navStart, navEnd > navStart ? navEnd : navStart + 2000);
   const navKeys = [...navBlock.matchAll(/\['([a-z0-9]+)', '[^']+'\]/g)].map((x) => x[1]);
   const known = new Set(Object.keys(routed).concat(['clients', 'client', 'newclient', 'chat']));
   const orphanNav = navKeys.filter((k) => !known.has(k));
