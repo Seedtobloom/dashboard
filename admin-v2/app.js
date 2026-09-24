@@ -72,7 +72,7 @@
   // Barre d'outils de mise en forme au-dessus d'une zone de saisie (textarea #id).
   var ADM_EMOJIS = ['😊', '🙂', '🥳', '👍', '🙏', '✨', '🎉', '❤️', '🔥', '✅', '⚠️', '📌', '🗓️', '⏰', '💡', '🎨', '👀', '🙌', '💜', '🌿'];
   function admMsgToolbar(id) {
-    function b(html, title, on) { return '<button type="button" title="' + title + '" onmousedown="event.preventDefault()" onclick="' + on + '" style="border:none;background:#fff;border-radius:8px;min-width:28px;height:28px;padding:0 7px;cursor:pointer;font-size:13px;color:var(--terre);display:inline-flex;align-items:center;justify-content:center">' + html + '</button>'; }
+    function b(html, title, on) { return '<button type="button" title="' + title + '" onmousedown="event.preventDefault()" onclick="' + on + '" style="border:none;background:#fff;border-radius:8px;min-width:28px;height:28px;padding:0 7px;cursor:pointer;font-size:15px;color:var(--terre);display:inline-flex;align-items:center;justify-content:center">' + html + '</button>'; }
     function sw(col, nom) { return '<button type="button" title="Couleur ' + nom + '" onmousedown="event.preventDefault()" onclick="ADM.msgWrap(\'' + id + '\',\'[' + nom + ']\',\'[/]\')" style="width:19px;height:19px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px var(--bone-d);background:' + col + ';cursor:pointer;padding:0"></button>'; }
     var sep = '<span style="width:1px;height:18px;background:var(--bone-d);margin:0 3px"></span>';
     var pal = '<div id="' + id + '-emoji" style="display:none;flex-wrap:wrap;gap:2px;padding:7px;border:none;border-radius:10px;background:#fff;margin-top:4px;max-width:280px">' +
@@ -80,8 +80,8 @@
     return '<div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin-bottom:6px">' +
       b('<strong>B</strong>', 'Gras', 'ADM.msgWrap(\'' + id + '\',\'**\',\'**\')') +
       b('<em>I</em>', 'Italique', 'ADM.msgWrap(\'' + id + '\',\'_\',\'_\')') +
-      b('<span style="font-size:11px">A</span><span style="font-size:14px">+</span>', 'Grossir le texte', 'ADM.msgWrap(\'' + id + '\',\'[grand]\',\'[/]\')') +
-      b('<span style="font-size:10px">A</span><span style="font-size:15px">+</span>', 'Titre (plus grand)', 'ADM.msgWrap(\'' + id + '\',\'[titre]\',\'[/]\')') + sep +
+      b('<span style="font-size:15px">A</span><span style="font-size:15px">+</span>', 'Grossir le texte', 'ADM.msgWrap(\'' + id + '\',\'[grand]\',\'[/]\')') +
+      b('<span style="font-size:15px">A</span><span style="font-size:15px">+</span>', 'Titre (plus grand)', 'ADM.msgWrap(\'' + id + '\',\'[titre]\',\'[/]\')') + sep +
       sw('#5A2A11', 'violet') + sw('#4f7a52', 'vert') + sw('#35608f', 'bleu') + sw('#b5791f', 'orange') + sw('#9b3a2e', 'rouge') + sep +
       b('•', 'Liste à puces', 'ADM.msgBullet(\'' + id + '\')') +
       b('😊', 'Emoji', 'ADM.emojiToggle(\'' + id + '\')') +
@@ -120,13 +120,13 @@
     if (!atts || !atts.length) return '';
     var k = admChatKey();
     return '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">' + atts.map(function (a) {
-      return '<a href="/api/clients/' + k + '/files/' + encodeURIComponent(a.key) + '/download" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;font-size:11.5px;padding:4px 9px;border-radius:8px;border:none;color:var(--glycine-900);text-decoration:none">' + admIcon('clip') + ' ' + esc(a.name || 'fichier') + '</a>';
+      return '<a href="/api/clients/' + k + '/files/' + encodeURIComponent(a.key) + '/download" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;font-size:15px;padding:4px 9px;border-radius:8px;border:none;color:var(--glycine-900);text-decoration:none">' + admIcon('clip') + ' ' + esc(a.name || 'fichier') + '</a>';
     }).join('') + '</div>';
   }
   function admMsgAttRender(cid) {
     var box = el(cid + '-att'); if (!box) return;
     box.innerHTML = (ADM_MSG_ATT[cid] || []).map(function (a, i) {
-      return '<span style="display:inline-flex;align-items:center;gap:6px;font-size:11.5px;color:var(--terre);background:var(--surface-2,#f6f1e7);border:none;border-radius:8px;padding:4px 9px">' + admIcon('clip') + ' ' + esc(a.name) + '<button onclick="ADM.msgAttRemove(\'' + cid + '\',' + i + ')" title="Retirer" style="border:none;background:none;color:var(--red);cursor:pointer;font-size:12px;padding:0;line-height:1">&#x2715;</button></span>';
+      return '<span style="display:inline-flex;align-items:center;gap:6px;font-size:15px;color:var(--terre);background:var(--surface-2,#f6f1e7);border:none;border-radius:8px;padding:4px 9px">' + admIcon('clip') + ' ' + esc(a.name) + '<button onclick="ADM.msgAttRemove(\'' + cid + '\',' + i + ')" title="Retirer" style="border:none;background:none;color:var(--red);cursor:pointer;font-size:15px;padding:0;line-height:1">&#x2715;</button></span>';
     }).join('');
   }
   function admMsgAttRemove(cid, i) { if (ADM_MSG_ATT[cid]) { ADM_MSG_ATT[cid].splice(i, 1); admMsgAttRender(cid); } }
@@ -146,7 +146,7 @@
   }
   // Bouton « joindre » : label + input caché, à placer dans une zone de saisie.
   function admAttachBtn(cid, projectId) {
-    return '<label title="Joindre un fichier" style="display:inline-flex;align-items:center;gap:6px;height:38px;padding:0 14px;border:none;border-radius:10px;cursor:pointer;color:var(--terre);background:#fff;font-size:12.5px;font-weight:600;white-space:nowrap">' + admIcon('clip') + ' Joindre<input type="file" multiple style="display:none" onchange="ADM.msgAttPick(this,\'' + cid + '\',\'' + projectId + '\')"></label>';
+    return '<label title="Joindre un fichier" style="display:inline-flex;align-items:center;gap:6px;height:38px;padding:0 14px;border:none;border-radius:10px;cursor:pointer;color:var(--terre);background:#fff;font-size:15px;font-weight:600;white-space:nowrap">' + admIcon('clip') + ' Joindre<input type="file" multiple style="display:none" onchange="ADM.msgAttPick(this,\'' + cid + '\',\'' + projectId + '\')"></label>';
   }
   function fmtDate(d) { if (!d) return '·'; var t = new Date(d); return isNaN(t) ? esc(d) : t.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }); }
   function fmtDT(d) { if (!d) return ''; var t = new Date(d); return isNaN(t) ? '' : t.toLocaleString('fr-FR'); }
@@ -241,8 +241,8 @@
       jpost('/api/clients/' + key + '/remind', { kind: kind, title: title, projectLabel: projectLabel }).then(function (r) { if (r.ok) toast('Relance envoyée par mail ✓'); else toast('Erreur'); });
     });
   }
-  function badge(n) { return n > 0 ? '<span style="display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:var(--glycine);color:var(--terre);font-family:var(--font-micro);font-size:10px;font-weight:700;margin-left:6px">' + n + '</span>' : ''; }
-  function badgeAlert(n) { return n > 0 ? '<span title="Révision(s) à faire" style="display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:#8a4a2c;color:#fff;font-family:var(--font-micro);font-size:10px;font-weight:700;margin-left:6px">' + n + '</span>' : ''; }
+  function badge(n) { return n > 0 ? '<span style="display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:var(--glycine);color:var(--terre);font-family:var(--font-micro);font-size:15px;font-weight:700;margin-left:6px">' + n + '</span>' : ''; }
+  function badgeAlert(n) { return n > 0 ? '<span title="Révision(s) à faire" style="display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:#8a4a2c;color:#fff;font-family:var(--font-micro);font-size:15px;font-weight:700;margin-left:6px">' + n + '</span>' : ''; }
 
   /* ── Revenir en arrière ───────────────────────────────────────────────
    * L'application n'avait aucune mémoire de navigation : ouvrir un projet,
@@ -311,8 +311,8 @@
       if (d && d.v && d.v !== window.__APPV && !_appvBannerShown) {
         _appvBannerShown = true;
         var b = document.createElement('div');
-        b.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);bottom:20px;z-index:99999;background:var(--terre,#110704);color:var(--paille,#F0E9D6);border-radius:999px;padding:12px 18px;display:flex;align-items:center;gap:14px;box-shadow:0 6px 24px rgba(28,18,5,0.25);font-family:var(--font-body,sans-serif);font-size:14px';
-        b.innerHTML = '<span>✨ Une nouvelle version est disponible.</span><button style="border:none;cursor:pointer;background:var(--paille,#F0E9D6);color:var(--terre,#110704);font-weight:700;border-radius:999px;padding:8px 16px;font-family:inherit;font-size:13px">Recharger</button>';
+        b.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);bottom:20px;z-index:99999;background:var(--terre,#110704);color:var(--paille,#F0E9D6);border-radius:999px;padding:12px 18px;display:flex;align-items:center;gap:14px;box-shadow:0 6px 24px rgba(28,18,5,0.25);font-family:var(--font-body,sans-serif);font-size:15px';
+        b.innerHTML = '<span>✨ Une nouvelle version est disponible.</span><button style="border:none;cursor:pointer;background:var(--paille,#F0E9D6);color:var(--terre,#110704);font-weight:700;border-radius:999px;padding:8px 16px;font-family:inherit;font-size:15px">Recharger</button>';
         b.querySelector('button').onclick = function () { location.reload(true); };
         document.body.appendChild(b);
       }
@@ -397,7 +397,7 @@
     else { msg = 'Connexion impossible.'; hint = 'Vérifie ta connexion, puis réessaie.'; }
     el('app').innerHTML = '<div class="center" style="max-width:460px;margin:0 auto;padding:40px 20px;text-align:center">' +
       '<p style="font-family:var(--font-display);font-style:italic;font-size:22px;color:var(--terre);margin-bottom:10px">' + esc(msg) + '</p>' +
-      (hint ? '<p class="muted" style="font-size:14px;line-height:1.6;margin-bottom:18px">' + esc(hint) + '</p>' : '') +
+      (hint ? '<p class="muted" style="font-size:15px;line-height:1.6;margin-bottom:18px">' + esc(hint) + '</p>' : '') +
       '<a class="btn btn--dark btn--sm" href="javascript:location.reload()">Réessayer</a></div>';
   }
 
@@ -486,17 +486,17 @@
       subs.push(['bilanavis', 'Bilan & avis', 0]);
       var pr = presence(c.lastSeen);
       var av = '<span style="position:relative;flex-shrink:0;width:22px;height:22px">' +
-        '<span style="width:22px;height:22px;border-radius:50%;background:rgba(242,229,194,0.16);display:inline-flex;align-items:center;justify-content:center;font-family:var(--font-display);font-style:italic;font-size:12px">' + esc((nm[0] || '?').toUpperCase()) + '</span>' +
+        '<span style="width:22px;height:22px;border-radius:50%;background:rgba(242,229,194,0.16);display:inline-flex;align-items:center;justify-content:center;font-family:var(--font-display);font-style:italic;font-size:15px">' + esc((nm[0] || '?').toUpperCase()) + '</span>' +
         (pr.online ? '<span title="En ligne" style="position:absolute;bottom:-1px;right:-1px;width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 0 2px var(--nuit,#2a1f16)"></span>' : '') +
         '</span>';
       var head = '<button class="navitem' + (isCur ? ' active' : '') + '" onclick="ADM.navClientTab(\'' + c.key + '\',null)" style="padding-right:6px" title="' + esc(pr.label) + '">' +
         av +
         '<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(nm) + '</span>' +
         (c.unread > 0 ? badge(c.unread) : '') +
-        '<span onclick="event.stopPropagation();ADM.navToggleClient(\'' + c.key + '\')" title="' + (open ? 'Replier' : 'Déplier') + '" style="margin-left:auto;padding:2px 7px;opacity:0.55;font-size:10px">' + (open ? '▾' : '▸') + '</span></button>';
+        '<span onclick="event.stopPropagation();ADM.navToggleClient(\'' + c.key + '\')" title="' + (open ? 'Replier' : 'Déplier') + '" style="margin-left:auto;padding:2px 7px;opacity:0.55;font-size:15px">' + (open ? '▾' : '▸') + '</span></button>';
       var subsHtml = open ? subs.map(function (sub) {
         var on = isCur && TAB === sub[0];
-        return '<button class="navitem" onclick="ADM.navClientTab(\'' + c.key + '\',\'' + sub[0] + '\')" style="padding:6px 12px 6px 44px;font-size:12.5px;' + (on ? 'color:var(--paille)' : 'opacity:0.72') + '">' +
+        return '<button class="navitem" onclick="ADM.navClientTab(\'' + c.key + '\',\'' + sub[0] + '\')" style="padding:6px 12px 6px 44px;font-size:15px;' + (on ? 'color:var(--paille)' : 'opacity:0.72') + '">' +
           '<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(sub[1]) + '</span>' + (sub[2] > 0 ? badge(sub[2]) : '') + '</button>';
       }).join('') : '';
       return head + subsHtml;
@@ -565,11 +565,11 @@
       var txt = (t.text || '').trim();
       return '<div style="padding:13px 15px;border:none;background:#E8F1FF">' +
         '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">' +
-          '<div style="font-weight:600;color:var(--terre);font-size:14px;min-width:0">' + esc(t.title || 'Sans titre') + '</div>' +
+          '<div style="font-weight:600;color:var(--terre);font-size:15px;min-width:0">' + esc(t.title || 'Sans titre') + '</div>' +
           (when ? '<span class="micro" style="color:var(--muted);flex-shrink:0;text-transform:none;letter-spacing:0">' + when + '</span>' : '') +
         '</div>' +
         '<div class="micro" style="color:#2c4a72;text-transform:none;letter-spacing:0;margin-top:3px;font-weight:600">💬 Nouveau commentaire de ' + esc(t.client) + '</div>' +
-        (txt ? '<div style="font-size:12.5px;color:var(--terre-600);line-height:1.5;margin-top:5px;font-style:italic;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden">« ' + esc(txt) + ' »</div>' : '') +
+        (txt ? '<div style="font-size:15px;color:var(--terre-600);line-height:1.5;margin-top:5px;font-style:italic;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden">« ' + esc(txt) + ' »</div>' : '') +
         '<div style="display:flex;gap:7px;margin-top:9px">' +
           '<button class="btn btn--dark btn--sm" onclick="ADM.notifOpen(\'' + t.key + '\',\'' + t.id + '\')">Ouvrir</button>' +
           '<button class="btn btn--outline btn--sm" onclick="ADM.notifAckComment(\'' + t.key + '\',\'' + t.id + '\')">Vu</button>' +
@@ -579,7 +579,7 @@
       var when = t.at ? new Date(t.at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) : '';
       return '<div style="padding:13px 15px;border:none;background:#f3f6f0">' +
         '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">' +
-          '<div style="font-weight:600;color:var(--terre);font-size:14px;min-width:0">' + esc(t.title || 'Sans titre') + '</div>' +
+          '<div style="font-weight:600;color:var(--terre);font-size:15px;min-width:0">' + esc(t.title || 'Sans titre') + '</div>' +
           (when ? '<span class="micro" style="color:var(--muted);flex-shrink:0;text-transform:none;letter-spacing:0">' + when + '</span>' : '') +
         '</div>' +
         '<div class="micro" style="color:#3f5a37;text-transform:none;letter-spacing:0;margin-top:3px;font-weight:600">↩ Retours reçus · à retravailler de ton côté</div>' +
@@ -592,16 +592,16 @@
     var rows = NEW_TASKS.map(function (t) {
       var when = t.createdAt ? new Date(t.createdAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) : '';
       var content = (t.content || '').trim();
-      var preview = content ? '<div style="font-size:12.5px;color:var(--terre-600);line-height:1.5;margin-top:5px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden">' + esc(content) + '</div>' : '<div style="font-size:12px;font-style:italic;color:var(--muted);margin-top:5px">Sans description.</div>';
-      var att = t.attCount ? '<span style="font-size:11px;color:var(--muted);margin-left:8px">📎 ' + t.attCount + '</span>' : '';
+      var preview = content ? '<div style="font-size:15px;color:var(--terre-600);line-height:1.5;margin-top:5px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden">' + esc(content) + '</div>' : '<div style="font-size:15px;font-style:italic;color:var(--muted);margin-top:5px">Sans description.</div>';
+      var att = t.attCount ? '<span style="font-size:15px;color:var(--muted);margin-left:8px">📎 ' + t.attCount + '</span>' : '';
       var attDl = (Array.isArray(t.attachments) && t.attachments.length)
         ? '<div style="margin-top:7px;display:flex;flex-wrap:wrap;gap:6px">' + t.attachments.map(function (a) {
-            return '<a href="/api/clients/' + t.key + '/files/' + encodeURIComponent(a.key) + '/download" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;font-size:11.5px;padding:4px 9px;border-radius:8px;border:none;color:var(--glycine-900);text-decoration:none">📎 ' + esc(a.name || 'fichier') + '</a>';
+            return '<a href="/api/clients/' + t.key + '/files/' + encodeURIComponent(a.key) + '/download" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;font-size:15px;padding:4px 9px;border-radius:8px;border:none;color:var(--glycine-900);text-decoration:none">📎 ' + esc(a.name || 'fichier') + '</a>';
           }).join('') + '</div>'
         : '';
       return '<div style="padding:13px 15px;border:none">' +
         '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">' +
-          '<div style="font-weight:600;color:var(--terre);font-size:14px;min-width:0">' + (t.kind === 'ticket' ? '<span title="Ticket de maintenance">🎫 </span>' : '') + esc(t.title || 'Sans titre') + att + '</div>' +
+          '<div style="font-weight:600;color:var(--terre);font-size:15px;min-width:0">' + (t.kind === 'ticket' ? '<span title="Ticket de maintenance">🎫 </span>' : '') + esc(t.title || 'Sans titre') + att + '</div>' +
           (when ? '<span class="micro" style="color:var(--muted);flex-shrink:0;text-transform:none;letter-spacing:0">' + when + '</span>' : '') +
         '</div>' +
         '<div class="micro" style="color:var(--glycine-900);text-transform:none;letter-spacing:0;margin-top:2px">' + esc(t.client) + '</div>' +
@@ -640,9 +640,9 @@
     if (!run) return '';
     var sec = run.base + (Date.now() - run.startedAt) / 1000;
     return '<div style="margin:14px 14px 4px;padding:13px 15px;background:rgba(242,229,194,0.12);border-radius:13px">' +
-      '<div style="font-size:10px;letter-spacing:0.09em;text-transform:uppercase;color:var(--paille);opacity:0.65;margin-bottom:5px">Chrono en cours</div>' +
+      '<div style="font-size:15px;letter-spacing:0.09em;text-transform:uppercase;color:var(--paille);opacity:0.65;margin-bottom:5px">Chrono en cours</div>' +
       '<div id="nav-timer-clock" style="font-family:var(--font-micro);font-variant-numeric:tabular-nums;font-weight:700;font-size:23px;color:var(--paille);letter-spacing:0.02em">' + mtClock(sec) + '</div>' +
-      '<div style="font-size:12px;color:var(--paille);opacity:0.85;margin:3px 0 10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(run.title || 'tâche') + '</div>' +
+      '<div style="font-size:15px;color:var(--paille);opacity:0.85;margin:3px 0 10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(run.title || 'tâche') + '</div>' +
       '<button class="btn btn--outline btn--block btn--sm" style="color:var(--paille);border-color:rgba(242,229,194,0.3)" onclick="ADM.navTimerPause()">⏸ Mettre en pause</button>' +
     '</div>';
   }
@@ -902,7 +902,7 @@
         '<td style="text-align:right;font-variant-numeric:tabular-nums"><b>' + m.ops.r + '</b> lecture' + (m.ops.r > 1 ? 's' : '') + '</td>' +
         '<td style="text-align:right;font-variant-numeric:tabular-nums;color:' + (m.ops.w ? '#8a4a2c' : 'var(--muted)') + '">' + m.ops.w + ' écriture' + (m.ops.w > 1 ? 's' : '') + '</td></tr>';
     }
-    var tbl = mesures ? '<table style="width:100%;border-collapse:collapse;font-size:13.5px">' +
+    var tbl = mesures ? '<table style="width:100%;border-collapse:collapse;font-size:15px">' +
       '<thead><tr><th style="text-align:left;padding-bottom:8px" class="micro">Écran</th><th class="micro" style="text-align:right">Lectures</th><th class="micro" style="text-align:right">Écritures</th></tr></thead>' +
       '<tbody>' + mesures.map(ligne).join('') + '</tbody></table>' : '';
     body.innerHTML =
@@ -977,7 +977,7 @@
           '<input class="inp" value="' + esc(r.label || '') + '" placeholder="Titre (ex. Relance douce, Accusé de réception…)" style="flex:1;font-weight:600" onchange="ADM.qrSet(\'' + r.id + '\',\'label\',this.value)">' +
           '<button class="pbtn" style="color:#8d2b21" onclick="ADM.qrDel(\'' + r.id + '\')">Suppr.</button>' +
         '</div>' +
-        '<textarea class="inp" placeholder="Le texte du message…" style="width:100%;box-sizing:border-box;min-height:80px;resize:vertical;font-size:14px;line-height:1.5" onchange="ADM.qrSet(\'' + r.id + '\',\'text\',this.value)">' + esc(r.text || '') + '</textarea>' +
+        '<textarea class="inp" placeholder="Le texte du message…" style="width:100%;box-sizing:border-box;min-height:80px;resize:vertical;font-size:15px;line-height:1.5" onchange="ADM.qrSet(\'' + r.id + '\',\'text\',this.value)">' + esc(r.text || '') + '</textarea>' +
       '</div>';
     }).join('');
     b.innerHTML = '<div class="card infocard" style="background:var(--card)"><h3>Réponses rapides</h3>' +
@@ -999,7 +999,7 @@
         '<div style="max-height:340px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;margin:8px 0">' +
           QREPLIES.map(function (r, i) {
             return '<button class="qr-pick" data-i="' + i + '" style="text-align:left;padding:11px 13px;border:none;border-radius:10px;background:var(--card);cursor:pointer">' +
-              '<div style="font-weight:600;font-size:13.5px;color:var(--terre)">' + esc(r.label || '(sans titre)') + '</div>' +
+              '<div style="font-weight:600;font-size:15px;color:var(--terre)">' + esc(r.label || '(sans titre)') + '</div>' +
               '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px">' + esc((r.text || '').slice(0, 90)) + '</div>' +
             '</button>';
           }).join('') +
@@ -1283,7 +1283,7 @@
   }
   function inboxPreview(content) {
     var c = (content || '').trim();
-    return c ? '<div style="font-size:12.5px;color:var(--terre-600);line-height:1.5;margin-top:5px;white-space:pre-wrap;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden">' + mtLinkify(c) + '</div>' : '';
+    return c ? '<div style="font-size:15px;color:var(--terre-600);line-height:1.5;margin-top:5px;white-space:pre-wrap;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden">' + mtLinkify(c) + '</div>' : '';
   }
   function inboxAtts(x) {
     // Dernier fichier joint en premier (les fichiers récents sont ajoutés en fin de liste).
@@ -1295,7 +1295,7 @@
       if (isImg) {
         return '<a href="' + url + '" target="_blank" rel="noopener" title="' + esc(a.name || 'image') + '" style="display:block;border-radius:10px;overflow:hidden;border:none;line-height:0"><img src="' + url + '" alt="' + esc(a.name || '') + '" loading="lazy" style="max-height:140px;max-width:220px;display:block;object-fit:cover"></a>';
       }
-      return '<a href="' + url + '" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;font-size:11.5px;padding:5px 10px;border-radius:8px;border:none;color:var(--glycine-900);text-decoration:none">📎 ' + esc(a.name || 'fichier') + '</a>';
+      return '<a href="' + url + '" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;font-size:15px;padding:5px 10px;border-radius:8px;border:none;color:var(--glycine-900);text-decoration:none">📎 ' + esc(a.name || 'fichier') + '</a>';
     }).join('') + '</div>';
   }
   function inboxCard(it) {
@@ -1306,21 +1306,21 @@
     var seenBtn = '<button class="btn btn--outline btn--sm" onclick="ADM.inboxSeen(' + seenArgs + ')">Vu</button>';
     var body = '';
     if (it.type === 'qnr') {
-      body = '<div style="font-size:14px;font-weight:600;color:var(--terre);margin-top:6px">' + esc(x.name || 'Questionnaire') + '</div>';
+      body = '<div style="font-size:15px;font-weight:600;color:var(--terre);margin-top:6px">' + esc(x.name || 'Questionnaire') + '</div>';
     } else if (it.type === 'task' || it.type === 'ticket') {
-      body = '<div style="font-size:14.5px;font-weight:600;color:var(--terre);margin-top:5px">' + esc(x.title || 'Sans titre') + '</div>' + inboxPreview(x.content) + inboxAtts(x);
+      body = '<div style="font-size:15px;font-weight:600;color:var(--terre);margin-top:5px">' + esc(x.title || 'Sans titre') + '</div>' + inboxPreview(x.content) + inboxAtts(x);
     } else if (it.type === 'rework') {
-      body = '<div style="font-size:14.5px;font-weight:600;color:var(--terre);margin-top:5px">' + esc(x.title || 'Sans titre') + '</div><div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:4px">La cliente a laissé ses retours · à retravailler de ton côté.</div>' + inboxAtts(x);
+      body = '<div style="font-size:15px;font-weight:600;color:var(--terre);margin-top:5px">' + esc(x.title || 'Sans titre') + '</div><div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:4px">La cliente a laissé ses retours · à retravailler de ton côté.</div>' + inboxAtts(x);
     } else if (it.type === 'comment') {
-      body = '<div style="font-size:14.5px;font-weight:600;color:var(--terre);margin-top:5px">' + esc(x.title || 'Sans titre') + '</div>' + (x.text ? '<div style="font-size:12.5px;color:var(--terre-600);line-height:1.5;margin-top:5px;font-style:italic">« ' + esc(x.text) + ' »</div>' : '') + inboxAtts(x);
+      body = '<div style="font-size:15px;font-weight:600;color:var(--terre);margin-top:5px">' + esc(x.title || 'Sans titre') + '</div>' + (x.text ? '<div style="font-size:15px;color:var(--terre-600);line-height:1.5;margin-top:5px;font-style:italic">« ' + esc(x.text) + ' »</div>' : '') + inboxAtts(x);
     } else if (it.type === 'validated') {
-      body = '<div style="font-size:14.5px;font-weight:600;color:var(--terre);margin-top:5px">' + esc(x.name || 'Livrable') + '</div>' + (x.taskTitle ? '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:3px">Tâche : ' + esc(x.taskTitle) + '</div>' : '');
+      body = '<div style="font-size:15px;font-weight:600;color:var(--terre);margin-top:5px">' + esc(x.name || 'Livrable') + '</div>' + (x.taskTitle ? '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:3px">Tâche : ' + esc(x.taskTitle) + '</div>' : '');
     } else if (it.type === 'revision') {
       var rlink = x.clientLink ? '<div style="margin-top:8px"><a class="btn btn--outline btn--sm" href="' + esc(/^https?:\/\//i.test(x.clientLink) ? x.clientLink : 'https://' + x.clientLink) + '" target="_blank" rel="noopener">🔗 Lien de la cliente</a></div>' : '';
-      var rwish = x.wishDate ? '<div style="margin-top:7px;font-family:var(--font-micro);font-size:12px;font-weight:700;color:#6a4a0b;background:#fbf5e6;border:none;border-radius:8px;padding:6px 10px;display:inline-block">📅 Nouvelle version souhaitée pour le ' + esc((x.wishDate || '').split('-').reverse().join('/')) + '</div>' : '';
-      body = '<div style="font-size:14.5px;font-weight:600;color:var(--terre);margin-top:5px">' + esc(x.name || 'Livrable') + '</div>' +
+      var rwish = x.wishDate ? '<div style="margin-top:7px;font-family:var(--font-micro);font-size:15px;font-weight:700;color:#6a4a0b;background:#fbf5e6;border:none;border-radius:8px;padding:6px 10px;display:inline-block">📅 Nouvelle version souhaitée pour le ' + esc((x.wishDate || '').split('-').reverse().join('/')) + '</div>' : '';
+      body = '<div style="font-size:15px;font-weight:600;color:var(--terre);margin-top:5px">' + esc(x.name || 'Livrable') + '</div>' +
         (x.projectLabel ? '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:3px">' + esc(x.projectLabel) + '</div>' : '') +
-        (x.comment ? '<div style="font-size:13px;color:#7a2e1e;line-height:1.5;margin-top:7px;white-space:pre-wrap;background:#fbeae5;border:none;border-radius:9px;padding:9px 12px">« ' + esc(x.comment) + ' »</div>' : '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:4px">La cliente a demandé une révision.</div>') +
+        (x.comment ? '<div style="font-size:15px;color:#7a2e1e;line-height:1.5;margin-top:7px;white-space:pre-wrap;background:#fbeae5;border:none;border-radius:9px;padding:9px 12px">« ' + esc(x.comment) + ' »</div>' : '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:4px">La cliente a demandé une révision.</div>') +
         rwish + inboxAtts(x) + rlink;
     }
     if (it.type === 'revision') {
@@ -1389,20 +1389,20 @@
     var bf = taskBrief(x);
     var urg = x.urgency === 'haute' || x.urgency === 'urgent';
     var isProject = x.demandeType === 'project';
-    var projBadge = isProject ? ' <span style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#7a3a0a;background:#fdf3e8;padding:3px 8px;border-radius:999px;vertical-align:middle">🟠 Nouveau projet · devis</span>' : '';
-    var urgBadge = urg ? ' <span style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#8a4a2c;background:#F0E2D6;padding:3px 8px;border-radius:999px;vertical-align:middle">Urgent</span>' : '';
+    var projBadge = isProject ? ' <span style="font-family:var(--font-micro);font-size:15px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#7a3a0a;background:#fdf3e8;padding:3px 8px;border-radius:999px;vertical-align:middle">🟠 Nouveau projet · devis</span>' : '';
+    var urgBadge = urg ? ' <span style="font-family:var(--font-micro);font-size:15px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#8a4a2c;background:#F0E2D6;padding:3px 8px;border-radius:999px;vertical-align:middle">Urgent</span>' : '';
     var forfaitTxt = x.forfaitConfigured ? (x.forfaitRemaining <= 0 ? 'forfait épuisé' : 'reste ' + x.forfaitRemaining + ' h') : 'forfait non défini';
     var forfaitCol = x.forfaitConfigured && x.forfaitRemaining <= 0 ? '#8a4a2c' : (x.forfaitConfigured && x.forfaitRemaining <= 2 ? 'var(--orange)' : 'var(--muted)');
     var link = x.clientLink ? '<a class="btn btn--outline btn--sm" href="' + esc(/^https?:\/\//i.test(x.clientLink) ? x.clientLink : 'https://' + x.clientLink) + '" target="_blank" rel="noopener">🔗 Lien</a>' : '';
     var body =
       '<div style="font-size:16px;font-weight:650;color:var(--terre);margin-top:5px">' + esc(x.title || 'Sans titre') + urgBadge + projBadge +
-        '<span style="float:right;font-family:var(--font-micro);font-size:11px;font-weight:600;color:' + forfaitCol + '">' + esc(forfaitTxt) + '</span>' +
+        '<span style="float:right;font-family:var(--font-micro);font-size:15px;font-weight:600;color:' + forfaitCol + '">' + esc(forfaitTxt) + '</span>' +
       '</div>' +
       (bf.blocks
         ? ptBlocksHtml(x, x.key, 'La demande du client')
-        : (bf.text ? '<div style="font-size:14px;color:var(--terre-600);line-height:1.5;margin-top:10px;white-space:pre-wrap">' + mtLinkify(bf.text) + '</div>' : '')) +
+        : (bf.text ? '<div style="font-size:15px;color:var(--terre-600);line-height:1.5;margin-top:10px;white-space:pre-wrap">' + mtLinkify(bf.text) + '</div>' : '')) +
       briefTableHtml(x.table) +
-      '<div class="row" style="gap:14px;flex-wrap:wrap;margin-top:12px;font-family:var(--font-micro);font-size:11px;color:var(--muted)">' +
+      '<div class="row" style="gap:14px;flex-wrap:wrap;margin-top:12px;font-family:var(--font-micro);font-size:15px;color:var(--muted)">' +
         (x.dueDate ? '<span>📅 Souhaité : <strong style="color:var(--terre)">' + esc((x.dueDate || '').split('-').reverse().join('/')) + '</strong></span>' : '') +
         '<span>📨 ' + x.monthCount + ' demande' + (x.monthCount > 1 ? 's' : '') + ' ce mois</span>' +
         (x.avgMinutes ? '<span>⏱ Temps moyen : ' + fmtMin(x.avgMinutes) + '</span>' : '') +
@@ -1419,6 +1419,34 @@
   }
   // Panneau latéral droit : ouvre le détail d'un élément d'Inbox sans quitter
   // la liste (au lieu de rediriger vers la fiche complète).
+  /* Un tiroir à droite, partagé. L'inbox en avait un, les questionnaires un
+   * autre : celui-ci est écrit une fois et se remplit de ce qu'on lui donne.
+   * Le fond cliquable et la touche Échap le ferment, comme partout. */
+  function stbTiroirFermer() {
+    var b = el('stb-tiroir-bk'); if (b) b.remove();
+    var d = el('stb-tiroir'); if (d) d.remove();
+  }
+  function stbTiroir(titre, html, onFermer) {
+    var d = el('stb-tiroir');
+    if (!d) {
+      var bk = document.createElement('div');
+      bk.id = 'stb-tiroir-bk'; bk.className = 'stbtr-bk';
+      bk.onclick = function () { stbTiroirFermer(); if (onFermer) onFermer(); };
+      document.body.appendChild(bk);
+      d = document.createElement('div');
+      d.id = 'stb-tiroir'; d.className = 'stbtr';
+      document.body.appendChild(d);
+      document.addEventListener('keydown', function esc2(e) {
+        if (e.key !== 'Escape') return;
+        document.removeEventListener('keydown', esc2);
+        stbTiroirFermer(); if (onFermer) onFermer();
+      });
+    }
+    d.innerHTML = '<div class="stbtr-h"><div class="stbtr-t">' + esc(titre) + '</div>' +
+      '<button class="btn btn--outline btn--sm" onclick="ADM.tiroirFermer()">Fermer</button></div>' +
+      '<div class="stbtr-b">' + html + '</div>';
+    return d;
+  }
   function inboxDrawerClose() { var b = el('inbox-drawer-bk'); if (b) b.remove(); var d = el('inbox-drawer'); if (d) d.remove(); }
   function inboxDrawer(type, key, id) {
     var it = inboxItems().filter(function (i) { return i.type === type && i.x.key === key && String(i.x.id) === String(id); })[0];
@@ -1461,8 +1489,8 @@
       '</div>' +
       '<div style="padding:6px 22px 90px">' +
         '<div style="font-size:18px;font-weight:650;color:var(--terre);line-height:1.3;margin-bottom:12px">' + esc(title) + '</div>' +
-        (contentTxt ? '<div style="font-size:14.5px;color:var(--terre-600);line-height:1.6;white-space:pre-wrap">' + mtLinkify(contentTxt) + '</div>' : '') +
-        (meta.length ? '<div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:14px;font-family:var(--font-micro);font-size:12px;color:var(--muted)">' + meta.map(function (m) { return '<span>' + m + '</span>'; }).join('') + '</div>' : '') +
+        (contentTxt ? '<div style="font-size:15px;color:var(--terre-600);line-height:1.6;white-space:pre-wrap">' + mtLinkify(contentTxt) + '</div>' : '') +
+        (meta.length ? '<div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:14px;font-family:var(--font-micro);font-size:15px;color:var(--muted)">' + meta.map(function (m) { return '<span>' + m + '</span>'; }).join('') + '</div>' : '') +
         inboxAtts(x) +
         (link ? '<div style="margin-top:14px">' + link + '</div>' : '') +
         '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:24px">' + acts + '</div>' +
@@ -1774,14 +1802,14 @@
     if (!done.length) return '';
     done.sort(function (a, b) { return String(b.completedAt || '').localeCompare(String(a.completedAt || '')); });
     var rows = done.slice(0, 40).map(function (t) {
-      return '<div style="display:flex;align-items:center;gap:10px;padding:8px 16px;font-size:13.5px;color:var(--muted)">' +
+      return '<div style="display:flex;align-items:center;gap:10px;padding:8px 16px;font-size:15px;color:var(--muted)">' +
         '<span style="color:#456039">✓</span><span style="flex:1;min-width:0">' + esc(t.title || '') + '</span>' +
         (t.completedAt ? '<span class="micro" style="text-transform:none;letter-spacing:0">' + esc(fmtDate(t.completedAt)) + '</span>' : '') +
         '<button class="pbtn" onclick="ADM.myTaskStatus(\'' + t.id + '\',\'todo\')">Rouvrir</button>' +
         '<button class="pbtn" onclick="ADM.myTaskArchive(\'' + t.id + '\',true)">Archiver</button>' +
       '</div>';
     }).join('');
-    return '<details style="margin-top:22px"><summary style="cursor:pointer;font-family:var(--font-micro);font-size:11px;letter-spacing:0.07em;text-transform:uppercase;color:var(--muted);padding:4px 0">Terminées · ' + done.length + '</summary>' +
+    return '<details style="margin-top:22px"><summary style="cursor:pointer;font-family:var(--font-micro);font-size:15px;letter-spacing:0.07em;text-transform:uppercase;color:var(--muted);padding:4px 0">Terminées · ' + done.length + '</summary>' +
       '<div class="card" style="padding:4px 0;margin-top:8px">' + rows + '</div></details>';
   }
   /* ── Calendrier des échéances ─────────────────────────────────────────
@@ -2002,7 +2030,7 @@
       : (bf.text ? mtLinkify(bf.text) : '');
     var briefTbl = bf.table ? '<div style="white-space:normal">' + briefTableHtml(x.table) + '</div>' : '';
     var brief = (briefBody + briefTbl) || '<span style="color:var(--muted)">Pas de brief renseigné pour cette tâche.</span>';
-    var link = x.clientLink ? '<div style="margin-top:12px"><a href="' + esc(/^https?:\/\//i.test(x.clientLink) ? x.clientLink : 'https://' + x.clientLink) + '" target="_blank" rel="noopener" style="font-family:var(--font-micro);font-size:12px;color:var(--terre-600)">🔗 Lien déposé par la cliente</a></div>' : '';
+    var link = x.clientLink ? '<div style="margin-top:12px"><a href="' + esc(/^https?:\/\//i.test(x.clientLink) ? x.clientLink : 'https://' + x.clientLink) + '" target="_blank" rel="noopener" style="font-family:var(--font-micro);font-size:15px;color:var(--terre-600)">🔗 Lien déposé par la cliente</a></div>' : '';
     // Lien de révision : celui que TU envoies à la cliente. Il était stocké et
     // transmis, mais affiché nulle part : une fois envoyé, impossible de le
     // retrouver depuis la tâche. Seul le lien reçu DE la cliente l'était.
@@ -2019,7 +2047,7 @@
           '<a href="' + esc(rlHref) + '" target="_blank" rel="noopener" class="pbtn">Ouvrir le lien</a>' +
           '<button class="pbtn" onclick="ADM.atCopyLink(\'' + esc(rl.replace(/'/g, "\\'")) + '\')">Copier</button>' +
           '<button class="pbtn pbtn--ok" title="Tu as déposé une nouvelle version au même endroit : prévenir la cliente" onclick="ADM.atReviewUpdated(\'' + key + '\',\'' + x.id + '\')">↻ J\'ai mis à jour</button>' +
-          '<span style="flex:1;min-width:0;font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(rl) + '</span>' +
+          '<span style="flex:1;min-width:0;font-size:15px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(rl) + '</span>' +
         '</div></div>' : '';
     var atts = (x.attachments || []).filter(function (a) { return a.key; });
     var files = atts.length ? '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">' + atts.map(function (a) { return '<a class="pbtn" href="/api/clients/' + key + '/files/' + encodeURIComponent(a.key) + '/download">📎 ' + esc(a.name || 'fichier') + '</a>'; }).join('') + '</div>' : '';
@@ -2054,7 +2082,7 @@
     }
     var rowsHtml = ents.map(function (e) {
       return '<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-top:1px solid var(--bone-d)">' +
-        '<span style="flex:1;min-width:0;font-size:13.5px;color:var(--terre)">' + esc(mLbl(e.month)) + '</span>' +
+        '<span style="flex:1;min-width:0;font-size:15px;color:var(--terre)">' + esc(mLbl(e.month)) + '</span>' +
         (e.at ? '<span class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted)">saisi le ' + esc(fmtDate(e.at)) + '</span>' : '<span class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted)">chrono</span>') +
         '<b style="font-variant-numeric:tabular-nums;min-width:56px;text-align:right">' + hm2(e.minutes) + '</b>' +
         (e.id ? '<button class="pbtn" title="Retirer cette saisie" onclick="ADM.atDelEntry(\'' + key + '\',\'' + x.id + '\',\'' + esc(e.id) + '\')">✕</button>' : '') +
@@ -2086,7 +2114,7 @@
         '<div>' + atDueLbl(x) + '</div></div>' +
       '<div class="at-dr__body">' +
         '<p class="at-dr__lab">Le brief</p><div class="at-dr__brief">' + brief + link + files + rev + '</div>' +
-        '<p class="at-dr__lab" style="margin-top:24px">Ma note <span style="font-family:var(--font-body);text-transform:none;letter-spacing:0;font-size:11.5px;color:var(--muted)">— pour toi seule, ta cliente ne la voit pas</span></p>' +
+        '<p class="at-dr__lab" style="margin-top:24px">Ma note <span style="font-family:var(--font-body);text-transform:none;letter-spacing:0;font-size:15px;color:var(--muted)">— pour toi seule, ta cliente ne la voit pas</span></p>' +
         '<div id="at-note-' + x.id + '">' + atNoteInner(x) + '</div>' +
         timeBlock +
         '<p class="at-dr__lab" style="margin-top:24px">Échange avec la cliente</p><div id="at-dr-cmts"><div class="micro" style="color:var(--muted)">Chargement…</div></div>' +
@@ -2116,8 +2144,8 @@
    * client (le paquet envoyé là-bas en est expurgé côté serveur). */
   function atNoteInner(x) {
     var n = (x.studioNote || '').trim();
-    var lien = '<button onclick="ADM.atEditNote(\'' + x.key + '\',\'' + x.id + '\')" style="background:none;border:none;color:var(--muted);font-size:11.5px;cursor:pointer;padding:3px 0;text-decoration:underline">' + (n ? 'Modifier' : '+ Ajouter une note') + '</button>';
-    return (n ? '<div style="font-size:13.5px;color:#5e4a2e;white-space:pre-wrap;line-height:1.55;background:var(--card);border-radius:11px;padding:11px 14px;margin-bottom:4px">' + mtLinkify(n) + '</div>' : '') + lien;
+    var lien = '<button onclick="ADM.atEditNote(\'' + x.key + '\',\'' + x.id + '\')" style="background:none;border:none;color:var(--muted);font-size:15px;cursor:pointer;padding:3px 0;text-decoration:underline">' + (n ? 'Modifier' : '+ Ajouter une note') + '</button>';
+    return (n ? '<div style="font-size:15px;color:#5e4a2e;white-space:pre-wrap;line-height:1.55;background:var(--card);border-radius:11px;padding:11px 14px;margin-bottom:4px">' + mtLinkify(n) + '</div>' : '') + lien;
   }
   function atEditNote(key, id) {
     var x = atFind(key, id); if (!x) return;
@@ -2262,7 +2290,7 @@
         var l = (x.clientLink || '').trim();
         if (!l) return '';
         var u = /^https?:\/\//i.test(l) ? l : 'https://' + l;
-        return '<div style="margin-top:4px;font-size:12.5px;display:flex;align-items:center;gap:6px"><span style="flex-shrink:0;opacity:0.6">🔗</span><a href="' + esc(u) + '" target="_blank" rel="noopener" style="color:' + (dark ? 'rgba(242,229,194,0.95)' : 'var(--glycine-900)') + ';overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="Lien déposé par le client">' + esc(l.replace(/^https?:\/\//i, '').slice(0, 60)) + '</a></div>';
+        return '<div style="margin-top:4px;font-size:15px;display:flex;align-items:center;gap:6px"><span style="flex-shrink:0;opacity:0.6">🔗</span><a href="' + esc(u) + '" target="_blank" rel="noopener" style="color:' + (dark ? 'rgba(242,229,194,0.95)' : 'var(--glycine-900)') + ';overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="Lien déposé par le client">' + esc(l.replace(/^https?:\/\//i, '').slice(0, 60)) + '</a></div>';
       }
       function prioBrief(x, dark) {
         var bf = taskBrief(x);
@@ -2281,21 +2309,21 @@
         var body = (hasBlocks || hasTable)
           ? '<div style="background:var(--card);border:none;border-radius:12px;padding:14px 18px;margin-top:8px;width:100%;box-sizing:border-box;color:var(--terre)">' + ptBlocksHtml(x, x.key, 'Le brief du client') + briefTableHtml(x.table) + '</div>'
           : (c
-            ? '<div style="white-space:pre-wrap;font-size:14px;line-height:1.6;color:var(--terre);background:var(--card);border:none;border-radius:12px;padding:14px 18px;margin-top:8px;width:100%;box-sizing:border-box">' + mtLinkify(c) + '</div>'
+            ? '<div style="white-space:pre-wrap;font-size:15px;line-height:1.6;color:var(--terre);background:var(--card);border:none;border-radius:12px;padding:14px 18px;margin-top:8px;width:100%;box-sizing:border-box">' + mtLinkify(c) + '</div>'
             : '');
         var att = atts.length
           ? '<div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px">' + atts.map(function (a) {
-              return '<a href="/api/clients/' + x.key + '/files/' + encodeURIComponent(a.key) + '/download" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:5px 10px;border-radius:8px;border:1px solid ' + (dark ? 'rgba(242,229,194,0.25)' : 'var(--bone-d)') + ';color:' + (dark ? 'rgba(242,229,194,0.9)' : 'var(--glycine-900)') + ';text-decoration:none">📎 ' + esc(a.name || 'fichier') + '</a>';
+              return '<a href="/api/clients/' + x.key + '/files/' + encodeURIComponent(a.key) + '/download" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;font-size:15px;padding:5px 10px;border-radius:8px;border:1px solid ' + (dark ? 'rgba(242,229,194,0.25)' : 'var(--bone-d)') + ';color:' + (dark ? 'rgba(242,229,194,0.9)' : 'var(--glycine-900)') + ';text-decoration:none">📎 ' + esc(a.name || 'fichier') + '</a>';
             }).join('') + '</div>'
-          : (x.attCount ? '<div style="margin-top:7px;font-size:12px;color:' + mutCol + '">📎 ' + x.attCount + ' fichier' + (x.attCount > 1 ? 's' : '') + ' joint' + (x.attCount > 1 ? 's' : '') + '</div>' : '');
+          : (x.attCount ? '<div style="margin-top:7px;font-size:15px;color:' + mutCol + '">📎 ' + x.attCount + ' fichier' + (x.attCount > 1 ? 's' : '') + ' joint' + (x.attCount > 1 ? 's' : '') + '</div>' : '');
         var link = hasLink ? prioClientLink(x, dark) : '';
         // Aperçu toujours visible du texte, pour voir la demande sans cliquer.
         var preview = c
-          ? '<div style="font-size:13px;color:' + txtCol + ';margin-top:6px;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">' + esc(c.slice(0, 240)) + (c.length > 240 ? '…' : '') + '</div>'
+          ? '<div style="font-size:15px;color:' + txtCol + ';margin-top:6px;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">' + esc(c.slice(0, 240)) + (c.length > 240 ? '…' : '') + '</div>'
           : '';
         var label = (hasBlocks || hasTable) ? 'Voir le brief du client' : (c ? 'Voir toute la demande' : (hasAtt ? 'Voir les pièces jointes' : 'Voir le lien'));
         // Bouton bien visible (pastille) + contenu déplié, pleine largeur.
-        return '<div style="width:100%">' + preview + '<details style="margin-top:7px"><summary style="cursor:pointer;list-style:none;display:inline-flex;align-items:center;gap:6px;font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:0.02em;color:' + sumCol + ';background:' + sumBg + ';border-radius:999px;padding:5px 12px">📋 ' + label + '</summary>' + body + att + link + '</details></div>';
+        return '<div style="width:100%">' + preview + '<details style="margin-top:7px"><summary style="cursor:pointer;list-style:none;display:inline-flex;align-items:center;gap:6px;font-family:var(--font-micro);font-size:15px;font-weight:700;letter-spacing:0.02em;color:' + sumCol + ';background:' + sumBg + ';border-radius:999px;padding:5px 12px">📋 ' + label + '</summary>' + body + att + link + '</details></div>';
       }
       // Chrono par tâche partenaire, utilisable directement depuis Priorités
       // (Démarrer/Pause), avec le temps déjà passé. Le temps est aussi visible
@@ -2306,7 +2334,7 @@
         if (x.kind === 'ticket' || x.project === 'maintenance') {
           var tsec = x.timeSpentSeconds || (x.timeSpentMinutes || 0) * 60;
           var tcol = dark ? 'rgba(242,229,194,0.85)' : 'var(--terre)';
-          var tclock = '<span title="Temps passé sur ce ticket" style="font-family:var(--font-micro);font-variant-numeric:tabular-nums;font-weight:700;font-size:13px;color:' + tcol + ';min-width:54px;text-align:right">' + mtClock(tsec) + '</span>';
+          var tclock = '<span title="Temps passé sur ce ticket" style="font-family:var(--font-micro);font-variant-numeric:tabular-nums;font-weight:700;font-size:15px;color:' + tcol + ';min-width:54px;text-align:right">' + mtClock(tsec) + '</span>';
           var tedit = '<button class="pbtn" title="Saisir le temps passé sur ce ticket" onclick="ADM.prioSetTime(\'' + x.key + '\',\'' + x.id + '\',' + tsec + ',\'ticket\',\'' + (x.project || 'maintenance') + '\')">✎</button>';
           return '<span style="display:inline-flex;align-items:center;gap:5px">' + tclock + tedit + '</span>';
         }
@@ -2314,7 +2342,7 @@
         var run = PT_TIMER && PT_TIMER.id === x.id;
         var sec = run ? (PT_TIMER.base + (Date.now() - PT_TIMER.startedAt) / 1000) : (x.timeSpentSeconds || 0);
         var col = run ? 'var(--green)' : (dark ? 'rgba(242,229,194,0.85)' : 'var(--terre)');
-        var clock = '<span id="pt-timer-' + x.id + '" title="Temps passé sur cette tâche" style="font-family:var(--font-micro);font-variant-numeric:tabular-nums;font-weight:700;font-size:13px;color:' + col + ';min-width:54px;text-align:right">' + mtClock(sec) + '</span>';
+        var clock = '<span id="pt-timer-' + x.id + '" title="Temps passé sur cette tâche" style="font-family:var(--font-micro);font-variant-numeric:tabular-nums;font-weight:700;font-size:15px;color:' + col + ';min-width:54px;text-align:right">' + mtClock(sec) + '</span>';
         var btn = run
           ? '<button class="pbtn" style="color:var(--orange)" title="Mettre le chrono en pause" onclick="ADM.ptPause(\'' + x.id + '\')">⏸</button>'
           : '<button class="pbtn" title="Démarrer le chrono" onclick="ADM.ptStart(\'' + x.id + '\',\'' + x.key + '\')">▶</button>';
@@ -2327,8 +2355,8 @@
         var brief = prioBrief(x, false);
         return '<div class="prow"' + (brief ? ' style="flex-wrap:wrap"' : '') + '>' +
           '<div class="prow__date"><strong>' + fmtDate(x.dueDate) + '</strong><span style="color:' + whenCol(x._d) + '">' + whenLabel(x._d) + '</span></div>' +
-          '<div class="prow__main"><div class="prow__el">' + esc(x.title) + (x.needsRework ? ' <span style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#3f5a37;background:#e3ecdd;padding:3px 8px;border-radius:999px;vertical-align:middle">↩ Retours reçus · à retravailler</span>' : '') +
-            (x.kind === 'ticket' ? ' <span style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#6a4a0b;background:#fdf3e8;padding:3px 8px;border-radius:999px;vertical-align:middle">🎫 Ticket</span>' + (x.priority === 'haute' ? ' <span style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#8a4a2c;background:#F0E2D6;padding:3px 8px;border-radius:999px;vertical-align:middle">Urgent</span>' : '') + (x.status === 'in_progress' ? ' <span style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#305277;background:#e3edfb;padding:3px 8px;border-radius:999px;vertical-align:middle">En cours</span>' : '') : '') + '</div>' +
+          '<div class="prow__main"><div class="prow__el">' + esc(x.title) + (x.needsRework ? ' <span style="font-family:var(--font-micro);font-size:15px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#3f5a37;background:#e3ecdd;padding:3px 8px;border-radius:999px;vertical-align:middle">↩ Retours reçus · à retravailler</span>' : '') +
+            (x.kind === 'ticket' ? ' <span style="font-family:var(--font-micro);font-size:15px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#6a4a0b;background:#fdf3e8;padding:3px 8px;border-radius:999px;vertical-align:middle">🎫 Ticket</span>' + (x.priority === 'haute' ? ' <span style="font-family:var(--font-micro);font-size:15px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#8a4a2c;background:#F0E2D6;padding:3px 8px;border-radius:999px;vertical-align:middle">Urgent</span>' : '') + (x.status === 'in_progress' ? ' <span style="font-family:var(--font-micro);font-size:15px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#305277;background:#e3edfb;padding:3px 8px;border-radius:999px;vertical-align:middle">En cours</span>' : '') : '') + '</div>' +
             '<div class="prow__meta"><a href="javascript:ADM.openClient(\'' + x.key + '\')">' + esc(x.client) + '</a> · ' + esc(x.projectLabel) + ' · ' + esc(x.kind) + '</div>' + prioClientLink(x, false) + '</div>' +
           (x.id ? '<div class="prow__act">' + prioTimer(x, false) +
             (x.kind === 'ticket' && x.status === 'open' ? '<button class="pbtn" title="Passer le ticket en cours" onclick="ADM.prioTicketStart(\'' + x.key + '\',\'' + x.id + '\')">En cours</button>' : '') +
@@ -2373,7 +2401,7 @@
       }
       function prioChip(kind, cur, lbl, onclick) {
         var on = cur === kind;
-        return '<button onclick="' + onclick + '" style="padding:5px 12px;border-radius:999px;border:1px solid ' + (on ? 'var(--terre)' : 'var(--bone-d)') + ';cursor:pointer;font-family:var(--font-micro);font-size:10px;letter-spacing:0.05em;text-transform:uppercase;background:' + (on ? 'var(--terre)' : 'transparent') + ';color:' + (on ? 'var(--paille)' : 'var(--muted)') + '">' + lbl + '</button>';
+        return '<button onclick="' + onclick + '" style="padding:5px 12px;border-radius:999px;border:1px solid ' + (on ? 'var(--terre)' : 'var(--bone-d)') + ';cursor:pointer;font-family:var(--font-micro);font-size:15px;letter-spacing:0.05em;text-transform:uppercase;background:' + (on ? 'var(--terre)' : 'transparent') + ';color:' + (on ? 'var(--paille)' : 'var(--muted)') + '">' + lbl + '</button>';
       }
       var prioControls = '<div class="row mb" style="gap:6px;flex-wrap:wrap;align-items:center">' +
         '<span class="micro" style="margin-right:2px">Vue</span>' +
@@ -2402,10 +2430,10 @@
           : '';
         return '<div style="display:flex;gap:12px;align-items:flex-start;padding:14px 16px;border-radius:13px;margin-bottom:9px;background:rgba(155,58,46,0.06)">' +
           '<div style="flex:1;min-width:0">' +
-            '<div style="font-weight:600;color:var(--terre);font-size:14.5px">' + esc(r.name) + (r.taskTitle ? ' <span style="font-family:var(--font-micro);font-size:10px;text-transform:uppercase;letter-spacing:0.03em;color:var(--muted)">(' + esc(r.taskTitle) + ')</span>' : '') + '</div>' +
-            '<div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.03em;text-transform:uppercase;color:var(--muted);margin-top:3px"><a href="javascript:ADM.openClient(\'' + r.key + '\')">' + esc(r.client) + '</a> · ' + esc(r.projectLabel) + (r.at ? ' · demandé le ' + fmtDate(r.at) : '') + '</div>' +
-            (r.comment ? '<div style="font-family:var(--font-body);font-style:italic;font-size:13px;color:var(--terre);margin-top:6px;line-height:1.45">« ' + esc(r.comment) + ' »</div>' : '') +
-            (r.wishDate ? '<div style="margin-top:7px;font-family:var(--font-micro);font-size:11.5px;font-weight:700;color:#6a4a0b;background:#fbf5e6;border:none;border-radius:8px;padding:5px 9px;display:inline-block">📅 Souhaitée pour le ' + esc((r.wishDate || '').split('-').reverse().join('/')) + '</div>' : '') +
+            '<div style="font-weight:600;color:var(--terre);font-size:15px">' + esc(r.name) + (r.taskTitle ? ' <span style="font-family:var(--font-micro);font-size:15px;text-transform:uppercase;letter-spacing:0.03em;color:var(--muted)">(' + esc(r.taskTitle) + ')</span>' : '') + '</div>' +
+            '<div style="font-family:var(--font-micro);font-size:15px;letter-spacing:0.03em;text-transform:uppercase;color:var(--muted);margin-top:3px"><a href="javascript:ADM.openClient(\'' + r.key + '\')">' + esc(r.client) + '</a> · ' + esc(r.projectLabel) + (r.at ? ' · demandé le ' + fmtDate(r.at) : '') + '</div>' +
+            (r.comment ? '<div style="font-family:var(--font-body);font-style:italic;font-size:15px;color:var(--terre);margin-top:6px;line-height:1.45">« ' + esc(r.comment) + ' »</div>' : '') +
+            (r.wishDate ? '<div style="margin-top:7px;font-family:var(--font-micro);font-size:15px;font-weight:700;color:#6a4a0b;background:#fbf5e6;border:none;border-radius:8px;padding:5px 9px;display:inline-block">📅 Souhaitée pour le ' + esc((r.wishDate || '').split('-').reverse().join('/')) + '</div>' : '') +
             filesHtml +
           '</div>' +
           '<div class="prow__act" style="flex-shrink:0">' +
@@ -2437,7 +2465,7 @@
         var reviewUrl = (isReview && x.reviewLink) ? (/^https?:\/\//i.test(x.reviewLink) ? x.reviewLink : 'https://' + x.reviewLink) : '';
         var linkBtn = reviewUrl ? '<a class="pbtn" href="' + esc(reviewUrl) + '" target="_blank" rel="noopener" title="Ouvrir le lien de révision">Ouvrir</a>' : '';
         // Lien affiché en clair (cliquable) pour le retrouver d'un coup d'œil.
-        var linkLine = reviewUrl ? '<div style="margin-top:4px;font-size:12.5px;display:flex;align-items:center;gap:6px"><span style="flex-shrink:0;opacity:0.6">🔗</span><a href="' + esc(reviewUrl) + '" target="_blank" rel="noopener" style="color:var(--glycine-900);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(x.reviewLink) + '</a></div>' : '';
+        var linkLine = reviewUrl ? '<div style="margin-top:4px;font-size:15px;display:flex;align-items:center;gap:6px"><span style="flex-shrink:0;opacity:0.6">🔗</span><a href="' + esc(reviewUrl) + '" target="_blank" rel="noopener" style="color:var(--glycine-900);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(x.reviewLink) + '</a></div>' : '';
         // Temps passé : on affiche le même chrono que sur les révisions
         // (temps + ▶ + ✎) sur les livrables/étapes en attente. Pour un livrable,
         // la cible est la tâche sous-jacente (taskId), pas le livrable lui-même.
@@ -2473,7 +2501,7 @@
       var waitHtml = waitAll.map(waitRow).join('');
 
       var forf = (d.forfaits || []).map(function (f) {
-        var nameLink = '<strong style="font-size:14px"><a href="javascript:ADM.openClient(\'' + f.key + '\')">' + esc(f.client) + '</a></strong>';
+        var nameLink = '<strong style="font-size:15px"><a href="javascript:ADM.openClient(\'' + f.key + '\')">' + esc(f.client) + '</a></strong>';
         if (!f.configured) {
           return '<div class="prow" style="display:block;padding:11px 4px"><div class="between">' + nameLink + '<span class="micro" style="color:var(--muted)">non défini</span></div></div>';
         }
@@ -2515,16 +2543,16 @@
       function hLabel(m) { m = Math.round(m); if (!m) return '·'; if (m < 60) return m + ' min'; var h = Math.floor(m / 60), r = m % 60; return h + 'h' + (r ? ('' + (r < 10 ? '0' : '') + r) : ''); }
       var meteo = '<div class="card infocard"><h3><span class="infocard__dot" style="background:#2c4a72"></span>Charge de la semaine</h3>' +
         '<div class="between" style="align-items:baseline;margin-bottom:10px"><span class="micro" style="text-transform:none;letter-spacing:0;color:var(--terre-600)">Temps prévu, estimé par jour</span>' +
-          '<span style="font-weight:700;font-size:15px;color:' + (weekCapH && weekMinTotal > weekCapH * 60 ? '#8a4a2c' : 'var(--terre)') + '">' + hLabel(weekMinTotal) + (weekCapH ? ' <span style="font-weight:400;font-size:12px;color:var(--muted)">/ ' + weekCapH + 'h</span>' : '') + '</span></div>' +
+          '<span style="font-weight:700;font-size:15px;color:' + (weekCapH && weekMinTotal > weekCapH * 60 ? '#8a4a2c' : 'var(--terre)') + '">' + hLabel(weekMinTotal) + (weekCapH ? ' <span style="font-weight:400;font-size:15px;color:var(--muted)">/ ' + weekCapH + 'h</span>' : '') + '</span></div>' +
         '<div style="display:flex;align-items:flex-end;gap:10px;padding-top:6px;min-height:78px">' +
         weekLoad.map(function (w) {
           var barH = w.mins ? Math.max(Math.round(w.mins / maxLoad * 60), 6) : 3;
           var heavy = dayCapMin ? w.mins > dayCapMin : w.mins >= 240;
           var col = heavy ? '#8a4a2c' : (w.mins ? '#2c4a72' : 'var(--bone-d)');
           return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px">' +
-            '<div style="font-family:var(--font-micro);font-size:11px;font-weight:700;color:' + (heavy ? '#8a4a2c' : 'var(--terre)') + '">' + hLabel(w.mins) + '</div>' +
+            '<div style="font-family:var(--font-micro);font-size:15px;font-weight:700;color:' + (heavy ? '#8a4a2c' : 'var(--terre)') + '">' + hLabel(w.mins) + '</div>' +
             '<div style="width:100%;height:' + barH + 'px;border-radius:5px 5px 0 0;background:' + col + '" title="' + w.count + ' tâche' + (w.count > 1 ? 's' : '') + '"></div>' +
-            '<div style="font-family:var(--font-micro);font-size:9px;letter-spacing:0.04em;text-transform:uppercase;color:var(--muted)">' + esc(w.label) + '</div>' +
+            '<div style="font-family:var(--font-micro);font-size:15px;letter-spacing:0.04em;text-transform:uppercase;color:var(--muted)">' + esc(w.label) + '</div>' +
           '</div>';
         }).join('') +
         '</div>' +
@@ -2548,7 +2576,7 @@
         var bg = r.level === 'high' ? '#F0E2D6' : '#fbf5e6';
         return '<div class="prow" style="background:' + bg + ';border-radius:9px">' +
           '<div class="prow__date"><strong>' + (x.dueDate ? fmtDate(x.dueDate) : '—') + '</strong><span style="color:' + col + ';font-weight:600">' + esc(r.reason) + '</span></div>' +
-          '<div class="prow__main"><div class="prow__el">' + esc(x.title) + (x.kind === 'ticket' ? ' <span style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#6a4a0b;background:#fdf3e8;padding:3px 8px;border-radius:999px;vertical-align:middle">🎫 Ticket</span>' : '') + '</div><div class="prow__meta"><a href="javascript:ADM.openClient(\'' + x.key + '\')">' + esc(x.client) + '</a> · ' + esc(x.projectLabel) + '</div></div>' +
+          '<div class="prow__main"><div class="prow__el">' + esc(x.title) + (x.kind === 'ticket' ? ' <span style="font-family:var(--font-micro);font-size:15px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#6a4a0b;background:#fdf3e8;padding:3px 8px;border-radius:999px;vertical-align:middle">🎫 Ticket</span>' : '') + '</div><div class="prow__meta"><a href="javascript:ADM.openClient(\'' + x.key + '\')">' + esc(x.client) + '</a> · ' + esc(x.projectLabel) + '</div></div>' +
           '<div class="prow__act">' + (x.project === 'partner' ? prioTimer(x, false) : '') + '<button class="pbtn" onclick="ADM.openClient(\'' + x.key + '\')">Ouvrir</button></div>' +
         '</div>';
       }
@@ -2767,7 +2795,7 @@
       function hLbl(m) { m = Math.round(m); var h = Math.floor(m / 60), r = m % 60; return h ? (h + 'h' + (r ? ('' + (r < 10 ? '0' : '') + r) : '')) : (m + ' min'); }
       var pjLoad = todayMin ? '<div class="pj-dayload"><span class="pj-dayload__l">Charge du jour</span>' +
         '<span class="pj-dayload__bar"><i style="width:' + (dayCapMin ? Math.min(100, Math.round(todayMin / dayCapMin * 100)) : 40) + '%"></i></span>' +
-        '<span class="pj-dayload__v">' + hLbl(todayMin) + (dayCapMin ? ' <span style="font-size:12px;color:var(--terre-400)">/ ' + hLbl(dayCapMin) + '</span>' : '') + '</span></div>' : '';
+        '<span class="pj-dayload__v">' + hLbl(todayMin) + (dayCapMin ? ' <span style="font-size:15px;color:var(--terre-400)">/ ' + hLbl(dayCapMin) + '</span>' : '') + '</span></div>' : '';
       function pjFlags(x) {
         var f = '', nAtt = (x.attachments && x.attachments.length) || x.attCount || 0;
         if (nAtt) f += '<span class="pj-flag"><svg viewBox="0 0 24 24"><path d="M21.4 11.05l-9.19 9.19a5 5 0 0 1-7.07-7.07l9.19-9.19a3.5 3.5 0 0 1 4.95 4.95L10.12 18.12a1.5 1.5 0 0 1-2.12-2.12l8.49-8.49"/></svg>' + nAtt + '</span>';
@@ -2857,7 +2885,7 @@
   var MT_TIMER = null, MT_INT = null, MT_TASKS = [], MT_CLIENTS = [], MT_EXP = {};
   var MT_TAG_COLORS = [['#E8F1FF', '#2c4a72'], ['#F0E2D6', '#8a4a2c'], ['#f6ecd5', '#8a6414'], ['#eef1e6', '#4f6a46'], ['#EDE5D7', '#5A2A11'], ['#e6ddce', '#8a5c3f']];
   function mtTagColor(name) { var h = 0; for (var i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0; return MT_TAG_COLORS[h % MT_TAG_COLORS.length]; }
-  function mtTagPill(tg) { var c = mtTagColor(tg); return '<span style="font-family:var(--font-micro);font-size:9px;letter-spacing:0.04em;text-transform:uppercase;padding:3px 9px;border-radius:999px;background:' + c[0] + ';color:' + c[1] + '">' + esc(tg) + '</span>'; }
+  function mtTagPill(tg) { var c = mtTagColor(tg); return '<span style="font-family:var(--font-micro);font-size:15px;letter-spacing:0.04em;text-transform:uppercase;padding:3px 9px;border-radius:999px;background:' + c[0] + ';color:' + c[1] + '">' + esc(tg) + '</span>'; }
   // ── Refonte « Studio OS » : mode de travail (axe d'organisation) + énergie ──
   // [clé, libellé, emoji, couleur texte, couleur fond]
   var MT_MODES = [
@@ -2869,7 +2897,7 @@
     ['idee', 'Idée', '💡', '#8a6f2e', '#fbf5e6']
   ];
   function mtMode(m) { for (var i = 0; i < MT_MODES.length; i++) if (MT_MODES[i][0] === m) return MT_MODES[i]; return null; }
-  function mtModePill(m) { var x = mtMode(m); if (!x) return ''; return '<span title="' + x[1] + '" style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;padding:3px 9px;border-radius:999px;background:' + x[4] + ';color:' + x[3] + '">' + x[2] + ' ' + x[1] + '</span>'; }
+  function mtModePill(m) { var x = mtMode(m); if (!x) return ''; return '<span title="' + x[1] + '" style="font-family:var(--font-micro);font-size:15px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;padding:3px 9px;border-radius:999px;background:' + x[4] + ';color:' + x[3] + '">' + x[2] + ' ' + x[1] + '</span>'; }
   // [clé, emoji, libellé, minutes indicatives]
   var MT_ENERGY = [['quick', '🟢', '10 min', 10], ['short', '🟡', '30 min', 30], ['medium', '🟠', '1 h', 60], ['deep', '🔴', 'Demi-journée', 240]];
   function mtEnergy(e) { for (var i = 0; i < MT_ENERGY.length; i++) if (MT_ENERGY[i][0] === e) return MT_ENERGY[i]; return null; }
@@ -2906,7 +2934,7 @@
     var hasNote = !!(t.notes && String(t.notes).trim());
     var subs = Array.isArray(t.subtasks) ? t.subtasks : [];
     var noteMark = (hasNote || subs.length)
-      ? '<span title="Cette tâche a des détails" style="flex-shrink:0;color:var(--muted);font-size:12px">📝' + (subs.length ? ' <span style="font-size:11px">' + subs.filter(function (s) { return s.done; }).length + '/' + subs.length + '</span>' : '') + '</span>'
+      ? '<span title="Cette tâche a des détails" style="flex-shrink:0;color:var(--muted);font-size:15px">📝' + (subs.length ? ' <span style="font-size:15px">' + subs.filter(function (s) { return s.done; }).length + '/' + subs.length + '</span>' : '') + '</span>'
       : '';
     // Ligne dépliable : cliquer le titre (ou « Détails ») ouvre les détails
     // (note, lien, sous-tâches) directement sous la tâche, sans quitter la liste.
@@ -2947,7 +2975,7 @@
     var sec = running ? (MT_TIMER.base + (Date.now() - MT_TIMER.startedAt) / 1000) : (t.timeSpentSeconds || 0);
     return '<div style="display:flex;align-items:center;gap:9px;margin-top:10px">' +
       '<span class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted)">Temps passé</span>' +
-      '<span id="mt-timer-' + t.id + '" style="font-family:var(--font-micro);font-variant-numeric:tabular-nums;font-weight:700;font-size:13px;color:' + (running ? 'var(--green, #456039)' : 'var(--terre)') + '">' + mtClock(sec) + '</span>' +
+      '<span id="mt-timer-' + t.id + '" style="font-family:var(--font-micro);font-variant-numeric:tabular-nums;font-weight:700;font-size:15px;color:' + (running ? 'var(--green, #456039)' : 'var(--terre)') + '">' + mtClock(sec) + '</span>' +
       (running
         ? '<button class="pbtn" onclick="ADM.mtPause(\'' + t.id + '\')">⏸ Pause</button>'
         : '<button class="pbtn" onclick="ADM.mtStart(\'' + t.id + '\')">▶ Démarrer</button>') +
@@ -3083,8 +3111,8 @@
     var rows = subs.map(function (s) {
       return '<div style="display:flex;align-items:center;gap:8px;padding:3px 0">' +
         '<input type="checkbox"' + (s.done ? ' checked' : '') + ' onchange="ADM.mtSubToggle(\'' + t.id + '\',\'' + s.id + '\')" style="width:15px;height:15px;cursor:pointer">' +
-        '<span style="flex:1;font-size:13px;color:var(--terre-600)' + (s.done ? ';text-decoration:line-through;opacity:0.6' : '') + '">' + esc(s.text) + '</span>' +
-        '<button onclick="ADM.mtSubDel(\'' + t.id + '\',\'' + s.id + '\')" style="background:none;border:none;color:#8d2b21;cursor:pointer;font-size:14px;line-height:1">×</button>' +
+        '<span style="flex:1;font-size:15px;color:var(--terre-600)' + (s.done ? ';text-decoration:line-through;opacity:0.6' : '') + '">' + esc(s.text) + '</span>' +
+        '<button onclick="ADM.mtSubDel(\'' + t.id + '\',\'' + s.id + '\')" style="background:none;border:none;color:#8d2b21;cursor:pointer;font-size:15px;line-height:1">×</button>' +
       '</div>';
     }).join('');
     return '<div style="margin-top:8px">' + rows +
@@ -3197,8 +3225,8 @@
   function sessionsBlock(t) {
     var ss = Array.isArray(t.sessions) ? t.sessions : [];
     if (!ss.length) return '';
-    var rows = ss.slice(-8).reverse().map(function (x) { var l = mtFmtSession(x); return l ? '<div style="font-family:var(--font-micro);font-size:11.5px;color:var(--terre-600);padding:3px 0;font-variant-numeric:tabular-nums">' + l + '</div>' : ''; }).join('');
-    return '<details class="mt" style="margin-top:8px"><summary style="cursor:pointer;font-family:var(--font-micro);font-size:10px;letter-spacing:0.07em;text-transform:uppercase;color:var(--muted);padding:3px 0">Historique du chrono · ' + ss.length + '</summary><div style="padding:4px 0 2px">' + rows + (ss.length > 8 ? '<div class="micro" style="text-transform:none;letter-spacing:0">… et ' + (ss.length - 8) + ' session' + (ss.length - 8 > 1 ? 's' : '') + ' plus ancienne' + (ss.length - 8 > 1 ? 's' : '') + '</div>' : '') + '</div></details>';
+    var rows = ss.slice(-8).reverse().map(function (x) { var l = mtFmtSession(x); return l ? '<div style="font-family:var(--font-micro);font-size:15px;color:var(--terre-600);padding:3px 0;font-variant-numeric:tabular-nums">' + l + '</div>' : ''; }).join('');
+    return '<details class="mt" style="margin-top:8px"><summary style="cursor:pointer;font-family:var(--font-micro);font-size:15px;letter-spacing:0.07em;text-transform:uppercase;color:var(--muted);padding:3px 0">Historique du chrono · ' + ss.length + '</summary><div style="padding:4px 0 2px">' + rows + (ss.length > 8 ? '<div class="micro" style="text-transform:none;letter-spacing:0">… et ' + (ss.length - 8) + ' session' + (ss.length - 8 > 1 ? 's' : '') + ' plus ancienne' + (ss.length - 8 > 1 ? 's' : '') + '</div>' : '') + '</div></details>';
   }
   function mtClock(sec) { sec = Math.round(sec); var h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = sec % 60; function p(n) { return n < 10 ? '0' + n : n; } return (h > 0 ? h + ':' : '') + p(m) + ':' + p(s); }
   function mtDur(sec) { sec = Math.round(sec); if (sec < 60) return sec + ' s'; var h = Math.floor(sec / 3600), m = Math.round((sec % 3600) / 60); return (h > 0 ? h + ' h ' : '') + (m > 0 ? m + ' min' : (h > 0 ? '' : '0 min')); }
@@ -3281,8 +3309,8 @@
     return admSerializeRich(d);
   }
   function mtNoteInner(t) {
-    var editLink = '<button onclick="ADM.mtEditNote(\'' + t.id + '\')" style="background:none;border:none;color:var(--muted);font-size:11px;cursor:pointer;padding:2px 0;text-decoration:underline">' + (t.notes ? 'Modifier la note' : '+ Ajouter une note ou un lien') + '</button>';
-    return (t.notes ? '<div style="font-size:12.5px;color:#5e4a2e;white-space:pre-wrap;line-height:1.5;margin-bottom:2px">' + mtLinkify(t.notes) + '</div>' : '') + editLink;
+    var editLink = '<button onclick="ADM.mtEditNote(\'' + t.id + '\')" style="background:none;border:none;color:var(--muted);font-size:15px;cursor:pointer;padding:2px 0;text-decoration:underline">' + (t.notes ? 'Modifier la note' : '+ Ajouter une note ou un lien') + '</button>';
+    return (t.notes ? '<div style="font-size:15px;color:#5e4a2e;white-space:pre-wrap;line-height:1.5;margin-bottom:2px">' + mtLinkify(t.notes) + '</div>' : '') + editLink;
   }
   function mtEditNote(id) {
     var c = el('mt-note-' + id); if (!c) return;
@@ -3388,7 +3416,7 @@
     ['autre', 'Autre', '#7a5540', '#f1eee7']
   ];
   function visTypeMeta(t) { for (var i = 0; i < VIS_TYPES.length; i++) if (VIS_TYPES[i][0] === t) return VIS_TYPES[i]; return null; }
-  function visTypeChip(t) { var m = visTypeMeta(t); if (!m) return ''; return '<span style="font-family:var(--font-micro);font-size:8.5px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;padding:3px 8px;border-radius:999px;background:' + m[3] + ';color:' + m[2] + '">' + m[1] + '</span>'; }
+  function visTypeChip(t) { var m = visTypeMeta(t); if (!m) return ''; return '<span style="font-family:var(--font-micro);font-size:15px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;padding:3px 8px;border-radius:999px;background:' + m[3] + ';color:' + m[2] + '">' + m[1] + '</span>'; }
   function visSetTypeFilter(v) { VIS_TYPEFILTER = v; renderVisiosBody(); }
   function renderVisios() {
     setMain(topbar('') + '<div class="wrap" id="vis-body" style="max-width:none"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
@@ -3529,16 +3557,16 @@
   ];
   function callAntiseche() {
     var SC = 'background:#fff;border-radius:11px;padding:11px 13px;margin-bottom:10px;break-inside:avoid;-webkit-column-break-inside:avoid';
-    var HD = 'font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--terre-400,#8a6f54)';
+    var HD = 'font-family:var(--font-micro);font-size:15px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--terre-400,#8a6f54)';
     var steps = CALL_STEPS.map(function (s) {
-      var relHtml = s.r.map(function (x) { return '<div style="font-family:var(--font-micro);font-size:13px;color:var(--terre-600,#6b533b);line-height:1.4;margin-top:4px">› ' + esc(x) + '</div>'; }).join('');
-      return '<div style="' + SC + '"><div style="display:flex;align-items:center;gap:8px"><span style="width:20px;height:20px;border-radius:50%;background:var(--terre);color:var(--paille);display:grid;place-items:center;font-family:var(--font-micro);font-weight:700;font-size:11px;flex:none">' + s.n + '</span><span style="' + HD + '">' + esc(s.t) + '</span></div>' +
-        '<div style="font-family:var(--font-micro);font-weight:600;font-size:14.5px;line-height:1.35;color:var(--terre);margin-top:6px">' + esc(s.q) + '</div>' + relHtml + '</div>';
+      var relHtml = s.r.map(function (x) { return '<div style="font-family:var(--font-micro);font-size:15px;color:var(--terre-600,#6b533b);line-height:1.4;margin-top:4px">› ' + esc(x) + '</div>'; }).join('');
+      return '<div style="' + SC + '"><div style="display:flex;align-items:center;gap:8px"><span style="width:20px;height:20px;border-radius:50%;background:var(--terre);color:var(--paille);display:grid;place-items:center;font-family:var(--font-micro);font-weight:700;font-size:15px;flex:none">' + s.n + '</span><span style="' + HD + '">' + esc(s.t) + '</span></div>' +
+        '<div style="font-family:var(--font-micro);font-weight:600;font-size:15px;line-height:1.35;color:var(--terre);margin-top:6px">' + esc(s.q) + '</div>' + relHtml + '</div>';
     }).join('');
     var reb = '<div style="' + SC + '"><div style="' + HD + ';margin-bottom:8px">Rebonds</div>' +
-      CALL_REBONDS.map(function (r) { return '<div style="font-family:var(--font-micro);font-size:13px;color:var(--terre);line-height:1.5;margin-bottom:5px">' + r[0] + ' <b style="font-weight:600">' + esc(r[1]) + '</b><br>' + esc(r[2]) + '</div>'; }).join('') + '</div>';
+      CALL_REBONDS.map(function (r) { return '<div style="font-family:var(--font-micro);font-size:15px;color:var(--terre);line-height:1.5;margin-bottom:5px">' + r[0] + ' <b style="font-weight:600">' + esc(r[1]) + '</b><br>' + esc(r[2]) + '</div>'; }).join('') + '</div>';
     var sec = '<div style="' + SC + ';margin-bottom:0"><div style="' + HD + ';margin-bottom:8px">Secours</div>' +
-      CALL_SECOURS.map(function (p) { return '<div style="font-family:var(--font-micro);font-size:13px;color:var(--terre);line-height:1.45;margin-bottom:6px">' + esc(p) + '</div>'; }).join('') + '</div>';
+      CALL_SECOURS.map(function (p) { return '<div style="font-family:var(--font-micro);font-size:15px;color:var(--terre);line-height:1.45;margin-bottom:6px">' + esc(p) + '</div>'; }).join('') + '</div>';
     return '<div style="background:#E8F1FF;border-radius:14px;padding:12px;column-count:2;column-gap:12px">' + steps + reb + sec + '</div>';
   }
 
@@ -3800,11 +3828,11 @@
     var cards = trames.map(function (t) {
       var secs = trameParse(t.content); var nq = 0; secs.forEach(function (s) { nq += s.questions.length; });
       return '<div onclick="ADM.trameOpen(\'' + t.id + '\')" style="position:relative;cursor:pointer;background:var(--card);border-radius:16px;padding:20px 22px;display:flex;flex-direction:column">' +
-        '<button onclick="event.stopPropagation();ADM.trameEditLib(\'' + t.id + '\')" title="Modifier cette trame" style="position:absolute;top:14px;right:14px;border:none;background:var(--bone);border-radius:999px;width:32px;height:32px;cursor:pointer;color:var(--terre-600);font-size:14px;display:grid;place-items:center">✎</button>' +
+        '<button onclick="event.stopPropagation();ADM.trameEditLib(\'' + t.id + '\')" title="Modifier cette trame" style="position:absolute;top:14px;right:14px;border:none;background:var(--bone);border-radius:999px;width:32px;height:32px;cursor:pointer;color:var(--terre-600);font-size:15px;display:grid;place-items:center">✎</button>' +
         '<span style="width:40px;height:40px;border-radius:11px;background:var(--gold-chip);color:var(--terre);display:grid;place-items:center;margin-bottom:13px"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8 10h8M8 14h5"/><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>' +
         '<span style="font-family:\'Alegreya\',Georgia,serif;font-style:italic;font-size:23px;color:var(--terre);line-height:1.12">' + esc(t.title || 'Sans titre') + '</span>' +
-        '<span style="font-family:var(--font-micro);font-weight:300;font-size:12px;color:var(--muted);margin-top:6px">' + secs.length + ' étape' + (secs.length > 1 ? 's' : '') + ' · ' + nq + ' question' + (nq > 1 ? 's' : '') + '</span>' +
-        '<span style="font-family:var(--font-micro);font-size:12px;font-weight:600;color:var(--terre-600);margin-top:14px;display:inline-flex;align-items:center;gap:6px">Ouvrir l\'appel <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>' +
+        '<span style="font-family:var(--font-micro);font-weight:300;font-size:15px;color:var(--muted);margin-top:6px">' + secs.length + ' étape' + (secs.length > 1 ? 's' : '') + ' · ' + nq + ' question' + (nq > 1 ? 's' : '') + '</span>' +
+        '<span style="font-family:var(--font-micro);font-size:15px;font-weight:600;color:var(--terre-600);margin-top:14px;display:inline-flex;align-items:center;gap:6px">Ouvrir l\'appel <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>' +
       '</div>';
     }).join('');
     return '<div class="vis-wrap" style="max-width:900px;margin:0 auto">' +
@@ -3828,16 +3856,16 @@
           '<div style="flex:1;min-width:0"><div style="font-family:\'Alegreya\',Georgia,serif;font-size:22px;line-height:1.35;color:' + (on ? 'var(--terre-600)' : 'var(--terre)') + '">' + trameHi(q) + '</div>' +
           '<textarea onchange="ADM.trameQNote(\'' + k + '\',this.value)" placeholder="Note la réponse…" style="width:100%;box-sizing:border-box;margin-top:9px;min-height:40px;resize:vertical;border:none;background:var(--bone);border-radius:9px;padding:10px 13px;font-family:var(--font-body);font-weight:300;font-size:16px;color:var(--terre);outline:none;line-height:1.5">' + esc(a.n || '') + '</textarea></div></div>';
       }).join('');
-      return '<div style="margin-top:24px"><div style="display:flex;align-items:center;gap:11px;margin-bottom:6px"><span style="width:26px;height:26px;border-radius:50%;background:var(--terre-600);color:var(--paille);font-family:var(--font-micro);font-size:12px;font-weight:700;display:grid;place-items:center;flex-shrink:0">' + (si + 1) + '</span><span style="font-family:\'Alegreya\',Georgia,serif;font-size:25px;font-weight:400;color:var(--terre)">' + esc(trameTitleClean(s.title) || 'Étape') + '</span></div>' +
-        (s.hint ? '<div style="font-family:var(--font-micro);font-weight:300;font-size:14px;color:var(--muted);font-style:italic;margin:0 0 13px 37px;line-height:1.55">' + esc(s.hint) + '</div>' : '') + qs + '</div>';
+      return '<div style="margin-top:24px"><div style="display:flex;align-items:center;gap:11px;margin-bottom:6px"><span style="width:26px;height:26px;border-radius:50%;background:var(--terre-600);color:var(--paille);font-family:var(--font-micro);font-size:15px;font-weight:700;display:grid;place-items:center;flex-shrink:0">' + (si + 1) + '</span><span style="font-family:\'Alegreya\',Georgia,serif;font-size:25px;font-weight:400;color:var(--terre)">' + esc(trameTitleClean(s.title) || 'Étape') + '</span></div>' +
+        (s.hint ? '<div style="font-family:var(--font-micro);font-weight:300;font-size:15px;color:var(--muted);font-style:italic;margin:0 0 13px 37px;line-height:1.55">' + esc(s.hint) + '</div>' : '') + qs + '</div>';
     }).join('');
     return '<div class="vis-wrap" style="max-width:760px;margin:0 auto">' +
       '<button class="btn btn--outline btn--sm" onclick="ADM.trameBackLib()">← Bibliothèque</button>' +
       '<div style="background:var(--terre);color:var(--paille);border-radius:18px;padding:22px 26px;margin-top:14px">' +
-        '<div style="font-family:var(--font-micro);font-size:10.5px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-chip)">Appel en cours</div>' +
+        '<div style="font-family:var(--font-micro);font-size:15px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-chip)">Appel en cours</div>' +
         '<div style="font-family:\'Alegreya\',Georgia,serif;font-style:italic;font-size:28px;margin:7px 0 14px;line-height:1.08">' + esc(t.title || '') + '</div>' +
         '<div style="height:8px;border-radius:99px;background:rgba(240,233,214,.18);overflow:hidden"><span style="display:block;height:100%;width:' + pct + '%;background:var(--gold-chip)"></span></div>' +
-        '<div style="font-family:var(--font-micro);font-weight:300;font-size:12px;color:rgba(240,233,214,.72);margin-top:8px">' + done + ' / ' + total + ' questions cochées</div>' +
+        '<div style="font-family:var(--font-micro);font-weight:300;font-size:15px;color:rgba(240,233,214,.72);margin-top:8px">' + done + ' / ' + total + ' questions cochées</div>' +
         '<button class="btn btn--sm" style="margin-top:15px;background:var(--gold-chip);color:var(--terre);border:none;font-weight:600" onclick="ADM.trameEditToggle()">✎ Modifier cette trame</button></div>' +
       body + '</div>';
   }
@@ -3846,7 +3874,7 @@
     return esc(s).replace(/«[^»]*»/g, function (m) { return '<span style="background:#F0E2D6;color:var(--terre);font-weight:600;border-radius:4px;padding:1px 4px">' + m + '</span>'; });
   }
   // Une ligne « repère » (à NE PAS dire) : gris, italique.
-  function trameNote(s, ml) { return '<div style="font-family:var(--font-micro);font-size:13px;line-height:1.55;color:var(--muted);font-style:italic;margin-bottom:' + (ml || 2) + 'px">' + esc(s) + '</div>'; }
+  function trameNote(s, ml) { return '<div style="font-family:var(--font-micro);font-size:15px;line-height:1.55;color:var(--muted);font-style:italic;margin-bottom:' + (ml || 2) + 'px">' + esc(s) + '</div>'; }
   function trameRender(content) {
     var lines = String(content || '').split('\n');
     return lines.map(function (l) {
@@ -3862,10 +3890,10 @@
         var condHtml = cond ? trameNote(cond, 1) : '';
         var respColor = respHasQ ? 'var(--terre-600,#6b533b)' : 'var(--muted)';
         var respIt = respHasQ ? '' : ';font-style:italic';
-        var respHtml = '<div style="font-family:var(--font-micro);font-size:13.5px;line-height:1.6;color:' + respColor + respIt + ';margin:0 0 9px ' + (cond ? '16px' : '0') + '"><span style="color:var(--terre-400,#8a6f54)">→ </span>' + (respHasQ ? trameHi(resp) : esc(resp)) + '</div>';
+        var respHtml = '<div style="font-family:var(--font-micro);font-size:15px;line-height:1.6;color:' + respColor + respIt + ';margin:0 0 9px ' + (cond ? '16px' : '0') + '"><span style="color:var(--terre-400,#8a6f54)">→ </span>' + (respHasQ ? trameHi(resp) : esc(resp)) + '</div>';
         return condHtml + respHtml;
       }
-      if (/«[^»]*»/.test(l)) return '<div style="font-family:var(--font-micro);font-size:13.5px;line-height:1.6;color:var(--terre-600,#6b533b);margin-bottom:7px">' + trameHi(l) + '</div>';
+      if (/«[^»]*»/.test(l)) return '<div style="font-family:var(--font-micro);font-size:15px;line-height:1.6;color:var(--terre-600,#6b533b);margin-bottom:7px">' + trameHi(l) + '</div>';
       return trameNote(l, 7);
     }).join('');
   }
@@ -3920,21 +3948,21 @@
         return '<div style="display:flex;gap:9px;align-items:flex-start;margin-bottom:8px">' +
           '<span style="margin-top:10px;color:var(--gold-chip);flex-shrink:0;font-size:17px">«</span>' +
           '<textarea oninput="ADM.trameEdQ(' + si + ',' + qi + ',this.value)" rows="1" placeholder="Ce que tu dis / demandes au client…" style="flex:1;min-width:0;box-sizing:border-box;resize:vertical;min-height:40px;border:none;background:var(--bone);border-radius:9px;padding:9px 12px;font-family:\'Alegreya\',Georgia,serif;font-size:18px;line-height:1.35;color:var(--terre);outline:none;box-shadow:inset 0 0 0 1px var(--bone-d)">' + esc(q) + '</textarea>' +
-          '<button onclick="ADM.trameEdQDel(' + si + ',' + qi + ')" title="Supprimer la question" style="margin-top:7px;flex-shrink:0;border:none;background:none;cursor:pointer;color:var(--muted);width:26px;height:26px;border-radius:7px;display:grid;place-items:center;font-size:14px">✕</button>' +
+          '<button onclick="ADM.trameEdQDel(' + si + ',' + qi + ')" title="Supprimer la question" style="margin-top:7px;flex-shrink:0;border:none;background:none;cursor:pointer;color:var(--muted);width:26px;height:26px;border-radius:7px;display:grid;place-items:center;font-size:15px">✕</button>' +
         '</div>';
       }).join('');
       return '<div style="background:var(--card);border-radius:15px;padding:15px 17px;margin-bottom:13px">' +
         '<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">' +
-          '<span style="width:27px;height:27px;border-radius:50%;background:var(--terre-600);color:var(--paille);font-family:var(--font-micro);font-size:12px;font-weight:700;display:grid;place-items:center;flex-shrink:0">' + (si + 1) + '</span>' +
+          '<span style="width:27px;height:27px;border-radius:50%;background:var(--terre-600);color:var(--paille);font-family:var(--font-micro);font-size:15px;font-weight:700;display:grid;place-items:center;flex-shrink:0">' + (si + 1) + '</span>' +
           '<input value="' + esc(s.title) + '" oninput="ADM.trameEdField(' + si + ',\'title\',this.value)" placeholder="Titre de l\'étape" style="flex:1;min-width:0;border:none;outline:none;background:var(--bone);border-radius:8px;padding:9px 12px;font-family:\'Alegreya\',Georgia,serif;font-size:20px;font-weight:500;color:var(--terre)">' +
           '<button onclick="ADM.trameEdSecMove(' + si + ',-1)" title="Monter" style="border:none;background:none;cursor:pointer;color:var(--muted);width:24px;height:26px;font-size:15px">↑</button>' +
           '<button onclick="ADM.trameEdSecMove(' + si + ',1)" title="Descendre" style="border:none;background:none;cursor:pointer;color:var(--muted);width:24px;height:26px;font-size:15px">↓</button>' +
           '<button onclick="ADM.trameEdSecDel(' + si + ')" title="Supprimer l\'étape" style="border:none;background:none;cursor:pointer;color:var(--muted);width:26px;height:26px;border-radius:7px;display:grid;place-items:center"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg></button>' +
         '</div>' +
-        '<textarea oninput="ADM.trameEdField(' + si + ',\'hint\',this.value)" rows="2" placeholder="Repères pour t\'aider (tu ne les lis pas au client)" style="width:100%;box-sizing:border-box;resize:vertical;min-height:46px;border:none;background:var(--bone);border-radius:9px;padding:9px 12px;font-family:var(--font-micro);font-weight:300;font-style:italic;font-size:14px;line-height:1.5;color:var(--muted);outline:none;margin-bottom:13px">' + esc(s.hint) + '</textarea>' +
-        '<div style="font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--gold-chip);margin-bottom:8px">Questions à poser</div>' +
+        '<textarea oninput="ADM.trameEdField(' + si + ',\'hint\',this.value)" rows="2" placeholder="Repères pour t\'aider (tu ne les lis pas au client)" style="width:100%;box-sizing:border-box;resize:vertical;min-height:46px;border:none;background:var(--bone);border-radius:9px;padding:9px 12px;font-family:var(--font-micro);font-weight:300;font-style:italic;font-size:15px;line-height:1.5;color:var(--muted);outline:none;margin-bottom:13px">' + esc(s.hint) + '</textarea>' +
+        '<div style="font-family:var(--font-micro);font-size:15px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--gold-chip);margin-bottom:8px">Questions à poser</div>' +
         qs +
-        '<button onclick="ADM.trameEdQAdd(' + si + ')" style="border:none;background:none;cursor:pointer;color:var(--terre-600);font-family:var(--font-micro);font-size:13px;font-weight:600;padding:5px 0;display:inline-flex;align-items:center;gap:5px">+ Ajouter une question</button>' +
+        '<button onclick="ADM.trameEdQAdd(' + si + ')" style="border:none;background:none;cursor:pointer;color:var(--terre-600);font-family:var(--font-micro);font-size:15px;font-weight:600;padding:5px 0;display:inline-flex;align-items:center;gap:5px">+ Ajouter une question</button>' +
       '</div>';
     }).join('');
     return '<div>' + titleInput + body +
@@ -3950,10 +3978,10 @@
     if (CALL_TRAME_EDIT) return trameStructEditor(cur);
     var opts = trames.map(function (t) { return '<option value="' + t.id + '"' + (t.id === CALL_TRAME_SEL ? ' selected' : '') + '>' + esc(t.title || 'Sans titre') + '</option>'; }).join('');
     return '<div style="background:#fff;border-radius:14px;padding:14px 16px">' +
-      '<div class="row" style="gap:8px;align-items:center;margin-bottom:12px"><select class="inp" style="flex:1;font-size:13px" onchange="ADM.trameSel(this.value)">' + opts + '</select>' +
+      '<div class="row" style="gap:8px;align-items:center;margin-bottom:12px"><select class="inp" style="flex:1;font-size:15px" onchange="ADM.trameSel(this.value)">' + opts + '</select>' +
         '<button class="btn btn--outline btn--sm" title="Éditer" onclick="ADM.trameEditToggle()">✎</button>' +
         '<button class="btn btn--outline btn--sm" title="Nouvelle trame" onclick="ADM.trameNew()">+</button></div>' +
-      '<div style="font-family:var(--font-micro);font-size:11px;color:var(--muted);margin-bottom:10px;display:flex;align-items:center;gap:6px;flex-wrap:wrap"><span style="background:#F0E2D6;color:var(--terre);font-weight:600;border-radius:4px;padding:1px 5px">« … »</span> ce que tu dis · <span style="font-style:italic">gris = tes repères / mots du client (à ne pas dire)</span></div>' +
+      '<div style="font-family:var(--font-micro);font-size:15px;color:var(--muted);margin-bottom:10px;display:flex;align-items:center;gap:6px;flex-wrap:wrap"><span style="background:#F0E2D6;color:var(--terre);font-weight:600;border-radius:4px;padding:1px 5px">« … »</span> ce que tu dis · <span style="font-style:italic">gris = tes repères / mots du client (à ne pas dire)</span></div>' +
       '<div style="max-height:calc(100vh - 250px);overflow:auto;padding-right:4px">' + trameRender(cur.content) + '</div>' +
     '</div>';
   }
@@ -3961,7 +3989,7 @@
     return '<div>' +
       '<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">' +
         '<input id="call-title" value="' + esc(n.title || '') + '" oninput="ADM.callNoteSet(\'' + n.id + '\',\'title\',this.value)" placeholder="Nom de l\'appel…" style="flex:1;border:none;outline:none;background:none;font-family:var(--font-micro);font-weight:700;font-size:22px;color:var(--terre)">' +
-        '<span style="font-family:var(--font-micro);font-size:12px;color:var(--muted);white-space:nowrap">' + esc(n.date || '') + '</span>' +
+        '<span style="font-family:var(--font-micro);font-size:15px;color:var(--muted);white-space:nowrap">' + esc(n.date || '') + '</span>' +
         '<button class="btn btn--outline btn--sm" onclick="ADM.callNoteDel(\'' + n.id + '\')">Suppr.</button>' +
       '</div>' +
       '<textarea oninput="ADM.callNoteSet(\'' + n.id + '\',\'text\',this.value)" placeholder="Note à l\'arrache : mots-clés, verbatims, ce que tu retiens…" style="width:100%;box-sizing:border-box;min-height:calc(100vh - 220px);resize:vertical;border:none;background:#F8F6F2;border-radius:12px;padding:16px 18px;font-family:var(--font-micro);font-size:16px;line-height:1.65;color:var(--terre);outline:none">' + esc(n.text || '') + '</textarea>' +
@@ -3975,15 +4003,15 @@
     var items = notes.map(function (n) {
       var on = n.id === CALL_SEL;
       return '<button onclick="ADM.callNoteSel(\'' + n.id + '\')" style="display:block;width:100%;text-align:left;border:none;cursor:pointer;background:' + (on ? '#fff' : 'transparent') + ';border-radius:11px;padding:11px 13px;margin-bottom:2px">' +
-        '<div id="cnli-' + n.id + '" style="font-family:var(--font-micro);font-size:13.5px;font-weight:600;color:var(--terre);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(n.title || 'Sans titre') + '</div>' +
-        '<div style="font-family:var(--font-micro);font-size:11px;color:var(--muted);margin-top:2px">' + esc(n.date || '') + '</div>' +
+        '<div id="cnli-' + n.id + '" style="font-family:var(--font-micro);font-size:15px;font-weight:600;color:var(--terre);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(n.title || 'Sans titre') + '</div>' +
+        '<div style="font-family:var(--font-micro);font-size:15px;color:var(--muted);margin-top:2px">' + esc(n.date || '') + '</div>' +
       '</button>';
-    }).join('') || '<div style="font-family:var(--font-micro);font-size:12.5px;color:var(--muted);padding:14px 6px">Aucune note pour le moment.</div>';
+    }).join('') || '<div style="font-family:var(--font-micro);font-size:15px;color:var(--muted);padding:14px 6px">Aucune note pour le moment.</div>';
     var list = '<aside style="background:#F8F6F2;border-radius:16px;padding:10px;align-self:start">' +
       '<button class="btn btn--dark btn--block btn--sm" onclick="ADM.callNoteNew()" style="margin-bottom:8px">+ Nouvelle note</button>' + items + '</aside>';
     var editor = cur
       ? '<div style="background:#fff;border-radius:16px;padding:18px 20px">' + callEditor(cur) + '</div>'
-      : '<div style="background:#fff;border-radius:16px;padding:60px 26px;text-align:center;color:var(--muted);font-family:var(--font-micro);font-size:14px">Crée une note pour préparer et suivre ton appel.<br>L\'anti-sèche reste affichée à droite.</div>';
+      : '<div style="background:#fff;border-radius:16px;padding:60px 26px;text-align:center;color:var(--muted);font-family:var(--font-micro);font-size:15px">Crée une note pour préparer et suivre ton appel.<br>L\'anti-sèche reste affichée à droite.</div>';
     var rtoggle = '<div class="subtabs" style="margin-bottom:10px">' +
       '<button class="subtab' + (CALL_RIGHT === 'trame' ? ' active' : '') + '" onclick="ADM.callRight(\'trame\')">📋 Trame</button>' +
       '<button class="subtab' + (CALL_RIGHT === 'anti' ? ' active' : '') + '" onclick="ADM.callRight(\'anti\')">🌱 Anti-sèche</button>' +
@@ -4152,7 +4180,7 @@
   function visStepHtml(c, s, idx, total) {
     return '<div class="card" style="background:var(--card);padding:12px 14px;margin-bottom:10px">' +
       '<div class="row" style="gap:8px;align-items:center;margin-bottom:8px">' +
-        '<span style="font-family:var(--font-micro);font-size:11px;color:var(--muted);flex-shrink:0">Étape ' + (idx + 1) + '</span>' +
+        '<span style="font-family:var(--font-micro);font-size:15px;color:var(--muted);flex-shrink:0">Étape ' + (idx + 1) + '</span>' +
         '<input class="inp" value="' + esc(s.title || '') + '" placeholder="Titre de l\'étape (ex. Accueil, Besoins…)" style="flex:1;font-weight:600" onchange="ADM.visStepSet(\'' + c.id + '\',\'' + s.id + '\',\'title\',this.value)">' +
         '<button class="pbtn" title="Monter"' + (idx === 0 ? ' disabled style="opacity:0.3"' : '') + ' onclick="ADM.visStepMove(\'' + c.id + '\',\'' + s.id + '\',-1)">↑</button>' +
         '<button class="pbtn" title="Descendre"' + (idx === total - 1 ? ' disabled style="opacity:0.3"' : '') + ' onclick="ADM.visStepMove(\'' + c.id + '\',\'' + s.id + '\',1)">↓</button>' +
@@ -4190,13 +4218,13 @@
         : ((st.title ? '<div style="font-family:var(--font-display);font-style:italic;font-size:27px;color:var(--terre);margin-bottom:16px">' + esc(st.title) + '</div>' : '') + '<div style="font-size:21px;line-height:1.8;color:var(--terre)">' + (st.html || '') + '</div>');
       ov.innerHTML = '<div style="background:#fff;border-radius:20px;max-width:780px;width:100%;max-height:90vh;display:flex;flex-direction:column;box-shadow:none">' +
         '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 24px;border:none">' +
-          '<div style="font-family:var(--font-micro);font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted)">' + esc(c.client || 'Visio') + ' · Étape ' + (i + 1) + ' / ' + steps.length + '</div>' +
+          '<div style="font-family:var(--font-micro);font-size:15px;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted)">' + esc(c.client || 'Visio') + ' · Étape ' + (i + 1) + ' / ' + steps.length + '</div>' +
           '<button id="vp-close" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:24px;line-height:1">×</button>' +
         '</div>' +
         '<div style="height:4px;background:var(--bone-d)"><div style="height:100%;width:' + Math.round((i + 1) / steps.length * 100) + '%;background:var(--terre);transition:width .25s"></div></div>' +
         '<div style="padding:30px 34px;overflow-y:auto;flex:1">' + content + '</div>' +
         '<div style="padding:10px 24px 6px;border:none">' +
-          '<div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);margin-bottom:5px">📝 Vos notes</div>' +
+          '<div style="font-family:var(--font-micro);font-size:15px;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);margin-bottom:5px">📝 Vos notes</div>' +
           '<textarea id="vp-notes" onchange="ADM.visNoteSave(\'' + id + '\',this.value)" placeholder="Notez ce qui se dit pendant l\'appel…" style="width:100%;box-sizing:border-box;min-height:54px;resize:vertical;font-size:15px;line-height:1.5;border:none;border-radius:8px;padding:8px 10px;font-family:inherit;color:var(--terre)">' + esc(c.notes || '') + '</textarea>' +
         '</div>' +
         '<div style="display:flex;justify-content:space-between;gap:10px;padding:14px 24px 16px;border:none">' +
@@ -4226,12 +4254,12 @@
     var col = dark ? '#F2E5C2' : 'var(--terre)';
     var bd = dark ? 'rgba(242,229,194,0.28)' : 'var(--bone-d)';
     var bg = dark ? 'rgba(255,255,255,0.08)' : '#fff';
-    var css = 'padding:5px 9px;border:1px solid ' + bd + ';border-radius:7px;background:' + bg + ';cursor:pointer;font-size:13px;color:' + col + ';line-height:1;font-family:inherit';
+    var css = 'padding:5px 9px;border:1px solid ' + bd + ';border-radius:7px;background:' + bg + ';cursor:pointer;font-size:15px;color:' + col + ';line-height:1;font-family:inherit';
     function b(cmd, label, title, val) { return '<button type="button" title="' + title + '" onmousedown="event.preventDefault();ADM.visFmt(\'' + cmd + '\'' + (val ? ',\'' + val + '\'' : '') + ')" style="' + css + '">' + label + '</button>'; }
     var sw = ['#110704', '#c0533b', '#4f6a46', '#35608f', '#c9952f'].map(function (c) { return '<button type="button" title="Couleur du texte" onmousedown="event.preventDefault();ADM.visFmt(\'foreColor\',\'' + c + '\')" style="width:19px;height:19px;border-radius:5px;border:1px solid ' + bd + ';background:' + c + ';cursor:pointer"></button>'; }).join('');
     var sep = '<span style="width:1px;height:16px;background:' + bd + ';margin:0 2px;display:inline-block"></span>';
     return b('bold', '<b>B</b>', 'Gras') + b('italic', '<i>I</i>', 'Italique') + b('underline', '<u>U</u>', 'Souligné') + sep +
-      b('fontSize', 'A<span style="font-size:9px;vertical-align:super">+</span>', 'Grand texte', '5') + b('fontSize', 'A', 'Texte normal', '3') + b('fontSize', '<span style="font-size:10px">a</span>', 'Petit texte', '2') + sep +
+      b('fontSize', 'A<span style="font-size:15px;vertical-align:super">+</span>', 'Grand texte', '5') + b('fontSize', 'A', 'Texte normal', '3') + b('fontSize', '<span style="font-size:15px">a</span>', 'Petit texte', '2') + sep +
       b('insertUnorderedList', '• Liste', 'Liste à puces') + b('insertOrderedList', '1. Liste', 'Liste numérotée') + sep +
       sw + sep + b('insertHorizontalRule', 'Séparateur', 'Insérer un séparateur');
   }
@@ -4294,7 +4322,7 @@
     var stepsHtml = steps.map(function (s, idx) {
       return '<div style="border:none;border-radius:10px;padding:10px 12px;margin-bottom:8px">' +
         '<div class="row" style="gap:8px;align-items:center;margin-bottom:6px">' +
-          '<span style="font-family:var(--font-micro);font-size:11px;color:var(--muted);flex-shrink:0">Étape ' + (idx + 1) + '</span>' +
+          '<span style="font-family:var(--font-micro);font-size:15px;color:var(--muted);flex-shrink:0">Étape ' + (idx + 1) + '</span>' +
           '<input class="inp" value="' + esc(s.title || '') + '" placeholder="Titre de l\'étape" style="flex:1;font-weight:600" onchange="ADM.visTplStepSet(\'' + t.id + '\',\'' + s.id + '\',\'title\',this.value)">' +
           '<button class="pbtn" title="Monter"' + (idx === 0 ? ' disabled style="opacity:0.3"' : '') + ' onclick="ADM.visTplStepMove(\'' + t.id + '\',\'' + s.id + '\',-1)">↑</button>' +
           '<button class="pbtn" title="Descendre"' + (idx === steps.length - 1 ? ' disabled style="opacity:0.3"' : '') + ' onclick="ADM.visTplStepMove(\'' + t.id + '\',\'' + s.id + '\',1)">↓</button>' +
@@ -5159,7 +5187,7 @@
 
     setMain(topbar('Tâches') +
       '<div class="wrap ck">' +
-        '<div class="ck-tete"><div><div class="ck-meta">Tâches</div>' +
+        '<div class="ck-tete"><div>' +
           '<h1 class="ck-h1">Tout ce qui reste</h1></div>' +
           '<div class="ck-date">' + l.length + ' tâches actives · ' + esc(ckpDuree(restant)) + ' à faire' +
           (aPlanifier ? ' · <b>' + esc(ckpDuree(aPlanifier)) + ' à planifier</b>' : '') +
@@ -5303,8 +5331,7 @@
         '</div>' +
         '<div><div class="ck-meta">Combien de temps te faut-il encore ?</div>' +
           ckpChampReste(t, 'pan') +
-          '<div class="ck-pn">Tant que tu ne le corriges pas, le restant découle de ton estimation moins ce que tu as déjà passé. Le corriger ici ne touche jamais à l’estimation de départ : c’est elle qui te permet de voir l’écart.</div>' +
-        '</div>' +
+                  '</div>' +
         '<div><div class="ck-meta">Quand</div>' +
           (futurs.length ? futurs.map(function (c) {
             return '<div class="ck-pcr">' + esc(ckpMaj(ckpQuand(c.date))) + ' · ' + esc(ckpHM(c.start || 0)) +
@@ -6335,13 +6362,9 @@
     });
     setMain(topbar('Projets') +
       '<div class="wrap ck">' +
-        '<div class="ck-tete"><div><div class="ck-meta">Projets</div>' +
-          '<h1 class="ck-h1">Où en est <span class="ck-accent">chaque projet</span></h1></div>' +
-          '<div class="ck-date">' + l.length + ' projet' + (l.length > 1 ? 's' : '') + ' · ' + nb +
-          ' type' + (nb > 1 ? 's' : '') + ' de prestation, un seul écran</div></div>' +
-        
-        ckpHero('Tes projets', l.length + ' <em>en cours</em>',
-          nb + ' type' + (nb > 1 ? 's' : '') + ' de prestation, un seul écran : ce qui change, c’est le contenu, jamais la structure.',
+        '<div class="ck-tete"><div>' +
+          '<h1 class="ck-h1">Où en est <span class="ck-accent">chaque projet</span></h1></div></div>' +
+        ckpHero('Tes projets', l.length + ' <em>en cours</em>', '',
           ckpHeroPuce('var(--ciel)', totRestant ? ckpDuree(totRestant) + ' de travail encore nécessaire, tous projets confondus'
             : 'Rien à faire de ton côté sur les projets en cours') +
           (totSansPlace ? ckpHeroPuce('var(--terracotta)', ckpDuree(totSansPlace) + ' n’ont encore de place nulle part') : '') +
@@ -6807,18 +6830,18 @@
   function msNewBlock(diso) {
     var ov = document.createElement('div'); ov.className = 'admconfirm';
     var day = diso || msIso(new Date());
-    var lab = 'display:flex;flex-direction:column;gap:4px;font-family:var(--font-micro);font-size:11px;color:var(--muted)';
+    var lab = 'display:flex;flex-direction:column;gap:4px;font-family:var(--font-micro);font-size:15px;color:var(--muted)';
     ov.innerHTML = '<div class="admconfirm__box" style="max-width:440px;text-align:left">' +
       '<div class="admconfirm__title">Nouveau bloc de temps</div>' +
-      '<p style="font-size:12.5px;color:var(--muted);margin:8px 0 14px;line-height:1.5">Il sera ajouté à ton calendrier iCloud, et servira de repère pour y ranger tes tâches.</p>' +
+      '<p style="font-size:15px;color:var(--muted);margin:8px 0 14px;line-height:1.5">Il sera ajouté à ton calendrier iCloud, et servira de repère pour y ranger tes tâches.</p>' +
       '<div style="display:flex;flex-direction:column;gap:10px">' +
-        '<label style="' + lab + '">Nom du bloc<input id="mb-title" class="inp" placeholder="Créneau Marie, Prospection, Envol…" style="font-size:14px;padding:9px 11px"></label>' +
-        '<label style="' + lab + '">Jour<input id="mb-date" class="inp" type="date" value="' + day + '" style="font-size:14px;padding:9px 11px"></label>' +
+        '<label style="' + lab + '">Nom du bloc<input id="mb-title" class="inp" placeholder="Créneau Marie, Prospection, Envol…" style="font-size:15px;padding:9px 11px"></label>' +
+        '<label style="' + lab + '">Jour<input id="mb-date" class="inp" type="date" value="' + day + '" style="font-size:15px;padding:9px 11px"></label>' +
         '<div style="display:flex;gap:10px">' +
-          '<label style="flex:1;' + lab + '">Début<input id="mb-start" class="inp" type="time" value="09:30" style="font-size:14px;padding:9px 11px"></label>' +
-          '<label style="flex:1;' + lab + '">Fin<input id="mb-end" class="inp" type="time" value="13:00" style="font-size:14px;padding:9px 11px"></label>' +
+          '<label style="flex:1;' + lab + '">Début<input id="mb-start" class="inp" type="time" value="09:30" style="font-size:15px;padding:9px 11px"></label>' +
+          '<label style="flex:1;' + lab + '">Fin<input id="mb-end" class="inp" type="time" value="13:00" style="font-size:15px;padding:9px 11px"></label>' +
         '</div>' +
-        '<label style="display:flex;align-items:center;gap:9px;font-family:var(--font-body);font-size:13px;color:var(--terre);cursor:pointer;margin-top:2px"><input id="mb-rep" type="checkbox" checked style="width:16px;height:16px;accent-color:var(--terre)">Chaque semaine (bloc récurrent)</label>' +
+        '<label style="display:flex;align-items:center;gap:9px;font-family:var(--font-body);font-size:15px;color:var(--terre);cursor:pointer;margin-top:2px"><input id="mb-rep" type="checkbox" checked style="width:16px;height:16px;accent-color:var(--terre)">Chaque semaine (bloc récurrent)</label>' +
       '</div>' +
       '<div class="admconfirm__row" style="margin-top:16px"><button class="btn btn--outline btn--sm" data-no>Annuler</button><button class="btn btn--sm" data-yes style="background:var(--terre);color:#fff">Créer le bloc</button></div>' +
     '</div>';
@@ -6981,7 +7004,7 @@
     var ov = document.createElement('div'); ov.className = 'admconfirm';
     ov.innerHTML = '<div class="admconfirm__box" style="max-width:460px;text-align:left">' +
       '<div class="admconfirm__title">Note · ' + esc(t.title || 'Tâche') + '</div>' +
-      '<textarea id="ms-note-ta" class="inp" style="width:100%;box-sizing:border-box;min-height:120px;resize:vertical;margin-top:12px;font-size:14px;line-height:1.5" placeholder="Tes notes sur cette tâche (rappels, détails, liens…)">' + esc(t.notes || '') + '</textarea>' +
+      '<textarea id="ms-note-ta" class="inp" style="width:100%;box-sizing:border-box;min-height:120px;resize:vertical;margin-top:12px;font-size:15px;line-height:1.5" placeholder="Tes notes sur cette tâche (rappels, détails, liens…)">' + esc(t.notes || '') + '</textarea>' +
       '<div class="admconfirm__row" style="margin-top:14px">' +
         (t.notes ? '<button class="btn btn--outline btn--sm" data-clear style="margin-right:auto;color:#8d2b21">Effacer</button>' : '') +
         '<button class="btn btn--outline btn--sm" data-no>Annuler</button>' +
@@ -7045,9 +7068,9 @@
     return '<div style="display:flex;align-items:flex-end;gap:10px;height:170px;padding-top:8px">' + items.map(function (x) {
       var h = Math.round((x.value / max) * 132);
       return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:6px;min-width:0">' +
-        '<div style="font-family:var(--font-micro);font-size:10px;font-weight:600;color:var(--terre)">' + (x.value ? (fmtVal ? fmtVal(x.value) : x.value) : '') + '</div>' +
+        '<div style="font-family:var(--font-micro);font-size:15px;font-weight:600;color:var(--terre)">' + (x.value ? (fmtVal ? fmtVal(x.value) : x.value) : '') + '</div>' +
         '<div style="width:100%;max-width:48px;height:' + Math.max(2, h) + 'px;background:' + color + ';border-radius:6px 6px 0 0"></div>' +
-        '<div style="font-family:var(--font-micro);font-size:9px;color:var(--muted);white-space:nowrap;letter-spacing:0.03em">' + esc(x.label) + '</div>' +
+        '<div style="font-family:var(--font-micro);font-size:15px;color:var(--muted);white-space:nowrap;letter-spacing:0.03em">' + esc(x.label) + '</div>' +
       '</div>';
     }).join('') + '</div>';
   }
@@ -7094,12 +7117,12 @@
     if (satis) tiles.push(['avis', (Math.round(satis * 10) / 10) + '/5', 'satisfaction']);
     var body = tiles.map(function (t) {
       return '<div style="min-width:130px;padding:6px 20px 6px 0">' +
-        '<div style="display:flex;align-items:center;gap:7px;font-family:var(--font-micro);font-size:9.5px;letter-spacing:0.06em;text-transform:uppercase;color:var(--glycine-900,#2c4a72);margin-bottom:5px"><span style="display:inline-flex;color:var(--glycine-900,#2c4a72)">' + admIcon(t[0]) + '</span>' + esc(t[2]) + '</div>' +
+        '<div style="display:flex;align-items:center;gap:7px;font-family:var(--font-micro);font-size:15px;letter-spacing:0.06em;text-transform:uppercase;color:var(--glycine-900,#2c4a72);margin-bottom:5px"><span style="display:inline-flex;color:var(--glycine-900,#2c4a72)">' + admIcon(t[0]) + '</span>' + esc(t[2]) + '</div>' +
         '<div style="font-family:var(--font-display);font-style:italic;font-size:30px;color:var(--terre);line-height:1">' + t[1] + '</div>' +
       '</div>';
     }).join('');
     return '<div class="card" style="background:var(--card);border:none;padding:18px 20px;margin-bottom:18px">' +
-      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px"><span style="width:7px;height:7px;border-radius:50%;background:var(--glycine-900,#2c4a72)"></span><span style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted)">Depuis le 1er janvier ' + year + '</span></div>' +
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px"><span style="width:7px;height:7px;border-radius:50%;background:var(--glycine-900,#2c4a72)"></span><span style="font-family:var(--font-micro);font-size:15px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted)">Depuis le 1er janvier ' + year + '</span></div>' +
       '<div style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:8px 0">' + body + '</div>' +
     '</div>';
   }
@@ -7120,12 +7143,12 @@
     var inactive = col.inactiveCount || 0;
     function tile(icon, big, label, danger) {
       return '<div style="min-width:150px;padding:6px 20px 6px 0">' +
-        '<div style="display:flex;align-items:center;gap:7px;font-family:var(--font-micro);font-size:9.5px;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);margin-bottom:5px"><span style="display:inline-flex;color:var(--terre-400,#8a7d6b)">' + admIcon(icon) + '</span>' + esc(label) + '</div>' +
+        '<div style="display:flex;align-items:center;gap:7px;font-family:var(--font-micro);font-size:15px;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);margin-bottom:5px"><span style="display:inline-flex;color:var(--terre-400,#8a7d6b)">' + admIcon(icon) + '</span>' + esc(label) + '</div>' +
         '<div style="font-family:var(--font-display);font-style:italic;font-size:28px;color:' + (danger ? '#8a4a2c' : 'var(--terre)') + ';line-height:1">' + big + '</div>' +
       '</div>';
     }
     return '<div class="card" style="background:var(--card);border:none;padding:18px 20px;margin-bottom:18px">' +
-      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px"><span style="width:7px;height:7px;border-radius:50%;background:var(--terre)"></span><span style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted)">Santé des collaborations</span></div>' +
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px"><span style="width:7px;height:7px;border-radius:50%;background:var(--terre)"></span><span style="font-family:var(--font-micro);font-size:15px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted)">Santé des collaborations</span></div>' +
       '<div style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:8px 0">' +
         tile('mytasks', nYou, 'en attente de toi', false) +
         tile('clients', nThem, 'en attente d\'elles', false) +
@@ -7144,7 +7167,7 @@
       var pct = Math.round((x.minutes / maxM) * 100);
       var share = total ? Math.round((x.minutes / total) * 100) : 0;
       var col = i === 0 ? 'var(--terre)' : 'var(--glycine-700)';
-      return '<div style="margin-bottom:14px"><div class="between" style="margin-bottom:5px"><strong style="font-size:14px;color:var(--terre)">' + esc(x.type) + '</strong><span class="micro" style="color:var(--terre);font-weight:700">' + hh(x.minutes) + ' · ' + share + '%</span></div>' +
+      return '<div style="margin-bottom:14px"><div class="between" style="margin-bottom:5px"><strong style="font-size:15px;color:var(--terre)">' + esc(x.type) + '</strong><span class="micro" style="color:var(--terre);font-weight:700">' + hh(x.minutes) + ' · ' + share + '%</span></div>' +
         '<div style="height:10px;background:var(--surface-2);border-radius:999px;overflow:hidden"><div style="height:100%;width:' + pct + '%;background:' + col + ';border-radius:999px"></div></div></div>';
     }).join('');
     return '<div class="card infocard" style="background:var(--card)"><h3>Temps par type de tâche</h3>' +
@@ -7161,7 +7184,7 @@
       var r = p.est > 0 ? Math.round(p.real / p.est * 100) : 0;
       var over = r > 110, under = r < 90;
       var col = over ? '#8a4a2c' : (under ? '#4a6b43' : 'var(--terre)');
-      return '<div class="prow" style="display:block;padding:10px 4px"><div class="between"><strong style="font-size:14px">' + esc(p.pole) + '</strong>' +
+      return '<div class="prow" style="display:block;padding:10px 4px"><div class="between"><strong style="font-size:15px">' + esc(p.pole) + '</strong>' +
         '<span class="micro" style="color:' + col + ';font-weight:700">réel ' + r + '% de l\'estimé</span></div>' +
         '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:3px">prévu ' + hh(p.est) + ' · réel ' + hh(p.real) + ' · ' + p.count + ' tâche' + (p.count > 1 ? 's' : '') + '</div></div>';
     }).join('');
@@ -7172,7 +7195,7 @@
         '<div><div class="micro">Réel</div><div style="font-family:var(--font-display);font-style:italic;font-size:28px;color:' + (ratio > 110 ? '#8a4a2c' : 'var(--terre)') + '">' + realH + ' h</div></div>' +
         '<div><div class="micro">Écart</div><div style="font-family:var(--font-display);font-style:italic;font-size:28px;color:' + (ratio > 110 ? '#8a4a2c' : (ratio < 90 ? '#4a6b43' : 'var(--terre)')) + '">' + ratio + '%</div></div>' +
       '</div>' +
-      '<h4 style="margin:6px 0 8px;font-size:14px">Par pôle</h4>' + (poleRows || '<div class="empty">—</div>') + '</div>';
+      '<h4 style="margin:6px 0 8px;font-size:15px">Par pôle</h4>' + (poleRows || '<div class="empty">—</div>') + '</div>';
   }
   // Accueil KPI : les 6 cartes essentielles + le score « Santé du studio ».
   function kpiSummaryHtml() {
@@ -7206,13 +7229,13 @@
     var chargeOver = weekCapH && weekMin > weekCapH * 60;
     function card(icon, big, label, sub, onclick) {
       return '<button onclick="' + onclick + '" style="text-align:left;background:var(--card);border:none;border-radius:14px;padding:15px 16px;cursor:pointer;display:flex;flex-direction:column;gap:4px;transition:box-shadow .14s" onmouseenter="this.style.boxShadow=\'0 3px 14px rgba(28,18,5,0.08)\'" onmouseleave="this.style.boxShadow=\'\'">' +
-        '<span style="display:flex;align-items:center;gap:8px;font-family:var(--font-micro);font-size:10px;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted)"><span style="color:var(--terre-400,#8a7d6b);display:inline-flex">' + admIcon(icon) + '</span>' + esc(label) + '</span>' +
+        '<span style="display:flex;align-items:center;gap:8px;font-family:var(--font-micro);font-size:15px;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted)"><span style="color:var(--terre-400,#8a7d6b);display:inline-flex">' + admIcon(icon) + '</span>' + esc(label) + '</span>' +
         '<span style="font-family:var(--font-display);font-style:italic;font-size:26px;color:var(--terre);line-height:1.05">' + big + '</span>' +
         (sub ? '<span class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted)">' + sub + '</span>' : '') +
       '</button>';
     }
     var cards =
-      card('planning', hL(weekMin) + (weekCapH ? ' <span style="font-size:14px;color:var(--muted)">/ ' + weekCapH + 'h</span>' : ''), 'Charge de la semaine', chargeOver ? 'au-delà de ta capacité' : '', "ADM.nav('priorities');setTimeout(function(){ADM.prioSetTab('load')},60)") +
+      card('planning', hL(weekMin) + (weekCapH ? ' <span style="font-size:15px;color:var(--muted)">/ ' + weekCapH + 'h</span>' : ''), 'Charge de la semaine', chargeOver ? 'au-delà de ta capacité' : '', "ADM.nav('priorities');setTimeout(function(){ADM.prioSetTab('load')},60)") +
       card('inbox', inboxN, 'Demandes à analyser', inboxN ? 'à trier dans l\'Inbox' : 'rien en attente', "ADM.nav('inbox')") +
       card('priorities', overdue, 'Tâches en retard', '', "ADM.nav('priorities');setTimeout(function(){ADM.prioSetTab('risks')},60)") +
       card('kpi', forfSurv + ' cliente' + (forfSurv > 1 ? 's' : ''), 'Forfaits à surveiller', '', "ADM.nav('priorities');setTimeout(function(){ADM.prioSetTab('load')},60)") +
@@ -7222,9 +7245,9 @@
         '<div style="width:96px;height:96px;border-radius:50%;flex-shrink:0;display:grid;place-items:center;background:conic-gradient(' + scoreCol + ' ' + (score * 3.6) + 'deg, var(--bone-d) 0deg)">' +
           '<div style="width:76px;height:76px;border-radius:50%;background:var(--card);display:grid;place-items:center"><div style="font-family:var(--font-display);font-style:italic;font-size:28px;color:' + scoreCol + ';line-height:1">' + score + '</div></div>' +
         '</div>' +
-        '<div style="min-width:0"><div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted)">Santé du studio</div>' +
+        '<div style="min-width:0"><div style="font-family:var(--font-micro);font-size:15px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted)">Santé du studio</div>' +
           '<div style="font-family:var(--font-display);font-style:italic;font-size:26px;color:var(--terre)">' + score + ' / 100</div>' +
-          '<div style="font-size:14px;color:' + scoreCol + ';font-weight:600;margin-top:2px">' + esc(scoreLbl) + '</div></div>' +
+          '<div style="font-size:15px;color:' + scoreCol + ';font-weight:600;margin-top:2px">' + esc(scoreLbl) + '</div></div>' +
       '</div>' +
       '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:22px">' + cards + '</div>';
   }
@@ -8211,13 +8234,13 @@
       var day = e.at.slice(0, 10);
       if (day !== lastDay) {
         lastDay = day;
-        out += '<div style="font-family:var(--font-micro);font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin:18px 0 8px">' + esc(fmtDate(e.at)) + '</div>';
+        out += '<div style="font-family:var(--font-micro);font-size:15px;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin:18px 0 8px">' + esc(fmtDate(e.at)) + '</div>';
       }
       out += '<div style="display:flex;gap:12px;padding:9px 0;border:none">' +
         '<div style="flex-shrink:0;font-size:16px;width:26px;text-align:center;line-height:1.4">' + e.icon + '</div>' +
-        '<div style="flex:1;min-width:0"><div style="font-size:14px;color:var(--terre);font-weight:500;line-height:1.35">' + esc(e.title) + '</div>' +
+        '<div style="flex:1;min-width:0"><div style="font-size:15px;color:var(--terre);font-weight:500;line-height:1.35">' + esc(e.title) + '</div>' +
           (e.sub ? '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:2px">' + esc(e.sub) + '</div>' : '') + '</div>' +
-        '<div style="flex-shrink:0;font-family:var(--font-micro);font-size:10px;color:var(--muted);padding-top:3px">' + esc(fmtDT(e.at).split(' ')[1] || '') + '</div>' +
+        '<div style="flex-shrink:0;font-family:var(--font-micro);font-size:15px;color:var(--muted);padding-top:3px">' + esc(fmtDT(e.at).split(' ')[1] || '') + '</div>' +
       '</div>';
     });
     return '<div class="card infocard" style="background:var(--card)"><h3>Journal de projet</h3>' +
@@ -8303,6 +8326,7 @@
     return chatCard(d);
   }
   function sectionEffets(d, cur) {
+    if (cur === 'taches') ptTiroir(d); else if (PT_OPEN) ptFermer();
     var box = el('chat-' + d.id); if (box) box.scrollTop = box.scrollHeight;
     if (cur === 'msg' && d.unread > 0) { jpost('/api/clients/' + CURKEY + '/message/read', { projectId: d.id }, 'POST'); d.unread = 0; renderClient(); }
     if (cur === 'tickets' && Array.isArray(d.content.tickets) && d.content.tickets.some(function (t) { return t.seenByAdmin === false; })) {
@@ -8372,9 +8396,9 @@
           '<button class="pbtn" title="Descendre"' + (idx === items.length - 1 ? ' disabled style="opacity:0.3"' : '') + ' onclick="ADM.qnMove(\'' + d.id + '\',\'' + q.id + '\',1)">↓</button>' +
           '<button class="pbtn" style="color:#8d2b21" onclick="ADM.qnDel(\'' + d.id + '\',\'' + q.id + '\')">×</button>' +
         '</div>' +
-        '<textarea class="inp" placeholder="Aide / précisions (exemples…), optionnel" style="width:100%;box-sizing:border-box;min-height:40px;resize:vertical;font-size:13px" onchange="ADM.qnSet(\'' + d.id + '\',\'' + q.id + '\',\'help\',this.value)">' + esc(q.help || '') + '</textarea>' +
-        (withOpts ? '<div style="margin-top:8px"><div class="micro" style="text-transform:none;letter-spacing:0;margin-bottom:3px">Choix proposés (une ligne = un choix)</div><textarea class="inp" style="width:100%;box-sizing:border-box;min-height:64px;resize:vertical;font-size:13px" placeholder="Mariage\nChef à domicile\nBuffets…" onchange="ADM.qnSetOptions(\'' + d.id + '\',\'' + q.id + '\',this.value)">' + esc((q.options || []).join('\n')) + '</textarea></div>' : '') +
-        (!isSec && ansTxt ? '<div style="margin-top:8px;background:#eef4ea;border:1px solid #cfe0c6;border-radius:8px;padding:8px 10px;font-size:13px;color:var(--terre);white-space:pre-wrap"><span class="micro" style="text-transform:none;letter-spacing:0;color:#3f5a37;display:block;margin-bottom:3px">Réponse de la cliente</span>' + esc(ansTxt) + '</div>' : '') +
+        '<textarea class="inp" placeholder="Aide / précisions (exemples…), optionnel" style="width:100%;box-sizing:border-box;min-height:40px;resize:vertical;font-size:15px" onchange="ADM.qnSet(\'' + d.id + '\',\'' + q.id + '\',\'help\',this.value)">' + esc(q.help || '') + '</textarea>' +
+        (withOpts ? '<div style="margin-top:8px"><div class="micro" style="text-transform:none;letter-spacing:0;margin-bottom:3px">Choix proposés (une ligne = un choix)</div><textarea class="inp" style="width:100%;box-sizing:border-box;min-height:64px;resize:vertical;font-size:15px" placeholder="Mariage\nChef à domicile\nBuffets…" onchange="ADM.qnSetOptions(\'' + d.id + '\',\'' + q.id + '\',this.value)">' + esc((q.options || []).join('\n')) + '</textarea></div>' : '') +
+        (!isSec && ansTxt ? '<div style="margin-top:8px;background:#eef4ea;border:1px solid #cfe0c6;border-radius:8px;padding:8px 10px;font-size:15px;color:var(--terre);white-space:pre-wrap"><span class="micro" style="text-transform:none;letter-spacing:0;color:#3f5a37;display:block;margin-bottom:3px">Réponse de la cliente</span>' + esc(ansTxt) + '</div>' : '') +
       '</div>';
     }
     var list = items.length ? items.map(row).join('') : '<div class="empty">Aucune question. Ajoute-en une, ou colle ton questionnaire en un clic.</div>';
@@ -8415,7 +8439,7 @@
     var body = items.map(function (q) {
       var opts = q.options || [];
       if (q.type === 'section') return '<div style="margin:20px 0 10px;padding-bottom:6px;border-bottom:2px solid var(--bone-d)"><div style="font-family:var(--font-display);font-style:italic;font-size:20px;color:var(--terre)">' + esc(q.label) + '</div>' + (q.help ? '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:5px;white-space:pre-wrap">' + esc(q.help) + '</div>' : '') + '</div>';
-      var lab = '<div style="font-size:14px;font-weight:600;color:var(--terre);margin-bottom:5px">' + esc(q.label) + '</div>' + (q.help ? '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-bottom:7px;white-space:pre-wrap">' + esc(q.help) + '</div>' : '');
+      var lab = '<div style="font-size:15px;font-weight:600;color:var(--terre);margin-bottom:5px">' + esc(q.label) + '</div>' + (q.help ? '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-bottom:7px;white-space:pre-wrap">' + esc(q.help) + '</div>' : '');
       var inp;
       if (q.type === 'short') inp = '<input class="inp" disabled placeholder="Réponse courte…" style="width:100%;box-sizing:border-box">';
       else if (q.type === 'choice') inp = opts.map(function (o) { return '<label style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1.5px solid var(--bone-d);border-radius:9px;margin-bottom:6px;color:var(--terre)"><input type="radio" disabled>' + esc(o) + '</label>'; }).join('') || '<div class="micro">(ajoute des choix)</div>';
@@ -8558,7 +8582,7 @@
       return '<button onclick="ADM.crSet(\'' + pid + '\',\'' + c.id + '\',\'bannerColor\',\'' + bc + '\')" title="Couleur de bannière" style="width:22px;height:22px;border-radius:50%;background:' + bc + ';border:2px solid ' + (on ? 'var(--terre)' : '#fff') + ';box-shadow:0 0 0 1px var(--bone-d);cursor:pointer;padding:0"></button>';
     }).join('');
     var autoOn = !c.bannerColor;
-    var auto = '<button onclick="ADM.crSet(\'' + pid + '\',\'' + c.id + '\',\'bannerColor\',\'\')" title="Auto (couleur de catégorie)" style="height:22px;padding:0 10px;border-radius:999px;background:#fff;border:2px solid ' + (autoOn ? 'var(--terre)' : '#fff') + ';box-shadow:0 0 0 1px var(--bone-d);cursor:pointer;font-family:var(--font-micro);font-size:10px;font-weight:700;color:var(--terre-600)">Auto</button>';
+    var auto = '<button onclick="ADM.crSet(\'' + pid + '\',\'' + c.id + '\',\'bannerColor\',\'\')" title="Auto (couleur de catégorie)" style="height:22px;padding:0 10px;border-radius:999px;background:#fff;border:2px solid ' + (autoOn ? 'var(--terre)' : '#fff') + ';box-shadow:0 0 0 1px var(--bone-d);cursor:pointer;font-family:var(--font-micro);font-size:15px;font-weight:700;color:var(--terre-600)">Auto</button>';
     return '<div class="row" style="gap:7px;align-items:center;flex-wrap:wrap"><span class="micro" style="color:var(--muted)">Bannière</span>' + auto + sw + '</div>';
   }
   function crOpts(list, cur) { return list.map(function (o) { return '<option value="' + o[0] + '"' + (cur === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join(''); }
@@ -8658,8 +8682,8 @@
         var attHtml = atts.map(function (a) { return '<a class="cg-btn cg-btn--soft" href="/api/clients/' + CURKEY + '/files/' + encodeURIComponent(a.key) + '/download" target="_blank">📎 ' + esc(a.name || 'fichier') + '</a>'; }).join('');
         var lkHtml = l.clientLink ? '<a class="cg-btn cg-btn--soft" href="' + esc(/^https?:\/\//i.test(l.clientLink) ? l.clientLink : 'https://' + l.clientLink) + '" target="_blank" rel="noopener">🔗 Lien</a>' : '';
         fb = '<div style="margin:0 0 8px;padding:11px 13px;background:#fbeae5;border:1px solid #f0d3c9;border-radius:10px">' +
-          '<div style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#8d2b21;margin-bottom:5px">Retour de la cliente</div>' +
-          (l.clientComment ? '<div style="font-size:13px;color:#7a2e1e;white-space:pre-wrap;line-height:1.5">' + esc(l.clientComment) + '</div>' : '') +
+          '<div style="font-family:var(--font-micro);font-size:15px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#8d2b21;margin-bottom:5px">Retour de la cliente</div>' +
+          (l.clientComment ? '<div style="font-size:15px;color:#7a2e1e;white-space:pre-wrap;line-height:1.5">' + esc(l.clientComment) + '</div>' : '') +
           ((attHtml || lkHtml) ? '<div class="cg-btnrow" style="flex-wrap:wrap;margin-top:8px">' + attHtml + lkHtml + '</div>' : '') +
         '</div>';
       }
@@ -8693,7 +8717,7 @@
             '<span class="cg-rev__lb">↩ Utilisés' + (crRevExtra ? ' (dont ' + (crRevExtra > 0 ? '+' : '') + crRevExtra + ' manuel)' : '') + '</span>' +
             '<span style="display:inline-flex;align-items:center;gap:6px">' +
               '<button type="button" onclick="ADM.crSet(\'' + pid + '\',\'' + c.id + '\',\'revExtra\',' + (crRevExtra - 1) + ')" title="Retirer un aller-retour" style="width:24px;height:24px;border-radius:7px;border:none;background:#fff;cursor:pointer;font-size:15px;line-height:1;color:var(--terre)">−</button>' +
-              '<span style="font-family:var(--font-micro);font-size:13px;font-weight:700;color:' + (crRevUsed > crRevMax ? '#b23b2a' : 'var(--terre)') + ';min-width:36px;text-align:center">' + crRevUsed + ' / ' + crRevMax + '</span>' +
+              '<span style="font-family:var(--font-micro);font-size:15px;font-weight:700;color:' + (crRevUsed > crRevMax ? '#b23b2a' : 'var(--terre)') + ';min-width:36px;text-align:center">' + crRevUsed + ' / ' + crRevMax + '</span>' +
               '<button type="button" onclick="ADM.crSet(\'' + pid + '\',\'' + c.id + '\',\'revExtra\',' + (crRevExtra + 1) + ')" title="Ajouter un aller-retour fait hors espace" style="width:24px;height:24px;border-radius:7px;border:none;background:#fff;cursor:pointer;font-size:15px;line-height:1;color:var(--terre)">+</button>' +
             '</span>' +
           '</div>' +
@@ -8703,7 +8727,7 @@
         '</div>' +
         crBannerRow(pid, c) +
         '<div class="cg-cols cg-cols--1">' +
-          '<div class="cg-ver-col">' +
+          '<section class="cg-bloc">' +
             '<div class="cg-lbl">Versions</div>' + vHtml +
             '<div class="cg-btnrow">' +
               '<button class="cg-btn cg-btn--dark" onclick="ADM.crAddVersion(\'' + pid + '\',\'' + c.id + '\')">' + cgIcon('plus', 14) + ' Version</button>' +
@@ -8711,10 +8735,11 @@
               '<button class="cg-ib cg-ib--del" style="margin-left:auto" onclick="ADM.crDel(\'' + pid + '\',\'' + c.id + '\')" title="Supprimer la création">' + cgIcon('trash', 15) + '</button>' +
             '</div>' +
           '</div>' +
-          '<div class="cg-plan-col">' +
-            '<div class="cg-lbl">' + cgIcon('cal', 13) + ' Planning prévisionnel' + (n ? ' · ' + n + ' jalon' + (n > 1 ? 's' : '') : ' · vide') + '</div>' +
+          '</section>' +
+          '<section class="cg-bloc">' +
+            '<div class="cg-lbl">' + cgIcon('cal', 15) + ' Planning prévisionnel</div>' +
             '<div id="planwrap-' + fullPid + '-' + c.id + '" class="cg-plan">' + planningEditor(fullPid, c.planning, c.planningStart, c.id) + '</div>' +
-          '</div>' +
+          '</section>' +
         '</div>' +
         crExchange(pid, c) +
       '</section>';
@@ -8728,16 +8753,17 @@
         if (/\.(jpe?g|png|webp|gif|avif|svg)$/i.test(f.name || '')) {
           return '<a href="' + furl + '" target="_blank" rel="noopener" title="' + esc(f.name || 'image') + '" style="display:block;border-radius:10px;overflow:hidden;border:1px solid var(--bone-d,#eae5dc);line-height:0"><img src="' + furl + '" alt="' + esc(f.name || '') + '" loading="lazy" style="max-height:130px;max-width:200px;display:block;object-fit:cover"></a>';
         }
-        return '<a href="' + furl + '" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid var(--bone-d,#eae5dc);border-radius:9px;padding:6px 11px;font-family:var(--font-micro);font-size:12px;color:var(--terre);text-decoration:none">' + cgIcon('download', 12) + esc(f.name || 'fichier') + '</a>';
+        return '<a href="' + furl + '" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid var(--bone-d,#eae5dc);border-radius:9px;padding:6px 11px;font-family:var(--font-micro);font-size:15px;color:var(--terre);text-decoration:none">' + cgIcon('download', 12) + esc(f.name || 'fichier') + '</a>';
       }).join('') + '</div>' : '';
-      var commentsHtml = comments.length ? comments.map(function (m) { var mine = m.author === 'cindy'; return '<div style="margin-bottom:8px"><div style="font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--muted);margin-bottom:2px">' + (mine ? 'Vous' : 'Cliente') + ' · ' + (m.createdAt ? fmtDT(m.createdAt) : '') + '</div><div style="font-family:var(--font-micro);font-size:13px;line-height:1.5;color:var(--terre);background:' + (mine ? 'var(--brume,#E4F0FF)' : '#F8F6F2') + ';border-radius:10px;padding:8px 12px">' + esc(m.text || '') + '</div></div>'; }).join('') : '';
-      return '<div style="border-top:1px solid var(--line,#eee);margin-top:14px;padding-top:12px">' +
-        '<div style="font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--terre-600,#6b533b);margin-bottom:10px;display:flex;align-items:center;gap:7px">' + cgIcon('image', 13) + ' Échanges cliente' + (c.clientNotif ? '<span style="width:8px;height:8px;border-radius:50%;background:#c0533b;display:inline-block"></span>' : '') + '</div>' +
+      var commentsHtml = comments.length ? comments.map(function (m) { var mine = m.author === 'cindy'; return '<div style="margin-bottom:8px"><div style="font-family:var(--font-micro);font-size:15px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--muted);margin-bottom:2px">' + (mine ? 'Vous' : 'Cliente') + ' · ' + (m.createdAt ? fmtDT(m.createdAt) : '') + '</div><div style="font-family:var(--font-micro);font-size:15px;line-height:1.5;color:var(--terre);background:' + (mine ? 'var(--brume,#E4F0FF)' : '#F8F6F2') + ';border-radius:10px;padding:8px 12px">' + esc(m.text || '') + '</div></div>'; }).join('') : '';
+      return '<section class="cg-bloc cg-bloc--ech">' +
+        '<div class="cg-lbl">' + cgIcon('chat', 15) + ' Échanges avec ta cliente' +
+        (c.clientNotif ? '<span class="cg-nouv"></span>' : '') + '</div>' +
         filesHtml + commentsHtml +
         (c.clotureAt
-          ? '<div class="cg-empty">Création terminée : ce fil est archivé. Il reste lisible des deux côtés, mais plus personne n’y écrit.</div>'
-          : '<div class="row" style="gap:8px;margin-top:4px"><input class="cg-in" id="cg-reply-' + c.id + '" placeholder="Répondre à la cliente…" style="flex:1" onkeydown="if(event.key===\'Enter\'){event.preventDefault();ADM.crReply(\'' + pid + '\',\'' + c.id + '\');}"><button class="cg-btn cg-btn--dark" onclick="ADM.crReply(\'' + pid + '\',\'' + c.id + '\')">Répondre</button></div>') +
-      '</div>';
+          ? '<div class="cg-empty">Création terminée : ce fil est archivé, il reste lisible des deux côtés.</div>'
+          : '<div class="row" style="gap:8px;margin-top:4px"><input class="cg-in" id="cg-reply-' + c.id + '" placeholder="Répondre à ta cliente…" style="flex:1" onkeydown="if(event.key===\'Enter\'){event.preventDefault();ADM.crReply(\'' + pid + '\',\'' + c.id + '\');}"><button class="cg-btn cg-btn--dark" onclick="ADM.crReply(\'' + pid + '\',\'' + c.id + '\')">Répondre</button></div>') +
+      '</section>';
     }
     var crVives = creations.filter(function (c) { return !c.clotureAt; });
     var crClos = creations.filter(function (c) { return !!c.clotureAt; });
@@ -8757,7 +8783,7 @@
         '<button class="btn btn--dark btn--sm" onclick="ADM.crAdd(\'' + pid + '\')">Créer</button></div>'
       : '';
     var entete = '<div class="cg-tete"><div><h3 style="margin:0">Créations</h3>' +
-      '<div class="cg-lead" style="margin:6px 0 0">Une card par création : clique pour l’ouvrir. Ce que tu déposes, ta cliente le retrouve dans son espace.</div></div>' +
+      '</div>' +
       '<button class="btn ' + (CG_OPEN.neuve ? 'btn--outline' : 'btn--dark') + ' btn--sm" onclick="ADM.cgNeuve()">' +
       (CG_OPEN.neuve ? 'Annuler' : '+ Nouvelle création') + '</button></div>';
 
@@ -8826,13 +8852,15 @@
     t0 = t0 || '';
     var cq = cid ? ',\'' + cid + '\'' : '';
     var rows = planCompute(planning, t0);
-    var OWN = { studio: ['🎨 Toi', '#eef3f6', '#305277'], cliente: ['👤 Cliente', '#F0E2D6', '#8a4a2c'], les_deux: ['🤝 Vous deux', '#eef1ec', '#3f5a37'] };
-    var STx = { fait: ['Fait', '#e6f0e2', '#456039'], en_cours: ['En cours', '#f6ead2', '#8a6414'], a_venir: ['À venir', '#efe7d7', '#675334'] };
+    // Qui porte le jalon, et où il en est : dans les nuances de la charte,
+    // pas dans des couleurs inventées.
+    var OWN = { studio: ['Toi', '#EAF2FF', '#2A4266'], cliente: ['Ta cliente', '#F5E3D9', '#8A4522'], les_deux: ['Vous deux', '#EDEAE7', '#3A2A22'] };
+    var STx = { fait: ['Fait', '#EDE4DE', '#5A2A11'], en_cours: ['En cours', '#F5E3D9', '#8A4522'], a_venir: ['À venir', '#F1EEE9', '#6B5A50'] };
     function jalonRow(r) {
       var j = r.j;
       var ow = OWN[j.owner] || OWN.studio;
       var stt = STx[j.status] || STx.a_venir;
-      var dotc = j.status === 'fait' ? '#456039' : (j.status === 'en_cours' ? '#8a6414' : '#c8b29a');
+      var dotc = j.status === 'fait' ? '#5A2A11' : (j.status === 'en_cours' ? '#CD8F6E' : '#D8D2CB');
       var timing = j.dateMode === 'fixed'
         ? '<label class="cg-fld"><span>Date fixe</span><input class="cg-in" type="date" value="' + esc(j.date || '') + '" onchange="ADM.pjSet(\'' + pid + '\',\'' + j.id + '\',\'date\',this.value' + cq + ')"></label>'
         : (j.dateMode === 'range'
@@ -8845,10 +8873,10 @@
       var edite = !!PJ_ED[j.id];
       var ligne = '<div class="cgj-l" onclick="ADM.pjEdit(\'' + j.id + '\')" title="' +
         (edite ? 'Replier' : 'Modifier ce jalon') + '">' +
-        '<span class="cgj-d">' + (r.label || '—') + '</span>' +
+        '<span class="cgj-d">' + esc(r.label || 'Sans date') + '</span>' +
         '<span class="cgj-t">' + esc(j.title || 'Sans titre') + '</span>' +
-        '<span class="cg-chip" style="background:' + ow[1] + ';color:' + ow[2] + '">' + ow[0] + '</span>' +
-        '<select class="cg-in cgj-s" onclick="event.stopPropagation()" onchange="event.stopPropagation();ADM.pjSet(\'' + pid + '\',\'' + j.id + '\',\'status\',this.value' + cq + ')" title="Avancement">' +
+        '<span class="cgj-c" style="background:' + ow[1] + ';color:' + ow[2] + '">' + esc(ow[0]) + '</span>' +
+        '<select class="cgj-s" style="background:' + stt[1] + ';color:' + stt[2] + '" onclick="event.stopPropagation()" onchange="event.stopPropagation();ADM.pjSet(\'' + pid + '\',\'' + j.id + '\',\'status\',this.value' + cq + ')" title="Avancement">' +
           '<option value="a_venir"' + (j.status !== 'en_cours' && j.status !== 'fait' ? ' selected' : '') + '>À venir</option>' +
           '<option value="en_cours"' + (j.status === 'en_cours' ? ' selected' : '') + '>En cours</option>' +
           '<option value="fait"' + (j.status === 'fait' ? ' selected' : '') + '>Fait</option>' +
@@ -8881,7 +8909,18 @@
       '</div>';
     }
     var eid = 'plan-new-' + pid + (cid ? '-' + cid : '');
-    return '<div class="cg-t0"><span>Départ (T0)</span><input class="cg-in" type="date" value="' + esc(t0) + '" onchange="ADM.pjStart(\'' + pid + '\',this.value' + cq + ')" style="width:150px"><span class="cg-hint">' + (t0 ? 'les dates se calculent à partir de là' : 'vide = dates relatives (Sem 1, Sem 3-4…)') + '</span></div>' +
+    // Ce que le planning raconte, avant d'entrer dans le détail.
+    var si = rows.length ? planSituation({ jalons: planning, planningStart: t0 }) : null;
+    var resume = si ? '<div class="cg-pres">' +
+      '<div class="cg-presj"><span style="width:' + si.pct + '%"></span></div>' +
+      '<div class="cg-presl"><b>' + si.done + ' jalon' + (si.done > 1 ? 's' : '') + ' sur ' + si.total + '</b>' +
+      (si.ended ? '<span>tout est fait</span>'
+        : (si.current ? '<span>prochain : ' + esc(si.current.j.title || 'sans titre') +
+            (si.current.label ? ' · ' + esc(si.current.label) : '') + '</span>' : '')) +
+      (!si.ended && si.late.length ? '<span class="ck-ap">' + si.late.length + ' en retard</span>' : '') +
+      '</div></div>' : '';
+    return resume +
+      '<div class="cg-t0"><span>Départ</span><input class="cg-in" type="date" value="' + esc(t0) + '" onchange="ADM.pjStart(\'' + pid + '\',this.value' + cq + ')" style="width:160px"></div>' +
       (rows.length ? '<div class="cg-jals">' + rows.map(jalonRow).join('') + '</div>' : '<div class="cg-empty">Aucun jalon. Ajoute la première étape ci-dessous.</div>') +
       '<div class="cg-addj"><input class="cg-in" id="' + eid + '" placeholder="Titre de l\'étape (ex. Intégration des templates)" style="flex:1" onkeydown="if(event.key===\'Enter\'){event.preventDefault();ADM.pjAdd(\'' + pid + '\'' + cq + ');}"><button class="cg-btn cg-btn--dark" onclick="ADM.pjAdd(\'' + pid + '\'' + cq + ')">' + cgIcon('plus', 14) + ' Ajouter un jalon</button></div>';
   }
@@ -8894,8 +8933,7 @@
   function planningTab(d) {
     var pid = d.id;
     return '<div class="card infocard" style="background:var(--card)"><h3><span class="infocard__dot" style="background:#35608f"></span>Planning éditorial</h3>' +
-      '<div class="micro mb">Chaque jalon a une échéance (date fixe ou durée qui s\'enchaîne depuis le précédent) et un responsable (toi / la cliente). La cliente voit ce planning et est prévenue quand une action lui incombe.</div>' +
-      '<div id="planwrap-' + pid + '">' + planningEditor(pid, d.content.planning, d.content.planningStart, '') + '</div>' +
+            '<div id="planwrap-' + pid + '">' + planningEditor(pid, d.content.planning, d.content.planningStart, '') + '</div>' +
     '</div>';
   }
   // pid = identifiant public du projet (d.id : 'website' / 'branding' / 'support-001'…),
@@ -9413,7 +9451,7 @@
     var restCol = over ? '#8a4a2c' : (low ? 'var(--orange)' : 'var(--green)');
     var pct = f.available > 0 ? Math.min(100, Math.round(f.used / f.available * 100)) : (f.used > 0 ? 100 : 0);
     function line(lbl, val, col, strong) { return '<div style="display:flex;justify-content:space-between;align-items:baseline;padding:5px 0"><span class="micro" style="text-transform:none;letter-spacing:0;color:var(--terre-600)">' + lbl + '</span><span style="font-weight:' + (strong ? '700' : '600') + ';font-size:' + (strong ? '15px' : '13.5px') + ';color:' + (col || 'var(--terre)') + '">' + val + '</span></div>'; }
-    var _excTag = f.curExceptional ? ' <span style="font-size:10px;font-weight:700;color:var(--gold-ink);background:var(--gold-chip);border-radius:999px;padding:1px 8px;vertical-align:middle">exceptionnel</span>' : '';
+    var _excTag = f.curExceptional ? ' <span style="font-size:15px;font-weight:700;color:var(--gold-ink);background:var(--gold-chip);border-radius:999px;padding:1px 8px;vertical-align:middle">exceptionnel</span>' : '';
     var carryLine = '';
     if (f.carryIn > 0) carryLine = line('+ Report du mois dernier ' + (f.curExceptional ? _excTag : '<span style="color:var(--muted)">(heures non utilisées)</span>'), '+ ' + fmtHrs(f.carryIn), 'var(--green)');
     else if (f.carryIn < 0) carryLine = line('− Dépassement du mois dernier <span style="color:var(--muted)">(déduit)</span>', '− ' + fmtHrs(-f.carryIn), '#8a4a2c');
@@ -9426,10 +9464,10 @@
       var validated = !!t.completedAt;
       var note = validated ? ('validée le ' + fmtDate(t.completedAt)) : (t.status === 'done' ? 'terminée' : 'en cours');
       return '<div style="display:flex;justify-content:space-between;gap:10px;align-items:baseline;padding:6px 0;border:none">' +
-        '<span style="font-size:13px;color:var(--terre);min-width:0"><span style="font-weight:600">' + esc(t.title || 'Tâche') + '</span> <span class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted)">· ' + note + '</span></span>' +
-        '<span style="font-weight:600;font-size:13px;white-space:nowrap">' + fmtHrs(o.mins / 60) + '</span></div>';
+        '<span style="font-size:15px;color:var(--terre);min-width:0"><span style="font-weight:600">' + esc(t.title || 'Tâche') + '</span> <span class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted)">· ' + note + '</span></span>' +
+        '<span style="font-weight:600;font-size:15px;white-space:nowrap">' + fmtHrs(o.mins / 60) + '</span></div>';
     }).join('');
-    var mtBlock = '<details style="margin-top:10px"><summary style="cursor:pointer;list-style:none;font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:0.02em;color:#2c4a72;background:#E8F1FF;border-radius:999px;padding:5px 12px;display:inline-block">📋 Détail : ' + mt.length + ' tâche' + (mt.length > 1 ? 's' : '') + ' travaillée' + (mt.length > 1 ? 's' : '') + ' ce mois</summary>' +
+    var mtBlock = '<details style="margin-top:10px"><summary style="cursor:pointer;list-style:none;font-family:var(--font-micro);font-size:15px;font-weight:700;letter-spacing:0.02em;color:#2c4a72;background:#E8F1FF;border-radius:999px;padding:5px 12px;display:inline-block">📋 Détail : ' + mt.length + ' tâche' + (mt.length > 1 ? 's' : '') + ' travaillée' + (mt.length > 1 ? 's' : '') + ' ce mois</summary>' +
       (mt.length ? mtRows : '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:8px">Aucun temps passé sur ' + esc(monthLbl) + ' pour l\'instant.</div>') + '</details>';
     var carryTxt = f.carryIn > 0 ? ' + report ' + fmtHrs(f.carryIn) : (f.carryIn < 0 ? ' − dépassement ' + fmtHrs(-f.carryIn) : '');
     var breakdown = '<div class="card" style="margin-top:0">' +
@@ -9440,7 +9478,7 @@
       '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--terre-600)">' + fmtHrs(f.used) + ' travaillées sur ' + fmtHrs(f.available) + ' dispo <span style="color:var(--muted)">(base ' + fmtHrs(f.base) + carryTxt + ')</span></div>' +
       billed +
       mtBlock +
-      '<details style="margin-top:12px"><summary style="cursor:pointer;list-style:none;font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:0.02em;color:var(--terre-600)">ℹ️ Comment c\'est compté&nbsp;?</summary>' +
+      '<details style="margin-top:12px"><summary style="cursor:pointer;list-style:none;font-family:var(--font-micro);font-size:15px;font-weight:700;letter-spacing:0.02em;color:var(--terre-600)">ℹ️ Comment c\'est compté&nbsp;?</summary>' +
         '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--terre-600);line-height:1.55;margin-top:8px">' +
           'Chaque heure est rattachée au <strong>mois où elle a réellement été travaillée</strong> (d\'après le chrono), peu importe quand la tâche est validée. Le temps « hors forfait » et les demandes non triées ne comptent pas. Les heures non utilisées se reportent sur le mois suivant (plafond ' + fmtHrs(f.cap) + ')&nbsp;; un dépassement est déduit du mois suivant, et au-delà d\'un mois de forfait il est facturé.' +
         '</div></details>' +
@@ -9454,7 +9492,7 @@
       return mt.map(function (o) {
         var t = o.t;
         var note = t.completedAt ? ('validée le ' + fmtDate(t.completedAt)) : (t.status === 'done' ? 'terminée' : 'en cours');
-        return '<div style="display:flex;justify-content:space-between;gap:10px;align-items:baseline;padding:5px 2px;font-size:13.5px">' +
+        return '<div style="display:flex;justify-content:space-between;gap:10px;align-items:baseline;padding:5px 2px;font-size:15px">' +
           '<span style="color:var(--terre);min-width:0"><span style="font-weight:600">' + esc(t.title || 'Tâche') + '</span> <span class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted)">· ' + note + '</span></span>' +
           '<span style="font-weight:600;white-space:nowrap;font-variant-numeric:tabular-nums">' + fmtHrs(o.mins / 60) + '</span></div>';
       }).join('');
@@ -9489,8 +9527,8 @@
         '</div>';
       return '<details' + (m.current ? ' open' : '') + ' style="background:' + (m.current ? 'var(--surface-2,#f4efe6)' : 'var(--card)') + ';border-radius:12px;margin-bottom:6px">' +
         '<summary style="cursor:pointer;list-style:none;display:flex;align-items:center;gap:12px;padding:11px 14px">' +
-          '<span style="flex:1;font-weight:' + (m.current ? '700' : '600') + ';color:var(--terre);font-size:14.5px;text-transform:capitalize">' + esc(m.label) + (m.current ? ' <span class="micro" style="text-transform:none;letter-spacing:0;color:var(--gold-ink)">· en cours</span>' : '') + (m.exceptional ? ' <span class="micro" style="text-transform:none;letter-spacing:0;color:var(--gold-ink);background:var(--gold-chip);padding:1px 8px;border-radius:999px;font-weight:700">exceptionnel</span>' : '') + '</span>' +
-          '<span style="font-variant-numeric:tabular-nums;color:var(--terre-600);font-size:13.5px;white-space:nowrap" title="Travaillé / Disponible">' + fmtHrs(m.used) + ' / ' + fmtHrs(m.available) + '</span>' +
+          '<span style="flex:1;font-weight:' + (m.current ? '700' : '600') + ';color:var(--terre);font-size:15px;text-transform:capitalize">' + esc(m.label) + (m.current ? ' <span class="micro" style="text-transform:none;letter-spacing:0;color:var(--gold-ink)">· en cours</span>' : '') + (m.exceptional ? ' <span class="micro" style="text-transform:none;letter-spacing:0;color:var(--gold-ink);background:var(--gold-chip);padding:1px 8px;border-radius:999px;font-weight:700">exceptionnel</span>' : '') + '</span>' +
+          '<span style="font-variant-numeric:tabular-nums;color:var(--terre-600);font-size:15px;white-space:nowrap" title="Travaillé / Disponible">' + fmtHrs(m.used) + ' / ' + fmtHrs(m.available) + '</span>' +
           '<span style="font-variant-numeric:tabular-nums;color:' + restCol + ';font-weight:700;min-width:80px;text-align:right;white-space:nowrap">' + rest + '</span>' +
         '</summary>' +
         '<div style="padding:0 14px 12px">' + monthTaskLines(m.ym) + calc + '</div>' +
@@ -9513,7 +9551,7 @@
       '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--terre-600);margin-bottom:10px;line-height:1.5">Marquées terminées mais sans temps enregistré → elles ne décomptent rien du forfait. Renseigne leur temps (et le mois) pour un suivi juste.</div>' +
       noTimeDone.map(function (t) {
         return '<div style="display:flex;justify-content:space-between;gap:10px;align-items:center;padding:7px 0">' +
-          '<span style="font-size:13.5px;color:var(--terre);min-width:0"><span style="font-weight:600">' + esc(t.title || 'Tâche') + '</span>' + (t.completedAt ? ' <span class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted)">· validée le ' + fmtDate(t.completedAt) + '</span>' : '') + '</span>' +
+          '<span style="font-size:15px;color:var(--terre);min-width:0"><span style="font-weight:600">' + esc(t.title || 'Tâche') + '</span>' + (t.completedAt ? ' <span class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted)">· validée le ' + fmtDate(t.completedAt) + '</span>' : '') + '</span>' +
           '<button class="btn btn--outline btn--sm" style="flex-shrink:0" onclick="ADM.ptFinishPrompt(\'' + t.id + '\')">Renseigner le temps</button>' +
         '</div>';
       }).join('') +
@@ -9525,12 +9563,12 @@
     var _billMin = _bill.reduce(function (s, t) { return s + _tmin(t); }, 0);
     var _oos = _allT.filter(function (t) { return t.stage === 'out_of_scope' && _tmin(t) > 0; });
     var _oosMin = _oos.reduce(function (s, t) { return s + _tmin(t); }, 0);
-    function _exLine(t) { return '<div style="display:flex;justify-content:space-between;gap:10px;align-items:baseline;padding:5px 0;font-size:13.5px"><span style="color:var(--terre)"><span style="font-weight:600">' + esc(t.title || 'Tâche') + '</span></span><span style="font-weight:600;white-space:nowrap;font-variant-numeric:tabular-nums">' + fmtHrs(_tmin(t) / 60) + '</span></div>'; }
+    function _exLine(t) { return '<div style="display:flex;justify-content:space-between;gap:10px;align-items:baseline;padding:5px 0;font-size:15px"><span style="color:var(--terre)"><span style="font-weight:600">' + esc(t.title || 'Tâche') + '</span></span><span style="font-weight:600;white-space:nowrap;font-variant-numeric:tabular-nums">' + fmtHrs(_tmin(t) / 60) + '</span></div>'; }
     var completeness = '<div class="card" style="margin-top:0">' +
       '<h3 style="margin:0 0 4px;font-size:16px">Contrôle · tout est compté&nbsp;?</h3>' +
       '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--terre-600);line-height:1.55;margin-bottom:6px"><strong>' + _bill.length + ' tâche' + (_bill.length > 1 ? 's' : '') + '</strong> dans le forfait (archivées comprises) · <strong>' + fmtHrs(_billMin / 60) + '</strong> enregistrées au total. Une tâche que tu as faite n\'apparaît pas&nbsp;? Elle est forcément dans un de ces cas :</div>' +
       (noTimeDone.length ? '<div class="micro" style="text-transform:none;letter-spacing:0;color:#824426;margin:4px 0 2px;font-weight:600">• ' + noTimeDone.length + ' terminée' + (noTimeDone.length > 1 ? 's' : '') + ' sans temps saisi → onglet « Ce mois » pour les renseigner</div>' : '') +
-      (_oos.length ? '<details style="margin-top:6px"><summary style="cursor:pointer;list-style:none;font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:0.02em;color:#8a4a2c;background:#F0E2D6;border-radius:999px;padding:5px 12px;display:inline-block">• Hors forfait · ' + _oos.length + ' tâche' + (_oos.length > 1 ? 's' : '') + ' avec ' + fmtHrs(_oosMin / 60) + ' (non compté, facturé à part)</summary><div style="margin-top:6px">' + _oos.map(_exLine).join('') + '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:6px">Si l\'une devrait compter dans le forfait, rouvre-la et enlève « hors forfait ».</div></div></details>' : '') +
+      (_oos.length ? '<details style="margin-top:6px"><summary style="cursor:pointer;list-style:none;font-family:var(--font-micro);font-size:15px;font-weight:700;letter-spacing:0.02em;color:#8a4a2c;background:#F0E2D6;border-radius:999px;padding:5px 12px;display:inline-block">• Hors forfait · ' + _oos.length + ' tâche' + (_oos.length > 1 ? 's' : '') + ' avec ' + fmtHrs(_oosMin / 60) + ' (non compté, facturé à part)</summary><div style="margin-top:6px">' + _oos.map(_exLine).join('') + '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:6px">Si l\'une devrait compter dans le forfait, rouvre-la et enlève « hors forfait ».</div></div></details>' : '') +
       (!noTimeDone.length && !_oos.length ? '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--terre-600);font-weight:600">✓ Aucune tâche exclue, tout ton travail facturable est compté.</div>' : '') +
     '</div>';
     var histView = (f.history && f.history.length) ? histBlock : '<div class="card" style="margin-top:0"><div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted)">Pas encore d\'historique — il se remplit au fil des mois.</div></div>';
@@ -9539,7 +9577,7 @@
     var _ovKeys = Object.keys(_ovs).filter(function (k) { return /^\d{4}-\d{2}$/.test(k) && _ovs[k] !== '' && _ovs[k] != null; }).sort();
     var _ovRows = _ovKeys.map(function (k) {
       var lbl = new Date(k + '-01T00:00:00').toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
-      return '<div style="display:flex;align-items:center;gap:12px;padding:9px 0;border-top:1px solid var(--bone-d)"><span style="flex:1;text-transform:capitalize;font-weight:600;color:var(--terre);font-size:14px">' + esc(lbl) + '</span><span style="font-family:var(--font-micro);font-weight:700;color:var(--gold-ink)">' + fmtHrs(parseFloat(_ovs[k])) + '</span><button class="btn btn--outline btn--sm" onclick="ADM.forfaitOverrideDel(\'' + k + '\')">Retirer</button></div>';
+      return '<div style="display:flex;align-items:center;gap:12px;padding:9px 0;border-top:1px solid var(--bone-d)"><span style="flex:1;text-transform:capitalize;font-weight:600;color:var(--terre);font-size:15px">' + esc(lbl) + '</span><span style="font-family:var(--font-micro);font-weight:700;color:var(--gold-ink)">' + fmtHrs(parseFloat(_ovs[k])) + '</span><button class="btn btn--outline btn--sm" onclick="ADM.forfaitOverrideDel(\'' + k + '\')">Retirer</button></div>';
     }).join('');
     var _cm3 = (function () { var n = new Date(); return n.getFullYear() + '-' + String(n.getMonth() + 1).padStart(2, '0'); })();
     var _capH = (f.cap != null ? f.cap : 2);
@@ -9628,7 +9666,7 @@
       var done = t.status === 'done' || t.status === 'closed';
       var opts = TICKET_STATUS.map(function (s) { return '<option value="' + s[0] + '"' + (t.status === s[0] ? ' selected' : '') + '>' + s[1] + '</option>'; }).join('');
       var pm = prioMap[t.priority] || prioMap.moyenne;
-      var prioPill = '<span style="font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:0.04em;color:' + pm[1] + ';background:' + pm[2] + ';padding:4px 11px;border-radius:999px">' + pm[0] + '</span>';
+      var prioPill = '<span style="font-family:var(--font-micro);font-size:15px;font-weight:700;letter-spacing:0.04em;color:' + pm[1] + ';background:' + pm[2] + ';padding:4px 11px;border-radius:999px">' + pm[0] + '</span>';
       var catPill = t.category ? '<span class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted)">' + esc(t.category) + '</span>' : '';
       var dueTag = t.dueDate ? '<span class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted)">souhaité pour ' + fmtDate(t.dueDate) + '</span>' : '';
       var newDot = t.seenByAdmin === false ? '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#c46a1a;margin-right:7px" title="Nouveau"></span>' : '';
@@ -9660,7 +9698,7 @@
             '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:9px">' + prioPill + catPill + dueTag + '</div></div>' +
           '<button class="btn btn--danger btn--sm" style="flex-shrink:0" onclick="ADM.ticketDelete(\'' + t.id + '\')">Suppr.</button>' +
         '</div>' +
-        (t.description ? '<div style="margin-top:13px;font-size:14px;white-space:pre-wrap;line-height:1.6;color:var(--terre-600)">' + esc(t.description) + '</div>' : '') +
+        (t.description ? '<div style="margin-top:13px;font-size:15px;white-space:pre-wrap;line-height:1.6;color:var(--terre-600)">' + esc(t.description) + '</div>' : '') +
         atts + work +
       '</div>';
     }
@@ -9668,7 +9706,7 @@
       ? '<div style="display:grid;gap:14px">' + openT.map(card).join('') + '</div>'
       : '<div class="empty">Aucun ticket en cours. La cliente ouvre ses tickets depuis son espace.</div>';
     var histBlock = doneT.length
-      ? '<details style="margin-top:18px"><summary style="cursor:pointer;font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:var(--muted);padding:6px 0">Tickets terminés · ' + doneT.length + '</summary>' +
+      ? '<details style="margin-top:18px"><summary style="cursor:pointer;font-family:var(--font-micro);font-size:15px;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:var(--muted);padding:6px 0">Tickets terminés · ' + doneT.length + '</summary>' +
         '<div style="display:grid;gap:14px;margin-top:12px">' + doneT.map(card).join('') + '</div></details>'
       : '';
     var mh = parseFloat(d.content.monthlyHours) || 0;
@@ -9725,7 +9763,7 @@
       if (b.type === 'todo') return '<div style="display:flex;gap:8px;align-items:flex-start;margin:4px 0"><span style="flex-shrink:0">' + (b.done ? '☑' : '☐') + '</span><span style="white-space:pre-wrap;' + (b.done ? 'text-decoration:line-through;color:var(--muted)' : '') + '">' + mtLinkify(b.text || '') + '</span></div>';
       if (b.type === 'list') return '<div style="display:flex;gap:8px;margin:2px 0"><span style="color:#b08968;flex-shrink:0">•</span><span style="white-space:pre-wrap">' + mtLinkify(b.text || '') + '</span></div>';
       if (b.type === 'numbered') return '<div style="display:flex;gap:8px;margin:2px 0"><span style="color:#b08968;flex-shrink:0">' + num + '.</span><span style="white-space:pre-wrap">' + mtLinkify(b.text || '') + '</span></div>';
-      if (b.type === 'section') return '<div style="font-size:16px;font-weight:700;color:var(--terre);margin:16px 0 4px;display:flex;align-items:center;gap:6px"><span style="color:var(--glycine-900);font-size:12px">▾</span>' + esc(b.text || 'Section') + '</div>';
+      if (b.type === 'section') return '<div style="font-size:16px;font-weight:700;color:var(--terre);margin:16px 0 4px;display:flex;align-items:center;gap:6px"><span style="color:var(--glycine-900);font-size:15px">▾</span>' + esc(b.text || 'Section') + '</div>';
       if (b.type === 'sep') return '<hr style="border:none;border-top:2px dashed var(--bone-d);margin:12px 0">';
       if (b.type === 'file') { var dl = b.fileKey ? ('/api/clients/' + CK + '/files/' + encodeURIComponent(b.fileKey) + '/download') : '#'; return '<div style="margin:6px 0"><a class="btn btn--outline btn--sm" href="' + dl + '" target="_blank">📎 ' + esc(b.name || 'fichier') + '</a></div>'; }
       if (b.type === 'image') { var iu = b.fileKey ? ('/api/clients/' + CK + '/files/' + encodeURIComponent(b.fileKey) + '/download') : ''; return iu ? '<div style="margin:8px 0"><a href="' + iu + '" target="_blank" rel="noopener"><img src="' + iu + '" alt="' + esc(b.name || '') + '" style="max-width:100%;max-height:380px;border-radius:8px;display:block"></a></div>' : ''; }
@@ -9742,7 +9780,7 @@
         TBL_REG[tid] = { key: CK, taskId: t.id, blockId: b.id, cols: cols, src: rows, entete: 1, zebre: b.zebra, teinte: b.zebraBg };
         return tblWrap(tid);
       }
-      return '<div style="font-size:14px;line-height:1.6;color:var(--terre-600);white-space:pre-wrap;margin:6px 0">' + admRichSafe(b.text || '') + '</div>';
+      return '<div style="font-size:15px;line-height:1.6;color:var(--terre-600);white-space:pre-wrap;margin:6px 0">' + admRichSafe(b.text || '') + '</div>';
     }
     return '<div style="margin-top:15px"><div class="micro" style="margin-bottom:7px">' + esc(label || 'Le brief du client') + '</div>' + html + '</div>';
   }
@@ -9877,7 +9915,7 @@
     var th0 = moveId ? '<th style="background:var(--terre);padding:12px 8px;width:1%;white-space:nowrap;border-top-left-radius:13px"></th>' : '';
     var head = '<tr>' + th0 + cols.map(function (c, i) {
       var rnd = (i === 0 && !moveId ? 'border-top-left-radius:13px;' : '') + (i === cols.length - 1 ? 'border-top-right-radius:13px;' : '');
-      return '<th style="background:var(--terre);color:var(--paille);font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:12px 15px;vertical-align:middle;text-align:' + (i === 0 ? 'center' : 'left') + ';' + rnd + '">' + esc(c || '') + '</th>';
+      return '<th style="background:var(--terre);color:var(--paille);font-family:var(--font-micro);font-size:15px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:12px 15px;vertical-align:middle;text-align:' + (i === 0 ? 'center' : 'left') + ';' + rnd + '">' + esc(c || '') + '</th>';
     }).join('') + '</tr>';
     var bodyR = dataRows.map(function (row, ri) {
       var even = (zebre !== false) && ri % 2 === 1, last = ri === dataRows.length - 1;
@@ -9906,7 +9944,7 @@
           return '<td style="padding:14px 10px;text-align:center;vertical-align:top;background:' + cellBg + ';' + rnd + '"><span style="display:inline-grid;place-items:center;width:30px;height:30px;border-radius:9px;background:#F1DCA6;color:#7a5a1e;font-family:var(--font-display);font-style:italic;font-size:16px">' + esc(raw) + '</span></td>';
         }
         var col = vis ? '#2c4a72' : 'var(--terre)';
-        var extra = vis ? 'font-style:italic;font-size:13px;' : (ci === titIdx ? "font-family:var(--font-display);font-size:17px;line-height:1.25;" : 'font-size:13.5px;line-height:1.55;');
+        var extra = vis ? 'font-style:italic;font-size:15px;' : (ci === titIdx ? "font-family:var(--font-display);font-size:17px;line-height:1.25;" : 'font-size:15px;line-height:1.55;');
         return '<td style="padding:14px 15px;vertical-align:top;color:' + col + ';white-space:pre-wrap;word-break:break-word;min-width:130px;max-width:340px;background:' + cellBg + ';' + extra + rnd + '">' + admRichSafe(val) + '</td>';
       }).join('') + '</tr>';
     }).join('');
@@ -9942,12 +9980,12 @@
       if (t.dueDate) meta.push('échéance souhaitée ' + fmtDate(t.dueDate));
       var metaHtml = meta.length ? '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:3px">' + meta.join(' · ') + '</div>' : '';
       var msg = (t.content || '').trim();
-      var msgHtml = msg ? '<div style="font-size:13.5px;color:var(--terre-600);margin-top:8px;white-space:pre-wrap;line-height:1.5">' + esc(msg.slice(0, 400)) + (msg.length > 400 ? '…' : '') + '</div>' : '';
+      var msgHtml = msg ? '<div style="font-size:15px;color:var(--terre-600);margin-top:8px;white-space:pre-wrap;line-height:1.5">' + esc(msg.slice(0, 400)) + (msg.length > 400 ? '…' : '') + '</div>' : '';
       var atts = (t.attachments || []).filter(function (a) { return a && (a.key || a.fileKey); }).length;
       var attHtml = atts ? '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:7px">📎 ' + atts + ' pièce' + (atts > 1 ? 's' : '') + ' jointe' + (atts > 1 ? 's' : '') + '</div>' : '';
       var due10 = esc((t.dueDate || '').slice(0, 10));
       return '<div class="card" style="background:#f6ece3;max-width:760px;margin-bottom:10px">' +
-        '<div style="display:flex;align-items:baseline;gap:9px;flex-wrap:wrap"><span style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--gold-ink);background:var(--gold-chip);padding:3px 9px;border-radius:999px">À analyser</span><span style="font-weight:600;color:var(--terre)">' + esc(t.title || 'Demande') + '</span></div>' +
+        '<div style="display:flex;align-items:baseline;gap:9px;flex-wrap:wrap"><span style="font-family:var(--font-micro);font-size:15px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--gold-ink);background:var(--gold-chip);padding:3px 9px;border-radius:999px">À analyser</span><span style="font-weight:600;color:var(--terre)">' + esc(t.title || 'Demande') + '</span></div>' +
         metaHtml + msgHtml + attHtml +
         '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">' +
           '<button class="btn btn--dark btn--sm" onclick="ADM.ptDemandeTriage(\'' + t.id + '\',\'accept\')">✓ Accepter → tâche</button>' +
@@ -9957,6 +9995,7 @@
         '</div></div>';
     }
     var inboxBanner = inboxN ? '<div style="max-width:760px;margin-bottom:16px"><div class="micro" style="text-transform:none;letter-spacing:0;color:var(--gold-ink);font-weight:600;margin-bottom:9px">📨 ' + inboxN + ' demande' + (inboxN > 1 ? 's' : '') + ' en attente d\'analyse</div>' + inboxTasks.map(ptDemandeCard).join('') + '</div>' : '';
+    PT_DETAIL = ptCard;
     function ptCard(t) {
       var opts = TASK_STATUS.map(function (s) { return '<option value="' + s[0] + '"' + (t.status === s[0] ? ' selected' : '') + '>' + s[1] + '</option>'; }).join('');
       var prun = PT_TIMER && PT_TIMER.id === t.id;
@@ -9974,7 +10013,7 @@
         ? '<button class="btn btn--outline btn--sm" onclick="ADM.taskArchive(\'' + t.id + '\',false)">Restaurer</button>'
         : (t.status === 'done' ? '<button class="btn btn--outline btn--sm" onclick="ADM.taskArchive(\'' + t.id + '\',true)">Archiver</button>' : '');
       var hair = 'height:1px;background:var(--bone-d);margin:18px 0;opacity:0.7';
-      var pill = '<span style="display:inline-block;font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:' + stCol + ';background:' + stBg + ';padding:4px 11px;border-radius:999px">' + stLbl + '</span>';
+      var pill = '<span style="display:inline-block;font-family:var(--font-micro);font-size:15px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:' + stCol + ';background:' + stBg + ';padding:4px 11px;border-radius:999px">' + stLbl + '</span>';
       // Chip carrée à icône (état) — jamais de point
       var stIcon = { todo: '<circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 2"/>', in_progress: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>', review: '<path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/>', done: '<path d="M20 6 9 17l-5-5"/>' }[t.status] || '<circle cx="12" cy="12" r="9"/>';
       var stChip = '<span class="tkchip" style="background:' + stBg + '"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="' + stCol + '" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">' + stIcon + '</svg></span>';
@@ -9983,7 +10022,7 @@
       // « je ne sais pas où c'est comptabilisé », même pour une tâche en attente.
       var _mbm = admTaskMinByMonth(t);
       var _mks = Object.keys(_mbm).filter(function (k) { return _mbm[k] > 0; }).sort();
-      var monthChip = _mks.length ? '<span title="Le temps de cette tâche est décompté du forfait sur ce(s) mois" style="display:inline-flex;align-items:center;gap:5px;font-family:var(--font-micro);font-size:10px;font-weight:600;letter-spacing:0.03em;color:var(--terre-600);background:var(--surface);padding:4px 11px;border-radius:999px">🗓 compté en ' + _mks.map(function (k) { return new Date(k + '-01T00:00:00').toLocaleDateString('fr-FR', { month: 'long' }); }).join(' + ') + '</span>' : '';
+      var monthChip = _mks.length ? '<span title="Le temps de cette tâche est décompté du forfait sur ce(s) mois" style="display:inline-flex;align-items:center;gap:5px;font-family:var(--font-micro);font-size:15px;font-weight:600;letter-spacing:0.03em;color:var(--terre-600);background:var(--surface);padding:4px 11px;border-radius:999px">🗓 compté en ' + _mks.map(function (k) { return new Date(k + '-01T00:00:00').toLocaleDateString('fr-FR', { month: 'long' }); }).join(' + ') + '</span>' : '';
       // en-tête : titre + statut/échéance à gauche, actions à droite
       // Badge « livrable » : catégorise la tâche selon l'état de son dernier
       // livrable envoyé (envoyé/à valider, validé, révision demandée).
@@ -9998,9 +10037,11 @@
           refuse: ['📦 Révision demandée', '#8a4a2c', '#F0E2D6'],
           revision: ['📦 Révision demandée', '#8a4a2c', '#F0E2D6']
         }[lastDlv.status || 'a_valider'] || null;
-        if (dm) dlvBadge = '<span style="font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:0.03em;color:' + dm[1] + ';background:' + dm[2] + ';padding:4px 11px;border-radius:999px">' + dm[0] + (tls.length > 1 ? ' · V' + tls.length : '') + '</span>';
+        if (dm) dlvBadge = '<span style="font-family:var(--font-micro);font-size:15px;font-weight:700;letter-spacing:0.03em;color:' + dm[1] + ';background:' + dm[2] + ';padding:4px 11px;border-radius:999px">' + dm[0] + (tls.length > 1 ? ' · V' + tls.length : '') + '</span>';
       }
-      var header = '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px">' +
+      // Dans le tiroir (largeur d'une colonne), les boutons d'action doivent
+      // passer sous le titre plutôt que l'écraser en colonne d'une lettre.
+      var header = '<div class="pt-head">' +
         '<div style="display:flex;gap:13px;align-items:flex-start;min-width:0">' + stChip +
         '<div style="min-width:0">' +
           '<div style="font-size:18px;font-weight:600;color:var(--terre);line-height:1.25">' + esc(t.title) + '</div>' +
@@ -10016,8 +10057,8 @@
       var brief = t.content ? (function () {
         var long = t.content.length > 260 || (t.content.match(/\n/g) || []).length > 4;
         return '<div style="margin-top:15px"><div class="micro" style="margin-bottom:7px">La demande du client</div>' +
-          '<div id="ptc-' + t.id + '" style="font-size:14px;white-space:pre-wrap;line-height:1.6;color:var(--terre-600)' + (long ? ';display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;overflow:hidden' : '') + '">' + mtLinkify(t.content) + '</div>' +
-          (long ? '<button id="ptc-btn-' + t.id + '" onclick="ADM.ptToggleContent(\'' + t.id + '\')" style="background:none;border:none;color:var(--glycine-900);font-size:12px;cursor:pointer;padding:6px 0 0;text-decoration:underline">Tout afficher</button>' : '') + '</div>';
+          '<div id="ptc-' + t.id + '" style="font-size:15px;white-space:pre-wrap;line-height:1.6;color:var(--terre-600)' + (long ? ';display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;overflow:hidden' : '') + '">' + mtLinkify(t.content) + '</div>' +
+          (long ? '<button id="ptc-btn-' + t.id + '" onclick="ADM.ptToggleContent(\'' + t.id + '\')" style="background:none;border:none;color:var(--glycine-900);font-size:15px;cursor:pointer;padding:6px 0 0;text-decoration:underline">Tout afficher</button>' : '') + '</div>';
       })() : '';
       var atts = (Array.isArray(t.attachments) && t.attachments.length) ? '<div style="display:flex;flex-wrap:wrap;gap:7px;margin-top:12px">' + t.attachments.map(function (a) { return '<a class="btn btn--outline btn--sm" href="/api/clients/' + CURKEY + '/files/' + encodeURIComponent(a.key) + '/download" target="_blank">📎 ' + esc(a.name || 'fichier') + '</a>'; }).join('') + '</div>' : '';
       // Lien & fichiers ajoutés par le client dans sa tâche (propriété p_elements).
@@ -10061,13 +10102,13 @@
       var histHtml = histArr.length
         ? '<div style="margin-top:12px"><div class="micro" style="margin-bottom:4px">Historique des révisions · ' + histArr.length + '</div>' +
           histArr.map(function (h, i) {
-            return '<div style="display:flex;gap:9px;align-items:baseline;font-size:12.5px;padding:6px 0;border:none">' +
+            return '<div style="display:flex;gap:9px;align-items:baseline;font-size:15px;padding:6px 0;border:none">' +
               '<span class="micro" style="color:var(--terre);text-transform:none;letter-spacing:0;flex-shrink:0">R' + (histArr.length - i) + '</span>' +
               '<a href="' + esc(h.url) + '" target="_blank" rel="noopener" style="color:var(--glycine-900);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(h.url) + '</a>' +
               '<span class="micro" style="color:var(--muted);text-transform:none;letter-spacing:0;flex-shrink:0">' + fmtDate(h.at) + '</span></div>';
           }).join('') + '</div>'
         : (t.reviewLink
-          ? '<div style="margin-top:9px;font-size:12.5px"><a href="' + esc(t.reviewLink) + '" target="_blank" rel="noopener" style="color:var(--glycine-900)">' + esc(t.reviewLink) + '</a> <span class="micro" style="color:var(--muted);text-transform:none;letter-spacing:0">— enregistré, pas encore envoyé</span></div>'
+          ? '<div style="margin-top:9px;font-size:15px"><a href="' + esc(t.reviewLink) + '" target="_blank" rel="noopener" style="color:var(--glycine-900)">' + esc(t.reviewLink) + '</a> <span class="micro" style="color:var(--muted);text-transform:none;letter-spacing:0">— enregistré, pas encore envoyé</span></div>'
           : '');
       var reviewSaved = histHtml;
       var review = '<div style="background:#faf6ee;border:none;border-radius:13px;padding:14px 16px;margin-top:14px">' +
@@ -10083,7 +10124,7 @@
       // Cindy ne l'a pas traité (elle peut le lever ici, ou en renvoyant/terminant).
       var reworkBanner = t.needsRework ? '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:#eef4ea;border:1px solid #cfe0c6;border-radius:12px;padding:12px 15px;margin-bottom:16px">' +
         '<span style="font-size:18px">↩</span>' +
-        '<div style="flex:1;min-width:0"><div style="font-weight:700;color:#3f5a37;font-size:14px">Le client a fait ses retours</div>' +
+        '<div style="flex:1;min-width:0"><div style="font-weight:700;color:#3f5a37;font-size:15px">Le client a fait ses retours</div>' +
         '<div class="micro" style="text-transform:none;letter-spacing:0;color:#456039">C\'est à toi de retravailler la tâche' + (t.clientFeedbackAt ? ' · reçu le ' + fmtDate(t.clientFeedbackAt) : '') + '.</div></div>' +
         '<button class="btn btn--outline btn--sm" onclick="ADM.taskClearRework(\'' + t.id + '\')">Marquer traité</button>' +
         '</div>' : '';
@@ -10098,7 +10139,7 @@
         '<div style="' + hair + '"></div>' +
         commentsBlock('partner', t) +
         '<div style="' + hair + '"></div>' +
-        '<details><summary style="cursor:pointer;font-family:var(--font-micro);font-size:10px;letter-spacing:0.07em;text-transform:uppercase;color:var(--muted);padding:2px 0">Plus d\'options</summary>' +
+        '<details><summary style="cursor:pointer;font-family:var(--font-micro);font-size:15px;letter-spacing:0.07em;text-transform:uppercase;color:var(--muted);padding:2px 0">Plus d\'options</summary>' +
           '<div class="row mt" style="align-items:center;gap:10px"><span class="micro">Temps passé</span><input class="inp" type="number" style="width:80px" value="' + (t.timeSpentMinutes || 0) + '" title="ajuster les minutes" onchange="ADM.taskTime(\'' + t.id + '\',this.value)"><span class="micro">min</span></div>' +
           sessionsBlock(t) +
           '<div class="row mt" style="align-items:center;gap:12px;flex-wrap:wrap">' +
@@ -10113,17 +10154,69 @@
     var grid;
     if (!active.length) { grid = '<div class="empty">Aucune tâche (le client les crée depuis son espace).</div>'; }
     else {
+      // Une card par tâche, en grille : le détail complet d'une dizaine de
+      // tâches empilées faisait des écrans de défilement. Ouvrir une tâche
+      // la sort dans un tiroir, à droite, sans quitter la liste.
       var STG = [['todo', 'À faire'], ['in_progress', 'En cours'], ['review', 'À valider'], ['done', 'Terminé']];
       grid = STG.map(function (s) {
         var list = active.filter(function (t) { return (t.status || 'todo') === s[0]; });
         if (!list.length) return '';
-        var body = '<div style="display:flex;flex-direction:column;gap:16px;max-width:760px">' + list.map(ptCard).join('') + '</div>';
-        if (s[0] === 'done') return '<details style="margin-top:10px"><summary style="cursor:pointer;list-style:none;font-family:var(--font-micro);font-size:11px;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);padding:6px 0">' + s[1] + ' · ' + list.length + '</summary><div style="margin-top:10px">' + body + '</div></details>';
-        return '<div style="margin-bottom:6px"><div class="secmark2" style="margin:16px 0 10px">' + s[1] + ' · ' + list.length + '</div>' + body + '</div>';
+        return '<section class="pt-sec"><div class="pt-sech">' + esc(s[1]) +
+          '<span class="pt-secn">' + list.length + '</span></div>' +
+          '<div class="pjc-grid">' + list.map(function (t) { return ptCarte(t, d); }).join('') + '</div></section>';
       }).join('');
     }
-    var archHtml = archived.length ? '<details style="margin-top:18px"><summary style="cursor:pointer;font-family:var(--font-micro);font-size:11px;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);padding:6px 0">Tâches archivées · ' + archived.length + '</summary><div style="display:flex;flex-direction:column;gap:16px;max-width:760px;margin-top:12px">' + archived.map(ptCard).join('') + '</div></details>' : '';
+    var archHtml = archived.length ? '<details style="margin-top:18px"><summary style="cursor:pointer;font-family:var(--font-micro);font-size:15px;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);padding:6px 0">Tâches archivées · ' + archived.length + '</summary><div class="pjc-grid" style="margin-top:12px">' + archived.map(function (t) { return ptCarte(t, d); }).join('') + '</div></details>' : '';
     return inboxBanner + grid + archHtml;
+  }
+  /* La card d'une tâche : ce qu'on a besoin de savoir sans l'ouvrir. Même
+   * composant que les projets et les créations, donc la même façon de lire. */
+  var PT_TEINTES = {
+    todo:        { bg: '#F8F6F2', e: '#110704', sombre: false },   // Neige
+    in_progress: { bg: '#F5E3D9', e: '#5A2A11', sombre: false },   // Mandarine claire
+    review:      { bg: '#EAF2FF', e: '#2A4266', sombre: false },   // Azur clair
+    done:        { bg: '#EDE4DE', e: '#5A2A11', sombre: false }    // Cuivre clair
+  };
+  function ptStatutLabel(st) { for (var i = 0; i < TASK_STATUS.length; i++) if (TASK_STATUS[i][0] === st) return TASK_STATUS[i][1]; return 'À faire'; }
+  function ptCarte(t, d) {
+    var st = t.status || 'todo';
+    var lignes = [];
+    var est = Math.max(0, Math.round(Number(t.estMinutes) || 0));
+    var reel = Math.round((Number(t.timeSpentSeconds) || 0) / 60);
+    if (est || reel) {
+      lignes.push(['Temps', (reel ? esc(ckpDuree(reel)) + ' passées' : 'rien de compté') +
+        (est ? ' sur ' + esc(ckpDuree(est)) : '')]);
+    }
+    var livr = (d.content.livrables || []).filter(function (l) { return l.taskId === t.id; });
+    if (livr.length) lignes.push(['Versions', 'V' + livr.length + ' envoyée' + (livr.length > 1 ? 's' : '')]);
+    var atts = (Array.isArray(t.attachments) ? t.attachments : []).filter(function (a) { return a && (a.key || a.fileKey); }).length;
+    if (atts) lignes.push(['Fichiers', String(atts)]);
+    var cms = (Array.isArray(t.comments) ? t.comments : []).length;
+    if (cms) lignes.push(['Échanges', cms + (t.clientCommentNotif ? ' · <span class="ck-ap">nouveau</span>' : '')]);
+    if (t.needsRework) lignes.push(['Retour', '<span class="ck-ap">à retravailler</span>']);
+    return stbCarteProjet({
+      id: t.id, key: CURKEY, nom: t.title || 'Sans titre',
+      teinte: PT_TEINTES[st] || PT_TEINTES.todo,
+      presta: ptStatutLabel(st),
+      ou: t.dueDate ? 'Pour le ' + esc(fmtDate(t.dueDate)) : '<span class="ck-doux">Pas d’échéance</span>',
+      lignes: lignes,
+      ouvrir: 'ADM.ptOuvrir(\'' + t.id + '\')',
+      gestes: ''
+    });
+  }
+  /* Ouvrir une tâche la sort dans le tiroir de droite. On garde l'identifiant,
+   * et c'est sectionEffets qui le redessine après CHAQUE rendu : tous les
+   * gestes existants (changer le statut, déposer une version, répondre) le
+   * tiennent donc à jour sans qu'aucun d'eux ait à le savoir. */
+  var PT_OPEN = null, PT_DETAIL = null;
+  function ptDetail(t) { return PT_DETAIL ? PT_DETAIL(t) : ''; }
+  function ptOuvrir(id) { PT_OPEN = id; renderTab(); }
+  function ptFermer() { PT_OPEN = null; stbTiroirFermer(); }
+  function ptTiroir(d) {
+    if (!PT_OPEN || !d || !d.content) return;
+    var t = (d.content.taches || []).filter(function (x) { return x.id === PT_OPEN; })[0];
+    if (!t) { ptFermer(); return; }
+    stbTiroir(t.title || 'Tâche', ptDetail(t), function () { PT_OPEN = null; });
   }
   // Décode la propriété composite p_elements du client (« Lien & fichiers »).
   function ptBriefElements(t) {
@@ -10179,9 +10272,9 @@
     var rows = ls.map(function (l, i) {
       var isLast = i === ls.length - 1;
       return '<div class="file" style="' + (isLast ? '' : 'opacity:0.72') + '"><span class="nm">' +
-        '<strong style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.04em;color:var(--terre)">V' + (i + 1) + '</strong> ' + esc(l.name) + ' ' + pill(l.status, stLbl[l.status] || l.status) +
+        '<strong style="font-family:var(--font-micro);font-size:15px;letter-spacing:0.04em;color:var(--terre)">V' + (i + 1) + '</strong> ' + esc(l.name) + ' ' + pill(l.status, stLbl[l.status] || l.status) +
         (l.createdAt ? ' <span class="micro" style="letter-spacing:0.02em">' + fmtDate(l.createdAt) + '</span>' : '') +
-        (l.clientComment ? '<div class="muted" style="font-size:13px;font-style:italic;margin-top:2px">« ' + esc(l.clientComment) + ' »</div>' : '') + '</span>' +
+        (l.clientComment ? '<div class="muted" style="font-size:15px;font-style:italic;margin-top:2px">« ' + esc(l.clientComment) + ' »</div>' : '') + '</span>' +
         (l.fileKey ? '<a class="btn btn--outline btn--sm" href="/api/clients/' + CURKEY + '/files/' + encodeURIComponent(l.fileKey) + '/download">↓</a>' : '') +
         (l.reviewLink ? '<a class="btn btn--outline btn--sm" href="' + esc(/^https?:\/\//i.test(l.reviewLink) ? l.reviewLink : 'https://' + l.reviewLink) + '" target="_blank" rel="noopener">🔗 Ouvrir</a>' : '') +
         '<button class="btn btn--danger btn--sm" onclick="ADM.delDeliverable(\'' + l.id + '\')">Retirer</button></div>';
@@ -10256,10 +10349,10 @@
       return '<div style="display:flex;flex-direction:column;align-items:' + (mine ? 'flex-end' : 'flex-start') + ';margin-bottom:7px">' +
         '<div style="max-width:88%;background:' + bg + ';border-radius:12px;padding:8px 12px">' +
           '<div class="micro" style="text-transform:none;letter-spacing:0;color:' + (mine ? 'var(--muted)' : '#2c4a72') + ';font-weight:700;margin-bottom:2px">' + who + (c.createdAt ? ' · ' + fmtDate(c.createdAt) : '') + '</div>' +
-          '<div style="font-size:13.5px;color:var(--terre);line-height:1.45">' + mtLinkify(c.text || '') + '</div>' +
+          '<div style="font-size:15px;color:var(--terre);line-height:1.45">' + mtLinkify(c.text || '') + '</div>' +
         '</div></div>';
     }).join('') : '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-bottom:8px">Aucun échange pour l\'instant.</div>';
-    var flag = t.clientCommentNotif ? '<span style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#2c4a72;background:#E8F1FF;padding:3px 8px;border-radius:999px;margin-left:8px">Nouveau</span>' : '';
+    var flag = t.clientCommentNotif ? '<span style="font-family:var(--font-micro);font-size:15px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#2c4a72;background:#E8F1FF;padding:3px 8px;border-radius:999px;margin-left:8px">Nouveau</span>' : '';
     return '<div><div class="micro" style="margin-bottom:9px">Échanges sur la tâche' + flag + '</div>' + cs +
       '<div class="row mt" style="gap:8px"><input class="inp" style="flex:1" id="cm-' + t.id + '" placeholder="Répondre au client…" onkeydown="if(event.key===\'Enter\')ADM.taskComment(\'' + pid + '\',\'' + t.id + '\')"><button class="btn btn--dark btn--sm" onclick="ADM.taskComment(\'' + pid + '\',\'' + t.id + '\')">Envoyer</button></div></div>';
   }
@@ -10283,7 +10376,7 @@
   var QNR_ST = { assigned: ['À remplir', '#8a6f2e', '#fbf0d8'], in_progress: ['En cours', '#35608f', '#e3edfb'], to_review: ['À revoir', '#8a6f2e', '#fbf0d8'], completed: ['Complété ✓', '#3f6b3a', '#e7f0e3'] };
   function qnrStPill(inst, extra) {
     var sm = QNR_ST[inst.status] || QNR_ST.assigned;
-    return '<span style="flex-shrink:0;font-size:11.5px;font-weight:600;color:' + sm[1] + ';background:' + sm[2] + ';padding:4px 11px;border-radius:999px;white-space:nowrap">' + esc(sm[0]) + (extra || '') + '</span>';
+    return '<span style="flex-shrink:0;font-size:15px;font-weight:600;color:' + sm[1] + ';background:' + sm[2] + ';padding:4px 11px;border-radius:999px;white-space:nowrap">' + esc(sm[0]) + (extra || '') + '</span>';
   }
   function qnrHasAnswers(inst) {
     return inst.status === 'completed' || inst.status === 'to_review' ||
@@ -10296,8 +10389,8 @@
       if (!blocks.length) return '';
       var qs = blocks.map(function (b) {
         var disp = qnrFmtAnswer(ans[b.id]);
-        return '<div style="margin-bottom:12px"><div style="font-weight:600;font-size:13.5px;color:var(--terre)">' + esc(b.label || '') + '</div>' +
-          '<div style="font-size:14px;color:' + (disp === 'Sans réponse' ? 'var(--muted)' : 'var(--terre-600)') + ';white-space:pre-wrap;margin-top:2px">' + esc(disp) + '</div></div>';
+        return '<div style="margin-bottom:12px"><div style="font-weight:600;font-size:15px;color:var(--terre)">' + esc(b.label || '') + '</div>' +
+          '<div style="font-size:15px;color:' + (disp === 'Sans réponse' ? 'var(--muted)' : 'var(--terre-600)') + ';white-space:pre-wrap;margin-top:2px">' + esc(disp) + '</div></div>';
       }).join('');
       return '<div style="margin-top:16px"><div class="micro" style="text-transform:none;letter-spacing:0.04em;color:var(--muted);margin-bottom:8px;font-weight:700">' + esc(s.title || '') + '</div>' + qs + '</div>';
     }).join('');
@@ -10348,17 +10441,17 @@
     }).join('');
     var css = 'body{font-family:Georgia,\'Times New Roman\',serif;color:#2a2018;max-width:720px;margin:0 auto;padding:40px 34px;line-height:1.5}' +
       'h1{font-size:26px;font-style:italic;margin:0 0 4px;color:#412F21}' +
-      '.meta{font-size:12px;color:#5e4a2e;letter-spacing:0.04em;text-transform:uppercase;margin-bottom:26px}' +
+      '.meta{font-size:15px;color:#5e4a2e;letter-spacing:0.04em;text-transform:uppercase;margin-bottom:26px}' +
       'section{margin-bottom:22px}' +
-      '.sh{font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#6a4a0b;border-bottom:1px solid #e8ddc9;padding-bottom:5px;margin:22px 0 12px}' +
-      '.q{margin-bottom:14px}.ql{font-weight:700;font-size:14px;color:#412F21}.qa{font-size:14px;color:#40352a;white-space:pre-wrap;margin-top:2px}' +
-      '.qa.empty{color:#5e4a2e;font-style:italic}.qt{font-size:17px;font-style:italic;color:#412F21;margin:18px 0 4px}.qp{font-size:13px;color:#5e4a2e;margin:0 0 8px}' +
-      'footer{margin-top:34px;padding-top:14px;border-top:1px solid #e8ddc9;font-size:11px;color:#5e4a2e;text-align:center}' +
+      '.sh{font-size:15px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#6a4a0b;border-bottom:1px solid #e8ddc9;padding-bottom:5px;margin:22px 0 12px}' +
+      '.q{margin-bottom:14px}.ql{font-weight:700;font-size:15px;color:#412F21}.qa{font-size:15px;color:#40352a;white-space:pre-wrap;margin-top:2px}' +
+      '.qa.empty{color:#5e4a2e;font-style:italic}.qt{font-size:17px;font-style:italic;color:#412F21;margin:18px 0 4px}.qp{font-size:15px;color:#5e4a2e;margin:0 0 8px}' +
+      'footer{margin-top:34px;padding-top:14px;border-top:1px solid #e8ddc9;font-size:15px;color:#5e4a2e;text-align:center}' +
       '@media print{body{padding:0}@page{margin:16mm}}';
     var doc = '<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>' + esc(inst.name || 'Questionnaire') + (cn ? ', ' + esc(cn) : '') + '</title><style>' + css + '</style></head><body>' +
       '<h1>' + esc(inst.name || 'Questionnaire') + '</h1>' +
       '<div class="meta">' + (cn ? esc(cn) : '') + (cn && when ? ' · ' : '') + (when ? 'Complété le ' + esc(when) : '') + '</div>' +
-      (inst.description ? '<p style="font-size:13.5px;color:#5e4a2e;margin:-14px 0 22px">' + esc(inst.description) + '</p>' : '') +
+      (inst.description ? '<p style="font-size:15px;color:#5e4a2e;margin:-14px 0 22px">' + esc(inst.description) + '</p>' : '') +
       sections +
       '<footer>Seed to Bloom · seedtobloom.fr</footer>' +
       '<scr' + 'ipt>window.onload=function(){setTimeout(function(){window.print();},300);};</scr' + 'ipt>' +
@@ -10469,14 +10562,14 @@
   function ptFinishPrompt(id) {
     var t = ptFindTask(id); if (!t) return;
     var now = new Date(); var curMonth = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
-    var lab = 'flex:1;display:flex;flex-direction:column;gap:4px;font-family:var(--font-micro);font-size:11px;color:var(--muted)';
+    var lab = 'flex:1;display:flex;flex-direction:column;gap:4px;font-family:var(--font-micro);font-size:15px;color:var(--muted)';
     var ov = document.createElement('div'); ov.className = 'admconfirm';
     ov.innerHTML = '<div class="admconfirm__box" style="max-width:430px;text-align:left">' +
       '<div class="admconfirm__title">Terminer « ' + esc((t.title || 'Tâche').slice(0, 50)) + ' »</div>' +
-      '<p style="font-size:13.5px;color:var(--muted);margin:8px 0 14px;line-height:1.5">Combien de temps as-tu passé dessus, et sur quel mois&nbsp;? Ça garantit un décompte juste du forfait. (Laisse le temps vide pour terminer sans en compter.)</p>' +
+      '<p style="font-size:15px;color:var(--muted);margin:8px 0 14px;line-height:1.5">Combien de temps as-tu passé dessus, et sur quel mois&nbsp;? Ça garantit un décompte juste du forfait. (Laisse le temps vide pour terminer sans en compter.)</p>' +
       '<div style="display:flex;gap:10px">' +
-        '<label style="' + lab + '">Temps passé (h)<input id="fin-h" class="inp" type="number" min="0" step="0.25" style="font-size:14px;padding:9px 11px" placeholder="ex. 1.5"></label>' +
-        '<label style="' + lab + '">Mois du travail<input id="fin-m" class="inp" type="month" style="font-size:14px;padding:9px 11px" value="' + curMonth + '"></label>' +
+        '<label style="' + lab + '">Temps passé (h)<input id="fin-h" class="inp" type="number" min="0" step="0.25" style="font-size:15px;padding:9px 11px" placeholder="ex. 1.5"></label>' +
+        '<label style="' + lab + '">Mois du travail<input id="fin-m" class="inp" type="month" style="font-size:15px;padding:9px 11px" value="' + curMonth + '"></label>' +
       '</div>' +
       '<div class="admconfirm__row" style="margin-top:16px"><button class="btn btn--outline btn--sm" data-no>Annuler</button><button class="btn btn--sm" data-yes style="background:var(--terre);color:#fff">Terminer</button></div>' +
     '</div>';
@@ -10509,15 +10602,15 @@
     var mbm = admTaskMinByMonth(t); var mks = Object.keys(mbm).filter(function (k) { return mbm[k] > 0; }).sort();
     var wm = /^\d{4}-\d{2}$/.test(String(t.workMonth || '')) ? String(t.workMonth) : '';
     var defMonth = wm || (mks.length ? mks[mks.length - 1] : curMonth);
-    var lab = 'flex:1;display:flex;flex-direction:column;gap:4px;font-family:var(--font-micro);font-size:11px;color:var(--muted)';
+    var lab = 'flex:1;display:flex;flex-direction:column;gap:4px;font-family:var(--font-micro);font-size:15px;color:var(--muted)';
     var ov = document.createElement('div'); ov.className = 'admconfirm';
     ov.innerHTML = '<div class="admconfirm__box" style="max-width:460px;text-align:left">' +
       '<div class="admconfirm__title">Temps &amp; mois</div>' +
-      '<p style="font-size:13.5px;color:var(--muted);margin:8px 0 14px;line-height:1.5">Le temps passé sur « ' + esc((t.title || 'Tâche').slice(0, 50)) + ' » et le mois où il est compté dans le forfait.</p>' +
+      '<p style="font-size:15px;color:var(--muted);margin:8px 0 14px;line-height:1.5">Le temps passé sur « ' + esc((t.title || 'Tâche').slice(0, 50)) + ' » et le mois où il est compté dans le forfait.</p>' +
       '<div style="display:flex;gap:10px">' +
-        '<label style="' + lab + '">Heures<input id="tm-h" class="inp" type="number" min="0" step="1" style="font-size:14px;padding:9px 11px" value="' + curH + '"></label>' +
-        '<label style="' + lab + '">Minutes<input id="tm-m" class="inp" type="number" min="0" max="59" step="5" style="font-size:14px;padding:9px 11px" value="' + curM + '"></label>' +
-        '<label style="' + lab + '">Mois du travail<input id="tm-mo" class="inp" type="month" style="font-size:14px;padding:9px 11px" value="' + defMonth + '"></label>' +
+        '<label style="' + lab + '">Heures<input id="tm-h" class="inp" type="number" min="0" step="1" style="font-size:15px;padding:9px 11px" value="' + curH + '"></label>' +
+        '<label style="' + lab + '">Minutes<input id="tm-m" class="inp" type="number" min="0" max="59" step="5" style="font-size:15px;padding:9px 11px" value="' + curM + '"></label>' +
+        '<label style="' + lab + '">Mois du travail<input id="tm-mo" class="inp" type="month" style="font-size:15px;padding:9px 11px" value="' + defMonth + '"></label>' +
       '</div>' +
       '<div class="admconfirm__row" style="margin-top:16px"><button class="btn btn--outline btn--sm" data-no>Annuler</button><button class="btn btn--sm" data-yes style="background:var(--terre);color:#fff">Enregistrer</button></div>' +
     '</div>';
@@ -10642,7 +10735,7 @@
     var steps = (d.content.suivi || []).slice().sort(function (a, b) { return (a.order || 0) - (b.order || 0); });
     var rows = steps.length ? steps.map(function (s) {
       var opts = STEP_STATUS.map(function (x) { return '<option value="' + x[0] + '"' + (s.status === x[0] ? ' selected' : '') + '>' + x[1] + '</option>'; }).join('');
-      return '<tr><td><strong>' + esc(s.title) + '</strong>' + (s.description ? '<div class="muted" style="font-size:13px">' + esc(s.description) + '</div>' : '') + '</td>' +
+      return '<tr><td><strong>' + esc(s.title) + '</strong>' + (s.description ? '<div class="muted" style="font-size:15px">' + esc(s.description) + '</div>' : '') + '</td>' +
         '<td>' + fmtDate(s.date) + '</td>' +
         '<td><select class="inp" style="width:auto" onchange="ADM.stepStatus(\'' + d.id + '\',\'' + s.id + '\',this.value)">' + opts + '</select></td>' +
         '<td><div class="row" style="gap:5px;flex-wrap:nowrap"><button class="pbtn" onclick="ADM.stepEditOpen(\'' + d.id + '\',\'' + s.id + '\')" title="Modifier l\'étape">Modifier</button>' +
@@ -10708,7 +10801,7 @@
   function livrablesCard(d) {
     var ls = d.content.livrables || [];
     var rows = ls.length ? ls.map(function (l) {
-      return '<div class="file"><span class="nm">' + esc(l.name) + ' ' + pill(l.status, { a_valider: 'à valider', valide: 'validé', refuse: 'à revoir' }[l.status] || l.status) + (l.clientComment ? '<div class="muted" style="font-size:13px">« ' + esc(l.clientComment) + ' »</div>' : '') + '</span>' +
+      return '<div class="file"><span class="nm">' + esc(l.name) + ' ' + pill(l.status, { a_valider: 'à valider', valide: 'validé', refuse: 'à revoir' }[l.status] || l.status) + (l.clientComment ? '<div class="muted" style="font-size:15px">« ' + esc(l.clientComment) + ' »</div>' : '') + '</span>' +
         (l.fileKey ? '<a class="btn btn--outline btn--sm" href="/api/clients/' + CURKEY + '/files/' + encodeURIComponent(l.fileKey) + '/download">Télécharger</a>' : '') + '</div>';
     }).join('') : '<div class="empty">Aucun livrable. Déposes-en un depuis l\'onglet Documents (case « livrable »).</div>';
     return '<div class="card"><h3>Livrables</h3>' + rows + '</div>';
@@ -10739,7 +10832,7 @@
     function bub(m) {
       var mine = m.from === 'cindy';
       var av = '<span class="aavatar aavatar--' + (mine ? 'cindy' : 'client') + '">' + (mine ? 'C' : admClientInitial()) + '</span>';
-      return '<div class="msg msg--' + (mine ? 'cindy' : 'client') + '">' + av + '<div><div class="bubble"' + (m.pinned ? ' style="box-shadow:inset 0 0 0 1px #e8c98a"' : '') + '>' + (m.pinned ? '<span style="display:inline-block;font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.06em;background:#faf1da;color:#6a4a0b;padding:1px 7px;border-radius:999px;margin-bottom:5px">📌 Épinglé</span>' : '') + (q ? hi(m.message, q) : fmtMsg(m.message)) + admMsgAttChips(m.attachments) + '</div><div class="bmeta">' + (mine ? 'Vous' : 'Client') + ' · ' + fmtDT(m.date) + (m.editedAt ? ' · <span style="color:var(--muted)">modifié</span>' : '') + ' · <span style="cursor:pointer;text-decoration:underline" onclick="ADM.pinMsg(\'' + d.id + '\',\'' + m.id + '\',' + (m.pinned ? 'false' : 'true') + ')">' + (m.pinned ? 'détacher' : 'épingler') + '</span>' + (m.id ? ' · <span style="cursor:pointer;text-decoration:underline" onclick="ADM.msgEdit(\'' + d.id + '\',\'' + m.id + '\')">modifier</span>' : '') + (m.id ? ' · <span style="cursor:pointer;text-decoration:underline" onclick="ADM.msgMove(event,\'' + d.id + '\',\'' + m.id + '\')">déplacer</span>' : '') + ' · <span style="cursor:pointer;text-decoration:underline;color:var(--red)" onclick="ADM.delMsg(\'' + d.id + '\',\'' + (m.id || '') + '\',\'' + esc(m.date || '') + '\',\'' + esc(m.from || '') + '\')">supprimer</span>' + ((mine || !m.id) ? '' : ' · <span style="cursor:pointer;text-decoration:underline" onclick="ADM.msgUnread(\'' + d.id + '\',\'' + m.id + '\')">non lu</span>') + '</div></div></div>';
+      return '<div class="msg msg--' + (mine ? 'cindy' : 'client') + '">' + av + '<div><div class="bubble"' + (m.pinned ? ' style="box-shadow:inset 0 0 0 1px #e8c98a"' : '') + '>' + (m.pinned ? '<span style="display:inline-block;font-family:var(--font-micro);font-size:15px;font-weight:700;letter-spacing:0.06em;background:#faf1da;color:#6a4a0b;padding:1px 7px;border-radius:999px;margin-bottom:5px">📌 Épinglé</span>' : '') + (q ? hi(m.message, q) : fmtMsg(m.message)) + admMsgAttChips(m.attachments) + '</div><div class="bmeta">' + (mine ? 'Vous' : 'Client') + ' · ' + fmtDT(m.date) + (m.editedAt ? ' · <span style="color:var(--muted)">modifié</span>' : '') + ' · <span style="cursor:pointer;text-decoration:underline" onclick="ADM.pinMsg(\'' + d.id + '\',\'' + m.id + '\',' + (m.pinned ? 'false' : 'true') + ')">' + (m.pinned ? 'détacher' : 'épingler') + '</span>' + (m.id ? ' · <span style="cursor:pointer;text-decoration:underline" onclick="ADM.msgEdit(\'' + d.id + '\',\'' + m.id + '\')">modifier</span>' : '') + (m.id ? ' · <span style="cursor:pointer;text-decoration:underline" onclick="ADM.msgMove(event,\'' + d.id + '\',\'' + m.id + '\')">déplacer</span>' : '') + ' · <span style="cursor:pointer;text-decoration:underline;color:var(--red)" onclick="ADM.delMsg(\'' + d.id + '\',\'' + (m.id || '') + '\',\'' + esc(m.date || '') + '\',\'' + esc(m.from || '') + '\')">supprimer</span>' + ((mine || !m.id) ? '' : ' · <span style="cursor:pointer;text-decoration:underline" onclick="ADM.msgUnread(\'' + d.id + '\',\'' + m.id + '\')">non lu</span>') + '</div></div></div>';
     }
     var pinned = msgs.filter(function (m) { return m.pinned; });
     var rest = msgs.filter(function (m) { return !m.pinned; });
@@ -10784,8 +10877,8 @@
     });
     var pop = document.createElement('div'); pop.id = 'adm-msgmove';
     pop.style.cssText = 'position:fixed;z-index:99999;background:#fff;border:none;border-radius:12px;box-shadow:0 16px 40px -12px rgba(28,18,5,0.32);padding:6px;max-height:340px;overflow-y:auto;min-width:240px';
-    pop.innerHTML = '<div style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:6px 9px 4px">Déplacer vers…</div>' +
-      targets.map(function (t) { return '<button type="button" onmousedown="event.preventDefault()" onclick="ADM.msgMoveTo(\'' + fromPid + '\',\'' + msgId + '\',\'' + t.pid + '\',\'' + esc(t.topic) + '\')" style="display:block;width:100%;text-align:left;border:none;background:none;padding:7px 9px;border-radius:7px;cursor:pointer;font-size:12.5px;color:var(--terre)" onmouseover="this.style.background=\'#f4eee2\'" onmouseout="this.style.background=\'none\'">' + esc(t.label) + '</button>'; }).join('');
+    pop.innerHTML = '<div style="font-family:var(--font-micro);font-size:15px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:6px 9px 4px">Déplacer vers…</div>' +
+      targets.map(function (t) { return '<button type="button" onmousedown="event.preventDefault()" onclick="ADM.msgMoveTo(\'' + fromPid + '\',\'' + msgId + '\',\'' + t.pid + '\',\'' + esc(t.topic) + '\')" style="display:block;width:100%;text-align:left;border:none;background:none;padding:7px 9px;border-radius:7px;cursor:pointer;font-size:15px;color:var(--terre)" onmouseover="this.style.background=\'#f4eee2\'" onmouseout="this.style.background=\'none\'">' + esc(t.label) + '</button>'; }).join('');
     document.body.appendChild(pop);
     var x = (ev && ev.clientX) || 200, y = (ev && ev.clientY) || 200;
     pop.style.left = Math.max(8, Math.min(x, window.innerWidth - pop.offsetWidth - 8)) + 'px';
@@ -10836,7 +10929,7 @@
     var u = chatSubUnread(d, topicVal);
     var bg = on ? 'var(--terre)' : 'rgba(65,47,33,.06)';
     var col = on ? '#fff' : 'var(--terre-600)';
-    return '<button onclick="ADM.chatSetTopic(\'' + d.id + '\',\'' + topicVal + '\')" style="padding:5px 12px;border-radius:999px;border:none;cursor:pointer;font-family:var(--font-micro);font-size:11px;font-weight:600;background:' + bg + ';color:' + col + '">' + esc(label) + (u ? ' · ' + u : '') + '</button>';
+    return '<button onclick="ADM.chatSetTopic(\'' + d.id + '\',\'' + topicVal + '\')" style="padding:5px 12px;border-radius:999px;border:none;cursor:pointer;font-family:var(--font-micro);font-size:15px;font-weight:600;background:' + bg + ';color:' + col + '">' + esc(label) + (u ? ' · ' + u : '') + '</button>';
   }
   // Rangée de sous-discussions (Général + une par création) pour un support.
   function chatSubRow(d) {
@@ -10844,7 +10937,7 @@
     if (!creations.length) return '';
     var active = ADM_CHAT_TOPIC[d.id] || '';
     var pills = chatSubPill(d, 'Discussion générale', '', active === '') + creations.map(function (c) { return chatSubPill(d, c.name || 'Création', c.id, active === c.id); }).join('');
-    return '<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:18px 0 12px;padding-top:16px;border-top:1px solid var(--line,rgba(65,47,33,.13))"><span style="font-family:var(--font-micro);font-size:9px;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-right:3px">Créations</span>' + pills + '</div>';
+    return '<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:18px 0 12px;padding-top:16px;border-top:1px solid var(--line,rgba(65,47,33,.13))"><span style="font-family:var(--font-micro);font-size:15px;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-right:3px">Créations</span>' + pills + '</div>';
   }
   function chatSetTopic(pid, topic) {
     ADM_CHAT_TOPIC[pid] = topic;
@@ -11284,7 +11377,7 @@
       var isLate = cur.end && planDayStart(cur.end) < planDayStart(new Date());
       curHtml = '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:12px">' +
         '<span class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted)">' + (cur.j.status === 'en_cours' ? 'En cours' : 'Prochain jalon') + '</span>' +
-        '<b style="font-size:14.5px;color:var(--terre)">' + esc(cur.j.title || 'Sans titre') + '</b>' +
+        '<b style="font-size:15px;color:var(--terre)">' + esc(cur.j.title || 'Sans titre') + '</b>' +
         (cur.label ? '<span class="cg-pill" style="background:' + (isLate ? '#F0E2D6' : 'var(--card)') + ';color:' + (isLate ? '#8a4a2c' : 'var(--terre-600)') + '">' + esc(cur.label) + '</span>' : '') +
         '<span class="cg-chip" style="background:' + ow[1] + ';color:' + ow[2] + '">' + ow[0] + '</span>' +
         (cur.j.status !== 'en_cours' ? '<button class="btn btn--outline btn--sm" onclick="ADM.planTick(\'' + esc(pl.key) + '\',\'' + esc(pl.projectId) + '\',\'' + esc(pl.creationId || '') + '\',\'' + esc(cur.j.id) + '\',\'en_cours\')">Démarrer</button>' : '') +
@@ -11296,7 +11389,7 @@
       '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-bottom:8px">Dépassés par la suite du planning, il ne manque que la coche :</div>' +
       si.stale.map(function (r) {
         return '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:7px">' +
-          '<span style="flex:1;min-width:140px;font-size:14px;color:var(--terre-600)">' + esc(r.j.title || 'Sans titre') + '</span>' +
+          '<span style="flex:1;min-width:140px;font-size:15px;color:var(--terre-600)">' + esc(r.j.title || 'Sans titre') + '</span>' +
           (r.label ? '<span class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted)">' + esc(r.label) + '</span>' : '') +
           '<button class="btn btn--outline btn--sm" onclick="ADM.planTick(\'' + esc(pl.key) + '\',\'' + esc(pl.projectId) + '\',\'' + esc(pl.creationId || '') + '\',\'' + esc(r.j.id) + '\',\'fait\')">Marquer fait</button>' +
         '</div>';
@@ -11337,7 +11430,7 @@
         '<button class="subtab' + (QNR_TAB === 'reponses' ? ' active' : '') + '" onclick="ADM.qnrSetTab(\'reponses\')">Réponses' + (nRep ? ' · ' + nRep : '') + '</button>' +
       '</div>';
     if (QNR_TAB === 'reponses') { body.innerHTML = head + qnrRepView(); return; }
-    var bar = '<div class="qbar"><p style="font-family:var(--font-body);font-size:12.5px;color:var(--muted);margin:0">Crée un modèle, envoie-le, et retrouve les réponses dans l\'onglet « Réponses ».</p><div style="display:flex;gap:8px;align-items:center"><button class="btn btn--outline btn--sm" onclick="ADM.qnrImportJson()">Importer (JSON)</button><button class="btn btn--dark btn--sm" onclick="ADM.qnrAdd()">+ Nouveau modèle</button></div></div>';
+    var bar = '<div class="qbar"><p style="font-family:var(--font-body);font-size:15px;color:var(--muted);margin:0">Crée un modèle, envoie-le, et retrouve les réponses dans l\'onglet « Réponses ».</p><div style="display:flex;gap:8px;align-items:center"><button class="btn btn--outline btn--sm" onclick="ADM.qnrImportJson()">Importer (JSON)</button><button class="btn btn--dark btn--sm" onclick="ADM.qnrAdd()">+ Nouveau modèle</button></div></div>';
     var list = active.length
       ? active.map(qnrTplCardHtml).join('')
       : '<div class="empty">Aucun questionnaire pour l\'instant. Crée ton premier modèle (ex. « Questions de démarrage », « Brief branding »), puis envoie-le à une ou plusieurs clientes.</div>';
@@ -11418,7 +11511,7 @@
       : '<span class="micro" style="color:var(--muted);text-transform:none;letter-spacing:0">pas encore rempli</span>';
     return '<div style="border-top:1px solid var(--bone-d);padding:11px 0">' +
       '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">' +
-        '<span style="flex:1;min-width:140px;font-size:14.5px;color:var(--terre);font-weight:600">' + esc(q.client || '') + '</span>' +
+        '<span style="flex:1;min-width:140px;font-size:15px;color:var(--terre);font-weight:600">' + esc(q.client || '') + '</span>' +
         retard + qnrStPill(q, when) + btn +
       '</div>' +
       '<div id="qnr-rep-' + q.id + '" style="display:' + (open ? 'block' : 'none') + ';padding-top:10px">' +
@@ -11471,7 +11564,7 @@
     ov.innerHTML = '<div class="admconfirm__box" style="max-width:600px;text-align:left">' +
       '<div class="admconfirm__title">Importer un modèle (JSON)</div>' +
       '<div class="admconfirm__msg">Colle le JSON d\'un questionnaire. Il est ajouté comme un nouveau modèle — rien n\'est écrasé.</div>' +
-      '<textarea id="qnr-json-txt" class="inp" style="width:100%;box-sizing:border-box;min-height:220px;resize:vertical;font-size:12.5px;line-height:1.5;font-family:var(--font-micro,monospace)" placeholder="{ &quot;name&quot;: &quot;...&quot;, &quot;steps&quot;: [ ... ] }"></textarea>' +
+      '<textarea id="qnr-json-txt" class="inp" style="width:100%;box-sizing:border-box;min-height:220px;resize:vertical;font-size:15px;line-height:1.5;font-family:var(--font-micro,monospace)" placeholder="{ &quot;name&quot;: &quot;...&quot;, &quot;steps&quot;: [ ... ] }"></textarea>' +
       '<div class="admconfirm__row" style="margin-top:14px">' +
         '<button class="btn btn--outline btn--sm" data-no>Annuler</button>' +
         '<button class="btn btn--sm" data-yes style="background:var(--terre);color:#fff;border-color:var(--terre)">Importer</button>' +
@@ -11529,7 +11622,7 @@
       ov.innerHTML = '<div class="admconfirm__box" style="max-width:600px;text-align:left">' +
         '<div class="admconfirm__title">JSON du modèle</div>' +
         '<div class="admconfirm__msg">Sélectionne tout et copie.</div>' +
-        '<textarea class="inp" readonly style="width:100%;box-sizing:border-box;min-height:240px;resize:vertical;font-size:12.5px;font-family:var(--font-micro,monospace)"></textarea>' +
+        '<textarea class="inp" readonly style="width:100%;box-sizing:border-box;min-height:240px;resize:vertical;font-size:15px;font-family:var(--font-micro,monospace)"></textarea>' +
         '<div class="admconfirm__row" style="margin-top:14px"><button class="btn btn--outline btn--sm" data-no>Fermer</button></div></div>';
       ov.querySelector('textarea').value = txt;
       ov.querySelector('[data-no]').onclick = function () { ov.remove(); };
@@ -11592,7 +11685,7 @@
       '</div>' +
       '<div style="padding:20px 24px 90px;max-width:720px">' +
         '<input class="inp" value="' + esc(t.name || '') + '" placeholder="Nom du questionnaire (ex. Questions de démarrage)" style="width:100%;box-sizing:border-box;font-size:20px;font-weight:600;margin-bottom:10px" onchange="ADM.qnrSet(\'' + t.id + '\',\'name\',this.value)">' +
-        '<textarea class="inp" placeholder="Description courte (optionnel), visible par la cliente en haut du questionnaire" style="width:100%;box-sizing:border-box;min-height:56px;resize:vertical;font-size:14px;line-height:1.5;margin-bottom:14px" onchange="ADM.qnrSet(\'' + t.id + '\',\'description\',this.value)">' + esc(t.description || '') + '</textarea>' +
+        '<textarea class="inp" placeholder="Description courte (optionnel), visible par la cliente en haut du questionnaire" style="width:100%;box-sizing:border-box;min-height:56px;resize:vertical;font-size:15px;line-height:1.5;margin-bottom:14px" onchange="ADM.qnrSet(\'' + t.id + '\',\'description\',this.value)">' + esc(t.description || '') + '</textarea>' +
         '<div class="row" style="gap:14px;align-items:center;flex-wrap:wrap;margin-bottom:22px">' +
           '<span class="row" style="gap:8px;align-items:center"><span class="micro">Catégorie</span>' + catSel + '</span>' +
           '<span class="row" style="gap:6px;align-items:center"><span class="micro">Couleur</span>' + colorDots + '</span>' +
@@ -11609,13 +11702,13 @@
       QNR_BLOCKS.map(function (bt) { return '<option value="' + bt[0] + '">' + esc(bt[2] + '  ' + bt[1]) + '</option>'; }).join('') + '</select>';
     return '<div class="card" style="background:var(--card);padding:14px 15px;margin-bottom:14px;border:none;border-radius:12px">' +
       '<div class="row" style="gap:8px;align-items:center;margin-bottom:10px">' +
-        '<span style="font-family:var(--font-micro);font-size:10px;color:var(--muted);flex-shrink:0;text-transform:uppercase;letter-spacing:0.04em">Étape ' + (idx + 1) + '</span>' +
+        '<span style="font-family:var(--font-micro);font-size:15px;color:var(--muted);flex-shrink:0;text-transform:uppercase;letter-spacing:0.04em">Étape ' + (idx + 1) + '</span>' +
         '<input class="inp" value="' + esc(s.title || '') + '" placeholder="Titre de l\'étape (ex. Votre projet)" style="flex:1;font-weight:600" onchange="ADM.qnrStepSet(\'' + t.id + '\',\'' + s.id + '\',\'title\',this.value)">' +
         '<button class="pbtn" title="Monter"' + (idx === 0 ? ' disabled style="opacity:0.3"' : '') + ' onclick="ADM.qnrStepMove(\'' + t.id + '\',\'' + s.id + '\',-1)">↑</button>' +
         '<button class="pbtn" title="Descendre"' + (idx === total - 1 ? ' disabled style="opacity:0.3"' : '') + ' onclick="ADM.qnrStepMove(\'' + t.id + '\',\'' + s.id + '\',1)">↓</button>' +
         '<button class="pbtn" style="color:#8d2b21" title="Supprimer l\'étape" onclick="ADM.qnrStepDel(\'' + t.id + '\',\'' + s.id + '\')">×</button>' +
       '</div>' +
-      '<input class="inp" value="' + esc(s.help || '') + '" placeholder="Sous-titre / consigne de l\'étape (optionnel)" style="width:100%;box-sizing:border-box;font-size:13px;margin-bottom:12px" onchange="ADM.qnrStepSet(\'' + t.id + '\',\'' + s.id + '\',\'help\',this.value)">' +
+      '<input class="inp" value="' + esc(s.help || '') + '" placeholder="Sous-titre / consigne de l\'étape (optionnel)" style="width:100%;box-sizing:border-box;font-size:15px;margin-bottom:12px" onchange="ADM.qnrStepSet(\'' + t.id + '\',\'' + s.id + '\',\'help\',this.value)">' +
       (blocksHtml || '<div class="micro muted" style="text-transform:none;letter-spacing:0;padding:2px 0 10px">Aucune question dans cette étape.</div>') +
       '<div style="margin-top:6px">' + addSel + '</div>' +
     '</div>';
@@ -11624,7 +11717,7 @@
     var isStat = qnrIsStatic(b.type);
     // Sélecteur de type : permet de changer la fonction d'une question à tout
     // moment (ex. passer d'un choix unique à un choix multiple, ou à une réponse courte).
-    var typeSel = '<select class="inp" title="Changer le type de cette question" style="width:auto;font-size:11.5px;padding:3px 6px;font-family:var(--font-micro);color:#fff;background:var(--terre);border-color:var(--terre)" onchange="ADM.qnrBlockChangeType(\'' + t.id + '\',\'' + s.id + '\',\'' + b.id + '\',this.value)">' +
+    var typeSel = '<select class="inp" title="Changer le type de cette question" style="width:auto;font-size:15px;padding:3px 6px;font-family:var(--font-micro);color:#fff;background:var(--terre);border-color:var(--terre)" onchange="ADM.qnrBlockChangeType(\'' + t.id + '\',\'' + s.id + '\',\'' + b.id + '\',this.value)">' +
       QNR_BLOCKS.map(function (bt) { return '<option value="' + bt[0] + '"' + (b.type === bt[0] ? ' selected' : '') + '>' + esc(bt[2] + '  ' + bt[1]) + '</option>'; }).join('') + '</select>';
     var head = '<div class="row" style="gap:6px;align-items:center;margin-bottom:7px">' +
       typeSel +
@@ -11636,15 +11729,15 @@
     var labelField = '<input class="inp" value="' + esc(b.label || '') + '" placeholder="' + (isStat ? (b.type === 'title' ? 'Titre de la section' : 'Votre texte / consigne') : 'Intitulé de la question') + '" style="width:100%;box-sizing:border-box;font-weight:' + (isStat ? '600' : '500') + '" onchange="ADM.qnrBlockSet(\'' + t.id + '\',\'' + s.id + '\',\'' + b.id + '\',\'label\',this.value)">';
     var extra = '';
     if (!isStat) {
-      extra += '<input class="inp" value="' + esc(b.help || '') + '" placeholder="Aide / précision (optionnel)" style="width:100%;box-sizing:border-box;font-size:12.5px;margin-top:6px" onchange="ADM.qnrBlockSet(\'' + t.id + '\',\'' + s.id + '\',\'' + b.id + '\',\'help\',this.value)">';
+      extra += '<input class="inp" value="' + esc(b.help || '') + '" placeholder="Aide / précision (optionnel)" style="width:100%;box-sizing:border-box;font-size:15px;margin-top:6px" onchange="ADM.qnrBlockSet(\'' + t.id + '\',\'' + s.id + '\',\'' + b.id + '\',\'help\',this.value)">';
       if (qnrHasOptions(b.type)) {
-        extra += '<textarea class="inp" placeholder="Une option par ligne" style="width:100%;box-sizing:border-box;min-height:70px;resize:vertical;font-size:13px;margin-top:6px" onchange="ADM.qnrBlockOptions(\'' + t.id + '\',\'' + s.id + '\',\'' + b.id + '\',this.value)">' + esc((b.options || []).join('\n')) + '</textarea>';
-        if (b.type !== 'ranking') extra += '<label class="checkbox" style="margin-top:6px;font-size:13px"><input type="checkbox"' + (b.allowOther ? ' checked' : '') + ' onchange="ADM.qnrBlockSet(\'' + t.id + '\',\'' + s.id + '\',\'' + b.id + '\',\'allowOther\',this.checked)"> Autoriser une réponse « Autre » (champ libre)</label>';
+        extra += '<textarea class="inp" placeholder="Une option par ligne" style="width:100%;box-sizing:border-box;min-height:70px;resize:vertical;font-size:15px;margin-top:6px" onchange="ADM.qnrBlockOptions(\'' + t.id + '\',\'' + s.id + '\',\'' + b.id + '\',this.value)">' + esc((b.options || []).join('\n')) + '</textarea>';
+        if (b.type !== 'ranking') extra += '<label class="checkbox" style="margin-top:6px;font-size:15px"><input type="checkbox"' + (b.allowOther ? ' checked' : '') + ' onchange="ADM.qnrBlockSet(\'' + t.id + '\',\'' + s.id + '\',\'' + b.id + '\',\'allowOther\',this.checked)"> Autoriser une réponse « Autre » (champ libre)</label>';
       }
       if (b.type === 'rating' || b.type === 'slider') {
         extra += '<div class="row" style="gap:8px;align-items:center;margin-top:6px"><span class="micro">Maximum</span><input class="inp" type="number" min="2" max="' + (b.type === 'slider' ? '100' : '10') + '" value="' + (b.max || (b.type === 'slider' ? 10 : 5)) + '" style="width:80px" onchange="ADM.qnrBlockSet(\'' + t.id + '\',\'' + s.id + '\',\'' + b.id + '\',\'max\',parseInt(this.value,10)||0)"></div>';
       }
-      extra += '<label class="checkbox" style="margin-top:8px;font-size:13px"><input type="checkbox"' + (b.required ? ' checked' : '') + ' onchange="ADM.qnrBlockSet(\'' + t.id + '\',\'' + s.id + '\',\'' + b.id + '\',\'required\',this.checked)"> Réponse obligatoire</label>';
+      extra += '<label class="checkbox" style="margin-top:8px;font-size:15px"><input type="checkbox"' + (b.required ? ' checked' : '') + ' onchange="ADM.qnrBlockSet(\'' + t.id + '\',\'' + s.id + '\',\'' + b.id + '\',\'required\',this.checked)"> Réponse obligatoire</label>';
     }
     return '<div style="background:var(--bg,#faf7f1);border:none;border-radius:10px;padding:11px 12px;margin-bottom:9px">' + head + labelField + extra + '</div>';
   }
@@ -11739,8 +11832,8 @@
     ov.innerHTML = '<div class="admconfirm__box" style="max-width:600px;text-align:left">' +
       '<div class="admconfirm__title">✨ Mettre en forme un texte</div>' +
       '<div class="admconfirm__msg">Colle ton texte brut, je le transforme en questionnaire structuré. Astuce : un titre en MAJUSCULES ou finissant par « : » crée une étape ; une ligne finissant par « ? » devient une question ; des lignes à puces (- ou •) juste en dessous deviennent ses options.</div>' +
-      '<textarea id="qnr-import-txt" class="inp" style="width:100%;box-sizing:border-box;min-height:220px;resize:vertical;font-size:13.5px;line-height:1.5;font-family:var(--font-micro,monospace)" placeholder="VOTRE PROJET&#10;Quel est le nom de votre entreprise ?&#10;Décrivez votre activité en quelques mots ?&#10;&#10;VOS PRÉFÉRENCES&#10;Quels styles vous attirent ? (plusieurs réponses)&#10;- Épuré&#10;- Chaleureux&#10;- Audacieux&#10;Votre budget ?&#10;Votre adresse e-mail ?"></textarea>' +
-      (hasContent ? '<label class="checkbox" style="margin-top:10px;font-size:13px"><input type="checkbox" id="qnr-import-replace"> Remplacer le contenu existant (sinon, ajouté à la fin)</label>' : '') +
+      '<textarea id="qnr-import-txt" class="inp" style="width:100%;box-sizing:border-box;min-height:220px;resize:vertical;font-size:15px;line-height:1.5;font-family:var(--font-micro,monospace)" placeholder="VOTRE PROJET&#10;Quel est le nom de votre entreprise ?&#10;Décrivez votre activité en quelques mots ?&#10;&#10;VOS PRÉFÉRENCES&#10;Quels styles vous attirent ? (plusieurs réponses)&#10;- Épuré&#10;- Chaleureux&#10;- Audacieux&#10;Votre budget ?&#10;Votre adresse e-mail ?"></textarea>' +
+      (hasContent ? '<label class="checkbox" style="margin-top:10px;font-size:15px"><input type="checkbox" id="qnr-import-replace"> Remplacer le contenu existant (sinon, ajouté à la fin)</label>' : '') +
       '<div class="admconfirm__row" style="margin-top:14px">' +
         '<button class="btn btn--outline btn--sm" data-no>Annuler</button>' +
         '<button class="btn btn--sm" data-yes style="background:var(--terre);color:#fff;border-color:var(--terre)">Analyser &amp; créer</button>' +
@@ -11796,7 +11889,7 @@
     var chip = 'display:flex;gap:9px;align-items:center;padding:12px 14px;border:1.5px solid var(--bone-d);border-radius:10px;margin-bottom:8px;background:#fff;cursor:pointer;font-size:16px';
     if (b.type === 'long') f = '<textarea style="' + inpBox + ';min-height:70px;resize:vertical"></textarea>';
     else if (b.type === 'single' || b.type === 'multi') { var it0 = (b.type === 'single' ? 'radio' : 'checkbox'); f = (b.options || []).map(function (o) { return '<label style="' + chip + '"><input type="' + it0 + '" name="qprev_' + b.id + '"> ' + esc(o) + '</label>'; }).join(''); if (b.allowOther) f += '<label style="' + chip + '"><input type="' + it0 + '" name="qprev_' + b.id + '"> Autre : <input type="text" placeholder="champ libre" style="flex:1;background:#fff;border:none;border-radius:8px;padding:6px 9px;font-family:inherit"></label>'; }
-    else if (b.type === 'ranking') f = '<div data-admrankgroup>' + (b.options || []).map(function (o, i) { return '<div data-admrankitem onpointerdown="ADM.rankDown(event,this)" style="display:flex;gap:11px;align-items:center;padding:10px 12px;border:none;border-radius:12px;margin-bottom:8px;background:#fff;user-select:none"><span data-rankn style="flex-shrink:0;width:26px;height:26px;border-radius:50%;background:var(--nuit,#1c1205);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600">' + (i + 1) + '</span><span style="flex:1">' + esc(o) + '</span><span data-rankhandle style="color:var(--muted);font-size:19px;cursor:grab;touch-action:none;padding:4px 6px">⠿</span></div>'; }).join('') + '</div><div class="micro" style="color:var(--muted);margin-top:4px;text-transform:none;letter-spacing:0">Glisser (poignée ⠿) pour classer, 1 = priorité.</div>';
+    else if (b.type === 'ranking') f = '<div data-admrankgroup>' + (b.options || []).map(function (o, i) { return '<div data-admrankitem onpointerdown="ADM.rankDown(event,this)" style="display:flex;gap:11px;align-items:center;padding:10px 12px;border:none;border-radius:12px;margin-bottom:8px;background:#fff;user-select:none"><span data-rankn style="flex-shrink:0;width:26px;height:26px;border-radius:50%;background:var(--nuit,#1c1205);color:#fff;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:600">' + (i + 1) + '</span><span style="flex:1">' + esc(o) + '</span><span data-rankhandle style="color:var(--muted);font-size:19px;cursor:grab;touch-action:none;padding:4px 6px">⠿</span></div>'; }).join('') + '</div><div class="micro" style="color:var(--muted);margin-top:4px;text-transform:none;letter-spacing:0">Glisser (poignée ⠿) pour classer, 1 = priorité.</div>';
     else if (b.type === 'dropdown') f = '<select style="' + inpBox + '"><option>Choisir…</option>' + (b.options || []).map(function (o) { return '<option>' + esc(o) + '</option>'; }).join('') + (b.allowOther ? '<option>Autre…</option>' : '') + '</select>';
     else if (b.type === 'rating') f = '<div style="font-size:22px;color:#e0c060">' + new Array((b.max || 5) + 1).join('★') + '</div>';
     else if (b.type === 'slider') f = '<input type="range" min="0" max="' + (b.max || 10) + '" style="width:100%">';
@@ -11836,12 +11929,12 @@
       var desc = (t.description || '').trim();
       body =
         '<div style="height:8px;border-radius:999px;background:' + esc(col) + ';width:60px;margin-bottom:22px"></div>' +
-        '<div style="font-family:var(--font-micro);font-size:12.5px;letter-spacing:0.16em;text-transform:uppercase;color:' + esc(col) + ';margin-bottom:11px">Questionnaire</div>' +
+        '<div style="font-family:var(--font-micro);font-size:15px;letter-spacing:0.16em;text-transform:uppercase;color:' + esc(col) + ';margin-bottom:11px">Questionnaire</div>' +
         '<h1 style="font-family:var(--font-display);font-style:italic;font-size:32px;line-height:1.1;margin:0 0 18px">' + esc(t.name || 'Questionnaire') + '</h1>' +
         (desc
           ? '<div style="font-size:17px;line-height:1.75;color:var(--terre-600);white-space:pre-wrap">' + esc(desc) + '</div>'
           : '<div style="font-size:15px;line-height:1.7;color:var(--terre-600)">Prends un moment pour y répondre : tes réponses sont enregistrées automatiquement, tu peux revenir quand tu veux.</div>') +
-        '<div style="display:flex;align-items:center;gap:14px;margin-top:22px;font-family:var(--font-micro);font-size:12.5px;letter-spacing:0.05em;text-transform:uppercase;color:var(--muted)"><span>' + nS + ' étape' + (nS > 1 ? 's' : '') + '</span><span>·</span><span>' + nQ + ' question' + (nQ > 1 ? 's' : '') + '</span></div>' +
+        '<div style="display:flex;align-items:center;gap:14px;margin-top:22px;font-family:var(--font-micro);font-size:15px;letter-spacing:0.05em;text-transform:uppercase;color:var(--muted)"><span>' + nS + ' étape' + (nS > 1 ? 's' : '') + '</span><span>·</span><span>' + nQ + ' question' + (nQ > 1 ? 's' : '') + '</span></div>' +
         '<button class="btn btn--sm" style="margin-top:26px;background:' + esc(col) + ';color:#fff;border-color:' + esc(col) + '" onclick="ADM.qnrPreviewStart()">Commencer →</button>';
     } else {
       if (QNR_PREV_STEP >= steps.length) QNR_PREV_STEP = steps.length - 1;
@@ -11849,11 +11942,11 @@
       var isFirst = QNR_PREV_STEP === 0, isLast = QNR_PREV_STEP === steps.length - 1;
       var pct = Math.round((QNR_PREV_STEP + 1) / steps.length * 100);
       var progress = '<div style="margin-bottom:18px">' +
-        '<div style="display:flex;justify-content:space-between;font-family:var(--font-micro);font-size:13px;color:var(--muted);margin-bottom:7px"><span>Étape ' + (QNR_PREV_STEP + 1) + ' sur ' + steps.length + '</span><span>' + pct + '%</span></div>' +
+        '<div style="display:flex;justify-content:space-between;font-family:var(--font-micro);font-size:15px;color:var(--muted);margin-bottom:7px"><span>Étape ' + (QNR_PREV_STEP + 1) + ' sur ' + steps.length + '</span><span>' + pct + '%</span></div>' +
         '<div style="height:7px;background:var(--bone-d);border-radius:999px;overflow:hidden"><div style="height:100%;width:' + pct + '%;background:' + esc(col) + ';transition:width .2s"></div></div></div>';
       // Rappel discret pour revoir l'intro depuis la 1re étape (comme la cliente).
       var whyBlock = isFirst
-        ? '<div style="margin-bottom:16px"><button style="background:none;border:none;cursor:pointer;font-size:13px;padding:0;color:' + esc(col) + '" onclick="ADM.qnrPreviewCover()">↖ Revoir l\'introduction</button></div>'
+        ? '<div style="margin-bottom:16px"><button style="background:none;border:none;cursor:pointer;font-size:15px;padding:0;color:' + esc(col) + '" onclick="ADM.qnrPreviewCover()">↖ Revoir l\'introduction</button></div>'
         : '';
       var _pqn = 0;
       var fields = (s.blocks || []).map(function (b) { var n = qnrIsStatic(b.type) ? 0 : (++_pqn); return qnrFieldPreview(b, n); }).join('') || '<div class="micro muted" style="text-transform:none;letter-spacing:0">Aucune question dans cette étape.</div>';
@@ -11861,7 +11954,7 @@
         (!isFirst ? '<button class="btn btn--outline btn--sm" onclick="ADM.qnrPreviewNav(-1)">← Précédent</button>' : '') +
         (!isLast ? '<button class="btn btn--sm" style="flex:1;background:' + esc(col) + ';color:#fff;border-color:' + esc(col) + '" onclick="ADM.qnrPreviewNav(1)">Suivant →</button>'
                  : '<button class="btn btn--sm" style="flex:1;background:' + esc(col) + ';color:#fff;border-color:' + esc(col) + '" data-no>Fin de l\'aperçu ✓</button>') + '</div>';
-      var testHint = '<div style="font-size:14.5px;line-height:1.5;color:var(--terre-600);margin-bottom:16px;padding:12px 15px;background:var(--card);border:none;border-radius:11px">Aperçu interactif : tu peux cocher et écrire pour tester, rien n\'est enregistré.</div>';
+      var testHint = '<div style="font-size:15px;line-height:1.5;color:var(--terre-600);margin-bottom:16px;padding:12px 15px;background:var(--card);border:none;border-radius:11px">Aperçu interactif : tu peux cocher et écrire pour tester, rien n\'est enregistré.</div>';
       body = progress + whyBlock + testHint +
         (s.title ? '<h2 style="margin:2px 0 6px;font-family:var(--font-display);font-style:italic;font-size:26px;line-height:1.15">' + esc(s.title) + '</h2>' : '') +
         (s.help ? '<div style="font-size:16px;color:var(--muted);line-height:1.6;margin-bottom:12px;white-space:pre-wrap">' + esc(s.help) + '</div>' : '') +
@@ -11891,7 +11984,7 @@
         '<div class="admconfirm__msg">Choisis la ou les clientes qui recevront ce questionnaire dans leur espace.</div>' +
         '<div style="max-height:230px;overflow-y:auto;border:none;border-radius:10px;padding:6px 10px;margin:6px 0 12px">' + clientRows + '</div>' +
         '<div class="row" style="gap:10px;align-items:center;margin-bottom:10px"><span class="micro">Échéance (optionnel)</span><input class="inp" id="qnr-asg-due" type="date" style="width:auto"></div>' +
-        '<label class="checkbox" style="font-size:13px"><input type="checkbox" id="qnr-asg-notify" checked> Prévenir la cliente par e-mail</label>' +
+        '<label class="checkbox" style="font-size:15px"><input type="checkbox" id="qnr-asg-notify" checked> Prévenir la cliente par e-mail</label>' +
         '<div class="admconfirm__row" style="margin-top:14px">' +
           '<button class="btn btn--outline btn--sm" data-no>Annuler</button>' +
           '<button class="btn btn--sm" data-yes style="background:var(--terre);color:#fff;border-color:var(--terre)">Envoyer</button>' +
@@ -11961,7 +12054,7 @@
       '<div style="padding:15px 16px;flex:1;display:flex;flex-direction:column;gap:8px">' +
         '<div class="between" style="align-items:flex-start;gap:8px">' +
           '<span class="row" style="gap:8px;align-items:center;cursor:pointer" onclick="ADM.prjOpen(\'' + t.id + '\')"><span style="color:' + esc(col) + ';display:flex">' + head + '</span><strong style="font-size:15.5px;line-height:1.3">' + esc(t.name || 'Sans titre') + '</strong></span>' +
-          '<span style="font-family:var(--font-micro);font-size:9.5px;text-transform:uppercase;letter-spacing:0.04em;color:#fff;background:' + esc(col) + ';padding:3px 8px;border-radius:999px;white-space:nowrap;flex-shrink:0">' + esc(prjOfferLabel(t.offer)) + '</span>' +
+          '<span style="font-family:var(--font-micro);font-size:15px;text-transform:uppercase;letter-spacing:0.04em;color:#fff;background:' + esc(col) + ';padding:3px 8px;border-radius:999px;white-space:nowrap;flex-shrink:0">' + esc(prjOfferLabel(t.offer)) + '</span>' +
         '</div>' +
         '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:auto">' + wk + nP + ' phase' + (nP > 1 ? 's' : '') + ' · ' + nS + ' étape' + (nS > 1 ? 's' : '') + ' · ' + nD + ' livrable' + (nD > 1 ? 's' : '') + '</div>' +
       '</div>' +
@@ -12050,7 +12143,7 @@
         up + down +
         '<button class="pbtn" style="color:#8d2b21" title="Supprimer la phase" onclick="ADM.prjPhaseDel(\'' + t.id + '\',\'' + p.id + '\')">×</button>' +
       '</div>' +
-      '<input class="inp" value="' + esc(p.help || '') + '" placeholder="Sous-titre / repère de calendrier (optionnel, ex. Sem. 3)" style="width:100%;box-sizing:border-box;font-size:13px;margin-bottom:10px" onchange="ADM.prjPhaseSet(\'' + t.id + '\',\'' + p.id + '\',\'help\',this.value)">' +
+      '<input class="inp" value="' + esc(p.help || '') + '" placeholder="Sous-titre / repère de calendrier (optionnel, ex. Sem. 3)" style="width:100%;box-sizing:border-box;font-size:15px;margin-bottom:10px" onchange="ADM.prjPhaseSet(\'' + t.id + '\',\'' + p.id + '\',\'help\',this.value)">' +
       '<div class="micro" style="margin-bottom:6px">Étapes</div>' +
       (stepsHtml || '<div class="micro muted" style="text-transform:none;letter-spacing:0;margin-bottom:6px">Aucune étape.</div>') +
       '<div class="row" style="gap:5px;flex-wrap:wrap;margin:2px 0 12px">' +
@@ -12063,13 +12156,13 @@
   }
   function prjStepHtml(t, p, s) {
     var m = prjStepMeta(s.type);
-    var typeSel = '<select class="inp" style="width:auto;font-size:12px;padding:3px 6px" onchange="ADM.prjStepSet(\'' + t.id + '\',\'' + p.id + '\',\'' + s.id + '\',\'type\',this.value)">' +
+    var typeSel = '<select class="inp" style="width:auto;font-size:15px;padding:3px 6px" onchange="ADM.prjStepSet(\'' + t.id + '\',\'' + p.id + '\',\'' + s.id + '\',\'type\',this.value)">' +
       PRJ_STEP_TYPES.map(function (x) { return '<option value="' + x[0] + '"' + (s.type === x[0] ? ' selected' : '') + '>' + esc(x[1]) + '</option>'; }).join('') + '</select>';
     return '<div class="row" style="gap:7px;align-items:center;margin-bottom:6px">' +
       '<span title="' + esc(m[1]) + '" style="color:' + m[2] + ';display:flex;flex-shrink:0">' + admIcon(m[3]) + '</span>' +
-      '<input class="inp" value="' + esc(s.title || '') + '" placeholder="Intitulé de l\'étape" style="flex:1;font-size:13px" onchange="ADM.prjStepSet(\'' + t.id + '\',\'' + p.id + '\',\'' + s.id + '\',\'title\',this.value)">' +
+      '<input class="inp" value="' + esc(s.title || '') + '" placeholder="Intitulé de l\'étape" style="flex:1;font-size:15px" onchange="ADM.prjStepSet(\'' + t.id + '\',\'' + p.id + '\',\'' + s.id + '\',\'title\',this.value)">' +
       typeSel +
-      '<input class="inp" type="number" min="0" value="' + esc(s.estMinutes || 0) + '" title="Temps estimé (min)" style="width:64px;font-size:12px" onchange="ADM.prjStepSet(\'' + t.id + '\',\'' + p.id + '\',\'' + s.id + '\',\'estMinutes\',this.value)">' +
+      '<input class="inp" type="number" min="0" value="' + esc(s.estMinutes || 0) + '" title="Temps estimé (min)" style="width:64px;font-size:15px" onchange="ADM.prjStepSet(\'' + t.id + '\',\'' + p.id + '\',\'' + s.id + '\',\'estMinutes\',this.value)">' +
       '<span class="micro" style="text-transform:none">min</span>' +
       '<button class="pbtn" style="color:#8d2b21" title="Supprimer" onclick="ADM.prjStepDel(\'' + t.id + '\',\'' + p.id + '\',\'' + s.id + '\')">×</button>' +
     '</div>';
@@ -12077,9 +12170,9 @@
   function prjDelivHtml(t, p, d) {
     return '<div class="row" style="gap:7px;align-items:center;margin-bottom:6px">' +
       '<span style="color:' + esc(qnrColor(t)) + ';display:flex;flex-shrink:0">' + admIcon('deliv') + '</span>' +
-      '<input class="inp" value="' + esc(d.name || '') + '" placeholder="Nom du livrable (ex. Maquette Figma accueil)" style="flex:1;font-size:13px" onchange="ADM.prjDelivSet(\'' + t.id + '\',\'' + p.id + '\',\'' + d.id + '\',\'name\',this.value)">' +
+      '<input class="inp" value="' + esc(d.name || '') + '" placeholder="Nom du livrable (ex. Maquette Figma accueil)" style="flex:1;font-size:15px" onchange="ADM.prjDelivSet(\'' + t.id + '\',\'' + p.id + '\',\'' + d.id + '\',\'name\',this.value)">' +
       '<span class="micro" style="text-transform:none;letter-spacing:0">révisions</span>' +
-      '<input class="inp" type="number" min="0" max="20" value="' + esc(d.revisionsIncluded || 0) + '" title="Révisions incluses" style="width:60px;font-size:12px" onchange="ADM.prjDelivSet(\'' + t.id + '\',\'' + p.id + '\',\'' + d.id + '\',\'revisionsIncluded\',this.value)">' +
+      '<input class="inp" type="number" min="0" max="20" value="' + esc(d.revisionsIncluded || 0) + '" title="Révisions incluses" style="width:60px;font-size:15px" onchange="ADM.prjDelivSet(\'' + t.id + '\',\'' + p.id + '\',\'' + d.id + '\',\'revisionsIncluded\',this.value)">' +
       '<button class="pbtn" style="color:#8d2b21" title="Supprimer" onclick="ADM.prjDelivDel(\'' + t.id + '\',\'' + p.id + '\',\'' + d.id + '\')">×</button>' +
     '</div>';
   }
@@ -12229,6 +12322,7 @@
     stepAdd: stepAdd, stepStatus: stepStatus, stepDelete: stepDelete, stepEditOpen: stepEditOpen,
     qnAdd: qnAdd, qnSet: qnSet, qnDel: qnDel, qnMove: qnMove, qnBulk: qnBulk, qnSetOptions: qnSetOptions, qnSetTitle: qnSetTitle, qnSetReady: qnSetReady, qnPreview: qnPreview,
     planGo: planGo, planSetFilter: planSetFilter, planTick: planTick,
+    tiroirFermer: ptFermer, ptOuvrir: ptOuvrir,
     mailCfgSave: mailCfgSave, kvProbe: kvProbe, kvReset: kvReset,
     qnrAdd: qnrAdd, qnrOpen: qnrOpen, qnrCloseDrawer: qnrCloseDrawer, qnrSet: qnrSet, qnrDup: qnrDup, qnrImportJson: qnrImportJson, qnrExportJson: qnrExportJson, qnrArchive: qnrArchive, qnrDel: qnrDel, qnrToggleArch: qnrToggleArch, qnrPreview: qnrPreview, qnrPreviewNav: qnrPreviewNav, qnrPreviewStart: qnrPreviewStart, qnrPreviewCover: qnrPreviewCover, rankDown: rankDown, qnrSmartImport: qnrSmartImport, qnrAssignOpen: qnrAssignOpen, qnrStepAdd: qnrStepAdd, qnrBulkRequire: qnrBulkRequire, qnrStepSet: qnrStepSet, qnrStepDel: qnrStepDel, qnrStepMove: qnrStepMove, qnrBlockAdd: qnrBlockAdd, qnrBlockSet: qnrBlockSet, qnrBlockChangeType: qnrBlockChangeType, qnrBlockOptions: qnrBlockOptions, qnrBlockDel: qnrBlockDel, qnrBlockMove: qnrBlockMove,
     prjAdd: prjAdd, prjSeed: prjSeed, prjOpen: prjOpen, prjCloseDrawer: prjCloseDrawer, prjSet: prjSet, prjDup: prjDup, prjArchive: prjArchive, prjDel: prjDel, prjToggleArch: prjToggleArch, prjAssignOpen: prjAssignOpen, prjPhaseAdd: prjPhaseAdd, prjPhaseSet: prjPhaseSet, prjPhaseDel: prjPhaseDel, prjPhaseMove: prjPhaseMove, prjStepAdd: prjStepAdd, prjStepSet: prjStepSet, prjStepDel: prjStepDel, prjDelivAdd: prjDelivAdd, prjDelivSet: prjDelivSet, prjDelivDel: prjDelivDel,
