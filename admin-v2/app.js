@@ -6076,7 +6076,7 @@
      pas afficher un total que la liste des tâches contredirait.
      ════════════════════════════════════════════════════════════════════════ */
 
-  var CKJ = { ouvert: null, onglet: 'ensemble', filtre: 'actifs', charge: null, chargeFait: null, y: 0, neuf: null };
+  var CKJ = { ouvert: null, onglet: 'ensemble', filtre: 'actifs', qui: 'tous', charge: null, chargeFait: null, y: 0, neuf: null };
   var CKJ_PRESTA = { partenaire: 'Partenaire créative', site: 'Site web', identite: 'Identité visuelle',
     support: 'Support de com', maintenance: 'Espace tickets' };
 
@@ -6180,11 +6180,11 @@
   }
 
   function ckJSetFiltre(f) { CKJ.filtre = f; renderCockpitProjetsBody(); }
+  function ckJSetQui(q) { CKJ.qui = q; renderCockpitProjetsBody(); }
   /* Où l'on arrive en ouvrant un projet : là où il se travaille.
    * Un support de com vit par ses créations ; une vue d'ensemble en tête
    * n'était qu'une page qu'on traversait sans la lire. Les autres prestations
    * gardent leur synthèse, qui elle dit quelque chose. */
-  function ckJOngletDefaut(p) { return (p && p.prestation === 'support') ? 'creations' : 'ensemble'; }
   function ckJOuvrir(id) {
     navPas(function () {
       // On retient où l'on était dans la liste : la refermer doit y revenir,
@@ -6207,7 +6207,7 @@
     // Les sections du projet se souviennent de leur onglet par l'index partagé
     // avec la fiche cliente : y aller ensuite n'atterrit pas ailleurs.
     var p = CKJ.ouvert ? ckJTrouver(CKJ.ouvert) : null;
-    if (p) SUBTAB[p.projectId] = o;
+    if (p && !ckJOngletPrincipal(o)) SUBTAB[p.projectId] = o;
     renderCockpitProjetsBody();
   }
   /* Le contenu réel d'un projet (créations, versions, retours, planning,
@@ -6237,55 +6237,267 @@
 
   /* ── La liste ────────────────────────────────────────────────────────── */
 
+  /* ── Ce qu'il faut faire maintenant, et qui a la main ─────────────────
+   * Une seule phrase par projet, calculée ici pour la liste ET pour le
+   * bandeau du projet ouvert : les deux ne peuvent pas se contredire.
+   * qui : 'retard' (à toi, en retard), 'toi', 'client', 'rien'. */
+  function ckJPrenom(p) {
+    var c = (NAV_CLIENTS || []).filter(function (x) { return x.key === p.key; })[0];
+    return (c && c.prenom) ? c.prenom : (p.client || 'ton client');
+  }
+  function ckJRetardJ(iso) { var n = -ckpJoursOuvres(ckpAuj(), iso); return n > 0 ? n : 0; }
+  function ckJProchain(p) {
+    var qui = ckJPrenom(p), auj = ckpAuj();
+    if (p.clotureAt) return { qui: 'rien', phrase: 'Projet clôturé', quand: '' };
+    var x = ckJEchanges(p);
+    var vives = ckJTachesDe(p).filter(function (t) { return t.statut !== 'done'; })
+      .sort(function (a, b) { return (a.echeance || '9999') < (b.echeance || '9999') ? -1 : 1; });
+    var aEstimer = vives.filter(function (t) { return ckpRestant(t) === null; }).length;
+    var chezToi = vives.filter(function (t) { return t.statut !== 'review' && t.statut !== 'waiting_client'; });
+    var enRetard = chezToi.filter(function (t) { return t.echeance && t.echeance < auj; });
+    if (x.revisions.length) {
+      var r = x.revisions[0];
+      return { qui: 'toi', phrase: 'Reprendre « ' + (r.name || r.taskTitle || 'le livrable') + ' » : ' + qui + ' a fait un retour', quand: '' };
+    }
+    if (enRetard.length) {
+      var t0 = enRetard[0];
+      return { qui: 'retard', tache: t0, phrase: 'Finir « ' + t0.titre + ' »' + (aEstimer ? ', puis estimer ' + aEstimer + ' demande' + (aEstimer > 1 ? 's' : '') : ''),
+        quand: 'depuis ' + ckpQuand(t0.echeance), retardJ: ckJRetardJ(t0.echeance) };
+    }
+    if (chezToi.length) {
+      var t1 = chezToi[0];
+      return { qui: 'toi', tache: t1, phrase: 'Avancer « ' + t1.titre + ' »' + (chezToi.length > 1 ? ', puis ' + (chezToi.length - 1) + ' autre' + (chezToi.length > 2 ? 's' : '') : ''),
+        quand: t1.echeance ? ckpQuand(t1.echeance) : '' };
+    }
+    if (x.attente.length) {
+      var a = x.attente[0];
+      return { qui: 'client', phrase: qui + ' doit valider « ' + (a.name || a.taskTitle || 'le livrable') + ' »',
+        quand: a.createdAt ? 'depuis ' + ckpQuand(String(a.createdAt).slice(0, 10)) : '' };
+    }
+    if (vives.length) return { qui: 'client', phrase: qui + ' doit relire « ' + vives[0].titre + ' »', quand: '' };
+    var c = ckJEtapeCourante(p);
+    if (c && !c.fini) return { qui: 'toi', phrase: 'Avancer l’étape « ' + (c.etape.title || 'sans titre') + ' »', quand: c.etape.date ? ckpQuand(c.etape.date) : '' };
+    var cr = ckJCreations(p).filter(function (k) { return !k.clotureAt; });
+    if (cr.length) {
+      var chezC = cr.filter(function (k) { return k.status === 'attente_client'; });
+      if (chezC.length === cr.length) return { qui: 'client', phrase: qui + ' doit répondre sur « ' + (chezC[0].name || 'la création') + ' »', quand: '' };
+      var k0 = cr.filter(function (k) { return k.status !== 'attente_client'; })[0];
+      return { qui: 'toi', phrase: 'Avancer « ' + (k0.name || 'la création') + ' »', quand: '' };
+    }
+    if (!ckJEtapes(p).length && (p.prestation === 'site' || p.prestation === 'identite')) return { qui: 'rien', phrase: 'Poser les étapes du projet', quand: '' };
+    return { qui: 'rien', phrase: 'Rien en attente pour l’instant', quand: '' };
+  }
+  function ckJQuiPil(p, pr) {
+    var m = { retard: ['Toi, en retard', 'retard'], toi: ['Toi', 'toi'], client: [ckJPrenom(p), 'client'], rien: ['Personne', 'rien'] }[pr.qui];
+    return '<span class="pj-pil pj-pil--' + m[1] + '">' + esc(m[0]) + '</span>';
+  }
+  function ckJRepere(p) {
+    var c = ckJEtapeCourante(p);
+    if (c && !c.fini) return 'Étape ' + c.rang + ' sur ' + c.total + ' : ' + (c.etape.title || 'sans titre');
+    if (c && c.fini) return 'Toutes les étapes sont faites';
+    return ckJSousTitre(p);
+  }
+
+  /* ── La liste : un bloc par client, une phrase par projet ───────────── */
+  var FLECHE = '<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h10M9 4l4 4-4 4"/></svg>';
   function ckJLigne(p) {
-    var b = ckJBilan(p), c = ckJEtapeCourante(p), j = ckJJalon(p);
-    var f = ckJForfait(p), forf = '';
-    if (f && f.configured) {
-      forf = f.remaining < 0 ? 'dépassé de ' + ckpDuree(Math.round(f.over * 60))
-                             : ckpDuree(Math.round(f.remaining * 60)) + ' restant';
-    }
-    var sm = String(p.projectId || '').match(/^support-(\d{3})$/);
-    var cr = Array.isArray(p.creations) ? p.creations : [];
-    var crVives = cr.filter(function (x) { return !x.clotureAt; }).length;
-    var crTxt = cr.length ? (crVives ? crVives + ' en cours sur ' + cr.length : 'toutes terminées') : '';
-    // Pas de tâche pour porter une échéance ? Le planning prévisionnel en a une.
-    // Même moteur que l'onglet Planning : deux réponses ne peuvent pas diverger.
-    var jTxt = j ? j.titre + ' · ' + ckpQuand(j.date) : '';
-    if (!jTxt) {
-      var pls = ckJPlannings(p).filter(function (x) { return !x.si.ended && x.si.current; });
-      if (pls.length) {
-        pls.sort(function (x, y) { return planSortKey(x.si) - planSortKey(y.si); });
-        var cu = pls[0].si.current;
-        jTxt = (cu.j.title || 'Jalon') + (cu.label ? ' · ' + cu.label : '');
-      }
-    }
-    return stbCarteProjet({
-      id: ckJId(p), pid: sm ? sm[1] : null, key: p.key, creations: crTxt,
-      nom: p.projectLabel, presta: CKJ_PRESTA[p.prestation] || '', presta2: p.prestation,
-      clos: !!p.clotureAt, clotureAt: p.clotureAt,
-      ou: c ? (c.fini ? 'Toutes les étapes sont faites' : esc(c.etape.title || 'Étape sans titre'))
-            : esc(ckJSousTitre(p)),
-      total: (c && !c.fini) ? c.total : 0, faites: c ? c.faites : 0, rang: (c && !c.fini) ? c.rang : 0,
-      restant: b.restant, sansPlace: b.aPlanifier, inconnu: b.restant ? 0 : b.inconnu,
-      jalon: jTxt, forfait: forf,
-      ouvrir: 'ADM.ckJOuvrir(\'' + esc(ckJId(p)) + '\')'
-    });
+    var pr = ckJProchain(p);
+    return '<button class="pj-l" onclick="ADM.ckJOuvrir(\'' + esc(ckJId(p)) + '\')" aria-label="Ouvrir ' + esc(p.projectLabel) + ', ' + esc(p.client) + '">' +
+      '<span><span class="pj-nom">' + esc(p.projectLabel) + '</span><span class="pj-sous">' + esc(ckJRepere(p)) + '</span></span>' +
+      '<span class="pj-phr">' + esc(pr.phrase) + '</span>' +
+      '<span>' + ckJQuiPil(p, pr) + '</span>' +
+      '<span class="pj-quand num' + (pr.qui === 'retard' ? ' pj-quand--retard' : '') + '">' + esc(pr.quand || '') + '</span>' +
+      '<span class="pj-fl">' + FLECHE + '</span></button>';
   }
   function ckJParCliente(l) {
     var ordre = [], par = {};
     l.forEach(function (p) {
-      var c = p.client || 'Sans cliente';
+      var c = p.client || 'Sans client';
       if (!par[c]) { par[c] = []; ordre.push(c); }
       par[c].push(p);
     });
     return ordre.map(function (c) {
       var arr = par[c];
-      return '<div class="ckj-cli">' +
-        '<div class="ckj-clih"><span class="ckj-clin">' + esc(c) + '</span>' +
-          '<span class="ckj-clim">' + arr.length + ' projet' + (arr.length > 1 ? 's' : '') + '</span></div>' +
-        '<div class="pjc-grid">' + arr.map(ckJLigne).join('') + '</div></div>';
+      return '<section class="pj-cli"><div class="pj-cli__h"><h2>' + esc(c) + '</h2>' +
+        '<button class="tps-lien" onclick="ADM.openClient(\'' + esc(arr[0].key) + '\')">Fiche client</button></div>' +
+        '<div class="pj-l pj-l--h" aria-hidden="true"><span>Projet</span><span>Ce qu’il faut faire maintenant</span><span>Qui a la main</span><span>Pour quand</span><span></span></div>' +
+        arr.map(ckJLigne).join('') + '</section>';
     }).join('');
   }
+
+  /* ── Le projet ouvert : Suivi, Échanges, Fichiers ────────────────────
+   * Les outils détaillés (tâches, forfait, étapes, livrables, planning,
+   * créations, tickets) restent les mêmes blocs qu'avant : on y va depuis
+   * les liens « Voir… » du suivi ou le menu ⋯, et on en revient au suivi. */
+  var CKJ_SECTIONS = { taches: 'Toutes les tâches', forfait: 'Le forfait en détail', suivi: 'Les étapes', liv: 'Les livrables',
+    planning: 'Le planning', creations: 'Les créations', tickets: 'Les tickets', questionnaire: 'Le questionnaire' };
+  function ckJOngletPrincipal(o) { return o === 'ensemble' || o === 'echanges' || o === 'fichiers'; }
+  function ckJOngletDefaut() { return 'ensemble'; }
+  function ckJDetail(p) {
+    var d = ckJDomaine(p);
+    if (!d) ckJCharger(p.key);
+    var secs = d ? sectionsFor(d).filter(function (x) { return CKJ_SECTIONS[x[0]] && x[0] !== 'questionnaire'; }) : [];
+    if (d && !ckJOngletPrincipal(CKJ.onglet) && !secs.some(function (x) { return x[0] === CKJ.onglet; }) && CKJ.onglet !== 'questionnaire') CKJ.onglet = 'ensemble';
+    var msgN = d ? (sectionsFor(d).filter(function (x) { return x[0] === 'msg'; })[0] || [0, 0, 0])[2] : 0;
+    var sm = String(p.projectId || '').match(/^support-(\d{3})$/);
+    var arg = '\'' + esc(sm ? sm[1] : p.projectId) + '\',' + (sm ? 'true' : 'false') + ',\'' + esc(p.key) + '\'';
+    var items = [['Fiche client', 'ADM.openClient(\'' + esc(p.key) + '\')']].concat(secs.map(function (x) {
+      return [CKJ_SECTIONS[x[0]], 'ADM.ckJOnglet(\'' + x[0] + '\')'];
+    }));
+    if (p.clotureAt) items.push(['Rouvrir le projet', 'ADM.rouvrirProjet(' + arg + ')']);
+    var menu = ckMenuHtml(items, p.clotureAt ? '' : 'ADM.cloturerProjet(' + arg + ')', 'bas', 'Clôturer le projet…');
+    var ong = function (id, nom, n) {
+      var on = CKJ.onglet === id || (id === 'ensemble' && !ckJOngletPrincipal(CKJ.onglet));
+      return '<button role="tab" aria-selected="' + on + '" class="pg-ong pg-ong--seul pj-ong' + (on ? ' on' : '') + '" onclick="ADM.ckJOnglet(\'' + id + '\')">' +
+        '<span class="pg-ong__n">' + nom + '</span>' + (n > 0 ? '<span class="pj-ong__c num">' + n + '</span>' : '') + '</button>';
+    };
+    var tete = '<nav class="pj-fil" aria-label="Fil d’Ariane"><button class="tps-lien" onclick="ADM.ckJFermer()">Projets</button><span aria-hidden="true">/</span>' +
+        '<button class="tps-lien" onclick="ADM.openClient(\'' + esc(p.key) + '\')">' + esc(p.client) + '</button></nav>' +
+      '<div class="pj-tete"><div><h1 class="pg-h1">' + esc(p.projectLabel) + '</h1><p class="pj-tete__s">' + esc(ckJSousTete(p)) + '</p></div>' +
+        '<div class="pj-tete__a"><button class="tps-lien" onclick="ADM.ckJOnglet(\'echanges\')">Écrire à ' + esc(ckJPrenom(p)) + '</button>' + menu + '</div></div>' +
+      '<div class="pj-ongs" role="tablist" aria-label="' + esc(p.projectLabel) + '">' + ong('ensemble', 'Suivi', 0) + ong('echanges', 'Échanges', msgN) + ong('fichiers', 'Fichiers', 0) + '</div>';
+    var corps;
+    if (CKJ.onglet === 'ensemble') corps = ckJSuivi(p, d);
+    else if (CKJ.onglet === 'fichiers') corps = ckJOngletFichiers(p);
+    else if (!d) corps = '<div class="empty"><div class="spin" style="margin:20px auto"></div></div>';
+    else if (CKJ.onglet === 'echanges') {
+      var aQ = sectionsFor(d).some(function (x) { return x[0] === 'questionnaire'; });
+      corps = '<div class="cl2 ckj-sec">' + sectionContent(d, 'msg') + '</div>' +
+        (aQ ? '<h2 class="pj-h2">Le questionnaire</h2><div class="cl2 ckj-sec">' + sectionContent(d, 'questionnaire') + '</div>' : '');
+    } else {
+      corps = '<div class="pj-retour"><button class="tps-lien" onclick="ADM.ckJOnglet(\'ensemble\')">Revenir au suivi</button><h2 class="pj-h2">' + esc(CKJ_SECTIONS[CKJ.onglet] || '') + '</h2></div>' +
+        '<div class="cl2 ckj-sec">' + sectionContent(d, CKJ.onglet) + '</div>';
+    }
+    return tete + corps;
+  }
+  function ckJSousTete(p) {
+    var bits = [p.client];
+    var f = ckJForfait(p);
+    if (p.prestation === 'partenaire') bits.push((f && f.configured) ? ckpDuree(Math.round(f.base * 60)) + ' de travail par mois' : 'à la demande');
+    else {
+      var e = ckJEtapes(p), der = e.length ? e[e.length - 1] : null;
+      if (der && der.date && der.status !== 'done') bits.push((CKJ_PRESTA[p.prestation] || '') + ', fin prévue ' + ckpQuand(der.date));
+      else if (CKJ_PRESTA[p.prestation] && CKJ_PRESTA[p.prestation] !== p.projectLabel) bits.push(CKJ_PRESTA[p.prestation]);
+    }
+    if (p.clotureAt) bits.push('clôturé');
+    return bits.join(' · ');
+  }
+  // Le chemin du projet : ses étapes, en une barre en morceaux (option B).
+  function ckJChemin(p) {
+    var e = ckJEtapes(p);
+    if (!e.length) return '';
+    var c = ckJEtapeCourante(p);
+    var cur = (c && !c.fini) ? c.etape : null;
+    var seg = e.map(function (x) {
+      var etat = x.status === 'done' ? 'fait' : (x === cur ? 'cours' : 'apres');
+      var sous = etat === 'fait' ? 'Terminé' + (x.date ? ', ' + ckpQuand(x.date) : '')
+        : etat === 'cours' ? (x.date ? 'jusqu’à ' + ckpQuand(x.date).replace(/^le /, '') : 'en cours')
+        : (x.date ? ckpQuand(x.date) : 'à venir');
+      return '<li class="pj-seg pj-seg--' + etat + '"' + (etat === 'cours' ? ' aria-current="step"' : '') + '><span class="pj-seg__b"><i></i></span>' +
+        '<span class="pj-seg__n">' + esc(x.title || 'Étape sans titre') + '</span><span class="pj-seg__s num">' + esc(sous) + '</span>' +
+        (etat === 'cours' ? '<span class="pj-ici">Tu es ici</span>' : '') + '</li>';
+    }).join('');
+    var faites = e.filter(function (x) { return x.status === 'done'; }).length;
+    return '<section class="pj-chemin" aria-label="Le chemin du projet"><div class="pj-chemin__h"><div><h2>Le chemin du projet</h2>' +
+      '<p>' + e.length + ' étape' + (e.length > 1 ? 's' : '') + ', ' + faites + ' terminée' + (faites > 1 ? 's' : '') + '. Chaque morceau de la barre est une étape.</p></div>' +
+      '<span class="pj-chemin__r num">' + (cur ? 'Étape ' + c.rang + ' sur ' + c.total : (c && c.fini ? 'Tout est fait' : '')) + '</span></div>' +
+      '<ol class="pj-segs">' + seg + '</ol></section>';
+  }
+  // Le bandeau : la prochaine chose à faire, et qui l'a en main.
+  function ckJMaintenant(p) {
+    var pr = ckJProchain(p);
+    if (pr.qui === 'rien') return '';
+    var tete = pr.qui === 'client' ? 'C’est à ' + esc(ckJPrenom(p)) : 'C’est à toi' + (pr.qui === 'retard' ? ' <span class="pj-pil pj-pil--retard">en retard' + (pr.retardJ ? ' de ' + pr.retardJ + ' j' : '') + '</span>' : '');
+    var act = pr.tache ? '<button class="btn btn--dark" onclick="ADM.ckTVoir(\'' + esc(pr.tache.id) + '\')">Ouvrir la tâche</button>' : '';
+    return '<section class="pj-mnt pj-mnt--' + (pr.qui === 'client' ? 'client' : 'toi') + '"><div><div class="pj-mnt__k">' + tete + '</div>' +
+      '<p class="pj-mnt__p">' + esc(pr.phrase) + '</p>' + (pr.quand ? '<p class="pj-mnt__q num">' + esc(ckpMaj(pr.quand)) + '</p>' : '') + '</div>' + act + '</section>';
+  }
+  // Le forfait du mois : une case par heure (option A).
+  function ckJForfaitCases(p) {
+    var f = ckJForfait(p);
+    if (!f || !f.configured || !(f.available > 0)) return '';
+    var n = Math.min(60, Math.ceil(f.available)), u = Math.min(n, Math.round(f.used || 0)), rep = Math.max(0, Math.min(n - u, Math.round(f.carryIn || 0)));
+    var cases = '';
+    for (var i = 0; i < n; i++) cases += '<span class="pj-case' + (i < u ? ' pj-case--u' : (i >= n - rep ? ' pj-case--rep' : '')) + '"></span>';
+    var h = function (x) { return ckpDuree(Math.round((x || 0) * 60)); };
+    var depasse = (f.remaining || 0) < 0;
+    var mois = CKP_MOIS[new Date().getMonth()];
+    return '<section class="pj-forf"><div class="pj-forf__h"><div><div class="pj-forf__k">Ton forfait de ' + mois + '</div>' +
+      '<div class="pj-forf__v num">' + (depasse ? 'Dépassé de ' + h(f.over) : h(f.remaining) + ' <span>restantes sur ' + h(f.available) + '</span>') + '</div></div>' +
+      '<button class="tps-lien" onclick="ADM.ckJOnglet(\'forfait\')">Le forfait en détail</button></div>' +
+      '<div class="pj-cases" role="img" aria-label="' + h(f.used) + ' utilisées sur ' + h(f.available) + '">' + cases + '</div>' +
+      '<div class="pj-leg num"><span><i class="pj-case pj-case--u"></i>' + h(f.used) + ' utilisées</span><span><i class="pj-case"></i>' + h(Math.max(0, f.remaining - (f.carryIn || 0))) + ' du mois</span>' +
+      (f.carryIn ? '<span><i class="pj-case pj-case--rep"></i>' + h(f.carryIn) + ' reportées</span>' : '') + '</div></section>';
+  }
+  function ckJTachePil(t, p) {
+    var auj = ckpAuj();
+    if (t.statut === 'review' || t.statut === 'waiting_client') return '<span class="pj-pil pj-pil--client">' + esc(ckJPrenom(p)) + ' regarde</span>';
+    if (t.echeance && t.echeance < auj) return '<span class="pj-pil pj-pil--retard">En retard' + (ckJRetardJ(t.echeance) ? ' de ' + ckJRetardJ(t.echeance) + ' j' : '') + '</span>';
+    if (ckpRestant(t) === null) return '<span class="pj-pil pj-pil--rien">À estimer</span>';
+    if (t.statut === 'in_progress') return '<span class="pj-pil pj-pil--toi">En cours</span>';
+    return '<span class="pj-pil pj-pil--rien">À faire</span>';
+  }
+  function ckJAFaire(p, d, large) {
+    var toutes = ckJTachesDe(p);
+    var vives = toutes.filter(function (t) { return t.statut !== 'done'; }).sort(function (a, b) { return (a.echeance || '9999') < (b.echeance || '9999') ? -1 : 1; });
+    if (!toutes.length) return '';
+    var faites = toutes.length - vives.length;
+    var titre = p.prestation === 'partenaire' ? 'Les demandes de ' + ckJPrenom(p) : 'Ce que tu as à faire';
+    var lignes = vives.slice(0, 8).map(function (t) {
+      var r = ckpRestant(t);
+      return '<div class="pj-t"><button class="pj-t__n" onclick="ADM.ckTVoir(\'' + esc(t.id) + '\')">' + esc(t.titre) + '</button>' +
+        '<span class="num">' + (r === null ? '<button class="tps-lien" onclick="ADM.ckTVoir(\'' + esc(t.id) + '\')">Estimer le temps</button>' : esc(ckpDuree(r)) + ' à faire') + '</span>' +
+        '<span class="num pj-t__q">' + esc(t.echeance ? ckpQuand(t.echeance) : '') + '</span>' + ckJTachePil(t, p) + '</div>';
+    }).join('');
+    var aSec = d && sectionsFor(d).some(function (x) { return x[0] === 'taches'; });
+    return '<section class="pj-carte' + (large ? ' pj-carte--large' : '') + '"><div class="pj-carte__h"><h2>' + esc(titre) + '</h2>' +
+      '<span class="num">' + faites + ' sur ' + toutes.length + ' faite' + (faites > 1 ? 's' : '') + '</span></div>' +
+      '<div class="pj-prog">' + '<i style="width:' + Math.round(faites / toutes.length * 100) + '%"></i></div>' +
+      (lignes || '<p class="pj-vide">Tout est fait de ton côté.</p>') +
+      (vives.length > 8 || aSec ? '<div class="pj-carte__p"><button class="tps-lien" onclick="ADM.ckJOnglet(\'' + (aSec ? 'taches' : 'ensemble') + '\')">Voir toutes les tâches</button></div>' : '') + '</section>';
+  }
+  function ckJEnvois(p, d) {
+    var x = ckJEchanges(p), qui = ckJPrenom(p);
+    var l = x.revisions.map(function (r) { return [r, 'À reprendre', 'retard']; })
+      .concat(x.attente.map(function (a) { return [a, qui + ' regarde', 'client']; }))
+      .concat(x.valides.map(function (v) { return [v, 'Validé', 'toi']; }));
+    if (!l.length) return '';
+    var kindArg = function (o) { return o.taskId ? 'deliverable' : 'deliverable'; };
+    var aLiv = d && sectionsFor(d).some(function (s) { return s[0] === 'liv'; });
+    return '<section class="pj-envois"><div class="pj-carte__h"><h2>Ce que tu envoies à ' + esc(qui) + '</h2><span class="num">' + l.length + ' envoi' + (l.length > 1 ? 's' : '') + '</span></div>' +
+      l.map(function (e) {
+        var o = e[0], nm = o.name || o.taskTitle || 'Livrable', quand = (o.createdAt || o.at) ? ckpQuand(String(o.createdAt || o.at).slice(0, 10)) : '';
+        return '<div class="pj-env"><div><div class="pj-env__n">' + esc(nm) + '</div>' +
+          (e[2] === 'retard' && o.comment ? '<div class="pj-env__s">« ' + esc(String(o.comment).slice(0, 160)) + ' »</div>' : (quand ? '<div class="pj-env__s num">envoyé ' + esc(quand) + '</div>' : '')) + '</div>' +
+          (e[2] === 'client' ? '<button class="tps-lien" onclick="ADM.remind(\'' + esc(p.key) + '\',\'' + kindArg(o) + '\',\'' + jsq(nm) + '\',\'' + jsq(p.projectLabel) + '\')">Relancer</button>' : '') +
+          '<span class="pj-pil pj-pil--' + e[2] + '">' + esc(e[1]) + '</span></div>';
+      }).join('') +
+      (aLiv ? '<div class="pj-carte__p"><button class="tps-lien pj-lien-sombre" onclick="ADM.ckJOnglet(\'liv\')">Voir tous les livrables</button></div>' : '') + '</section>';
+  }
+  function ckJSuivi(p, d) {
+    var aFaire = ckJAFaire(p, d, false), envois = ckJEnvois(p, d);
+    var cartes = (aFaire && envois) ? '<div class="pj-deux">' + aFaire + envois + '</div>' : (aFaire.replace('pj-carte"', 'pj-carte pj-carte--large"') || envois);
+    var extra = '';
+    // Un support de com vit par ses créations, l'espace tickets par ses tickets :
+    // leur outil de travail vient directement sous le suivi.
+    if (d && p.prestation === 'support') extra = ckJBandePlanning(p) + '<h2 class="pj-h2">Les créations</h2><div class="cl2 ckj-sec">' + sectionContent(d, 'creations') + '</div>';
+    else if (d && p.prestation === 'maintenance') extra = '<h2 class="pj-h2">Les tickets</h2><div class="cl2 ckj-sec">' + sectionContent(d, 'tickets') + '</div>';
+    else if (!d && (p.prestation === 'support' || p.prestation === 'maintenance')) extra = '<div class="empty"><div class="spin" style="margin:20px auto"></div></div>';
+    else if (!ckJEtapes(p).length) extra = ckJBandePlanning(p);
+    var b = ckJBilan(p);
+    var fini = b.faites.length ? '<p class="pj-fini"><b>Terminé récemment :</b> ' + b.faites.slice(-4).reverse().map(function (t) {
+      return esc(t.titre) + (t.reel ? ' (' + esc(ckpDuree(t.reel)) + ')' : '');
+    }).join(' · ') + ' <button class="tps-lien" onclick="ADM.nav(\'done\')">Voir le journal</button></p>' : '';
+    var vide = !ckJChemin(p) && !ckJMaintenant(p) && !cartes && !extra;
+    // Les outils détaillés du projet, toujours à portée depuis le suivi.
+    var outils = d ? sectionsFor(d).filter(function (x) { return CKJ_SECTIONS[x[0]] && x[0] !== 'questionnaire' && !(p.prestation === 'support' && x[0] === 'creations') && !(p.prestation === 'maintenance' && x[0] === 'tickets'); }) : [];
+    var liens = outils.length ? '<nav class="pj-outils" aria-label="Tout le projet"><span>Tout le projet :</span>' + outils.map(function (x) {
+      return '<button class="tps-lien" onclick="ADM.ckJOnglet(\'' + x[0] + '\')">' + esc(CKJ_SECTIONS[x[0]]) + (x[2] > 0 ? ' [' + x[2] + ']' : '') + '</button>';
+    }).join('') + '</nav>' : '';
+    return ckJChemin(p) + ckJMaintenant(p) + ckJForfaitCases(p) + cartes + extra + fini + liens +
+      (vide ? '<p class="pj-vide">Rien à suivre pour l’instant sur ce projet.</p>' : '');
+  }
+
   /* Créer un projet de com depuis l'écran Projets : le bouton du haut ouvre
    * un champ avec le choix du client. La route est celle de
    * la fiche cliente, inchangée : c'est l'endroit du geste qui change. */
@@ -6322,135 +6534,6 @@
     return 'Pas d’étapes posées';
   }
 
-  /* ── Le détail : quatre onglets, les mêmes pour tous ──────────────────── */
-
-  function ckJDetail(p) {
-    var b = ckJBilan(p), j = ckJJalon(p);
-    var d = ckJDomaine(p);
-    if (!d) ckJCharger(p.key);
-    /* Un seul jeu d'onglets : la vue d'ensemble du cockpit, puis les sections
-     * du projet telles qu'elles existent déjà (créations, planning, étapes,
-     * livrables, forfait, tickets, questionnaire, messages), puis ses fichiers.
-     * On ne réécrit pas ces sections : ce sont les mêmes blocs, avec les mêmes
-     * gestes. Deux copies finiraient par dire deux choses. */
-    var estSupport = p.prestation === 'support';
-    var onglets = estSupport ? [] : [['ensemble', 'Vue d’ensemble', 0]];
-    if (d) { sectionsFor(d).forEach(function (x) { if (x[0] !== 'apercu') onglets.push(x); }); }
-    else if (!estSupport) { onglets.push(['etapes', 'Étapes', 0]); }
-    onglets.push(['fichiers', 'Fichiers', 0]);
-    // L'onglet ouvert ailleurs ne doit pas laisser une page vide ici. Tant que
-    // la charge n'est pas arrivée, on ne corrige rien : ses sections manquent
-    // encore, et on renverrait sur un onglet qu'on n'a pas demandé.
-    if (d && !onglets.some(function (o) { return o[0] === CKJ.onglet; })) {
-      var def = ckJOngletDefaut(p);
-      CKJ.onglet = onglets.some(function (o) { return o[0] === def; }) ? def : onglets[0][0];
-    }
-    var tn = ckTeinte({ presta2: p.prestation });
-    return '<button class="btn btn--outline btn--sm" onclick="ADM.ckJFermer()">Tous les projets</button>' +
-      '<div class="ckj-band' + (tn.sombre ? ' ckj-band--sombre' : '') +
-        '" style="--bg:' + tn.bg + ';--e:' + tn.e + '">' +
-      '<div class="ck-tete"><div>' +
-        '<div class="ck-meta">' + esc(p.client + (CKJ_PRESTA[p.prestation] && CKJ_PRESTA[p.prestation] !== p.projectLabel
-          ? ' · ' + CKJ_PRESTA[p.prestation] : '')) + '</div>' +
-        '<h1 class="ck-h1">' + esc(p.projectLabel) + '</h1></div>' +
-        '<div class="ck-date">' + (j ? esc(j.titre + ' · ' + ckpQuand(j.date)) : '') + '</div></div>' +
-      
-      '<div class="ckj-ong"><div class="ck-segm">' + onglets.map(function (o) {
-        return '<button class="ck-segb' + (CKJ.onglet === o[0] ? ' on' : '') +
-          '" onclick="ADM.ckJOnglet(\'' + o[0] + '\')">' + esc(o[1]) +
-          (o[2] > 0 ? ' <span class="ckj-ongn">' + o[2] + '</span>' : '') + '</button>';
-      }).join('') + '</div>' +
-      '<div class="ckj-act">' +
-      (function () {
-        var sm = String(p.projectId || '').match(/^support-(\d{3})$/);
-        var arg = '\'' + esc(sm ? sm[1] : p.projectId) + '\',' + (sm ? 'true' : 'false') + ',\'' + esc(p.key) + '\'';
-        return p.clotureAt
-          ? '<button class="btn btn--outline btn--sm" onclick="ADM.rouvrirProjet(' + arg + ')">Rouvrir le projet</button>'
-          : '<button class="btn btn--outline btn--sm" onclick="ADM.cloturerProjet(' + arg + ')">Clôturer le projet</button>';
-      }()) +
-      '<button class="btn btn--dark btn--sm" onclick="ADM.openClient(\'' + esc(p.key) + '\')">Fiche cliente</button></div></div></div>' +
-      (CKJ.onglet === 'ensemble' ? ckJEnsemble(p, b, d)
-        : CKJ.onglet === 'fichiers' ? ckJOngletFichiers(p)
-        : CKJ.onglet === 'etapes' ? ckJOngletEtapes(p)
-        // Un support n'a plus de vue d'ensemble : ce qu'elle disait de vrai
-        // (où en est le planning, ce qui attend un retour) passe au-dessus de
-        // ses créations, là où il travaille.
-        : d ? ((estSupport && CKJ.onglet === 'creations' ? ckJBandePlanning(p) + ckJRetours(p) : '') +
-               '<div class="cl2 ckj-sec">' + sectionContent(d, CKJ.onglet) + '</div>')
-        : '<div class="empty"><div class="spin" style="margin:20px auto"></div></div>');
-  }
-
-  function ckJEnsemble(p, b, d) {
-    var cr = ckJCreations(p);
-    var vives = ckJTachesDe(p).filter(function (t) { return t.statut !== 'done'; })
-      .sort(function (a, b2) { return ckpScore(b2) - ckpScore(a); });
-    var cartes = [];
-    /* Les trois temps ne s'affichent que si ce projet porte VRAIMENT du temps.
-       Un support de com n'a pas de tâches : montrer « 0 min · déjà passé »
-       n'était pas une mesure, c'était une absence déguisée en zéro. */
-    if (b.total || b.reel || b.restant) {
-      cartes.push(['Déjà passé', ckpDuree(b.reel), 'Compté quand le travail est réellement fait, pas quand il est planifié.']);
-      cartes.push(['Encore nécessaire', ckpDuree(b.restant),
-        b.inconnu ? b.inconnu + ' tâche' + (b.inconnu > 1 ? 's n’ont' : ' n’a') + ' pas de temps estimé : ce total est optimiste.'
-          : (b.aPlanifier ? ckpDuree(b.aPlanifier) + ' n’ont pas encore de créneau.' : 'Tout a un créneau.')]);
-      cartes.push(['Prévision totale', ckpDuree(b.reel + b.restant),
-        b.estim ? 'Estimation initiale : ' + ckpDuree(b.estim) + '.' : 'Aucune estimation initiale n’a été posée.']);
-    }
-    if (cr.length) {
-      var ouv = cr.filter(function (x) { return !x.clotureAt; }).length;
-      cartes.push([ouv ? 'Créations en cours' : 'Créations', ouv ? String(ouv) : String(cr.length),
-        ouv ? 'Sur ' + cr.length + ' au total. Clôturer une création archive son fil, des deux côtés.'
-            : 'Toutes terminées. Leurs fils sont archivés, et restent lisibles.']);
-    }
-    var f = ckJForfait(p);
-    if (f && f.configured) {
-      var h = function (x) { return ckpDuree(Math.round((x || 0) * 60)); };
-      var depasse = (f.remaining || 0) < 0;
-      cartes.push([depasse ? 'Dépassement ce mois-ci' : 'Restant ce mois-ci',
-        h(depasse ? f.over : f.remaining),
-        h(f.used) + ' consommées sur ' + h(f.available) + ' disponibles' +
-        (f.carryIn ? ' (dont ' + h(f.carryIn) + ' reportées)' : '') +
-        '. Une demande en cours ne consomme rien tant qu’elle n’est pas travaillée.']);
-    }
-    var tetes = cartes.length ? '<div class="ckl-cap" style="margin-bottom:24px">' + cartes.map(function (x) {
-      return '<div class="ckl-capb"><div class="ckl-capv">' + esc(x[1]) + '</div>' +
-        '<div class="ckl-capn">' + esc(x[0]) + '</div><div class="ckl-capx">' + esc(x[2]) + '</div></div>';
-    }).join('') + '</div>' : '';
-
-    // Ce qui reste à faire : les tâches quand il y en a, les créations sinon.
-    var corps;
-    if (vives.length) {
-      corps = '<div class="ck-tbl">' + vives.map(function (t) { return ckTLigne(t, 'projets'); }).join('') + '</div>';
-    } else if (cr.length) {
-      var ouvertes = cr.filter(function (x) { return !x.clotureAt; });
-      corps = '<div class="ck-tbl">' + (ouvertes.length ? ouvertes.map(function (x) {
-        var sm2 = String(p.projectId || '').match(/^support-(\d{3})$/);
-        return '<div class="ckj-ech"><div><div class="ckj-echn">' + esc(x.name || 'Création') + '</div>' +
-          '<div class="ck-ts">' + esc(ckJCrStatut(x.status)) + '</div></div>' +
-          '<div style="display:flex;gap:7px;flex-wrap:wrap">' +
-          (sm2 ? '<button class="btn btn--outline btn--sm" onclick="ADM.crCloturer(\'' + sm2[1] + '\',\'' + esc(x.id) + '\',\'' + esc(p.key) + '\')">Clôturer</button>' : '') +
-          '<button class="btn btn--dark btn--sm" onclick="ADM.ckJOnglet(\'creations\')">Ouvrir</button></div></div>';
-      }).join('') : '<div class="ck-vide">Toutes les créations sont terminées.</div>') + '</div>';
-    } else {
-      corps = '<div class="ck-tbl"><div class="ck-vide">Rien de ton côté.</div></div>';
-    }
-    var closes = cr.filter(function (x) { return !!x.clotureAt; });
-    return tetes + ckJBandePlanning(p) + ckJRetours(p) +
-      '<section class="ck-sec">' + ckpTitre(cr.length && !vives.length ? 'Ses créations' : 'Ce qui reste à faire') +
-        corps + '</section>' +
-      (closes.length ? '<section class="ck-sec">' + ckpTitre('Créations terminées',
-        'Leur fil est archivé : il reste lisible des deux côtés. Rouvrir remet la création en service.') +
-        '<div class="ck-tbl">' + closes.map(function (x) {
-          var sm3 = String(p.projectId || '').match(/^support-(\d{3})$/);
-          return '<div class="ckj-ech"><div><div class="ckj-echn">' + esc(x.name || 'Création') + '</div>' +
-            '<div class="ck-ts">Terminée le ' + esc(String(x.clotureAt).slice(0, 10).split('-').reverse().join('/')) + '</div></div>' +
-            (sm3 ? '<button class="btn btn--outline btn--sm" onclick="ADM.crRouvrir(\'' + sm3[1] + '\',\'' + esc(x.id) + '\',\'' + esc(p.key) + '\')">Rouvrir</button>' : '') +
-            '</div>';
-        }).join('') + '</div></section>' : '') +
-      (b.faites.length ? '<div class="ckj-fini"><b>Terminé :</b> ' + b.faites.map(function (t) {
-        return esc(t.titre) + (t.reel ? ' (' + esc(ckpDuree(t.reel)) + ')' : '');
-      }).join(' · ') + '</div>' : '');
-  }
   var CKJ_CR_ST = { a_preparer: 'À préparer', en_creation: 'En création', attente_client: 'Attente cliente',
     revision: 'En révision', valide: 'Validé', archive: 'Archivé' };
   function ckJCrStatut(st) { return CKJ_CR_ST[st] || st || ''; }
@@ -6484,50 +6567,6 @@
         '<button class="btn btn--outline btn--sm" onclick="ADM.ckJOnglet(\'planning\')">Voir le planning</button>' +
       '</div></section>';
   }
-  /* Les retours : ce qui attend sa validation, et ce qui revient vers toi.
-   * C'était un onglet à part ; c'est la première chose qu'on veut savoir en
-   * ouvrant un projet, donc ça vit sur la vue d'ensemble. */
-  function ckJRetours(p) {
-    var x = ckJEchanges(p);
-    if (!x.attente.length && !x.revisions.length && !x.valides.length) return '';
-    var ligne = function (l, mot) {
-      return '<div class="ckj-ech"><div><div class="ckj-echn">' + esc(l.name || l.taskTitle || 'Livrable') + '</div>' +
-        (mot && l.comment ? '<div class="ck-ts">« ' + esc(String(l.comment).slice(0, 180)) + ' »</div>'
-          : (l.taskTitle && l.name ? '<div class="ck-ts">' + esc(l.taskTitle) + '</div>' : '')) + '</div>' +
-        '<div class="ck-ts">' + esc((l.createdAt || l.at) ? ckpMaj(ckpQuand(String(l.createdAt || l.at).slice(0, 10))) : '') + '</div></div>';
-    };
-    var bloc = function (titre, l, mot) {
-      return l.length ? '<div class="ckj-ret"><div class="ck-ts ckj-rett">' + esc(titre) + '</div>' +
-        l.map(function (o) { return ligne(o, mot); }).join('') + '</div>' : '';
-    };
-    return '<section class="ck-sec">' +
-      ckpTitre('Les retours', 'Ce qui attend sa validation, et ce qui revient vers toi.') +
-      '<div class="ck-tbl">' +
-        bloc('Chez la cliente, en attente', x.attente, false) +
-        bloc('À retravailler', x.revisions, true) +
-        bloc('Validés, pas encore consultés', x.valides, false) +
-      '</div></section>';
-  }
-
-  function ckJOngletEtapes(p) {
-    var e = ckJEtapes(p);
-    if (!e.length) {
-      return '<p class="ck-semp">Cette prestation ne fonctionne pas par étapes : elle avance à la demande. ' +
-        'C’est le même écran, configuré autrement : les étapes se posent depuis la fiche cliente si un jour tu en veux.</p>';
-    }
-    var caches = e.filter(function (x) { return x.clientVisible === false; }).length;
-    return '<div class="ckj-etp">' + e.map(function (x) {
-      var etat = x.status === 'done' ? 'faite' : (x.status === 'in_progress' ? 'encours' : 'avenir');
-      return '<div class="ckj-etl ckj-etl--' + etat + '"><span class="ckj-etp2"></span>' +
-        '<div><div class="ckj-etn2">' + esc(x.title || 'Étape sans titre') + '</div>' +
-        '<div class="ckj-ets">' + (etat === 'faite' ? 'Terminée' : etat === 'encours' ? 'En cours' : 'À venir') +
-        (x.date ? ' · ' + esc(ckpMaj(ckpQuand(x.date))) : '') +
-        (x.clientVisible === false ? ' · interne, la cliente ne la voit pas' : '') + '</div></div></div>';
-    }).join('') + '</div>' +
-    (caches ? '<p class="ck-semp" style="margin-top:16px">Ta cliente voit ' + (e.length - caches) +
-      ' étapes sur ' + e.length + '. Les autres sont ton découpage de travail : les lui montrer ne l’aiderait pas.</p>' : '');
-  }
-
   /* Le planning prévisionnel du projet, vu d'ici.
    * Un projet peut porter plusieurs fils : le planning général, et un par
    * création. On les montre tous, avec les MÊMES calculs et les mêmes gestes
@@ -6568,12 +6607,22 @@
     var p = CKJ.ouvert ? ckJTrouver(CKJ.ouvert) : null;
     if (CKJ.ouvert && !p) CKJ.ouvert = null;
     if (p) {
-      setMain('<div class="wrap ck">' + ckJDetail(p) + '</div>');
+      setMain('<div class="wrap tps pj-page">' + ckJDetail(p) + '</div>');
       var dd = ckJDomaine(p);
-      if (dd) sectionEffets(dd, CKJ.onglet);
+      if (dd && CKJ.onglet === 'echanges') sectionEffets(dd, 'msg');
+      else if (dd && !ckJOngletPrincipal(CKJ.onglet)) sectionEffets(dd, CKJ.onglet);
       return;
     }
-    var l = ckJListe();
+    var tous = ckJListe();
+    var prs = {}; tous.forEach(function (x) { prs[ckJId(x)] = ckJProchain(x); });
+    var l = tous.filter(function (x) {
+      var q = prs[ckJId(x)].qui;
+      return CKJ.qui === 'moi' ? (q === 'toi' || q === 'retard') : CKJ.qui === 'client' ? q === 'client' : true;
+    });
+    var nMoi = tous.filter(function (x) { var q = prs[ckJId(x)].qui; return q === 'toi' || q === 'retard'; }).length;
+    var nRet = tous.filter(function (x) { return prs[ckJId(x)].qui === 'retard'; }).length;
+    var resume = nMoi ? nMoi + ' projet' + (nMoi > 1 ? 's attendent' : ' attend') + ' quelque chose de toi' + (nRet ? ', <b class="pj-ret">' + nRet + ' en retard</b>' : '')
+      : 'Aucun projet n’attend quelque chose de toi';
     // Créer un projet de com : un bouton en haut, qui demande pour quel client.
     var clis = (NAV_CLIENTS || []).filter(function (c) { return !c.archived; });
     var neuf = CKJ.neuf === '*' ? '<div class="ckj-neuf">' +
@@ -6583,15 +6632,17 @@
         'onkeydown="if(event.key===\'Enter\'){event.preventDefault();ADM.ckJCreer(\'*\');}">' +
         '<button class="btn btn--dark btn--sm" onclick="ADM.ckJCreer(\'*\')">Créer</button>' +
         '<button class="pjc-lien" onclick="ADM.ckJNeuf(\'*\')">Annuler</button></div>' : '';
-    setMain('<div class="wrap ck ckj-page">' +
-        '<h1 class="ck-h1">Où en est chaque projet</h1>' +
-        '<div class="ckj-barre"><div class="ck-segm" role="group" aria-label="Filtrer les projets">' +
-          '<button class="ck-segb' + (CKJ.filtre === 'actifs' ? ' on' : '') + '" aria-pressed="' + (CKJ.filtre === 'actifs') + '" onclick="ADM.ckJSetFiltre(\'actifs\')">En cours</button>' +
-          '<button class="ck-segb' + (CKJ.filtre === 'tout' ? ' on' : '') + '" aria-pressed="' + (CKJ.filtre === 'tout') + '" onclick="ADM.ckJSetFiltre(\'tout\')">Tous</button>' +
-        '</div>' + (clis.length ? '<button class="btn btn--dark" onclick="ADM.ckJNeuf(\'*\')">Nouveau projet de com</button>' : '') + '</div>' +
+    var seg = function (id, nom) { return '<button class="ck-segb' + (CKJ.qui === id ? ' on' : '') + '" aria-pressed="' + (CKJ.qui === id) + '" onclick="ADM.ckJSetQui(\'' + id + '\')">' + nom + '</button>'; };
+    setMain('<div class="wrap tps pj-page">' +
+        '<h1 class="pg-h1">Projets</h1>' +
+        '<div class="pj-barre"><div class="pj-barre__g"><div class="ck-segm" role="group" aria-label="Qui a la main">' + seg('moi', 'À moi') + seg('client', 'Au client') + seg('tous', 'Tous') + '</div>' +
+          '<span class="pj-resume num">' + resume + '</span></div>' +
+          (clis.length ? '<button class="btn btn--dark" onclick="ADM.ckJNeuf(\'*\')">Nouveau projet de com</button>' : '') + '</div>' +
         neuf +
         (l.length ? ckJParCliente(l)
-          : '<div class="ckj"><div class="ck-vide">Aucun projet en cours. Tout est fini, ou tout reste à ouvrir.</div></div>') +
+          : '<div class="pj-cli"><p class="pj-vide">' + (CKJ.qui === 'tous' ? 'Aucun projet en cours. Tout est fini, ou tout reste à ouvrir.' : 'Aucun projet dans ce cas.') + '</p></div>') +
+        '<p class="pj-pied"><button class="tps-lien" onclick="ADM.ckJSetFiltre(\'' + (CKJ.filtre === 'actifs' ? 'tout' : 'actifs') + '\')">' +
+          (CKJ.filtre === 'actifs' ? 'Voir aussi les projets terminés' : 'Ne montrer que les projets en cours') + '</button></p>' +
       '</div>');
   }
 
@@ -12609,7 +12660,7 @@
     ckLChoisir: ckLChoisir, ckLSemaine: ckLSemaine, ckLPoser: ckLPoser, ckLRetirer: ckLRetirer,
     ckLRegSet: ckLRegSet, ckLRegEnregistrer: ckLRegEnregistrer, ckLRegAnnuler: ckLRegAnnuler,
     ckLSetSimH: ckLSetSimH, ckLSetSimHz: ckLSetSimHz, ckLDepuis: ckLDepuis,
-    ckJSetFiltre: ckJSetFiltre, ckJOuvrir: ckJOuvrir, ckJFermer: ckJFermer, ckJOnglet: ckJOnglet,
+    ckJSetFiltre: ckJSetFiltre, ckJSetQui: ckJSetQui, ckJOuvrir: ckJOuvrir, ckJFermer: ckJFermer, ckJOnglet: ckJOnglet,
     ckJNeuf: ckJNeuf, ckJCreer: ckJCreer,
     tblStart: tblStart, tblCancel: tblCancel, tblSave: tblSave,
     tblDragStart: tblDragStart, tblDragEnd: tblDragEnd, tblDragOver: tblDragOver,
