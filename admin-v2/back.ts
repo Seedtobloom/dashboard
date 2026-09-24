@@ -1456,6 +1456,11 @@ async function handleTaskPatch(request: Request, env: Env, key: string, data: An
   if ('title' in body) body.title = (body.title || '').toString().slice(0, 300);
   if ('content' in body) body.content = (body.content || '').toString().slice(0, 10000);
   ADMIN_TASK_FIELDS.forEach((k) => { if (k in body) t[k] = body[k]; });
+  // Les étapes que le studio se donne pour découper une tâche. Comme
+  // studioNote, elles restent au studio (retirées de l'espace client).
+  if ('subtasks' in body) {
+    t.subtasks = Array.isArray(body.subtasks) ? body.subtasks.slice(0, 40).map((s: AnyObj) => ({ id: String((s && s.id) || genId()), text: String((s && s.text) || '').slice(0, 240), done: !!(s && s.done) })).filter((s: AnyObj) => s.text) : [];
+  }
   // Après la liste blanche : les créneaux doivent pouvoir corriger doDate
   // et slot que celle-ci vient peut-être d'écrire.
   // applyWork est le SEUL endroit qui écrit estMinutes : une seconde écriture
@@ -2148,6 +2153,7 @@ async function handleDashboard(env: Env): Promise<Response> {
             createdAt: t.createdAt || '', completedAt: t.completedAt || '',
             pole: t.pole || '', content: t.content || '',
             studioNote: t.studioNote || '',
+            subtasks: Array.isArray(t.subtasks) ? t.subtasks : [],
             timeSpentSeconds: t.timeSpentSeconds || (t.timeSpentMinutes || 0) * 60,
             estMinutes: typeof t.estMinutes === 'number' ? t.estMinutes : 0,
             restMinutes: typeof t.restMinutes === 'number' ? t.restMinutes : null,

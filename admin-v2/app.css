@@ -2635,3 +2635,15 @@ h1.cdhead__n{margin:0;font-weight:400;font-size:36px}
 .cl-proj__h{display:flex;align-items:baseline;gap:12px;margin:0 0 16px;font-family:'Cormorant Garamond',Georgia,serif;font-style:italic;font-weight:400;font-size:26px}
 .cl-proj__h span{font-family:'Inter Tight',ui-sans-serif,system-ui,sans-serif;font-style:normal;font-size:15px;color:#7a5540}
 .cl-proj .cpj-seg{margin-top:24px}
+/* Étapes d'une tâche */
+.cke-j{height:6px;border-radius:6px;background:#F0E9D6;margin:10px 0 6px;overflow:hidden}
+.cke-j span{display:block;height:100%;background:#110704;border-radius:6px}
+.cke-l{display:flex;align-items:center;justify-content:space-between;gap:10px;border-top:1px solid rgba(17,7,4,.08)}
+.cke-l label{display:flex;align-items:center;gap:12px;padding:10px 0;font-size:15px;cursor:pointer;flex:1}
+.cke-l input{width:20px;height:20px;accent-color:#110704;flex-shrink:0}
+.cke-l--f span{color:#7a5540;text-decoration:line-through;text-decoration-color:rgba(122,85,64,.5)}
+.cke-x{border:none;background:none;color:#7a5540;padding:6px;border-radius:8px;cursor:pointer}
+.cke-x:hover{color:#110704;background:#F8F6F2}
+.cke-aj{display:flex;align-items:center;gap:12px;margin-top:10px}
+.cke-aj .inp{max-width:340px}
+.ckgv-s h2 .ckg-doux{font-weight:400}

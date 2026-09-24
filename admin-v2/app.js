@@ -4478,7 +4478,8 @@
       table: (t.table && typeof t.table === 'object') ? t.table : null,
       fichiers: Array.isArray(t.attachments) ? t.attachments : [],
       lien: t.clientLink || '',
-      echanges: Array.isArray(t.comments) ? t.comments : []
+      echanges: Array.isArray(t.comments) ? t.comments : [],
+      etapes: Array.isArray(t.subtasks) ? t.subtasks : []
     };
   }
   // Tout le travail vivant, terminé COMPRIS : un projet a besoin de ce qui est
@@ -5371,6 +5372,7 @@
           '<span>' + esc(ckTRaison(t)) + '</span></div></header>' +
       '<div class="ckgv-g"><div class="ckgv-m">' +
         '<section class="ckgv-s"><h2>Ce qu’il faut faire</h2>' + (brief || '<p class="ckg-doux">Pas de brief pour cette tâche.</p>') + table + '</section>' +
+        (t.src !== 'ticket' ? ckTEtapes(t) : '') +
         (t.src !== 'perso' ? '<section class="ckgv-s"><h2>Échanges' + (t.src === 'client' ? ' avec ' + esc(t.qui) : '') + '</h2>' +
           (ech.length ? ech.map(function (m) {
             var mien = m.author === 'cindy';
@@ -5402,6 +5404,47 @@
     var s = ckpSignaux(t).filter(function (x) { return !/^En retard/.test(x.texte); });
     if (!s.length) return ckpEnRetard(t) ? '' : 'Rien ne la presse aujourd’hui.';
     return s.slice(0, 2).map(function (x) { return x.texte; }).join(' · ');
+  }
+
+  /* Les étapes : découper une grosse tâche en petits pas à cocher. Elles
+   * restent au studio, le client ne les voit pas. */
+  function ckTEtapes(t) {
+    var l = t.etapes || [], faites = l.filter(function (s) { return s.done; }).length;
+    var i = esc(t.id);
+    return '<section class="ckgv-s"><h2>Étapes' + (l.length ? ' <span class="ckg-doux num">· ' + faites + ' sur ' + l.length + '</span>' : '') + '</h2>' +
+      (l.length ? '<div class="cke-j" aria-hidden="true"><span style="width:' + Math.round(faites / l.length * 100) + '%"></span></div>' : '<p class="ckg-doux">Découpe la tâche en petits pas, tu verras où tu en es.</p>') +
+      l.map(function (s) {
+        return '<div class="cke-l' + (s.done ? ' cke-l--f' : '') + '"><label><input type="checkbox"' + (s.done ? ' checked' : '') +
+          ' onchange="ADM.ckTEtape(\'' + i + '\',\'' + esc(s.id) + '\',\'cocher\')"><span>' + esc(s.text) + '</span></label>' +
+          '<button class="cke-x" aria-label="Retirer l’étape ' + esc(s.text) + '" onclick="ADM.ckTEtape(\'' + i + '\',\'' + esc(s.id) + '\',\'retirer\')">' + IC_X + '</button></div>';
+      }).join('') +
+      '<div class="cke-aj"><input class="inp" id="cke-n-' + i + '" aria-label="Nouvelle étape" placeholder="Nouvelle étape" ' +
+        'onkeydown="if(event.key===\'Enter\'){event.preventDefault();ADM.ckTEtape(\'' + i + '\',\'\',\'ajouter\');}">' +
+        '<button class="pjc-lien" onclick="ADM.ckTEtape(\'' + i + '\',\'\',\'ajouter\')">Ajouter une étape</button></div>' +
+      '</section>';
+  }
+  function ckTEtape(id, sid, geste) {
+    var t = ckTTrouve(id); if (!t) return;
+    var l = (t.etapes || []).map(function (s) { return { id: s.id, text: s.text, done: !!s.done }; });
+    if (geste === 'ajouter') {
+      var champ = el('cke-n-' + id), v = champ ? (champ.value || '').trim() : '';
+      if (!v) { if (champ) champ.focus(); return; }
+      l.push({ id: '', text: v, done: false });
+    } else if (geste === 'retirer') l = l.filter(function (s) { return s.id !== sid; });
+    else l = l.map(function (s) { if (s.id === sid) s.done = !s.done; return s; });
+    var body = { subtasks: l };
+    if (t.src === 'client') body.projectId = t.projet || 'partner';
+    jpost(ckpUrl(t), body, 'PATCH').then(function (r) {
+      if (!r.ok) { toast('Erreur'); return; }
+      return r.json().then(function (maj) {
+        // Mise à jour sur place : relire tout le cockpit ferait sauter l'écran.
+        var src = t.src === 'perso' ? CKP.perso : (CKP.dash && CKP.dash.tasksAll);
+        var brut = (src || []).filter(function (x) { return x.id === id; })[0];
+        if (brut) brut.subtasks = (maj && Array.isArray(maj.subtasks)) ? maj.subtasks : l;
+        renderCockpitTaches();
+        if (geste === 'ajouter') { var c2 = el('cke-n-' + id); if (c2) c2.focus(); }
+      });
+    }).catch(function () { toast('Erreur'); });
   }
 
   /* ── Les gestes de cet écran ─────────────────────────────────────────── */
@@ -12495,7 +12538,7 @@
     toggleTicketsSpace: toggleTicketsSpace, ticketStatus: ticketStatus, ticketDue: ticketDue, ticketTime: ticketTime, ticketDelete: ticketDelete, ticketForfait: ticketForfait, ticketProposeDate: ticketProposeDate,
     ckpReste: ckpReste, ckpEstim: ckpEstim, ckpFinir: ckpFinir, ckpPasMaintenant: ckpPasMaintenant, ckpOrdreSysteme: ckpOrdreSysteme,
     ckTSetTri: ckTSetTri, ckTSetFiltre: ckTSetFiltre, ckTOuvrir: ckTOuvrir, ckTGrand: ckTGrand, ckMenu: ckMenu,
-    ckTRepondre: ckTRepondre, ckTCloturer: ckTCloturer, ckTSupprimer: ckTSupprimer, ckTCreerStb: ckTCreerStb, ckTVoir: ckTVoir,
+    ckTRepondre: ckTRepondre, ckTCloturer: ckTCloturer, ckTSupprimer: ckTSupprimer, ckTCreerStb: ckTCreerStb, ckTVoir: ckTVoir, ckTEtape: ckTEtape,
     ckTAEstimer: ckTAEstimer,
     ckLChoisir: ckLChoisir, ckLSemaine: ckLSemaine, ckLPoser: ckLPoser, ckLRetirer: ckLRetirer,
     ckLRegSet: ckLRegSet, ckLRegEnregistrer: ckLRegEnregistrer, ckLRegAnnuler: ckLRegAnnuler,

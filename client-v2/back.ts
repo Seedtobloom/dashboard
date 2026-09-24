@@ -1087,14 +1087,15 @@ async function handleForfait(request: Request, env: Env, masterKey: string, data
 
 /* Les tâches et les tickets partent TELS QUELS vers l'espace client : tout
  * champ ajouté côté studio y serait visible. Les notes que Cindy prend pour
- * elle sont donc retirées ici, une fois, sur les deux listes — plutôt que de
+ * elle (et ses étapes) sont donc retirées ici, une fois, sur les deux listes — plutôt que de
  * compter sur le fait que l'espace client ne les affiche pas. */
 function stripStudio(list: unknown): AnyObj[] {
   if (!Array.isArray(list)) return [];
   return list.map((t: AnyObj) => {
-    if (!t || typeof t !== 'object' || !('studioNote' in t)) return t;
+    if (!t || typeof t !== 'object' || !('studioNote' in t || 'subtasks' in t)) return t;
     const copie: AnyObj = { ...t };
     delete copie.studioNote;
+    delete copie.subtasks;
     return copie;
   });
 }
