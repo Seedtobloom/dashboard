@@ -2689,3 +2689,10 @@ h1.cdhead__n{margin:0;font-weight:400;font-size:36px}
 .inb--retours .ckg-r.on,.inb--retours .ckp-h{background:#E6E5B2}
 .inb--info .ckg-r.on,.inb--info .ckp-h{background:#F0E9D6}
 .inb--retours .inb-r.on .ck-tag--paille{background:#fff}
+
+/* ── Menu (option 1 validée) : titres de groupe en italique Paille, entrées en minuscules ── */
+.navgroup__label{font-family:'Cormorant Garamond',Georgia,serif;font-style:italic;font-weight:400;font-size:22px;letter-spacing:0;text-transform:none;color:#E6E5B2;padding:16px 13px 6px}
+.navitem{font-family:'Inter Tight',ui-sans-serif,system-ui,sans-serif;font-size:15px;letter-spacing:0;text-transform:none;color:rgba(248,246,242,0.82);gap:11px;padding:8px 13px}
+.navitem:hover{color:#F8F6F2}
+.navitem.active{color:#F8F6F2}
+.navitem svg{opacity:.8}

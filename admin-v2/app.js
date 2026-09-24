@@ -14,6 +14,10 @@
   var DOMAIN_LABELS = { partner: 'Partenaire créative', website: 'Site web', branding: 'Identité visuelle', maintenance: 'Espace tickets' };
   var DA_BANNER = [['#110704', 'Nuit'], ['#5A2A11', 'Terre'], ['#8B6F52', 'Argile'], ['#CD8F6E', 'Terracotta'], ['#C5DEFF', 'Bleu clair'], ['#F0E9D6', 'Paille']];
   var ADM_ICONS = {
+    cockpit: 'M3 11l9-8 9 8M5 10v10h14V10',
+    cktaches: 'M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11',
+    ckplanning: 'M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z',
+    ckprojets: 'M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z',
     priorities: 'M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1zM4 22v-7',
     mytasks: 'M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11',
     semaine: 'M4 4h4v16H4zM10 4h4v16h-4zM16 4h4v16h-4z',
