@@ -2166,3 +2166,26 @@ select.cg-in{cursor:pointer}
 .cpj__a{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end}
 @media(max-width:900px){.cpj{grid-template-columns:1fr;gap:8px}.cpj__a{justify-content:flex-start}}
 .cpj-note{font-size:13px;color:var(--muted);line-height:1.5;margin:10px 0 12px;max-width:72ch}
+/* Projets regroupés par cliente : le nom porte le groupe, pas chaque ligne. */
+.ckj-cli{margin-bottom:18px}
+.ckj-clih{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;padding:0 24px 8px}
+.ckj-clin{font-family:var(--font-display);font-style:italic;font-size:22px;color:var(--terre)}
+.ckj-clim{font-family:var(--font-micro);font-size:11px;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted)}
+
+/* ── La carte d'un projet : une seule, posée par deux écrans ──────────────
+   Pas de barre sur le côté : c'est l'eyebrow de prestation qui situe. */
+.pjc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(296px,1fr));gap:14px}
+.pjc{background:var(--bone);border-radius:18px;padding:17px 19px 15px;display:flex;flex-direction:column;gap:9px;box-shadow:inset 0 0 0 1px var(--border)}
+.pjc--clos{opacity:.7;background:var(--card)}
+.pjc-h{display:flex;align-items:center;justify-content:space-between;gap:9px;min-height:20px}
+.pjc-p{font-family:var(--font-micro);font-size:10px;font-weight:600;letter-spacing:0.11em;text-transform:uppercase;color:var(--terre-600)}
+.pjc-n{font-family:var(--font-display);font-style:italic;font-size:22px;line-height:1.1;color:var(--terre)}
+.pjc-ou{font-size:14px;color:var(--text);line-height:1.4}
+.pjc-rang{display:block;font-family:var(--font-micro);font-size:10.5px;letter-spacing:0.05em;text-transform:uppercase;color:var(--muted);margin-top:5px}
+.pjc-j{height:5px;border-radius:999px;background:var(--surface-2);overflow:hidden;margin-top:7px}
+.pjc-j span{display:block;height:100%;background:var(--glycine-900);border-radius:999px}
+.pjc-d{border-top:1px solid var(--border);padding-top:9px;margin-top:2px}
+.pjc-l{display:flex;justify-content:space-between;gap:10px;font-size:13px;padding:3px 0}
+.pjc-l span{color:var(--muted)}
+.pjc-l b{text-align:right;font-weight:600}
+.pjc-a{display:flex;gap:7px;flex-wrap:wrap;margin-top:auto;padding-top:9px}

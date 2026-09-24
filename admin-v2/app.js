@@ -5782,26 +5782,40 @@
 
   function ckJLigne(p) {
     var b = ckJBilan(p), c = ckJEtapeCourante(p), j = ckJJalon(p);
-    var pr = CKJ_PRESTA[p.prestation] || '';
-    var ou = c
-      ? (c.fini ? '<span class="ck-doux">Toutes les étapes sont faites</span>'
-        : '<div class="ckj-et">' + esc(c.etape.title || 'Étape sans titre') +
-          '<span class="ckj-etn">étape ' + c.rang + ' sur ' + c.total + '</span>' +
-          '<span class="ckj-jauge"><span style="width:' + (c.faites / c.total * 100).toFixed(0) + '%"></span></span></div>')
-      : '<span class="ck-doux">' + esc(ckJSousTitre(p)) + '</span>';
-    return '<div class="ckj-l" onclick="ADM.ckJOuvrir(\'' + esc(ckJId(p)) + '\')">' +
-      // On pense d'abord en clientes : son nom porte la ligne, la prestation
-      // la qualifie juste en dessous.
-      '<div><div class="ckj-n">' + esc(p.client) + '</div>' +
-        '<div class="ck-eb" style="margin-top:5px">' + esc(p.projectLabel) + '</div></div>' +
-      '<div>' + ou + '</div>' +
-      '<div>' + (b.restant ? '<b>' + esc(ckpDuree(b.restant)) + '</b> à faire'
-        : (b.inconnu ? '<b class="ck-inc">' + b.inconnu + ' à estimer</b>' : '<span class="ck-doux">rien à faire</span>')) +
-        (b.aPlanifier ? '<div class="ck-ts ck-ap">' + esc(ckpDuree(b.aPlanifier)) + ' sans place</div>' : '') +
-        (b.reel ? '<div class="ck-ts">' + esc(ckpDuree(b.reel)) + ' passées</div>' : '') + '</div>' +
-      '<div>' + (j ? '<b>' + esc(j.titre) + '</b><div class="ck-ts">' + esc(ckpMaj(ckpQuand(j.date))) + '</div>'
-        : '<span class="ck-doux">Pas de jalon</span>') + '</div>' +
-      '</div>';
+    var f = ckJForfait(p), forf = '';
+    if (f && f.configured) {
+      forf = f.remaining < 0 ? 'dépassé de ' + ckpDuree(Math.round(f.over * 60))
+                             : ckpDuree(Math.round(f.remaining * 60)) + ' restant';
+    }
+    var sm = String(p.projectId || '').match(/^support-(\d{3})$/);
+    return stbCarteProjet({
+      id: ckJId(p), pid: sm ? sm[1] : null, key: p.key,
+      nom: p.projectLabel, presta: CKJ_PRESTA[p.prestation] || '',
+      clos: !!p.clotureAt, clotureAt: p.clotureAt,
+      ou: c ? (c.fini ? 'Toutes les étapes sont faites' : esc(c.etape.title || 'Étape sans titre'))
+            : esc(ckJSousTitre(p)),
+      total: (c && !c.fini) ? c.total : 0, faites: c ? c.faites : 0, rang: (c && !c.fini) ? c.rang : 0,
+      restant: b.restant, sansPlace: b.aPlanifier, inconnu: b.restant ? 0 : b.inconnu,
+      jalon: j ? j.titre + ' · ' + ckpQuand(j.date) : '', forfait: forf,
+      ouvrir: 'ADM.ckJOuvrir(\'' + esc(ckJId(p)) + '\')'
+    });
+  }
+  function ckJParCliente(l) {
+    var ordre = [], par = {};
+    l.forEach(function (p) {
+      var c = p.client || 'Sans cliente';
+      if (!par[c]) { par[c] = []; ordre.push(c); }
+      par[c].push(p);
+    });
+    return ordre.map(function (c) {
+      var arr = par[c];
+      var restant = arr.reduce(function (s2, p) { return s2 + ckJBilan(p).restant; }, 0);
+      return '<div class="ckj-cli">' +
+        '<div class="ckj-clih"><span class="ckj-clin">' + esc(c) + '</span>' +
+          '<span class="ckj-clim">' + arr.length + ' projet' + (arr.length > 1 ? 's' : '') +
+          (restant ? ' · ' + esc(ckpDuree(restant)) + ' à faire' : '') + '</span></div>' +
+        '<div class="pjc-grid">' + arr.map(ckJLigne).join('') + '</div></div>';
+    }).join('');
   }
   function ckJSousTitre(p) {
     if (p.prestation === 'partenaire') {
@@ -5968,9 +5982,8 @@
           '<button class="ck-segb' + (CKJ.filtre === 'actifs' ? ' on' : '') + '" onclick="ADM.ckJSetFiltre(\'actifs\')">En cours</button>' +
           '<button class="ck-segb' + (CKJ.filtre === 'tout' ? ' on' : '') + '" onclick="ADM.ckJSetFiltre(\'tout\')">Tous</button>' +
         '</div>' +
-        '<div class="ckj-h"><span>Projet</span><span>Où ça en est</span><span>Travail</span><span>Prochain jalon</span></div>' +
-        '<div class="ckj">' + (l.length ? l.map(ckJLigne).join('')
-          : '<div class="ck-vide">Aucun projet en cours. Tout est fini, ou tout reste à ouvrir.</div>') + '</div>' +
+        (l.length ? ckJParCliente(l)
+          : '<div class="ckj"><div class="ck-vide">Aucun projet en cours. Tout est fini, ou tout reste à ouvrir.</div></div>') +
       '</div>');
   }
 
@@ -7755,42 +7768,11 @@
       '<div class="cdhead__m"><div class="cdhead__n">' + esc(nm) + '</div><div class="cdhead__p">' + esc(_cdProj) + '</div></div>' +
       '<span class="cdhead__pres"><i class="' + (_cdPr.online ? 'on' : '') + '"></i>' + esc(_cdPr.label) + '</span></div>';
     setMain(topbar('', visioBtn + '<button class="btn btn--outline btn--sm" onclick="ADM.nav(\'clients\')">← Clients</button>') +
-      '<div class="wrap cl2">' + cdhead + clientAlerts() + clientStats() + '<div class="tabs">' + tabsHtml + '</div><div id="tabbody"></div></div>');
+      '<div class="wrap cl2">' + cdhead + clientAlerts() + '<div class="tabs">' + tabsHtml + '</div><div id="tabbody"></div></div>');
     renderTab();
   }
   // Bandeau de 4 tuiles (maquette cdstats) : avancement, prochaine livraison,
   // forfait restant, dernier échange. Valeurs dérivées des données réelles.
-  function clientStats() {
-    var doms = (CUR.domains || []).concat(CUR.supports || []);
-    var totSteps = 0, doneSteps = 0, nextDue = '', forfaitTxt = '';
-    function keepDue(dd) { if (dd && (!nextDue || dd < nextDue)) nextDue = dd; }
-    doms.forEach(function (d) {
-      var c = d.content || {};
-      // Avancement : étapes (projets jalonnés) ET tâches (partenaire créative).
-      (c.suivi || []).forEach(function (s) { totSteps++; if (s.status === 'done' || s.completedAt) doneSteps++; });
-      (c.taches || []).forEach(function (t) { if (t.archived) return; totSteps++; if (t.status === 'done' || t.completedAt) doneSteps++; });
-      // Prochaine échéance : livrables, étapes non terminées, tâches non terminées.
-      (c.livrables || []).forEach(function (l) { if (l.status !== 'valide') keepDue(l.dueDate || l.dueAt || ''); });
-      (c.suivi || []).forEach(function (s) { if (s.status !== 'done' && !s.completedAt) keepDue(s.dueDate || s.date || ''); });
-      (c.taches || []).forEach(function (t) { if (!t.archived && t.status !== 'done' && !t.completedAt) keepDue(t.dueDate || ''); });
-      // Forfait restant : forfait partenaire (d.forfait) ou forfait mensuel maintenance.
-      if (d.forfait && d.forfait.configured && typeof d.forfait.remaining === 'number') {
-        forfaitTxt = (d.forfait.remaining < 0 ? '− ' + fmtHrs(-d.forfait.remaining) : fmtHrs(d.forfait.remaining));
-      }
-    });
-    var pct = totSteps ? Math.round(doneSteps / totSteps * 100) + '%' : '—';
-    var pr = presence(CUR.lastSeen);
-    var lastTxt = pr.online ? 'en ligne' : (pr.label || '—');
-    var t = [
-      ['', pct, 'Avancement'],
-      ['', nextDue ? esc(fmtDate(nextDue)) : '—', 'Prochaine livraison'],
-      ['', forfaitTxt || '—', 'Forfait restant'],
-      [' cdstat--new', esc(lastTxt), 'Dernier échange']
-    ];
-    return '<div class="cdstats">' + t.map(function (x) {
-      return '<div class="cdstat' + x[0] + '"><b>' + x[1] + '</b><span>' + x[2] + '</span></div>';
-    }).join('') + '</div>';
-  }
   function clientAlerts() {
     var unread = 0, aValider = 0, review = 0, waitClient = 0;
     function scan(list) {
@@ -8478,12 +8460,52 @@
      avec les mêmes trois gestes sur chaque ligne — ouvrir, clôturer, et pour
      un projet de com, supprimer.
      ════════════════════════════════════════════════════════════════════════ */
+  /* ── LA CARTE D'UN PROJET, ÉCRITE UNE FOIS ──────────────────────────────
+     Deux écrans la posent : « Projets », qui les groupe par cliente, et la
+     fiche d'une cliente, qui les groupe par état. Les données viennent de
+     deux sources différentes — le tableau de bord et la fiche — alors chacune
+     les traduit dans la MÊME forme. La carte, elle, n'existe qu'en un
+     exemplaire : deux cartes à maintenir, ce serait deux façons de dire où en
+     est un projet, et un jour deux réponses différentes.
+
+     v = { id, nom, presta, clos, clotureAt, ou, rang, total, faites,
+           restant, sansPlace, inconnu, jalon, forfait, ouvrir, key, pid } */
+  function stbCarteProjet(v) {
+    var arg = v.pid ? '\'' + esc(v.pid) + '\',true,\'' + esc(v.key || '') + '\''
+                    : '\'' + esc(v.id) + '\',false,\'' + esc(v.key || '') + '\'';
+    var jauge = v.total ? '<div class="pjc-j"><span style="width:' + (v.faites / v.total * 100).toFixed(0) + '%"></span></div>' : '';
+    var ligne = function (k, val) { return val ? '<div class="pjc-l"><span>' + esc(k) + '</span><b>' + val + '</b></div>' : ''; };
+    return '<div class="pjc' + (v.clos ? ' pjc--clos' : '') + '">' +
+      // La prestation ne se répète pas quand elle porte déjà le nom du projet.
+      '<div class="pjc-h"><span class="pjc-p">' +
+        (v.presta && v.presta.split(' · ')[0] !== v.nom ? esc(v.presta) : '') + '</span>' +
+        (v.clos ? '<span class="ck-ch ck-ch--neutre">Terminé</span>' : '') + '</div>' +
+      '<div class="pjc-n">' + esc(v.nom) + '</div>' +
+      '<div class="pjc-ou">' + (v.clos
+        ? 'Clôturé le ' + esc(String(v.clotureAt).slice(0, 10).split('-').reverse().join('/'))
+        : (v.ou || '<span class="ck-doux">Rien de posé pour l’instant</span>')) +
+        (!v.clos && v.total ? '<span class="pjc-rang">étape ' + v.rang + ' sur ' + v.total + '</span>' + jauge : '') +
+      '</div>' +
+      '<div class="pjc-d">' +
+        ligne('Travail', v.restant ? esc(ckpDuree(v.restant)) + ' à faire'
+          : (v.inconnu ? '<span class="ck-inc">' + v.inconnu + ' à estimer</span>' : '')) +
+        ligne('Sans place', v.sansPlace ? '<span class="ck-ap">' + esc(ckpDuree(v.sansPlace)) + '</span>' : '') +
+        ligne('Prochain jalon', v.jalon ? esc(v.jalon) : '') +
+        ligne('Forfait', v.forfait ? esc(v.forfait) : '') +
+      '</div>' +
+      '<div class="pjc-a">' +
+        '<button class="btn btn--dark btn--sm" onclick="' + v.ouvrir + '">Ouvrir</button>' +
+        (v.clos ? '<button class="btn btn--outline btn--sm" onclick="ADM.rouvrirProjet(' + arg + ')">Rouvrir</button>'
+                : '<button class="btn btn--outline btn--sm" onclick="ADM.cloturerProjet(' + arg + ')">Clôturer</button>') +
+        (v.pid ? '<button class="btn btn--danger btn--sm" onclick="ADM.delSupport(\'' + esc(v.pid) + '\')">Suppr.</button>' : '') +
+      '</div></div>';
+  }
   function cliProjets() {
     return (CUR.domains || []).map(function (d) {
       return { id: d.id, pid: null, nom: DOMAIN_LABELS[d.id] || d.label || 'Projet',
         presta: DOMAIN_LABELS[d.id] || d.label || '', content: d.content || {},
         clos: !!d.clotureAt, clotureAt: d.clotureAt || null, unread: d.unread || 0,
-        visible: d.isActive !== false, support: false };
+        visible: d.isActive !== false, support: false, forfait: d.forfait || null };
     }).concat((CUR.supports || []).map(function (sp) {
       return { id: sp.id, pid: sp.pid, nom: (sp.content && sp.content.name) || sp.label || 'Projet de com',
         presta: 'Support de com', content: sp.content || {},
@@ -8496,10 +8518,8 @@
     var c = p.content || {};
     var suivi = Array.isArray(c.suivi) ? c.suivi : [];
     if (suivi.length) {
-      var faites = suivi.filter(function (x) { return x.status === 'done'; }).length;
       var cur = suivi.filter(function (x) { return x.status !== 'done'; })[0];
-      return (cur ? esc(cur.title || 'Étape sans titre') : 'Toutes les étapes sont faites') +
-        '<div class="micro" style="color:var(--muted)">étape ' + Math.min(faites + 1, suivi.length) + ' sur ' + suivi.length + '</div>';
+      return cur ? esc(cur.title || 'Étape sans titre') : 'Toutes les étapes sont faites';
     }
     var taches = Array.isArray(c.taches) ? c.taches.filter(function (t) { return !t.archived && t.stage !== 'inbox'; }) : [];
     if (taches.length) {
@@ -8514,21 +8534,30 @@
     return '<span style="color:var(--muted)">Rien de posé pour l’instant</span>';
   }
   function cliLigneProjet(p) {
-    var arg = p.support ? '\'' + esc(p.pid) + '\',true' : '\'' + esc(p.id) + '\',false';
-    return '<div class="cpj' + (p.clos ? ' cpj--clos' : '') + '">' +
-      '<div class="cpj__n">' + esc(p.nom) +
-        '<div class="cpj__p">' + esc(p.presta) +
-          (!p.visible ? ' · <span style="color:var(--gold-chip)">masqué pour elle</span>' : '') +
-          (p.unread ? ' · <b>' + p.unread + ' non lu' + (p.unread > 1 ? 's' : '') + '</b>' : '') + '</div></div>' +
-      '<div class="cpj__o">' + (p.clos
-        ? '<span class="micro" style="color:var(--muted)">Terminé le ' + esc(String(p.clotureAt).slice(0, 10).split('-').reverse().join('/')) + '</span>'
-        : cliOuEnEst(p)) + '</div>' +
-      '<div class="cpj__a">' +
-        '<button class="btn btn--dark btn--sm" onclick="ADM.tab(\'' + esc(p.id) + '\')">Ouvrir</button>' +
-        (p.clos ? '<button class="btn btn--outline btn--sm" onclick="ADM.rouvrirProjet(' + arg + ')">Rouvrir</button>'
-                : '<button class="btn btn--outline btn--sm" onclick="ADM.cloturerProjet(' + arg + ')">Clôturer</button>') +
-        (p.support ? '<button class="btn btn--danger btn--sm" onclick="ADM.delSupport(\'' + esc(p.pid) + '\')">Suppr.</button>' : '') +
-      '</div></div>';
+    var c = p.content || {};
+    var suivi = Array.isArray(c.suivi) ? c.suivi : [];
+    var taches = Array.isArray(c.taches) ? c.taches.filter(function (t) { return !t.archived && t.stage !== 'inbox'; }) : [];
+    var faites = suivi.filter(function (x) { return x.status === 'done' || x.completedAt; }).length;
+    // Prochaine échéance DE CE PROJET : elle était agrégée pour toute la
+    // cliente, ce qui ne disait à quel projet elle appartenait.
+    var due = '';
+    var garde = function (d) { if (d && (!due || d < due)) due = d; };
+    (c.livrables || []).forEach(function (l) { if (l.status !== 'valide') garde(l.dueDate || l.dueAt || ''); });
+    suivi.forEach(function (x) { if (x.status !== 'done' && !x.completedAt) garde(x.dueDate || x.date || ''); });
+    taches.forEach(function (t) { if (t.status !== 'done' && !t.completedAt) garde(t.dueDate || ''); });
+    var forf = '';
+    if (p.forfait && p.forfait.configured && typeof p.forfait.remaining === 'number') {
+      forf = p.forfait.remaining < 0 ? 'dépassé de ' + fmtHrs(-p.forfait.remaining) : fmtHrs(p.forfait.remaining) + ' restant';
+    }
+    return stbCarteProjet({
+      id: p.id, pid: p.pid, key: CURKEY, nom: p.nom,
+      presta: p.presta + (!p.visible ? ' · masqué pour elle' : '') + (p.unread ? ' · ' + p.unread + ' non lu' + (p.unread > 1 ? 's' : '') : ''),
+      clos: p.clos, clotureAt: p.clotureAt,
+      ou: cliOuEnEst(p), total: suivi.length, faites: faites, rang: Math.min(faites + 1, suivi.length),
+      restant: 0, sansPlace: 0, inconnu: 0,
+      jalon: due ? fmtDate(due) : '', forfait: forf,
+      ouvrir: 'ADM.tab(\'' + esc(p.id) + '\')'
+    });
   }
   function projetsCard() {
     var l = cliProjets();
@@ -8537,7 +8566,8 @@
     var bloc = function (titre, arr, vide) {
       return '<div class="cpj-seg"><div class="cpj-seg__t">' + esc(titre) +
         '<span class="cpj-seg__n">' + arr.length + '</span></div>' +
-        (arr.length ? arr.map(cliLigneProjet).join('') : '<div class="cpj-vide">' + esc(vide) + '</div>') + '</div>';
+        (arr.length ? '<div class="pjc-grid">' + arr.map(cliLigneProjet).join('') + '</div>'
+                    : '<div class="cpj-vide">' + esc(vide) + '</div>') + '</div>';
     };
     return '<div class="card infocard cpj-card" style="background:var(--card)">' +
       '<h3><span class="infocard__dot" style="background:#35608f"></span>Ses projets</h3>' +
@@ -8552,17 +8582,21 @@
   /* Clôturer : un seul geste pour tous les projets. Les supports ont leur
      route (00X), les autres passent par celle des offres — mais la question
      posée et l'effet sont les mêmes. */
-  function cloturerProjet(id, estSupport) {
+  function cloturerProjet(id, estSupport, key) {
     admConfirm({ title: 'Clôturer ce projet ?',
       message: 'Il passe en terminé. Sa conversation est archivée : elle reste lisible par toi et par ta cliente, mais plus personne ne peut y écrire. Rien n’est supprimé, et tu peux le rouvrir.',
-      yes: 'Oui, clôturer', no: 'Annuler' }, function () { cliCloture(id, estSupport, true, 'Projet clôturé · conversation archivée'); });
+      yes: 'Oui, clôturer', no: 'Annuler' }, function () { cliCloture(id, estSupport, true, 'Projet clôturé · conversation archivée', key); });
   }
-  function rouvrirProjet(id, estSupport) { cliCloture(id, estSupport, false, 'Projet rouvert'); }
-  function cliCloture(id, estSupport, valeur, msg) {
-    var url = estSupport ? '/api/clients/' + CURKEY + '/support/' + id : '/api/clients/' + CURKEY + '/offer';
+  function rouvrirProjet(id, estSupport, key) { cliCloture(id, estSupport, false, 'Projet rouvert', key); }
+  function cliCloture(id, estSupport, valeur, msg, key) {
+    var k = key || CURKEY;
+    var url = estSupport ? '/api/clients/' + k + '/support/' + id : '/api/clients/' + k + '/offer';
     var body = estSupport ? { cloture: valeur } : { projectId: id, cloture: valeur };
     jpost(url, body, 'PATCH').then(function (r) {
-      if (r.ok) { toast(msg); refreshClient(); } else toast('Erreur');
+      if (!r.ok) { toast('Erreur'); return; }
+      toast(msg);
+      // On redessine l'écran où l'on se trouve, pas l'autre.
+      if (VIEW === 'ckprojets') { CKP.pret = false; ckpCharger(renderCockpitProjetsBody); } else refreshClient();
     }).catch(function () { toast('Erreur'); });
   }
   function renameSupport(pid, name) { jpost('/api/clients/' + CURKEY + '/support/' + pid, { name: name }, 'PATCH').then(function (r) { if (r.ok) { toast('Nom enregistré'); loadClient(); } else toast('Erreur'); }); }
