@@ -244,13 +244,62 @@
   function badge(n) { return n > 0 ? '<span style="display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:var(--glycine);color:var(--terre);font-family:var(--font-micro);font-size:10px;font-weight:700;margin-left:6px">' + n + '</span>' : ''; }
   function badgeAlert(n) { return n > 0 ? '<span title="Révision(s) à faire" style="display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:#8a4a2c;color:#fff;font-family:var(--font-micro);font-size:10px;font-weight:700;margin-left:6px">' + n + '</span>' : ''; }
 
+  /* ── Revenir en arrière ───────────────────────────────────────────────
+   * L'application n'avait aucune mémoire de navigation : ouvrir un projet,
+   * puis un onglet, puis une fiche obligeait à refaire tout le trajet à la
+   * main pour revenir. On range donc un instantané de l'endroit où l'on est
+   * (écran, cliente, onglet, projet ouvert, position dans la page) dans
+   * l'historique du navigateur. Le bouton « précédent », le geste à deux
+   * doigts et le raccourci clavier ramènent au pas d'avant.
+   * Un seul instantané, un seul endroit : aucun écran n'a à s'en occuper. */
+  var NAV_PROF = 0;                  // seul le geste extérieur empile
+  function navEtat() {
+    var sub = {};
+    try { sub = JSON.parse(JSON.stringify(SUBTAB || {})); } catch (e) { sub = {}; }
+    return { stb: 1, v: VIEW, key: CURKEY, tab: TAB, sub: sub, at: AT_SEC,
+      ckj: { ouvert: CKJ.ouvert, onglet: CKJ.onglet, filtre: CKJ.filtre },
+      y: window.scrollY || document.documentElement.scrollTop || 0 };
+  }
+  function navRestaurer(e) {
+    if (!e || !e.stb) return;
+    VIEW = e.v; CURKEY = e.key || null; TAB = e.tab || 'apercu';
+    if (e.sub) SUBTAB = e.sub;
+    if (e.at) AT_SEC = e.at;
+    CKJ.ouvert = e.ckj ? e.ckj.ouvert : null;
+    CKJ.onglet = (e.ckj && e.ckj.onglet) || 'ensemble';
+    CKJ.filtre = (e.ckj && e.ckj.filtre) || 'actifs';
+    CKJ.chargeFait = null;           // la charge du projet se refera si besoin
+    NAV_PROF++;                      // restaurer n'est pas naviguer
+    try { renderShell(); } finally { NAV_PROF--; }
+    // Certains écrans se remplissent après un aller-retour au serveur : on
+    // repose la position deux fois, sinon on retombe en haut de la page.
+    var y = e.y || 0;
+    setTimeout(function () { window.scrollTo(0, y); }, 60);
+    setTimeout(function () { window.scrollTo(0, y); }, 320);
+  }
+  // Un pas de navigation : on date l'endroit qu'on quitte (position comprise),
+  // on applique, puis on empile le nouvel endroit.
+  function navPas(f) {
+    if (NAV_PROF) { f(); return; }
+    NAV_PROF++;
+    try { history.replaceState(navEtat(), ''); } catch (e) {}
+    try { f(); } finally { NAV_PROF--; }
+    try { history.pushState(navEtat(), ''); } catch (e) {}
+  }
+
   /* ── boot / auth ── */
   function boot() {
     api('/api/me').then(function (r) {
       if (r.status === 401) { showLogin(); return null; }
       if (!r.ok) throw new Error();
       return r.json();
-    }).then(function (d) { if (d) { VIEW = 'priorities'; renderShell(); startPoll(); } }).catch(showError);
+    }).then(function (d) {
+      if (!d) return;
+      VIEW = 'cockpit'; renderShell(); startPoll();
+      // Le point de départ de l'historique, et l'écoute du retour.
+      try { history.replaceState(navEtat(), ''); } catch (e) {}
+      window.addEventListener('popstate', function (ev) { navRestaurer(ev.state); });
+    }).catch(showError);
   }
   var _poll = null;
   // Détecte un nouveau déploiement (hash de app.js différent) et propose de
@@ -396,11 +445,13 @@
 
   /* ── shell ── */
   function nav(v) {
-    // « Mes tâches » a fusionné dans « Tâches » : les anciens liens y mènent,
-    // sur la section qui correspond, plutôt que sur un écran disparu.
-    if (v === 'mytasks') { v = 'alltasks'; AT_SEC = 'entreprise'; }
-    VIEW = v; if (v !== 'client') CURKEY = null; renderShell(); window.scrollTo(0, 0);
-    pollWake();
+    navPas(function () {
+      // « Mes tâches » a fusionné dans « Tâches » : les anciens liens y mènent,
+      // sur la section qui correspond, plutôt que sur un écran disparu.
+      if (v === 'mytasks') { v = 'alltasks'; AT_SEC = 'entreprise'; }
+      VIEW = v; if (v !== 'client') CURKEY = null; renderShell(); window.scrollTo(0, 0);
+      pollWake();
+    });
   }
   var NAV_CLIENTS = [], NAV_OPEN = {};
   function buildNavHtml() {
@@ -468,7 +519,8 @@
     NAV_OPEN[key] = !open; // bascule explicite, y compris pour le client courant
     renderNav();
   }
-  function navClientTab(key, tab) {
+  function navClientTab(key, tab) { navPas(function () { navClientTab_(key, tab); }); }
+  function navClientTab_(key, tab) {
     var sameClient = CUR && CUR.key === key;
     CURKEY = key; VIEW = 'client'; NAV_OPEN[key] = true;
     TAB = tab || TAB_BY_CLIENT[key] || 'apercu';
@@ -5676,7 +5728,7 @@
      pas afficher un total que la liste des tâches contredirait.
      ════════════════════════════════════════════════════════════════════════ */
 
-  var CKJ = { ouvert: null, onglet: 'ensemble', filtre: 'actifs', charge: null, chargeFait: null };
+  var CKJ = { ouvert: null, onglet: 'ensemble', filtre: 'actifs', charge: null, chargeFait: null, y: 0 };
   var CKJ_PRESTA = { partenaire: 'Partenaire créative', site: 'Site web', identite: 'Identité visuelle',
     support: 'Support de com', maintenance: 'Espace tickets' };
 
@@ -5780,9 +5832,24 @@
   }
 
   function ckJSetFiltre(f) { CKJ.filtre = f; renderCockpitProjetsBody(); }
-  function ckJOuvrir(id) { CKJ.ouvert = id; CKJ.onglet = 'ensemble'; CKJ.chargeFait = null; renderCockpitProjetsBody(); window.scrollTo(0, 0); }
-  function ckJFermer() { CKJ.ouvert = null; renderCockpitProjetsBody(); }
-  function ckJOnglet(o) {
+  function ckJOuvrir(id) {
+    navPas(function () {
+      // On retient où l'on était dans la liste : la refermer doit y revenir,
+      // pas nous reposer en haut de la page.
+      CKJ.y = window.scrollY || 0;
+      CKJ.ouvert = id; CKJ.onglet = 'ensemble'; CKJ.chargeFait = null;
+      renderCockpitProjetsBody(); window.scrollTo(0, 0);
+    });
+  }
+  function ckJFermer() {
+    navPas(function () {
+      var y = CKJ.y || 0;
+      CKJ.ouvert = null; renderCockpitProjetsBody();
+      setTimeout(function () { window.scrollTo(0, y); }, 40);
+    });
+  }
+  function ckJOnglet(o) { navPas(function () { ckJOnglet_(o); }); }
+  function ckJOnglet_(o) {
     CKJ.onglet = o;
     // Les sections du projet se souviennent de leur onglet par l'index partagé
     // avec la fiche cliente : y aller ensuite n'atterrit pas ailleurs.
@@ -7888,7 +7955,7 @@
   }
 
   /* ── Détail client ── */
-  function openClient(key) { CURKEY = key; VIEW = 'client'; TAB = 'apercu'; renderShell(); loadClient(); }
+  function openClient(key) { navPas(function () { CURKEY = key; VIEW = 'client'; TAB = 'apercu'; renderShell(); loadClient(); }); }
   function loadClient(cb) {
     api('/api/clients/' + CURKEY).then(function (r) { return r.json(); }).then(function (d) { CUR = d; if (cb) cb(); else renderClient(); }).catch(showError);
   }
@@ -7967,7 +8034,7 @@
     }).join('');
     return '<div class="cqa"><div class="cqa__hd"><span class="cqa__ic">' + _bell + '</span><span class="cqa__t">Ce qui t\'attend</span><span class="cqa__n">' + chips.length + '</span></div><div class="cqa__chips">' + chipsHtml + '</div></div>';
   }
-  function tab(t) { TAB = t; if (CURKEY) TAB_BY_CLIENT[CURKEY] = t; renderClient(); renderNav(); }
+  function tab(t) { navPas(function () { TAB = t; if (CURKEY) TAB_BY_CLIENT[CURKEY] = t; renderClient(); renderNav(); }); }
 
   // Journal de projet : frise automatique des événements de la cliente, dérivée
   // des dates déjà présentes (tâches, livrables, étapes, tickets, questionnaires).
@@ -8136,7 +8203,8 @@
     if (!isSupport && (d.content.suivi !== undefined || d.id === 'partner')) s.unshift(['apercu', 'Aperçu', 0]);
     return s;
   }
-  function subtab(domId, key) {
+  function subtab(domId, key) { navPas(function () { subtab_(domId, key); }); }
+  function subtab_(domId, key) {
     SUBTAB[domId] = key;
     // Les boutons internes aux blocs (« voir les livrables », « répondre »…)
     // passent par ici : depuis l'écran Projets, ils changent SON onglet.
