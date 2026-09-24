@@ -2925,3 +2925,28 @@ h1.cdhead__n{margin:0;font-weight:400;font-size:36px}
 .pj-outils{display:flex;align-items:center;gap:22px;flex-wrap:wrap;margin:20px 0 0;padding-top:16px;border-top:1px solid #E4D9C5;font-size:15px;color:#7a5540}
 .pj-page .cg-empty{color:#7a5540}
 .toast:not(.show){visibility:hidden}
+/* Projets, option G validée : l'action seule en noir, puis des cartes blanches au même poids */
+.pj-mnt{background:#110704;color:#F8F6F2;border-radius:20px;padding:30px 34px;margin:0 0 20px}
+.pj-mnt__k{font-size:15px;font-weight:600;color:rgba(248,246,242,.75)}
+.pj-mnt__p{font-size:40px;line-height:1.12;margin-top:6px}
+.pj-mnt__q{color:rgba(248,246,242,.75)}
+.pj-mnt__b{background:#F8F6F2;color:#110704}
+.pj-mnt__b:hover{background:#E6E5B2;color:#110704}
+.pj-mnt__b:focus-visible{outline:2px solid #E6E5B2;outline-offset:3px}
+.pj-chemin{background:#fff;box-shadow:0 1px 2px rgba(17,7,4,.08);border-radius:16px;padding:28px 32px 30px}
+.pj-chemin__h{margin:0 0 22px}
+.pj-chemin__r{font-size:15px;font-weight:400;color:#7a5540}
+.pj-seg__b{height:12px;border-radius:12px;background:rgba(17,7,4,.12);margin-bottom:8px}
+.pj-seg--cours .pj-seg__b{background:rgba(17,7,4,.12)}
+.pj-seg__n,.pj-seg--cours .pj-seg__n{font-size:17px}
+.pj-ici{background:#C5DEFF;color:#110704;margin-top:4px}
+.pj-carte{padding:20px 24px}
+.pj-carte__h{margin:0 0 4px}
+.pj-carte__h h2{font-family:inherit;font-style:normal;font-weight:700;font-size:17px}
+.pj-envois{background:#fff;gap:0}
+.pj-envois .pj-carte__h>span{color:#7a5540}
+.pj-env{padding:11px 0;border-radius:0;border-top:1px solid #F0E9D6;background:none}
+.pj-deux{gap:20px}
+.pj-forf__v{font-size:36px}
+.pj-forf__v span{font-size:22px}
+.pj-mnt__b{font-size:15px;font-weight:600;padding:11px 22px;min-height:44px;border-radius:999px;border:none;flex-shrink:0}

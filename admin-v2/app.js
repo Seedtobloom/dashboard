@@ -6355,6 +6355,7 @@
         '<button class="tps-lien" onclick="ADM.openClient(\'' + esc(p.key) + '\')">' + esc(p.client) + '</button></nav>' +
       '<div class="pj-tete"><div><h1 class="pg-h1">' + esc(p.projectLabel) + '</h1><p class="pj-tete__s">' + esc(ckJSousTete(p)) + '</p></div>' +
         '<div class="pj-tete__a"><button class="tps-lien" onclick="ADM.ckJOnglet(\'echanges\')">Écrire à ' + esc(ckJPrenom(p)) + '</button>' + menu + '</div></div>' +
+      ckJMaintenant(p) +
       '<div class="pj-ongs" role="tablist" aria-label="' + esc(p.projectLabel) + '">' + ong('ensemble', 'Suivi', 0) + ong('echanges', 'Échanges', msgN) + ong('fichiers', 'Fichiers', 0) + '</div>';
     var corps;
     if (CKJ.onglet === 'ensemble') corps = ckJSuivi(p, d);
@@ -6398,19 +6399,22 @@
         (etat === 'cours' ? '<span class="pj-ici">Tu es ici</span>' : '') + '</li>';
     }).join('');
     var faites = e.filter(function (x) { return x.status === 'done'; }).length;
-    return '<section class="pj-chemin" aria-label="Le chemin du projet"><div class="pj-chemin__h"><div><h2>Le chemin du projet</h2>' +
-      '<p>' + e.length + ' étape' + (e.length > 1 ? 's' : '') + ', ' + faites + ' terminée' + (faites > 1 ? 's' : '') + '. Chaque morceau de la barre est une étape.</p></div>' +
-      '<span class="pj-chemin__r num">' + (cur ? 'Étape ' + c.rang + ' sur ' + c.total : (c && c.fini ? 'Tout est fait' : '')) + '</span></div>' +
+    var der = e[e.length - 1];
+    var droite = (cur ? 'Étape ' + c.rang + ' sur ' + c.total : (c && c.fini ? 'Toutes les étapes sont faites' : faites + ' sur ' + e.length)) +
+      (der && der.date && der.status !== 'done' ? ' · ' + (der.title ? esc(der.title).toLowerCase() : 'fin') + ' ' + ckpQuand(der.date) : '');
+    return '<section class="pj-chemin" aria-label="Où en est le projet"><div class="pj-chemin__h"><h2>Où en est le projet</h2>' +
+      '<span class="pj-chemin__r num">' + droite + '</span></div>' +
       '<ol class="pj-segs">' + seg + '</ol></section>';
   }
   // Le bandeau : la prochaine chose à faire, et qui l'a en main.
   function ckJMaintenant(p) {
     var pr = ckJProchain(p);
     if (pr.qui === 'rien') return '';
-    var tete = pr.qui === 'client' ? 'C’est à ' + esc(ckJPrenom(p)) : 'C’est à toi' + (pr.qui === 'retard' ? ' <span class="pj-pil pj-pil--retard">en retard' + (pr.retardJ ? ' de ' + pr.retardJ + ' j' : '') + '</span>' : '');
-    var act = pr.tache ? '<button class="btn btn--dark" onclick="ADM.ckTVoir(\'' + esc(pr.tache.id) + '\')">Ouvrir la tâche</button>' : '';
-    return '<section class="pj-mnt pj-mnt--' + (pr.qui === 'client' ? 'client' : 'toi') + '"><div><div class="pj-mnt__k">' + tete + '</div>' +
-      '<p class="pj-mnt__p">' + esc(pr.phrase) + '</p>' + (pr.quand ? '<p class="pj-mnt__q num">' + esc(ckpMaj(pr.quand)) + '</p>' : '') + '</div>' + act + '</section>';
+    var tete = (pr.qui === 'client' ? 'C’est à ' + esc(ckJPrenom(p)) : 'C’est à toi') + (pr.quand && pr.qui !== 'retard' ? ', ' + esc(pr.quand) : '') +
+      (pr.qui === 'retard' ? ' <span class="pj-pil pj-pil--retard">en retard' + (pr.retardJ ? ' de ' + pr.retardJ + ' j' : '') + '</span>' : '');
+    var act = pr.tache ? '<button class="btn pj-mnt__b" onclick="ADM.ckTVoir(\'' + esc(pr.tache.id) + '\')">Ouvrir la tâche</button>' : '';
+    return '<section class="pj-mnt" aria-label="Ce qu’il faut faire maintenant"><div><div class="pj-mnt__k">' + tete + '</div>' +
+      '<p class="pj-mnt__p">' + esc(pr.phrase) + '</p>' + (pr.qui === 'retard' && pr.quand ? '<p class="pj-mnt__q num">Prévu ' + esc(pr.quand.replace(/^depuis /, '')) + '</p>' : '') + '</div>' + act + '</section>';
   }
   // Le forfait du mois : une case par heure (option A).
   function ckJForfaitCases(p) {
@@ -6442,7 +6446,7 @@
     var vives = toutes.filter(function (t) { return t.statut !== 'done'; }).sort(function (a, b) { return (a.echeance || '9999') < (b.echeance || '9999') ? -1 : 1; });
     if (!toutes.length) return '';
     var faites = toutes.length - vives.length;
-    var titre = p.prestation === 'partenaire' ? 'Les demandes de ' + ckJPrenom(p) : 'Ce que tu as à faire';
+    var titre = p.prestation === 'partenaire' ? 'Les demandes de ' + ckJPrenom(p) : 'À faire de ton côté';
     var lignes = vives.slice(0, 8).map(function (t) {
       var r = ckpRestant(t);
       return '<div class="pj-t"><button class="pj-t__n" onclick="ADM.ckTVoir(\'' + esc(t.id) + '\')">' + esc(t.titre) + '</button>' +
@@ -6464,7 +6468,8 @@
     if (!l.length) return '';
     var kindArg = function (o) { return o.taskId ? 'deliverable' : 'deliverable'; };
     var aLiv = d && sectionsFor(d).some(function (s) { return s[0] === 'liv'; });
-    return '<section class="pj-envois"><div class="pj-carte__h"><h2>Ce que tu envoies à ' + esc(qui) + '</h2><span class="num">' + l.length + ' envoi' + (l.length > 1 ? 's' : '') + '</span></div>' +
+    var nAtt = x.attente.length;
+    return '<section class="pj-carte pj-envois"><div class="pj-carte__h"><h2>Envoyé à ' + esc(qui) + '</h2><span class="num">' + (nAtt ? nAtt + ' en attente' : l.length + ' envoi' + (l.length > 1 ? 's' : '')) + '</span></div>' +
       l.map(function (e) {
         var o = e[0], nm = o.name || o.taskTitle || 'Livrable', quand = (o.createdAt || o.at) ? ckpQuand(String(o.createdAt || o.at).slice(0, 10)) : '';
         return '<div class="pj-env"><div><div class="pj-env__n">' + esc(nm) + '</div>' +
@@ -6472,7 +6477,7 @@
           (e[2] === 'client' ? '<button class="tps-lien" onclick="ADM.remind(\'' + esc(p.key) + '\',\'' + kindArg(o) + '\',\'' + jsq(nm) + '\',\'' + jsq(p.projectLabel) + '\')">Relancer</button>' : '') +
           '<span class="pj-pil pj-pil--' + e[2] + '">' + esc(e[1]) + '</span></div>';
       }).join('') +
-      (aLiv ? '<div class="pj-carte__p"><button class="tps-lien pj-lien-sombre" onclick="ADM.ckJOnglet(\'liv\')">Voir tous les livrables</button></div>' : '') + '</section>';
+      (aLiv ? '<div class="pj-carte__p"><button class="tps-lien" onclick="ADM.ckJOnglet(\'liv\')">Voir tous les livrables</button></div>' : '') + '</section>';
   }
   function ckJSuivi(p, d) {
     var aFaire = ckJAFaire(p, d, false), envois = ckJEnvois(p, d);
@@ -6488,13 +6493,13 @@
     var fini = b.faites.length ? '<p class="pj-fini"><b>Terminé récemment :</b> ' + b.faites.slice(-4).reverse().map(function (t) {
       return esc(t.titre) + (t.reel ? ' (' + esc(ckpDuree(t.reel)) + ')' : '');
     }).join(' · ') + ' <button class="tps-lien" onclick="ADM.nav(\'done\')">Voir le journal</button></p>' : '';
-    var vide = !ckJChemin(p) && !ckJMaintenant(p) && !cartes && !extra;
+    var vide = !ckJChemin(p) && !cartes && !extra;
     // Les outils détaillés du projet, toujours à portée depuis le suivi.
     var outils = d ? sectionsFor(d).filter(function (x) { return CKJ_SECTIONS[x[0]] && x[0] !== 'questionnaire' && !(p.prestation === 'support' && x[0] === 'creations') && !(p.prestation === 'maintenance' && x[0] === 'tickets'); }) : [];
     var liens = outils.length ? '<nav class="pj-outils" aria-label="Tout le projet"><span>Tout le projet :</span>' + outils.map(function (x) {
       return '<button class="tps-lien" onclick="ADM.ckJOnglet(\'' + x[0] + '\')">' + esc(CKJ_SECTIONS[x[0]]) + (x[2] > 0 ? ' [' + x[2] + ']' : '') + '</button>';
     }).join('') + '</nav>' : '';
-    return ckJChemin(p) + ckJMaintenant(p) + ckJForfaitCases(p) + cartes + extra + fini + liens +
+    return ckJChemin(p) + ckJForfaitCases(p) + cartes + extra + fini + liens +
       (vide ? '<p class="pj-vide">Rien à suivre pour l’instant sur ce projet.</p>' : '');
   }
 
