@@ -6,6 +6,7 @@ dist/
 # On ignore le CONTENU de .claude, pas le dossier : git n'entre pas dans un
 # dossier exclu, et la ligne d'exception ci-dessous resterait sans effet.
 .claude/*
+!.claude/skills/
 # … sauf les réglages partagés, qui décrivent l'outillage du dépôt et non
 # l'état local d'une session.
 !.claude/settings.json
