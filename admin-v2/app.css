@@ -1812,7 +1812,9 @@ select.cg-in{cursor:pointer}
 .ck-h1{font-family:var(--font-display);font-style:italic;font-weight:400;font-size:44px;line-height:1.02;color:var(--terre);margin-top:2px}
 .ck-accent{color:var(--terre-600)}
 .ck-date{font-size:13px;color:var(--muted)}
-.ck-filet{height:3px;width:54px;background:var(--gold-soft);border-radius:2px;margin:18px 0 24px}
+/* Le filet jaune a été retiré : il ne portait aucune information, et se
+   répétait sur tous les écrans. L'espace suffit à séparer. */
+.ck-filet{display:none}
 .ck-chapo{font-size:16px;line-height:1.5;color:var(--text);max-width:64ch;margin-bottom:26px}
 .ck-chapo2{font-size:13.5px;color:var(--muted);margin-bottom:16px;max-width:66ch;line-height:1.5}
 .ck-doux{color:var(--muted);font-size:13px}

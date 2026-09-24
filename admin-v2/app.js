@@ -4690,7 +4690,7 @@
           '<h1 class="ck-h1">Bonjour <span class="ck-accent">Cindy</span></h1></div>' +
           '<div class="ck-date">' + esc(ckpMaj(CKP_JOURS[d.getDay()]) + ' ' + d.getDate() + ' ' + CKP_MOIS[d.getMonth()]) + '</div>' +
         '</div>' +
-        '<div class="ck-filet"></div>' +
+        
         ckpHero('Aujourd’hui', c.certaine > 0
           ? esc(ckpDuree(c.libre)) + ' <em>disponibles</em>'
           : '<em>Journée terminée</em>', esc(phrase), ckpHeroJournee()) +
@@ -5105,7 +5105,7 @@
           (aPlanifier ? ' · <b>' + esc(ckpDuree(aPlanifier)) + ' à planifier</b>' : '') +
           (inconnus ? '<br><span class="ck-inc">' + inconnus + ' sans temps estimé</span>' : '') +
           '</div></div>' +
-        '<div class="ck-filet"></div>' +
+        
         ckpHero('Aujourd’hui · ' + ckpMaj(ckpJourCourt(ckpAuj())),
           (ckpCapaciteDu(ckpAuj()).certaine > 0
             ? esc(ckpDuree(ckpCapaciteDu(ckpAuj()).libre)) + ' <em>disponibles</em>'
@@ -5644,7 +5644,7 @@
           '<h1 class="ck-h1">Ta <span class="ck-accent">semaine</span></h1></div>' +
           '<div class="ck-date">' + esc(ckpDuree(jour) + ' par semaine, dont ' +
             ckpDuree(ckpMargeJour() * (ckpJoursSemaine().length || 5)) + ' de marge') + '</div></div>' +
-        '<div class="ck-filet"></div>' +
+        
         ckpHero('Cette semaine',
           esc(ckpDuree(s.libre)) + ' <em>encore libres</em>',
           'Le planning décide de ce qui est possible. Tout le reste du cockpit lit ces créneaux : si une heure n’est pas ici, elle n’existe nulle part.',
@@ -5748,16 +5748,27 @@
     return out;
   }
 
+  function ckJCreations(p) { return Array.isArray(p.creations) ? p.creations : []; }
+  /* Un projet est FINI quand tout ce qu'il contient est fini — et seulement
+     s'il contient quelque chose. Un projet fraîchement ouvert, encore vide,
+     commence : il n'est pas terminé.
+     Ce contrôle regardait les tâches et les étapes seulement. Un support de
+     com n'a ni l'un ni l'autre : il vit par ses CRÉATIONS. Tous les supports
+     de com disparaissaient donc de « En cours ». */
+  function ckJFini(p) {
+    var b = ckJBilan(p), e = ckJEtapes(p), cr = ckJCreations(p);
+    if (!b.total && !e.length && !cr.length) return false;
+    if (b.vives > 0) return false;
+    if (e.some(function (x) { return x.status !== 'done'; })) return false;
+    if (cr.some(function (c) { return !c.clotureAt; })) return false;
+    return true;
+  }
   function ckJListe() {
     var l = ((CKP.dash && CKP.dash.projets) || []).slice();
     if (CKJ.filtre === 'actifs') {
-      // Actif = l'espace est ouvert ET il reste quelque chose à faire. Un
-      // projet fini n'est pas un projet en cours, même si son espace vit.
-      l = l.filter(function (p) {
-        if (!p.actif) return false;
-        var c = ckJEtapeCourante(p);
-        return ckJBilan(p).vives > 0 || (c && !c.fini);
-      });
+      // Actif = l'espace est ouvert, il n'est pas clôturé, et tout n'y est
+      // pas déjà fini.
+      l = l.filter(function (p) { return p.actif && !ckJFini(p); });
     }
     // Ce qui presse d'abord : le jalon le plus proche, puis le volume restant.
     return l.sort(function (a, b) {
@@ -5825,6 +5836,11 @@
       return (f && f.configured) ? 'Forfait : ' + ckpDuree(Math.round(f.base * 60)) + ' par mois' : 'À la demande';
     }
     if (p.prestation === 'maintenance') return 'Demandes au fil de l’eau';
+    var cr = ckJCreations(p);
+    if (cr.length) {
+      var ouv = cr.filter(function (c) { return !c.clotureAt; }).length;
+      return ouv ? ouv + ' création' + (ouv > 1 ? 's' : '') + ' en cours' : 'Toutes les créations sont terminées';
+    }
     return 'Pas d’étapes posées';
   }
 
@@ -5840,7 +5856,7 @@
           ? ' · ' + CKJ_PRESTA[p.prestation] : '')) + '</div>' +
         '<h1 class="ck-h1">' + esc(p.projectLabel) + '</h1></div>' +
         '<div class="ck-date">' + (j ? esc(j.titre + ' · ' + ckpQuand(j.date)) : '') + '</div></div>' +
-      '<div class="ck-filet"></div>' +
+      
       '<div class="ckj-ong"><div class="ck-segm">' + onglets.map(function (o) {
         return '<button class="ck-segb' + (CKJ.onglet === o[0] ? ' on' : '') +
           '" onclick="ADM.ckJOnglet(\'' + o[0] + '\')">' + esc(o[1]) + '</button>';
@@ -5971,7 +5987,7 @@
           '<h1 class="ck-h1">Où en est <span class="ck-accent">chaque projet</span></h1></div>' +
           '<div class="ck-date">' + l.length + ' projet' + (l.length > 1 ? 's' : '') + ' · ' + nb +
           ' type' + (nb > 1 ? 's' : '') + ' de prestation, un seul écran</div></div>' +
-        '<div class="ck-filet"></div>' +
+        
         ckpHero('Tes projets', l.length + ' <em>en cours</em>',
           nb + ' type' + (nb > 1 ? 's' : '') + ' de prestation, un seul écran : ce qui change, c’est le contenu, jamais la structure.',
           ckpHeroPuce('var(--ciel)', totRestant ? ckpDuree(totRestant) + ' de travail encore nécessaire, tous projets confondus'
@@ -8533,6 +8549,12 @@
     if (suivi.length) {
       var cur = suivi.filter(function (x) { return x.status !== 'done'; })[0];
       return cur ? esc(cur.title || 'Étape sans titre') : 'Toutes les étapes sont faites';
+    }
+    var cr = Array.isArray(c.creations) ? c.creations : [];
+    if (cr.length) {
+      var ouvertes = cr.filter(function (x) { return !x.clotureAt; }).length;
+      return ouvertes ? ouvertes + ' création' + (ouvertes > 1 ? 's' : '') + ' en cours'
+                      : '<span style="color:var(--muted)">Toutes les créations sont terminées</span>';
     }
     var taches = Array.isArray(c.taches) ? c.taches.filter(function (t) { return !t.archived && t.stage !== 'inbox'; }) : [];
     if (taches.length) {

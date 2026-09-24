@@ -2042,6 +2042,9 @@ async function handleDashboard(env: Env): Promise<Response> {
         actif: container.isActive !== false && !estCloture(container),
         clotureAt: container.clotureAt || null,
         etapes,
+        creations: (Array.isArray(container.creations) ? container.creations : []).slice(0, 60)
+          .map((c: AnyObj) => ({ id: String(c.id || ''), name: String(c.name || '').slice(0, 160),
+            status: String(c.status || ''), clotureAt: c.clotureAt || null })),
       });
     };
     // livrables : en attente de validation client, ou révision demandée par le client
@@ -2236,7 +2239,7 @@ async function handleDashboard(env: Env): Promise<Response> {
       if (o) (o.suivi || []).forEach((s: AnyObj) => { if (s.status !== 'done' && s.date) deadlines.push({ key: ci.key, client: who, project: 'support-' + pid, projectLabel: supportLabel(pid), kind: 'étape', id: s.id, title: s.title, dueDate: s.date, status: s.status, content: s.description || '' }); });
       collectLiv(o, supportLabel(pid), 'support-' + pid);
     collectPlanning(o, supportLabel(pid), 'support-' + pid);
-    collectProjet(o, supportLabel(pid), 'support-' + pid, 'support');
+    collectProjet(o, (o && o.name && String(o.name).trim()) || supportLabel(pid), 'support-' + pid, 'support');
     }
     // Projets en cours (avancement) pour « Tes projets en cours » du cockpit.
     // % = étapes terminées / total ; le partenaire compte ses tâches (hors demandes).
