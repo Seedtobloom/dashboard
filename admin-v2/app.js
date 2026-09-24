@@ -4770,8 +4770,7 @@
       ckpDuree(c.mobilisable) + ' qui restent, c’est ta marge.';
     else phrase = cap.length + ' choses comptent aujourd’hui, et il te reste ' + ckpDuree(c.libre) + ' de vraie place.';
 
-    setMain(topbar('Accueil') +
-      '<div class="wrap ck">' +
+    setMain('<div class="wrap ck ck--accueil">' +
         '<div class="ck-tete"><div>' +
           '<h1 class="ck-h1">Bonjour <span class="ck-accent">Cindy</span></h1></div>' +
           '<div class="ck-date">' + esc(ckpMaj(CKP_JOURS[d.getDay()]) + ' ' + d.getDate() + ' ' + CKP_MOIS[d.getMonth()]) + '</div>' +
@@ -4857,7 +4856,7 @@
   /* Le cap du jour : trois cards, dans le même langage que les projets, les
    * créations et les tâches. Un bloc de texte dense se lisait de haut en bas ;
    * trois cards se lisent d'un coup d'oeil, et chacune porte ses gestes.
-   * Une tâche en retard prend la Mandarine, les autres la Neige. */
+   * Une tâche en retard prend le Ciel, les autres le Lin. */
   function ckpCarteCap(c, i) {
     var t = c.t, ap = ckpAPlanifier(t), r = ckpRestant(t), pf = ckpPlanifieFutur(t);
     var retard = ckpEnRetard(t);
@@ -4869,22 +4868,24 @@
 
     return stbCarteProjet({
       id: t.id, key: t.key || '', nom: t.titre,
-      teinte: retard ? { bg: '#CD8F6E', e: '#110704', sombre: false }
+      teinte: retard ? { bg: '#C5DEFF', e: '#110704', sombre: false }
                      : { bg: '#F8F6F2', e: '#110704', sombre: false },
       presta: (i + 1) + ' · ' + (t.qui || '') + (t.ctx ? ' · ' + t.ctx : ''),
-      ou: (retard ? '<span class="ck-ap">En retard. </span>' : '') + esc(c.raison) +
+      ou: (retard && !/^en retard/i.test(c.raison || '') ? '<span class="ck-ap">En retard. </span>' : '') + esc(c.raison) +
         (c.raison2 ? '<span class="pjc-ou2">' + esc(c.raison2) + '</span>' : ''),
       lignes: lignes,
-      ouvrir: ckpOuvrirArg(t),
-      gestes: (r === null ? ckpChampEstim(t, 'cap')
-        : (ap ? ckpPlanifierBtn(t, 'Planifier')
-              : '<button class="btn btn--outline btn--sm" onclick="ADM.ckpPasMaintenant(\'' + esc(t.id) + '\')">Pas maintenant</button>')) +
-        ckpChampFini(t, 'cap')
+      ouvrir: ckpOuvrirArg(t), ouvrirLibelle: 'Ouvrir la tâche', gestePrincipal: true,
+      // Un seul geste en vue : « J'ai terminé ». Il déplie le temps passé
+      // (prérempli), qu'on valide ; le geste secondaire se déplie de même.
+      gestes: '<details class="ck-pli"><summary class="btn btn--dark btn--sm">J’ai terminé</summary>' + ckpChampFini(t, 'cap') + '</details>' +
+        (r === null ? '<details class="ck-pli"><summary class="pjc-lien">Estimer</summary>' + ckpChampEstim(t, 'cap') + '</details>'
+        : (ap ? '<button class="pjc-lien" onclick="event.stopPropagation();ADM.ckLDepuis(\'' + esc(t.id) + '\')">Planifier</button>'
+              : '<button class="pjc-lien" onclick="ADM.ckpPasMaintenant(\'' + esc(t.id) + '\')">Pas maintenant</button>'))
     });
   }
   function ckpSecCap(cap) {
     var corps = cap.length
-      ? '<div class="pjc-grid">' + cap.map(ckpCarteCap).join('') + '</div>'
+      ? '<div class="pjc-grid ck-capgrid">' + cap.map(ckpCarteCap).join('') + '</div>'
       : '<div class="ck-vide">Aucune tâche ne réclame de décision aujourd’hui.</div>';
     return '<section class="ck-sec">' + ckpTitre('Ton cap aujourd’hui', '',
       CKP.ordre ? '<button class="btn btn--outline btn--sm" onclick="ADM.ckpOrdreSysteme()">Ordre conseillé</button>' : '') +
@@ -5108,7 +5109,7 @@
       'value="' + esc(pre) + '" aria-label="Temps passé" title="Le temps que tu y as passé" ' +
       'onclick="event.stopPropagation()" ' +
       'onkeydown="event.stopPropagation();if(event.key===\'Enter\'){event.preventDefault();ADM.ckpFinir(' + a + ');}">' +
-      '<button class="btn btn--sm ck-bfin" onclick="event.stopPropagation();ADM.ckpFinir(' + a + ')">J’ai terminé</button></div>';
+      '<button class="btn btn--sm ck-bfin" onclick="event.stopPropagation();ADM.ckpFinir(' + a + ')">' + (zone === 'cap' ? 'Valider' : 'J’ai terminé') + '</button></div>';
   }
   function ckpFinir(id, zone) {
     var t = ckpTaches().filter(function (x) { return x.id === id; })[0];
@@ -9109,11 +9110,12 @@
         (v.lignes || []).map(function (x) { return ligne(x[0], x[1]); }).join('') +
       '</div>' +
       '<div class="pjc-a">' +
+        (v.gestePrincipal ? v.gestes + '<button class="pjc-lien" onclick="' + v.ouvrir + '">' + esc(v.ouvrirLibelle || 'Ouvrir') + '</button>' :
         '<button class="btn btn--dark btn--sm" onclick="' + v.ouvrir + '">Ouvrir</button>' +
         (v.gestes !== undefined ? v.gestes
           : ((v.clos ? '<button class="btn btn--outline btn--sm" onclick="ADM.rouvrirProjet(' + arg + ')">Rouvrir</button>'
                      : '<button class="btn btn--outline btn--sm" onclick="ADM.cloturerProjet(' + arg + ')">Clôturer</button>') +
-             (v.pid ? '<button class="btn btn--danger btn--sm" onclick="ADM.delSupport(\'' + esc(v.pid) + '\')">Suppr.</button>' : ''))) +
+             (v.pid ? '<button class="btn btn--danger btn--sm" onclick="ADM.delSupport(\'' + esc(v.pid) + '\')">Suppr.</button>' : '')))) +
       '</div></div>';
   }
   function cliProjets() {
