@@ -5259,6 +5259,14 @@
 
   /* Le menu « ⋯ » : les gestes rares ou à conséquences, jamais à côté du
    * geste principal. Supprimer est toujours dernier, séparé. */
+  // Le menu « ⋯ », écrit une fois : items = [[libellé, geste]], supprimer à part.
+  function ckMenuHtml(items, supprimer, vers) {
+    return '<div class="ckm' + (vers === 'haut' ? ' ckm--haut' : '') + '">' +
+      '<button class="ckm-b" aria-haspopup="menu" aria-expanded="false" aria-label="Plus d’actions" onclick="event.stopPropagation();ADM.ckMenu(this)">' + ICON_POINTS + '</button>' +
+      '<div class="ckm-l" role="menu" hidden>' + items.map(function (x) {
+        return '<button role="menuitem" class="ckm-i" onclick="' + x[1] + '">' + esc(x[0]) + '</button>';
+      }).join('') + (supprimer ? '<hr><button role="menuitem" class="ckm-i ckm-i--del" onclick="' + supprimer + '">Supprimer…</button>' : '') + '</div></div>';
+  }
   function ckTMenu(t, vers) {
     var k = esc(t.key), i = esc(t.id), p = esc(t.projet || 'partner');
     var items = [];
@@ -5270,12 +5278,7 @@
     }
     if (t.src !== 'perso') items.push(['Ouvrir dans la fiche client', ckpOuvrirArg(t)]);
     if (t.statut === 'review') items.push(['Clôturer sans attendre le client', 'ADM.ckTCloturer(\'' + i + '\')']);
-    var del = t.src === 'ticket' ? '' : '<hr><button role="menuitem" class="ckm-i ckm-i--del" onclick="ADM.ckTSupprimer(\'' + i + '\')">Supprimer…</button>';
-    return '<div class="ckm' + (vers === 'haut' ? ' ckm--haut' : '') + '">' +
-      '<button class="ckm-b" aria-haspopup="menu" aria-expanded="false" aria-label="Plus d’actions" onclick="event.stopPropagation();ADM.ckMenu(this)">' + ICON_POINTS + '</button>' +
-      '<div class="ckm-l" role="menu" hidden>' + items.map(function (x) {
-        return '<button role="menuitem" class="ckm-i" onclick="' + x[1] + '">' + esc(x[0]) + '</button>';
-      }).join('') + del + '</div></div>';
+    return ckMenuHtml(items, t.src === 'ticket' ? '' : 'ADM.ckTSupprimer(\'' + i + '\')', vers);
   }
   var ICON_POINTS = '<svg width="18" height="4" viewBox="0 0 18 4" aria-hidden="true" fill="currentColor"><circle cx="2" cy="2" r="1.7"/><circle cx="9" cy="2" r="1.7"/><circle cx="16" cy="2" r="1.7"/></svg>';
   var ICON_AGRANDIR = '<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 2.5h4v4M13.5 2.5 9 7M6.5 13.5h-4v-4M2.5 13.5 7 9"/></svg>';
@@ -6177,32 +6180,14 @@
     });
     return ordre.map(function (c) {
       var arr = par[c];
-      var restant = arr.reduce(function (s2, p) { return s2 + ckJBilan(p).restant; }, 0);
-      var key = (arr[0] && arr[0].key) || '';
-      var ouvert = CKJ.neuf === key;
-      /* Le geste de création vit AVEC les supports de com, pas au-dessus de
-       * tous les projets de la cliente : c'est un support qu'on crée, et
-       * c'est là qu'on regarde les siens. La tuile ferme la grille, à sa
-       * place, dans le langage des cards. */
-      var tuile = '<div class="pjc pjc--neuf" style="--bg:#F8F6F2;--e:#110704">' +
-        (ouvert
-          ? '<div class="pjc-n">Nouveau projet de com</div>' +
-            '<input class="inp" id="ckj-neuf-' + esc(key) + '" placeholder="Nom du projet (ex. Lancement printemps)"' +
-            ' onkeydown="if(event.key===\'Enter\'){event.preventDefault();ADM.ckJCreer(\'' + esc(key) + '\');}">' +
-            '<div class="pjc-a"><button class="btn btn--dark btn--sm" onclick="ADM.ckJCreer(\'' + esc(key) + '\')">Créer</button>' +
-            '<button class="btn btn--outline btn--sm" onclick="ADM.ckJNeuf(\'' + esc(key) + '\')">Annuler</button></div>'
-          : '<button class="pjc-neufb" onclick="ADM.ckJNeuf(\'' + esc(key) + '\')">' +
-            '<span class="pjc-neufp">+</span><span>Nouveau projet de com</span></button>') +
-      '</div>';
       return '<div class="ckj-cli">' +
         '<div class="ckj-clih"><span class="ckj-clin">' + esc(c) + '</span>' +
-          '<span class="ckj-clim">' + arr.length + ' projet' + (arr.length > 1 ? 's' : '') +
-          (restant ? ' · ' + esc(ckpDuree(restant)) + ' à faire' : '') + '</span></div>' +
-        '<div class="pjc-grid">' + arr.map(ckJLigne).join('') + tuile + '</div></div>';
+          '<span class="ckj-clim">' + arr.length + ' projet' + (arr.length > 1 ? 's' : '') + '</span></div>' +
+        '<div class="pjc-grid">' + arr.map(ckJLigne).join('') + '</div></div>';
     }).join('');
   }
-  /* Créer un projet de com depuis l'écran Projets : un champ qui s'ouvre sous
-   * le nom de la cliente, là où on regarde ses projets. La route est celle de
+  /* Créer un projet de com depuis l'écran Projets : le bouton du haut ouvre
+   * un champ avec le choix du client. La route est celle de
    * la fiche cliente, inchangée : c'est l'endroit du geste qui change. */
   function ckJNeuf(key) {
     CKJ.neuf = (CKJ.neuf === key) ? null : key;
@@ -6211,6 +6196,7 @@
   }
   function ckJCreer(key) {
     var ch = el('ckj-neuf-' + key);
+    if (key === '*') { var s = el('ckj-neuf-cli'); key = s ? s.value : ''; if (!key) return; }
     var nom = ((ch && ch.value) || '').trim();
     if (!nom) { toast('Donne-lui un nom, tu t’y retrouveras mieux'); if (ch) ch.focus(); return; }
     jpost('/api/clients/' + key + '/supports', { name: nom }).then(function (r) {
@@ -6482,34 +6468,28 @@
     var p = CKJ.ouvert ? ckJTrouver(CKJ.ouvert) : null;
     if (CKJ.ouvert && !p) CKJ.ouvert = null;
     if (p) {
-      setMain(topbar('Projets') + '<div class="wrap ck">' + ckJDetail(p) + '</div>');
+      setMain('<div class="wrap ck">' + ckJDetail(p) + '</div>');
       var dd = ckJDomaine(p);
       if (dd) sectionEffets(dd, CKJ.onglet);
       return;
     }
     var l = ckJListe();
-    var presta = {}; l.forEach(function (x) { presta[x.prestation] = 1; });
-    var nb = Object.keys(presta).length;
-    // Les totaux du bandeau viennent des MÊMES bilans que les lignes.
-    var totRestant = 0, totSansPlace = 0, prochain = null;
-    l.forEach(function (x) {
-      var b = ckJBilan(x); totRestant += b.restant; totSansPlace += b.aPlanifier;
-      var j = ckJJalon(x);
-      if (j && (!prochain || j.date < prochain.date)) prochain = j;
-    });
-    setMain(topbar('Projets') +
-      '<div class="wrap ck">' +
-        '<div class="ck-tete"><div>' +
-          '<h1 class="ck-h1">Où en est <span class="ck-accent">chaque projet</span></h1></div></div>' +
-        ckpHero('Tes projets', l.length + ' <em>en cours</em>', '',
-          ckpHeroPuce('var(--ciel)', totRestant ? ckpDuree(totRestant) + ' de travail encore nécessaire, tous projets confondus'
-            : 'Rien à faire de ton côté sur les projets en cours') +
-          (totSansPlace ? ckpHeroPuce('var(--terracotta)', ckpDuree(totSansPlace) + ' n’ont encore de place nulle part') : '') +
-          (prochain ? ckpHeroPuce('var(--paille)', 'Prochain jalon : ' + prochain.titre + ' · ' + ckpQuand(prochain.date)) : '')) +
-        '<div class="ck-segm" style="margin-bottom:18px">' +
-          '<button class="ck-segb' + (CKJ.filtre === 'actifs' ? ' on' : '') + '" onclick="ADM.ckJSetFiltre(\'actifs\')">En cours</button>' +
-          '<button class="ck-segb' + (CKJ.filtre === 'tout' ? ' on' : '') + '" onclick="ADM.ckJSetFiltre(\'tout\')">Tous</button>' +
-        '</div>' +
+    // Créer un projet de com : un bouton en haut, qui demande pour quel client.
+    var clis = (NAV_CLIENTS || []).filter(function (c) { return !c.archived; });
+    var neuf = CKJ.neuf === '*' ? '<div class="ckj-neuf">' +
+        '<label>Pour <select class="inp" id="ckj-neuf-cli">' + clis.map(function (c) {
+          return '<option value="' + esc(c.key) + '">' + esc(clientName(c)) + '</option>'; }).join('') + '</select></label>' +
+        '<input class="inp" id="ckj-neuf-*" aria-label="Nom du projet" placeholder="Nom du projet (ex. Lancement printemps)" ' +
+        'onkeydown="if(event.key===\'Enter\'){event.preventDefault();ADM.ckJCreer(\'*\');}">' +
+        '<button class="btn btn--dark btn--sm" onclick="ADM.ckJCreer(\'*\')">Créer</button>' +
+        '<button class="pjc-lien" onclick="ADM.ckJNeuf(\'*\')">Annuler</button></div>' : '';
+    setMain('<div class="wrap ck ckj-page">' +
+        '<h1 class="ck-h1">Où en est chaque projet</h1>' +
+        '<div class="ckj-barre"><div class="ck-segm" role="group" aria-label="Filtrer les projets">' +
+          '<button class="ck-segb' + (CKJ.filtre === 'actifs' ? ' on' : '') + '" aria-pressed="' + (CKJ.filtre === 'actifs') + '" onclick="ADM.ckJSetFiltre(\'actifs\')">En cours</button>' +
+          '<button class="ck-segb' + (CKJ.filtre === 'tout' ? ' on' : '') + '" aria-pressed="' + (CKJ.filtre === 'tout') + '" onclick="ADM.ckJSetFiltre(\'tout\')">Tous</button>' +
+        '</div>' + (clis.length ? '<button class="btn btn--dark" onclick="ADM.ckJNeuf(\'*\')">Nouveau projet de com</button>' : '') + '</div>' +
+        neuf +
         (l.length ? ckJParCliente(l)
           : '<div class="ckj"><div class="ck-vide">Aucun projet en cours. Tout est fini, ou tout reste à ouvrir.</div></div>') +
       '</div>');
@@ -8347,13 +8327,10 @@
     // Onglets : Vue d'ensemble, puis UN onglet par projet (chaque projet a sa
     // vue propre), puis Fichiers, Échanges, et Réglages.
     var _projTabs = (CUR.domains || []).concat(CUR.supports || []);
+    // Les projets ne sont plus des onglets : leurs cartes, dans la vue
+    // d'ensemble, les ouvrent déjà. Le fil d'Ariane dit dans lequel on est.
     var tabs = [['apercu', 'Vue d\'ensemble', 0]];
-    // Un projet clôturé reste consultable : son onglet le dit, sinon il se
-    // confond avec les projets en cours et on le rouvre pour rien.
-    _projTabs.forEach(function (x) {
-      var nom = DOMAIN_LABELS[x.id] || x.label || 'Projet';
-      tabs.push([x.id, x.clotureAt ? nom + ' · terminé' : nom, x.unread || 0]);
-    });
+    var _projOuvert = _projTabs.filter(function (x) { return x.id === TAB; })[0] || null;
     // Réponses aux questionnaires de la plateforme. La pastille compte les
     // questionnaires remplis que tu n'as pas encore ouverts.
     var _qnrNew = (CUR.questionnaires || []).filter(function (q) {
@@ -8372,15 +8349,19 @@
     var _cdInit = (nm.trim().charAt(0) || '?').toUpperCase();
     var _cdProj = (CUR.domains && CUR.domains[0]) ? (DOMAIN_LABELS[CUR.domains[0].id] || CUR.domains[0].label) : 'Espace client';
     var _cdPr = presence(CUR.lastSeen);
+    var fil = '<nav class="cl-fil" aria-label="Fil d’Ariane"><button class="ckt-pl" onclick="ADM.nav(\'clients\')">Clients</button><span aria-hidden="true">/</span>' +
+      (_projOuvert ? '<button class="ckt-pl" onclick="ADM.tab(\'apercu\')">' + esc(nm) + '</button><span aria-hidden="true">/</span><span>' + esc(DOMAIN_LABELS[_projOuvert.id] || _projOuvert.label || 'Projet') + '</span>'
+        : '<span>' + esc(nm) + '</span>') + '</nav>';
     var cdhead = '<div class="cdhead"><span class="cdhead__a">' + esc(_cdInit) + '</span>' +
-      '<div class="cdhead__m"><div class="cdhead__n">' + esc(nm) + '</div><div class="cdhead__p">' + esc(_cdProj) + '</div></div>' +
-      '<span class="cdhead__pres"><i class="' + (_cdPr.online ? 'on' : '') + '"></i>' + esc(_cdPr.label) + '</span></div>';
-    setMain(topbar('', visioBtn + '<button class="btn btn--outline btn--sm" onclick="ADM.nav(\'clients\')">Clients</button>') +
-      '<div class="wrap cl2">' + cdhead + clientAlerts() + '<div class="tabs">' + tabsHtml + '</div><div id="tabbody"></div></div>');
+      '<div class="cdhead__m"><h1 class="cdhead__n">' + esc(nm) + '</h1><div class="cdhead__p">' + esc(_cdProj) + ' · ' + esc(_cdPr.label.charAt(0).toLowerCase() + _cdPr.label.slice(1)) + '</div></div>' +
+      (visioBtn ? '<span class="cdhead__v">' + visioBtn + '</span>' : '') + '</div>';
+    setMain('<div class="wrap cl2">' + fil + cdhead + clientAlerts() + '<div class="tabs">' + tabsHtml + '</div><div id="tabbody"></div></div>');
     renderTab();
   }
   // Bandeau de 4 tuiles (maquette cdstats) : avancement, prochaine livraison,
   // forfait restant, dernier échange. Valeurs dérivées des données réelles.
+  // Ce qui attend, dit en une phrase : ce qui est à toi d'abord, puis ce qui
+  // attend le client. Les pastilles ressemblaient à des boutons sans en être.
   function clientAlerts() {
     var unread = 0, aValider = 0, review = 0, waitClient = 0;
     function scan(list) {
@@ -8392,18 +8373,17 @@
       });
     }
     scan(CUR.domains); scan(CUR.supports);
-    var chips = [];
-    // 'v' = à toi de jouer (terracotta) · 'c' = en attente de la cliente (bleu clair)
-    if (unread) chips.push(['Toi', unread + ' message' + (unread > 1 ? 's' : '') + ' à lire', 'v']);
-    if (review) chips.push(['Toi', review + ' tâche' + (review > 1 ? 's' : '') + ' à valider', 'v']);
-    if (aValider) chips.push(['Client', aValider + ' livrable' + (aValider > 1 ? 's' : '') + ' en attente de sa validation', 'c']);
-    if (waitClient) chips.push(['Client', waitClient + ' étape' + (waitClient > 1 ? 's' : '') + ' en attente de lui', 'c']);
-    var _bell = '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>';
-    if (!chips.length) return '<div class="cqa cqa--ok"><span class="cqa__ic"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span><span class="cqa__t">Tout est à jour pour ce client</span></div>';
-    var chipsHtml = chips.map(function (ch) {
-      return '<span class="cqa__chip cqa__chip--' + ch[2] + '"><span class="cqa__who">' + ch[0] + '</span>' + esc(ch[1]) + '</span>';
-    }).join('');
-    return '<div class="cqa"><div class="cqa__hd"><span class="cqa__ic">' + _bell + '</span><span class="cqa__t">Ce qui t\'attend</span><span class="cqa__n">' + chips.length + '</span></div><div class="cqa__chips">' + chipsHtml + '</div></div>';
+    var n = function (k, un, plus) { return '<b>' + k + ' ' + (k > 1 ? plus : un) + '</b>'; };
+    var toi = [], lui = [];
+    if (unread) toi.push(n(unread, 'message à lire', 'messages à lire'));
+    if (review) toi.push(n(review, 'tâche à valider', 'tâches à valider'));
+    if (aValider) lui.push(n(aValider, 'livrable à valider', 'livrables à valider'));
+    if (waitClient) lui.push(n(waitClient, 'étape à remplir', 'étapes à remplir'));
+    var et = function (l) { return l.length > 1 ? l.slice(0, -1).join(', ') + ' et ' + l[l.length - 1] : l[0]; };
+    var p = [];
+    if (toi.length) p.push('Pour toi : ' + et(toi) + '.');
+    if (lui.length) p.push('De son côté : ' + et(lui) + '.');
+    return '<p class="cl-att">' + (p.length ? p.join(' ') : 'Rien n’attend, ni de ton côté ni du sien.') + '</p>';
   }
   function tab(t) { navPas(function () { TAB = t; if (CURKEY) TAB_BY_CLIENT[CURKEY] = t; renderClient(); renderNav(); }); }
 
@@ -9247,21 +9227,15 @@
 
      v = { id, nom, presta, clos, clotureAt, ou, rang, total, faites,
            restant, sansPlace, inconnu, jalon, forfait, ouvrir, key, pid } */
-  /* Une teinte par prestation, prise dans la palette de bannière de la charte
-     (sans jaune). Elle sert à REPÉRER, pas à décorer : même prestation, même
-     couleur, sur les deux écrans. Le fond reste très pâle — le cuivre et le
-     jaune ne s'emploient jamais en grand aplat. */
-  /* Repérer une prestation à sa couleur : un aplat de la palette Seed to
-   * Bloom, sans contour. bg = l'aplat, e = l'encre qui s'y lit, sombre = le
-   * fond est foncé (les boutons s'inversent alors).
-   * Le Mimosa n'est pas dans cette table : le jaune ne se pose jamais en fond,
-   * même pâle, même en dégradé. Il ne sert qu'en texte ou en jauge sur un fond
-   * foncé, où il est chez lui. */
+  /* La teinte d'une carte : bg = l'aplat, e = l'encre qui s'y lit,
+   * sombre = le fond est foncé (les boutons s'inversent alors). */
   var CKJ_TEINTES = {
-    site:        { bg: '#C5DEFF', e: '#110704', sombre: false },   // Azur
-    partenaire:  { bg: '#CD8F6E', e: '#110704', sombre: false },   // Mandarine
-    support:     { bg: '#110704', e: '#F8F6F2', sombre: true },    // Ébène
-    identite:    { bg: '#5A2A11', e: '#F8F6F2', sombre: true },    // Cuivre
+    // Toutes les cartes de projet en Ciel : quatre couleurs ne disaient rien
+    // de plus que le titre, qui nomme déjà la prestation.
+    site:        { bg: '#C5DEFF', e: '#110704', sombre: false },
+    partenaire:  { bg: '#C5DEFF', e: '#110704', sombre: false },
+    support:     { bg: '#C5DEFF', e: '#110704', sombre: false },
+    identite:    { bg: '#C5DEFF', e: '#110704', sombre: false },
     maintenance: { bg: '#F8F6F2', e: '#110704', sombre: false },   // Neige
     interne:     { bg: '#F8F6F2', e: '#110704', sombre: false }    // Neige
   };
@@ -9308,11 +9282,13 @@
       '</div>' +
       '<div class="pjc-a">' +
         (v.gestePrincipal ? v.gestes + '<button class="pjc-lien" onclick="' + v.ouvrir + '">' + esc(v.ouvrirLibelle || 'Ouvrir') + '</button>' :
-        '<button class="btn btn--dark btn--sm" onclick="' + v.ouvrir + '">Ouvrir</button>' +
-        (v.gestes !== undefined ? v.gestes
-          : ((v.clos ? '<button class="btn btn--outline btn--sm" onclick="ADM.rouvrirProjet(' + arg + ')">Rouvrir</button>'
-                     : '<button class="btn btn--outline btn--sm" onclick="ADM.cloturerProjet(' + arg + ')">Clôturer</button>') +
-             (v.pid ? '<button class="btn btn--danger btn--sm" onclick="ADM.delSupport(\'' + esc(v.pid) + '\')">Suppr.</button>' : '')))) +
+        (v.gestes !== undefined
+          ? '<button class="btn btn--dark btn--sm" onclick="' + v.ouvrir + '">Ouvrir</button>' + v.gestes
+          // Un projet : « Ouvrir le projet », et le reste rangé dans le menu.
+          // Clôturer et Supprimer ne sont plus à côté du geste principal.
+          : '<button class="btn btn--dark" onclick="' + v.ouvrir + '">Ouvrir le projet</button><span class="ck-esp"></span>' +
+            ckMenuHtml([v.clos ? ['Rouvrir le projet', 'ADM.rouvrirProjet(' + arg + ')'] : ['Clôturer le projet', 'ADM.cloturerProjet(' + arg + ')']],
+              v.pid ? 'ADM.delSupport(\'' + esc(v.pid) + '\')' : '', 'bas'))) +
       '</div></div>';
   }
   function cliProjets() {
@@ -9394,13 +9370,11 @@
         (arr.length ? '<div class="pjc-grid">' + arr.map(cliLigneProjet).join('') + '</div>'
                     : '<div class="cpj-vide">' + esc(vide) + '</div>') + '</div>';
     };
-    return '<div class="card infocard cpj-card" style="background:var(--card)">' +
-      '<h3><span class="infocard__dot" style="background:#35608f"></span>Ses projets</h3>' +
-      bloc('En cours', vifs, 'Aucun projet en cours pour cette cliente.') +
+    return '<section class="cl-proj">' +
+      '<h2 class="cl-proj__h">Ses projets <span>' + vifs.length + ' en cours</span></h2>' +
+      (vifs.length ? '<div class="pjc-grid">' + vifs.map(cliLigneProjet).join('') + '</div>' : '<p class="cpj-vide">Aucun projet en cours.</p>') +
       (clos.length ? bloc('Terminés', clos, '') : '') +
-      // Créer un projet se fait dans l'écran Projets, à côté des autres projets
-      // de cette cliente : c'est là qu'on y pense, pas dans sa fiche.
-      '<p class="cpj-note">Un nouveau projet de com se crée depuis l’écran <b>Projets</b>, sous le nom de ta cliente.</p>' +
+      '<p class="cpj-note">Un nouveau projet de com se crée depuis l’écran <b>Projets</b>, avec le bouton « Nouveau projet de com ».</p>' +
       '</div>';
   }
   /* Clôturer : un seul geste pour tous les projets. Les supports ont leur
