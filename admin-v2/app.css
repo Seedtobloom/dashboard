@@ -2033,8 +2033,12 @@ select.cg-in{cursor:pointer}
 .ckj-etn{display:block;font-size:11.5px;color:var(--muted);margin-top:3px}
 .ckj-jauge{display:block;height:5px;border-radius:999px;background:var(--surface-2);overflow:hidden;margin-top:7px;max-width:170px}
 .ckj-jauge span{display:block;height:100%;background:var(--glycine-900);border-radius:999px}
+/* Les onglets d'un côté, les gestes du projet de l'autre. Avec sept sections,
+   « margin-left:auto » renvoyait le second bouton à la ligne, tout seul : les
+   gestes forment donc leur propre groupe, qui bascule d'un bloc. */
 .ckj-ong{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:20px}
-.ckj-ong .btn{margin-left:auto}
+.ckj-ong .ck-segm{flex-wrap:wrap}
+.ckj-act{display:flex;align-items:center;gap:8px;margin-left:auto;flex-wrap:wrap}
 .ckj-fini{margin-top:18px;font-size:12.5px;color:var(--muted);line-height:1.6}
 .ckj-fini b{color:var(--text)}
 /* Étapes : un point, jamais une barre */
@@ -2176,21 +2180,34 @@ select.cg-in{cursor:pointer}
 
 /* ── La carte d'un projet : une seule, posée par deux écrans ──────────────
    Pas de barre sur le côté : c'est l'eyebrow de prestation qui situe. */
+/* Page projet : la bande « où on en est », les retours, les sections reprises
+   de la fiche cliente. Les sections gardent leurs styles (.cl2) : ce sont les
+   mêmes blocs, on ne les redessine pas, on les accueille. */
+.ckj-ongn{display:inline-block;min-width:17px;padding:0 5px;margin-left:5px;border-radius:999px;background:var(--surface-2);font-size:10.5px;font-weight:700;line-height:17px;text-align:center;color:var(--cuivre)}
+.ck-segb.on .ckj-ongn{background:rgba(255,255,255,.22);color:#fff}
+.ckj-pl{display:flex;flex-direction:column;gap:11px;background:var(--bone);border-radius:16px;padding:16px 18px;box-shadow:inset 0 0 0 1px var(--border)}
+.ckj-plj{height:6px;border-radius:999px;background:var(--surface-2);overflow:hidden}
+.ckj-plj span{display:block;height:100%;background:var(--cuivre);border-radius:999px}
+.ckj-plc{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.ckj-plc b{font-size:15px;color:var(--cuivre)}
+.ckj-pl .btn{align-self:flex-start}
+.ckj-ret+.ckj-ret{margin-top:6px;padding-top:12px;border-top:1px solid var(--border)}
+.ckj-rett{display:block;margin-bottom:6px}
+.ckj-sec{margin-top:4px}
+.ckj-sec .card{max-width:none}
 .pjc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(296px,1fr));gap:14px}
-.pjc{--t:#6b533b;position:relative;background:color-mix(in srgb,var(--t) 6%,#fff);border-radius:18px;padding:17px 19px 15px;display:flex;flex-direction:column;gap:9px;box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--t) 22%,transparent);overflow:hidden}
+.pjc{--t:#5A2A11;--e:#5A2A11;--w:6%;--r:34%;position:relative;background:color-mix(in srgb,var(--t) var(--w),#fff);border-radius:18px;padding:17px 19px 15px;display:flex;flex-direction:column;gap:9px;box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--t) var(--r),transparent);overflow:hidden}
 /* Un filet de teinte en haut : on repère la prestation d'un coup d'œil, sans
    aplat de couleur et sans barre sur le côté. */
-.pjc::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--t)}
-.pjc--clos{opacity:.62;background:var(--card)}
-.pjc--clos::before{background:var(--border)}
+.pjc--clos{opacity:.62;background:var(--card);box-shadow:inset 0 0 0 1px var(--border)}
 .pjc-h{display:flex;align-items:center;justify-content:space-between;gap:9px;min-height:20px}
-.pjc-p{font-family:var(--font-micro);font-size:10px;font-weight:600;letter-spacing:0.11em;text-transform:uppercase;color:var(--t)}
+.pjc-p{font-family:var(--font-micro);font-size:10px;font-weight:600;letter-spacing:0.11em;text-transform:uppercase;color:var(--e)}
 .pjc-n{font-family:var(--font-display);font-style:italic;font-size:22px;line-height:1.1;color:var(--terre)}
 .pjc-ou{font-size:14px;color:var(--text);line-height:1.4}
 .pjc-rang{display:block;font-family:var(--font-micro);font-size:10.5px;letter-spacing:0.05em;text-transform:uppercase;color:var(--muted);margin-top:5px}
 .pjc-j{height:5px;border-radius:999px;background:var(--surface-2);overflow:hidden;margin-top:7px}
-.pjc-j span{display:block;height:100%;background:var(--t);border-radius:999px}
-.pjc-d{border-top:1px solid color-mix(in srgb,var(--t) 18%,transparent);padding-top:9px;margin-top:2px}
+.pjc-j span{display:block;height:100%;background:var(--e);border-radius:999px}
+.pjc-d{border-top:1px solid color-mix(in srgb,var(--e) 16%,transparent);padding-top:9px;margin-top:2px}
 .pjc-l{display:flex;justify-content:space-between;gap:10px;font-size:13px;padding:3px 0}
 .pjc-l span{color:var(--muted)}
 .pjc-l b{text-align:right;font-weight:600}

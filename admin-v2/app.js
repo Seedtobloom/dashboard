@@ -5676,7 +5676,7 @@
      pas afficher un total que la liste des tâches contredirait.
      ════════════════════════════════════════════════════════════════════════ */
 
-  var CKJ = { ouvert: null, onglet: 'ensemble', filtre: 'actifs' };
+  var CKJ = { ouvert: null, onglet: 'ensemble', filtre: 'actifs', charge: null, chargeFait: null };
   var CKJ_PRESTA = { partenaire: 'Partenaire créative', site: 'Site web', identite: 'Identité visuelle',
     support: 'Support de com', maintenance: 'Espace tickets' };
 
@@ -5780,9 +5780,35 @@
   }
 
   function ckJSetFiltre(f) { CKJ.filtre = f; renderCockpitProjetsBody(); }
-  function ckJOuvrir(id) { CKJ.ouvert = id; CKJ.onglet = 'ensemble'; renderCockpitProjetsBody(); window.scrollTo(0, 0); }
+  function ckJOuvrir(id) { CKJ.ouvert = id; CKJ.onglet = 'ensemble'; CKJ.chargeFait = null; renderCockpitProjetsBody(); window.scrollTo(0, 0); }
   function ckJFermer() { CKJ.ouvert = null; renderCockpitProjetsBody(); }
-  function ckJOnglet(o) { CKJ.onglet = o; renderCockpitProjetsBody(); }
+  function ckJOnglet(o) {
+    CKJ.onglet = o;
+    // Les sections du projet se souviennent de leur onglet par l'index partagé
+    // avec la fiche cliente : y aller ensuite n'atterrit pas ailleurs.
+    var p = CKJ.ouvert ? ckJTrouver(CKJ.ouvert) : null;
+    if (p) SUBTAB[p.projectId] = o;
+    renderCockpitProjetsBody();
+  }
+  /* Le contenu réel d'un projet (créations, versions, retours, planning,
+   * messages) vit dans la charge de sa cliente. On la charge ICI, une fois,
+   * pour ne plus avoir à ouvrir la fiche cliente pour travailler. */
+  function ckJDomaine(p) {
+    if (!p || !CUR || CUR.key !== p.key) return null;
+    return findDomain(p.projectId);
+  }
+  function ckJCharger(key) {
+    // chargeFait retient la tentative, pas seulement l'appel en cours : sans
+    // ça, une charge qui ne porte pas ce projet relancerait un rendu, qui
+    // relancerait une charge, sans fin.
+    if (!key || CKJ.charge === key || CKJ.chargeFait === key) return;
+    CKJ.charge = key;
+    CURKEY = key;                      // toutes les routes des gestes en dépendent
+    api('/api/clients/' + key).then(function (r) { return r.json(); }).then(function (dd) {
+      CUR = dd; CKJ.charge = null; CKJ.chargeFait = key;
+      if (VIEW === 'ckprojets') renderCockpitProjetsBody();
+    }).catch(function () { CKJ.charge = null; CKJ.chargeFait = key; });
+  }
   function ckJTrouver(id) {
     var l = (CKP.dash && CKP.dash.projets) || [];
     for (var i = 0; i < l.length; i++) if (ckJId(l[i]) === id) return l[i];
@@ -5862,8 +5888,19 @@
 
   function ckJDetail(p) {
     var b = ckJBilan(p), j = ckJJalon(p);
-    var onglets = [['ensemble', 'Vue d’ensemble'], ['etapes', 'Étapes'], ['planning', 'Planning prévisionnel'],
-      ['echanges', 'Échanges & validations'], ['fichiers', 'Fichiers']];
+    var d = ckJDomaine(p);
+    if (!d) ckJCharger(p.key);
+    /* Un seul jeu d'onglets : la vue d'ensemble du cockpit, puis les sections
+     * du projet telles qu'elles existent déjà (créations, planning, étapes,
+     * livrables, forfait, tickets, questionnaire, messages), puis ses fichiers.
+     * On ne réécrit pas ces sections : ce sont les mêmes blocs, avec les mêmes
+     * gestes. Deux copies finiraient par dire deux choses. */
+    var onglets = [['ensemble', 'Vue d’ensemble', 0]];
+    if (d) { sectionsFor(d).forEach(function (x) { if (x[0] !== 'apercu') onglets.push(x); }); }
+    else if (p.prestation !== 'support') { onglets.push(['etapes', 'Étapes', 0]); }
+    onglets.push(['fichiers', 'Fichiers', 0]);
+    // L'onglet ouvert ailleurs ne doit pas laisser une page vide ici.
+    if (!onglets.some(function (o) { return o[0] === CKJ.onglet; })) CKJ.onglet = 'ensemble';
     return '<button class="btn btn--outline btn--sm" onclick="ADM.ckJFermer()">← Tous les projets</button>' +
       '<div class="ck-tete" style="margin-top:16px"><div>' +
         '<div class="ck-meta">' + esc(p.client + (CKJ_PRESTA[p.prestation] && CKJ_PRESTA[p.prestation] !== p.projectLabel
@@ -5873,8 +5910,10 @@
       
       '<div class="ckj-ong"><div class="ck-segm">' + onglets.map(function (o) {
         return '<button class="ck-segb' + (CKJ.onglet === o[0] ? ' on' : '') +
-          '" onclick="ADM.ckJOnglet(\'' + o[0] + '\')">' + esc(o[1]) + '</button>';
+          '" onclick="ADM.ckJOnglet(\'' + o[0] + '\')">' + esc(o[1]) +
+          (o[2] > 0 ? ' <span class="ckj-ongn">' + o[2] + '</span>' : '') + '</button>';
       }).join('') + '</div>' +
+      '<div class="ckj-act">' +
       (function () {
         var sm = String(p.projectId || '').match(/^support-(\d{3})$/);
         var arg = '\'' + esc(sm ? sm[1] : p.projectId) + '\',' + (sm ? 'true' : 'false') + ',\'' + esc(p.key) + '\'';
@@ -5882,15 +5921,15 @@
           ? '<button class="btn btn--outline btn--sm" onclick="ADM.rouvrirProjet(' + arg + ')">Rouvrir le projet</button>'
           : '<button class="btn btn--outline btn--sm" onclick="ADM.cloturerProjet(' + arg + ')">Clôturer le projet</button>';
       }()) +
-      '<button class="btn btn--dark btn--sm" onclick="ADM.openClient(\'' + esc(p.key) + '\')">Ouvrir la fiche cliente</button></div>' +
-      (CKJ.onglet === 'ensemble' ? ckJEnsemble(p, b)
+      '<button class="btn btn--dark btn--sm" onclick="ADM.openClient(\'' + esc(p.key) + '\')">Fiche cliente</button></div></div>' +
+      (CKJ.onglet === 'ensemble' ? ckJEnsemble(p, b, d)
+        : CKJ.onglet === 'fichiers' ? ckJOngletFichiers(p)
         : CKJ.onglet === 'etapes' ? ckJOngletEtapes(p)
-        : CKJ.onglet === 'planning' ? ckJOngletPlanning(p)
-        : CKJ.onglet === 'echanges' ? ckJOngletEchanges(p)
-        : ckJOngletFichiers(p));
+        : d ? '<div class="cl2 ckj-sec">' + sectionContent(d, CKJ.onglet) + '</div>'
+        : '<div class="empty"><div class="spin" style="margin:20px auto"></div></div>');
   }
 
-  function ckJEnsemble(p, b) {
+  function ckJEnsemble(p, b, d) {
     var cr = ckJCreations(p);
     var vives = ckJTachesDe(p).filter(function (t) { return t.statut !== 'done'; })
       .sort(function (a, b2) { return ckpScore(b2) - ckpScore(a); });
@@ -5909,7 +5948,7 @@
     if (cr.length) {
       var ouv = cr.filter(function (x) { return !x.clotureAt; }).length;
       cartes.push([ouv ? 'Créations en cours' : 'Créations', ouv ? String(ouv) : String(cr.length),
-        ouv ? 'Sur ' + cr.length + ' au total. Une création se clôture depuis la fiche cliente : son fil s’archive.'
+        ouv ? 'Sur ' + cr.length + ' au total. Clôturer une création archive son fil, des deux côtés.'
             : 'Toutes terminées. Leurs fils sont archivés, et restent lisibles.']);
     }
     var f = ckJForfait(p);
@@ -5939,13 +5978,13 @@
           '<div class="ck-ts">' + esc(ckJCrStatut(x.status)) + '</div></div>' +
           '<div style="display:flex;gap:7px;flex-wrap:wrap">' +
           (sm2 ? '<button class="btn btn--outline btn--sm" onclick="ADM.crCloturer(\'' + sm2[1] + '\',\'' + esc(x.id) + '\',\'' + esc(p.key) + '\')">Clôturer</button>' : '') +
-          '<button class="btn btn--dark btn--sm" onclick="ADM.openClient(\'' + esc(p.key) + '\')">Ouvrir</button></div></div>';
+          '<button class="btn btn--dark btn--sm" onclick="ADM.ckJOnglet(\'creations\')">Ouvrir</button></div></div>';
       }).join('') : '<div class="ck-vide">Toutes les créations sont terminées.</div>') + '</div>';
     } else {
       corps = '<div class="ck-tbl"><div class="ck-vide">Rien de ton côté.</div></div>';
     }
     var closes = cr.filter(function (x) { return !!x.clotureAt; });
-    return tetes +
+    return tetes + ckJBandePlanning(p) + ckJRetours(p) +
       '<section class="ck-sec">' + ckpTitre(cr.length && !vives.length ? 'Ses créations' : 'Ce qui reste à faire') +
         corps + '</section>' +
       (closes.length ? '<section class="ck-sec">' + ckpTitre('Créations terminées',
@@ -5964,6 +6003,58 @@
   var CKJ_CR_ST = { a_preparer: 'À préparer', en_creation: 'En création', attente_client: 'Attente cliente',
     revision: 'En révision', valide: 'Validé', archive: 'Archivé' };
   function ckJCrStatut(st) { return CKJ_CR_ST[st] || st || ''; }
+  /* Où on en est dans le planning, dit en une bande sur la vue d'ensemble.
+   * Même moteur que l'onglet Planning et que l'écran Plannings : planSituation.
+   * Ici on résume, là-bas on agit : jamais deux calculs. */
+  function ckJBandePlanning(p) {
+    var l = ckJPlannings(p);
+    if (!l.length) return '';
+    l.sort(function (a, b) { return planSortKey(a.si) - planSortKey(b.si); });
+    var jal = 0, faits = 0, retard = 0;
+    l.forEach(function (x) { jal += x.si.total; faits += x.si.done; retard += x.si.ended ? 0 : x.si.late.length; });
+    var pct = jal ? Math.round(faits / jal * 100) : 0;
+    var cu = l[0].si.ended ? null : l[0].si.current;
+    var OWN = { studio: 'de ton côté', cliente: 'chez ta cliente', les_deux: 'à deux' };
+    return '<section class="ck-sec">' +
+      ckpTitre('Où on en est dans le planning',
+        faits + ' jalon' + (faits > 1 ? 's' : '') + ' sur ' + jal + ' terminé' + (faits > 1 ? 's' : '') +
+        (retard ? ' : ' + retard + ' en retard' : '') + '.') +
+      '<div class="ckj-pl">' +
+        '<div class="ckj-plj"><span style="width:' + pct + '%"></span></div>' +
+        (cu ? '<div class="ckj-plc">' +
+          '<span class="ck-ts">' + (cu.j.status === 'en_cours' ? 'En cours' : 'Prochain jalon') + '</span>' +
+          '<b>' + esc(cu.j.title || 'Sans titre') + '</b>' +
+          (cu.label ? '<span class="ck-ts">' + esc(cu.label) + '</span>' : '') +
+          '<span class="ck-ts">' + esc(OWN[cu.j.owner] || OWN.studio) + '</span>' +
+          '</div>' : '<div class="ckj-plc"><b>Tous les jalons sont faits.</b></div>') +
+        '<button class="btn btn--outline btn--sm" onclick="ADM.ckJOnglet(\'planning\')">Voir le planning</button>' +
+      '</div></section>';
+  }
+  /* Les retours : ce qui attend sa validation, et ce qui revient vers toi.
+   * C'était un onglet à part ; c'est la première chose qu'on veut savoir en
+   * ouvrant un projet, donc ça vit sur la vue d'ensemble. */
+  function ckJRetours(p) {
+    var x = ckJEchanges(p);
+    if (!x.attente.length && !x.revisions.length && !x.valides.length) return '';
+    var ligne = function (l, mot) {
+      return '<div class="ckj-ech"><div><div class="ckj-echn">' + esc(l.name || l.taskTitle || 'Livrable') + '</div>' +
+        (mot && l.comment ? '<div class="ck-ts">« ' + esc(String(l.comment).slice(0, 180)) + ' »</div>'
+          : (l.taskTitle && l.name ? '<div class="ck-ts">' + esc(l.taskTitle) + '</div>' : '')) + '</div>' +
+        '<div class="ck-ts">' + esc((l.createdAt || l.at) ? ckpMaj(ckpQuand(String(l.createdAt || l.at).slice(0, 10))) : '') + '</div></div>';
+    };
+    var bloc = function (titre, l, mot) {
+      return l.length ? '<div class="ckj-ret"><div class="ck-ts ckj-rett">' + esc(titre) + '</div>' +
+        l.map(function (o) { return ligne(o, mot); }).join('') + '</div>' : '';
+    };
+    return '<section class="ck-sec">' +
+      ckpTitre('Les retours', 'Ce qui attend sa validation, et ce qui revient vers toi.') +
+      '<div class="ck-tbl">' +
+        bloc('Chez la cliente, en attente', x.attente, false) +
+        bloc('À retravailler', x.revisions, true) +
+        bloc('Validés, pas encore consultés', x.valides, false) +
+      '</div></section>';
+  }
+
   function ckJOngletEtapes(p) {
     var e = ckJEtapes(p);
     if (!e.length) {
@@ -5983,27 +6074,6 @@
       ' étapes sur ' + e.length + '. Les autres sont ton découpage de travail : les lui montrer ne l’aiderait pas.</p>' : '');
   }
 
-  function ckJOngletEchanges(p) {
-    var x = ckJEchanges(p);
-    var bloc = function (titre, l, rendu, vide) {
-      return '<section class="ck-sec">' + ckpTitre(titre) +
-        '<div class="ck-tbl">' + (l.length ? l.map(rendu).join('') : '<div class="ck-vide">' + esc(vide) + '</div>') + '</div></section>';
-    };
-    var ligneLiv = function (l) {
-      return '<div class="ckj-ech"><div><div class="ckj-echn">' + esc(l.name || l.taskTitle || 'Livrable') + '</div>' +
-        (l.taskTitle && l.name ? '<div class="ck-ts">' + esc(l.taskTitle) + '</div>' : '') + '</div>' +
-        '<div class="ck-ts">' + esc(l.createdAt || l.at ? ckpMaj(ckpQuand(String(l.createdAt || l.at).slice(0, 10))) : '') + '</div></div>';
-    };
-    var ligneRev = function (l) {
-      return '<div class="ckj-ech"><div><div class="ckj-echn">' + esc(l.name || l.taskTitle || 'Livrable') + '</div>' +
-        (l.comment ? '<div class="ck-ts">« ' + esc(String(l.comment).slice(0, 180)) + ' »</div>' : '') + '</div>' +
-        '<div class="ck-ts">' + esc(l.at ? ckpMaj(ckpQuand(String(l.at).slice(0, 10))) : '') + '</div></div>';
-    };
-    return bloc('Chez la cliente, en attente', x.attente, ligneLiv, 'Rien n’attend sa validation.') +
-      bloc('Retours à retravailler', x.revisions, ligneRev, 'Aucun retour en attente de ta main.') +
-      bloc('Validés, pas encore consultés', x.valides, ligneLiv, 'Rien de nouveau à consulter.');
-  }
-
   /* Le planning prévisionnel du projet, vu d'ici.
    * Un projet peut porter plusieurs fils : le planning général, et un par
    * création. On les montre tous, avec les MÊMES calculs et les mêmes gestes
@@ -6013,24 +6083,6 @@
     return ((CKP.dash && CKP.dash.plannings) || []).filter(function (pl) {
       return pl.key === p.key && String(pl.projectId) === String(p.projectId);
     }).map(function (pl) { return { pl: pl, si: planSituation(pl) }; });
-  }
-  function ckJOngletPlanning(p) {
-    var l = ckJPlannings(p);
-    if (!l.length) {
-      return '<p class="ck-semp">Pas encore de planning prévisionnel sur ce projet. ' +
-        'Il se pose depuis la fiche cliente, sous-onglet « Planning » : tu y écris les jalons une fois, ' +
-        'et ils s’affichent ici, sur l’écran Plannings et chez ta cliente.</p>' +
-        '<div style="margin-top:14px"><button class="btn btn--dark btn--sm" onclick="ADM.planGo(\'' + esc(p.key) + '\',\'' + esc(p.projectId) + '\')">Poser le planning</button></div>';
-    }
-    // Le plus urgent d'abord : c'est le tri de l'écran Plannings, réutilisé.
-    l.sort(function (a, b) { return planSortKey(a.si) - planSortKey(b.si); });
-    var jal = 0, faits = 0, retard = 0;
-    l.forEach(function (x) { jal += x.si.total; faits += x.si.done; retard += x.si.ended ? 0 : x.si.late.length; });
-    return ckpTitre(l.length > 1 ? l.length + ' fils de planning' : 'Planning prévisionnel',
-      faits + ' jalon' + (faits > 1 ? 's' : '') + ' sur ' + jal + ' terminé' + (faits > 1 ? 's' : '') +
-      (retard ? ' : ' + retard + ' en retard' : '') + '. Tu peux cocher d’ici : ta cliente voit la même chose.') +
-      '<div style="display:flex;flex-direction:column;gap:14px">' +
-      l.map(function (x) { return planCardHtml(x, true); }).join('') + '</div>';
   }
 
   function ckJOngletFichiers(p) {
@@ -6061,7 +6113,12 @@
   function renderCockpitProjetsBody() {
     var p = CKJ.ouvert ? ckJTrouver(CKJ.ouvert) : null;
     if (CKJ.ouvert && !p) CKJ.ouvert = null;
-    if (p) { setMain(topbar('Projets') + '<div class="wrap ck">' + ckJDetail(p) + '</div>'); return; }
+    if (p) {
+      setMain(topbar('Projets') + '<div class="wrap ck">' + ckJDetail(p) + '</div>');
+      var dd = ckJDomaine(p);
+      if (dd) sectionEffets(dd, CKJ.onglet);
+      return;
+    }
     var l = ckJListe();
     var presta = {}; l.forEach(function (x) { presta[x.prestation] = 1; });
     var nb = Object.keys(presta).length;
@@ -7838,6 +7895,9 @@
     api('/api/clients/' + CURKEY).then(function (r) { return r.json(); }).then(function (d) { CUR = d; if (VIEW === 'client') renderClient(); }).catch(function () { });
   }
   function renderClient() {
+    // Un geste posé depuis l'écran Projets travaille sur les mêmes données,
+    // mais ne doit pas expédier sur la fiche cliente.
+    if (VIEW !== 'client') { if (VIEW === 'ckprojets' && CKJ.ouvert) renderCockpitProjetsBody(); return; }
     if (!CUR || CUR.key !== CURKEY) { setMain(topbar('Client') + '<div class="wrap"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>'); if (!CUR || CUR.key !== CURKEY) { loadClient(); } return; }
     var _cl = CUR.client || {};
     var nm = ((_cl.prenom || '') + ' ' + (_cl.nom || '')).trim() || (CUR.entreprise && CUR.entreprise.nom) || _cl.email || CUR.key;
@@ -7995,7 +8055,10 @@
     return projetsCard() + activity;
   }
   function renderTab() {
-    var body = el('tabbody'); if (!body) return;
+    // Depuis l'écran Projets, les mêmes blocs sont montés ailleurs : on y
+    // redessine, au lieu de ne rien faire (le geste semblerait sans effet).
+    var body = el('tabbody');
+    if (!body) { if (VIEW === 'ckprojets' && CKJ.ouvert) renderCockpitProjetsBody(); return; }
     if (TAB === 'apercu') return body.innerHTML = apercuTab();
     // Réponses aux questionnaires. Les ouvrir vaut consultation : la pastille
     // du dashboard et celle de l'onglet retombent.
@@ -8015,19 +8078,27 @@
     var subnav = '<div class="subtabs">' + secs.map(function (x) {
       return '<button class="subtab' + (cur === x[0] ? ' active' : '') + '" onclick="ADM.subtab(\'' + d.id + '\',\'' + x[0] + '\')">' + esc(x[1]) + (x[2] > 0 ? ' ' + badge(x[2]) : '') + '</button>';
     }).join('') + '</div>';
-    var content = '';
-    if (cur === 'apercu') content = apercuCard(d);
-    else if (cur === 'tickets') content = maintTickets(d);
-    else if (cur === 'creations') content = creationsGallery(d);
-    else if (cur === 'planning') content = planningTab(d);
-    else if (cur === 'forfait') content = partnerForfait(d);
-    else if (cur === 'taches') content = partnerTasks(d);
-    else if (cur === 'questionnaire') content = questionnaireCard(d);
-    else if (cur === 'bilan') content = bilanCard(d);
-    else if (cur === 'suivi') content = suiviCard(d);
-    else if (cur === 'liv') content = livrablesCard(d);
-    else content = chatCard(d);
-    body.innerHTML = subnav + content;
+    body.innerHTML = subnav + sectionContent(d, cur);
+    sectionEffets(d, cur);
+  }
+  /* Le contenu d'une section de projet, et ses effets d'ouverture.
+   * Sortis de renderTab pour que l'écran Projets affiche EXACTEMENT les mêmes
+   * blocs, avec les mêmes gestes : c'est un seul projet, il ne peut pas avoir
+   * deux pages qui disent deux choses. */
+  function sectionContent(d, cur) {
+    if (cur === 'apercu') return apercuCard(d);
+    if (cur === 'tickets') return maintTickets(d);
+    if (cur === 'creations') return creationsGallery(d);
+    if (cur === 'planning') return planningTab(d);
+    if (cur === 'forfait') return partnerForfait(d);
+    if (cur === 'taches') return partnerTasks(d);
+    if (cur === 'questionnaire') return questionnaireCard(d);
+    if (cur === 'bilan') return bilanCard(d);
+    if (cur === 'suivi') return suiviCard(d);
+    if (cur === 'liv') return livrablesCard(d);
+    return chatCard(d);
+  }
+  function sectionEffets(d, cur) {
     var box = el('chat-' + d.id); if (box) box.scrollTop = box.scrollHeight;
     if (cur === 'msg' && d.unread > 0) { jpost('/api/clients/' + CURKEY + '/message/read', { projectId: d.id }, 'POST'); d.unread = 0; renderClient(); }
     if (cur === 'tickets' && Array.isArray(d.content.tickets) && d.content.tickets.some(function (t) { return t.seenByAdmin === false; })) {
@@ -8062,7 +8133,13 @@
     if (!isSupport && (d.content.suivi !== undefined || d.id === 'partner')) s.unshift(['apercu', 'Aperçu', 0]);
     return s;
   }
-  function subtab(domId, key) { SUBTAB[domId] = key; renderTab(); }
+  function subtab(domId, key) {
+    SUBTAB[domId] = key;
+    // Les boutons internes aux blocs (« voir les livrables », « répondre »…)
+    // passent par ici : depuis l'écran Projets, ils changent SON onglet.
+    if (VIEW === 'ckprojets' && CKJ.ouvert) { CKJ.onglet = key; renderCockpitProjetsBody(); return; }
+    renderTab();
+  }
 
   // ── Questionnaire d'un projet : Cindy crée les questions, la cliente répond ──
   var QN_TYPE_LBL = { section: 'Titre de section', short: 'Réponse courte', long: 'Réponse longue', choice: 'Choix simple', multi: 'Choix multiple', rank: 'Classement (1, 2, 3…)' };
@@ -8257,8 +8334,9 @@
   var CR_STATUSES = [['a_preparer', 'À préparer'], ['en_creation', 'En création'], ['attente_client', 'Attente cliente'], ['revision', 'En révision'], ['valide', 'Validé'], ['archive', 'Archivé']];
   // Couleur d'identité par catégorie : [encre, fond teinté] pour différencier les cards.
   var CR_TYCOL = { print: ['#a35a1a', '#fbeee0'], digital: ['#35608f', '#e7eff9'], reseaux: ['#2c4a72', '#E8F1FF'], evenementiel: ['#4f6a46', '#e8f0e3'], autre: ['#6b533b', '#efe9e2'] };
-  // Palette de bannière (charte, sans jaune) proposée à Cindy pour personnaliser une création.
-  var CR_BANNERS = ['#6b533b', '#CD8F6E', '#35608f', '#4f6a46', '#a35a1a', '#8a5a6e'];
+  // Palette de bannière : la charte Seed to Bloom, et rien d'autre. Le Mimosa
+  // n'y est pas : une bannière est un aplat, et le jaune ne s'y met jamais.
+  var CR_BANNERS = ['#5A2A11', '#CD8F6E', '#C5DEFF', '#110704', '#F8F6F2'];
   function crBannerRow(pid, c) {
     var sw = CR_BANNERS.map(function (bc) {
       var on = (c.bannerColor || '').toLowerCase() === bc;
@@ -8594,20 +8672,32 @@
      (sans jaune). Elle sert à REPÉRER, pas à décorer : même prestation, même
      couleur, sur les deux écrans. Le fond reste très pâle — le cuivre et le
      jaune ne s'emploient jamais en grand aplat. */
+  /* Repérer une prestation à sa couleur : rien que la palette Seed to Bloom.
+   * t = la teinte, qui lave le fond et dessine le contour ; e = l'encre, prise
+   * dans les deux foncées, parce qu'un libellé en Azur ou en Mimosa ne se lit
+   * pas. Le Mimosa ne sert jamais d'aplat : à 12 % dans du blanc, c'est un
+   * voile, et le contour en porte la couleur. */
+  // w = combien de teinte dans le fond, r = combien dans le contour. Le brun et
+  // l'ébène ne passent qu'en voile et en trait fin : jamais en aplat.
   var CKJ_TEINTES = {
-    partenaire: '#6c4ea4', site: '#35608f', identite: '#8a5a6e',
-    support: '#a35a1a', maintenance: '#4f6a46', interne: '#6b533b'
+    site:        { t: '#C5DEFF', e: '#5A2A11', w: '15%', r: '58%' },   // Azur
+    partenaire:  { t: '#CD8F6E', e: '#5A2A11', w: '13%', r: '52%' },   // Mandarine
+    support:     { t: '#E6E5B2', e: '#5A2A11', w: '16%', r: '60%' },   // Mimosa
+    identite:    { t: '#5A2A11', e: '#5A2A11', w: '6%',  r: '34%' },   // Cuivre
+    maintenance: { t: '#110704', e: '#110704', w: '5%',  r: '30%' },   // Ébène
+    interne:     { t: '#5A2A11', e: '#5A2A11', w: '6%',  r: '34%' }
   };
+  var CKJ_DEFAUT = { t: '#5A2A11', e: '#5A2A11', w: '6%', r: '34%' };
   var CKJ_PRESTA_PAR_LB = null;
   function ckTeinte(v) {
-    if (v.presta2) return CKJ_TEINTES[v.presta2] || '#6b533b';
+    if (v.presta2) return CKJ_TEINTES[v.presta2] || CKJ_DEFAUT;
     // Depuis la fiche cliente, on n'a que le libellé : on le retraduit une fois.
     if (!CKJ_PRESTA_PAR_LB) {
       CKJ_PRESTA_PAR_LB = {};
       Object.keys(CKJ_PRESTA).forEach(function (k) { CKJ_PRESTA_PAR_LB[CKJ_PRESTA[k]] = k; });
     }
     var lb = String(v.presta || '').split(' · ')[0];
-    return CKJ_TEINTES[CKJ_PRESTA_PAR_LB[lb]] || '#6b533b';
+    return CKJ_TEINTES[CKJ_PRESTA_PAR_LB[lb]] || CKJ_DEFAUT;
   }
   function stbCarteProjet(v) {
     var teinte = ckTeinte(v);
@@ -8615,7 +8705,7 @@
                     : '\'' + esc(v.id) + '\',false,\'' + esc(v.key || '') + '\'';
     var jauge = v.total ? '<div class="pjc-j"><span style="width:' + (v.faites / v.total * 100).toFixed(0) + '%"></span></div>' : '';
     var ligne = function (k, val) { return val ? '<div class="pjc-l"><span>' + esc(k) + '</span><b>' + val + '</b></div>' : ''; };
-    return '<div class="pjc' + (v.clos ? ' pjc--clos' : '') + '" style="--t:' + teinte + '">' +
+    return '<div class="pjc' + (v.clos ? ' pjc--clos' : '') + '" style="--t:' + teinte.t + ';--e:' + teinte.e + ';--w:' + teinte.w + ';--r:' + teinte.r + '">' +
       // La prestation ne se répète pas quand elle porte déjà le nom du projet.
       '<div class="pjc-h"><span class="pjc-p">' +
         (v.presta && v.presta.split(' · ')[0] !== v.nom ? esc(v.presta) : '') + '</span>' +
@@ -8793,7 +8883,12 @@
   /* Après une écriture, on redessine l'écran où l'on se trouve — pas l'autre.
      Écrit une fois : chaque geste qui touche un projet l'appelle. */
   function ckRedessine(key) {
-    if (VIEW === 'ckprojets') { CKP.pret = false; ckpCharger(renderCockpitProjetsBody); return; }
+    if (VIEW === 'ckprojets') {
+      // Les deux sources de la page projet : la synthèse et la charge cliente.
+      CKP.pret = false; ckpCharger(renderCockpitProjetsBody);
+      if (CKJ.ouvert) { CKJ.charge = null; CKJ.chargeFait = null; ckJCharger(key || CURKEY); }
+      return;
+    }
     if (!key || key === CURKEY) refreshClient();
   }
   function crDel(pid, cid) {
