@@ -5869,15 +5869,27 @@
   }
 
   function ckJEnsemble(p, b) {
-    var prev = b.reel + b.restant;
-    var cartes = [
-      ['Déjà passé', ckpDuree(b.reel), 'Compté quand le travail est réellement fait, pas quand il est planifié.'],
-      ['Encore nécessaire', ckpDuree(b.restant),
+    var cr = ckJCreations(p);
+    var vives = ckJTachesDe(p).filter(function (t) { return t.statut !== 'done'; })
+      .sort(function (a, b2) { return ckpScore(b2) - ckpScore(a); });
+    var cartes = [];
+    /* Les trois temps ne s'affichent que si ce projet porte VRAIMENT du temps.
+       Un support de com n'a pas de tâches : montrer « 0 min · déjà passé »
+       n'était pas une mesure, c'était une absence déguisée en zéro. */
+    if (b.total || b.reel || b.restant) {
+      cartes.push(['Déjà passé', ckpDuree(b.reel), 'Compté quand le travail est réellement fait, pas quand il est planifié.']);
+      cartes.push(['Encore nécessaire', ckpDuree(b.restant),
         b.inconnu ? b.inconnu + ' tâche' + (b.inconnu > 1 ? 's n’ont' : ' n’a') + ' pas de temps estimé : ce total est optimiste.'
-          : (b.aPlanifier ? ckpDuree(b.aPlanifier) + ' n’ont pas encore de créneau.' : 'Tout a un créneau.')],
-      ['Prévision totale', ckpDuree(prev),
-        b.estim ? 'Estimation initiale : ' + ckpDuree(b.estim) + '.' : 'Aucune estimation initiale n’a été posée.']
-    ];
+          : (b.aPlanifier ? ckpDuree(b.aPlanifier) + ' n’ont pas encore de créneau.' : 'Tout a un créneau.')]);
+      cartes.push(['Prévision totale', ckpDuree(b.reel + b.restant),
+        b.estim ? 'Estimation initiale : ' + ckpDuree(b.estim) + '.' : 'Aucune estimation initiale n’a été posée.']);
+    }
+    if (cr.length) {
+      var ouv = cr.filter(function (x) { return !x.clotureAt; }).length;
+      cartes.push([ouv ? 'Créations en cours' : 'Créations', ouv ? String(ouv) : String(cr.length),
+        ouv ? 'Sur ' + cr.length + ' au total. Une création se clôture depuis la fiche cliente : son fil s’archive.'
+            : 'Toutes terminées. Leurs fils sont archivés, et restent lisibles.']);
+    }
     var f = ckJForfait(p);
     if (f && f.configured) {
       var h = function (x) { return ckpDuree(Math.round((x || 0) * 60)); };
@@ -5888,20 +5900,38 @@
         (f.carryIn ? ' (dont ' + h(f.carryIn) + ' reportées)' : '') +
         '. Une demande en cours ne consomme rien tant qu’elle n’est pas travaillée.']);
     }
-    var vives = ckJTachesDe(p).filter(function (t) { return t.statut !== 'done'; })
-      .sort(function (a, b2) { return ckpScore(b2) - ckpScore(a); });
-    return '<div class="ckl-cap" style="margin-bottom:24px">' + cartes.map(function (x) {
+    var tetes = cartes.length ? '<div class="ckl-cap" style="margin-bottom:24px">' + cartes.map(function (x) {
       return '<div class="ckl-capb"><div class="ckl-capv">' + esc(x[1]) + '</div>' +
         '<div class="ckl-capn">' + esc(x[0]) + '</div><div class="ckl-capx">' + esc(x[2]) + '</div></div>';
-    }).join('') + '</div>' +
-      '<section class="ck-sec">' + ckpTitre('Ce qui reste à faire') +
-        '<div class="ck-tbl">' + (vives.length ? vives.map(function (t) { return ckTLigne(t, 'projets'); }).join('')
-          : '<div class="ck-vide">Rien de ton côté.</div>') + '</div></section>' +
+    }).join('') + '</div>' : '';
+
+    // Ce qui reste à faire : les tâches quand il y en a, les créations sinon.
+    var corps;
+    if (vives.length) {
+      corps = '<div class="ck-tbl">' + vives.map(function (t) { return ckTLigne(t, 'projets'); }).join('') + '</div>';
+    } else if (cr.length) {
+      var ouvertes = cr.filter(function (x) { return !x.clotureAt; });
+      corps = '<div class="ck-tbl">' + (ouvertes.length ? ouvertes.map(function (x) {
+        return '<div class="ckj-ech"><div><div class="ckj-echn">' + esc(x.name || 'Création') + '</div>' +
+          '<div class="ck-ts">' + esc(ckJCrStatut(x.status)) + '</div></div>' +
+          '<button class="btn btn--outline btn--sm" onclick="ADM.openClient(\'' + esc(p.key) + '\')">Ouvrir</button></div>';
+      }).join('') : '<div class="ck-vide">Toutes les créations sont terminées.</div>') + '</div>';
+    } else {
+      corps = '<div class="ck-tbl"><div class="ck-vide">Rien de ton côté.</div></div>';
+    }
+    var closes = cr.filter(function (x) { return !!x.clotureAt; });
+    return tetes +
+      '<section class="ck-sec">' + ckpTitre(cr.length && !vives.length ? 'Ses créations' : 'Ce qui reste à faire') +
+        corps + '</section>' +
+      (closes.length ? '<div class="ckj-fini"><b>Créations terminées :</b> ' +
+        closes.map(function (x) { return esc(x.name || 'Création'); }).join(' · ') + '</div>' : '') +
       (b.faites.length ? '<div class="ckj-fini"><b>Terminé :</b> ' + b.faites.map(function (t) {
         return esc(t.titre) + (t.reel ? ' (' + esc(ckpDuree(t.reel)) + ')' : '');
       }).join(' · ') + '</div>' : '');
   }
-
+  var CKJ_CR_ST = { a_preparer: 'À préparer', en_creation: 'En création', attente_client: 'Attente cliente',
+    revision: 'En révision', valide: 'Validé', archive: 'Archivé' };
+  function ckJCrStatut(st) { return CKJ_CR_ST[st] || st || ''; }
   function ckJOngletEtapes(p) {
     var e = ckJEtapes(p);
     if (!e.length) {
