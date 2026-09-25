@@ -3010,3 +3010,27 @@ h1.cdhead__n{margin:0;font-weight:400;font-size:36px}
 .pj-cote-c .pj-t>.pj-pil{justify-self:end}
 .pj-cote-c__p{display:flex;justify-content:space-between}
 .pj-cotes{align-items:start}
+
+/* Projets, option A validée : ton côté en noir, le côté client en paille,
+   la bande ciel en tête de chaque offre, une largeur qui reste lisible */
+.pj-page{max-width:1180px}
+.pj-leg--toi{background:#110704}
+.pj-of__h,.pj-of--client .pj-of__h,.pj-of--pause .pj-of__h{background:#C5DEFF}
+.pj-cote{padding:16px 20px}
+.pj-cote>b{display:block;padding-bottom:6px}
+.pj-cote--moi{background:#110704;color:#F8F6F2}
+.pj-cote__l{padding:10px 0;border-top:1px solid rgba(17,7,4,.12);font-weight:600}
+.pj-cote--moi .pj-cote__l{border-top-color:rgba(248,246,242,.16);color:#F8F6F2}
+.pj-cote__s{font-weight:400}
+.pj-cote--moi .pj-cote__s,.pj-cote--moi .pj-cote__v{color:rgba(248,246,242,.75)}
+.pj-cote--moi .pj-pil--retard{background:#CD8F6E;color:#110704}
+.pj-tu,.pj-tu--retard,.pj-tu--toi{background:#110704;color:#F8F6F2}
+.pj-tu .pj-tu__a{color:rgba(248,246,242,.75)}
+.pj-tu .pj-av i{background:rgba(248,246,242,.2)}.pj-tu .pj-av i.on{background:#F8F6F2}
+.pj-tu .pj-pil--retard{background:#CD8F6E;color:#110704}
+.pj-tu--client{background:#E6E5B2;color:#110704}.pj-tu--pause{background:#F0E9D6;color:#110704}
+.pj-tu--client .pj-tu__a,.pj-tu--pause .pj-tu__a{color:#3b2a20}
+.pj-tu--client .pj-av i,.pj-tu--pause .pj-av i{background:rgba(17,7,4,.14)}
+.pj-tu--client .pj-av i.on,.pj-tu--pause .pj-av i.on{background:#110704}
+.pj-cote-c--moi .pj-cote-c__h{background:#110704}
+.pj-cote-c--moi .pj-cote-c__h h2,.pj-cote-c--moi .pj-cote-c__h>span{color:#F8F6F2}

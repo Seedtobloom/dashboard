@@ -6683,7 +6683,7 @@
     }
     setMain('<div class="wrap tps pj-page">' +
         '<div class="pj-tete"><h1 class="pg-h1">Projets</h1>' + (clis.length ? '<button class="btn btn--dark" onclick="ADM.ckJNeuf(\'*\')">Nouveau projet de com</button>' : '') + '</div>' +
-        '<div class="pj-leg"><span><i class="pj-leg--toi"></i>à toi</span><span><i class="pj-leg--client"></i>chez le client</span><span><i class="pj-leg--pause"></i>en pause</span></div>' +
+        '<div class="pj-leg"><span><i class="pj-leg--toi"></i>ton côté</span><span><i class="pj-leg--client"></i>côté client</span><span><i class="pj-leg--pause"></i>en pause</span></div>' +
         neuf +
         '<div class="pj-2col">' + nav + '<div class="pj-droite">' + droite + '</div></div>' +
         '<p class="pj-pied"><button class="tps-lien" onclick="ADM.ckJSetFiltre(\'' + (CKJ.filtre === 'actifs' ? 'tout' : 'actifs') + '\')">' +
