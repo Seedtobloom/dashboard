@@ -8,6 +8,8 @@
  */
   function stbBid(){ return 'b' + Math.random().toString(36).slice(2, 9); }
   function stbBlocksSave(pid, taskId, beacon){
+    // Brief d'une nouvelle demande pas encore envoyée : enregistré en brouillon.
+    if (String(taskId).indexOf('brouillon-') === 0){ if (window.cpNDSaveDraft) window.cpNDSaveDraft(beacon); return; }
     var t = cliTaskById(pid, taskId); if (!t) return;
     var body = { projectId: pid, blocks: t.blocks || [] };
     // On ne vide PLUS le brief d'origine. Avant, dès que le paragraphe avait

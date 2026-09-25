@@ -450,7 +450,6 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       var ov = document.createElement('div');
       ov.style.cssText = 'position:fixed;inset:0;z-index:9998;display:flex;align-items:center;justify-content:center;pointer-events:none';
       ov.innerHTML = '<div style="background:var(--card,#F8F6F2);border:1px solid var(--bone-d,#F8F6F2);box-shadow:none;border-radius:20px;padding:26px 32px;text-align:center;max-width:340px;transform:scale(0.9);opacity:0;transition:transform 260ms cubic-bezier(.2,1.3,.4,1),opacity 200ms">' +
-        '<div style="font-size:44px;line-height:1;margin-bottom:8px">🎉</div>' +
         '<div style="font-family:var(--font-display,serif);font-style:italic;font-size:24px;color:var(--terre,#110704);line-height:1.15">' + esc(title || 'Bravo !') + '</div>' +
         (sub ? '<div style="font-size:14px;color:var(--terre-600,#5A2A11);margin-top:6px;line-height:1.5">' + esc(sub) + '</div>' : '') +
       '</div>';
@@ -2581,6 +2580,13 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
             '<span>' + esc(date) + '</span><span class="num">' + esc(tm) + '</span><span>' + (n ? n + ' pièce' + (n > 1 ? 's' : '') : '') + '</span>' + cpAccActions(pid, t, false) + '</div>';
         }).join('') + '</div>';
     }).join('');
+    var br = Array.isArray(p.brouillons) ? p.brouillons : [];
+    if (br.length) html = '<div class="cpa-groupe"><div class="cpa-groupe__h"><h3>Tes brouillons</h3><span>' + br.length + ' · Cindy ne les voit pas encore</span></div>' +
+      br.map(function (b) {
+        return '<div class="cpa-brouillon"><div class="cpa-ligne__m"><b>' + esc(b.title || 'Demande sans nom') + '</b><span>' + esc(b.missionType || 'type à choisir') + '</span></div>' +
+          '<span>modifié le ' + esc(fmtShort(b.updatedAt)) + '</span>' +
+          '<span class="cpa-brouillon__a"><button class="cpl-lien" onclick="cpNDOpen(\'' + pid + '\',null,\'' + b.id + '\')">Reprendre</button><button class="cpl-lien" onclick="cpNDSupprimerBrouillon(\'' + pid + '\',\'' + b.id + '\')">Supprimer</button></span></div>';
+      }).join('') + '</div>' + html;
     return '<section class="cpb-carte cpa-tab">' + (html || '<p>Aucune demande en cours.</p>') + '<div style="padding-top:12px"><a href="#" class="cpl-lien" onclick="cliNewDemande(\'' + pid + '\');return false">Ajouter une demande</a></div></section>';
   }
   function cpAccFinies(pd) {
@@ -2611,6 +2617,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var nFin = (p.tasks || []).filter(function (t) { return t.archived || t.status === 'done'; }).length;
     function o(v, l) { return '<button class="cpl-ong' + (tab === v ? ' on' : '') + '" onclick="cpAccSetTab(\'' + pid + '\',\'' + v + '\')">' + l + '</button>'; }
     var onglets = '<div class="cpa-ongs"><div class="cpl-ongs">' + o('cal', 'Calendrier') + o('tableau', 'Tableau') + o('fini', 'Terminées' + (nFin ? ' · ' + nFin : '')) + '</div>' +
+      ((p.brouillons || []).length && tab !== 'tableau' ? '<button class="cpl-lien" onclick="cpAccSetTab(\'' + pid + '\',\'tableau\')">Tes brouillons · ' + p.brouillons.length + '</button>' : '') +
       '<span class="cpa-leg">en paille : à toi · en noir : chez Cindy · en crème : terminé · contour : reçue</span></div>';
     var dupBande = '';
     if (cpAccDup && cpAccDup.pid === pid) {
@@ -4938,7 +4945,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     window.cliEditTaskProp(pid, taskId, 'p_elements', JSON.stringify(cur));
   };
   window.cliClearTaskProp = function(pid, taskId, propId){ window.cliSaveTaskProp(pid, taskId, propId, ''); renderShell(); };
-  function cliTaskById(pid, taskId){ var pd=getPD(pid); return pd && (pd.project.tasks||[]).find(function(x){return x.id===taskId;}); }
+  function cliTaskById(pid, taskId){ if (window.cpNDTask && window.cpNDTask.id === taskId) return window.cpNDTask; var pd=getPD(pid); return pd && (pd.project.tasks||[]).find(function(x){return x.id===taskId;}); }
   window.cliSetBriefField = function(pid, taskId, propId, fieldName, value){
     var t = cliTaskById(pid, taskId); var cur = briefVal(t && t.properties ? t.properties[propId] : '');
     cur[fieldName] = value; window.cliSaveTaskProp(pid, taskId, propId, JSON.stringify(cur)); renderShell();
