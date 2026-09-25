@@ -2402,9 +2402,235 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       (autres.length ? '<section class="cpb-carte"><div class="cpb-h2 cpb-h2--sm"><h2>Autres livrables</h2></div>' + stbVersionsList(pid, autres) + '</section>' : '') +
     '</div></div>';
   }
+  /* ────────────────────────────────────────────────────────────────────────
+   * Accompagnement créatif (refonte 2026, maquette « calendrier A ») : un seul
+   * vocabulaire d'états (à toi en paille, chez Cindy en noir, terminé en crème),
+   * le calendrier au cœur, le Tableau par état (lignes à glisser) et les
+   * Terminées. Le panneau d'une demande reste celui de _drawer_patch.js.
+   * ──────────────────────────────────────────────────────────────────────── */
+  var cpAccTab = {}, cpAccFiltre = 'tout', cpAccDup = null, cpAccRep = null, cpAccRowDrag = null;
+  function cpEtat(t) {
+    var st = t.status || 'todo', pr = t.properties || {};
+    if (t.stage === 'refused') return { k: 'hors', l: 'Refusée' };
+    if (t.stage === 'out_of_scope') return { k: 'hors', l: 'Hors forfait' };
+    if (st === 'done') return { k: 'fait', l: 'Terminée' };
+    if (st === 'review') return { k: 'toi', l: 'À valider' };
+    if (t.proposedDueDate) return { k: 'toi', l: 'Date à confirmer' };
+    if (t.needsRework) return { k: 'cindy', l: 'En révision' };
+    if (st === 'in_progress') return { k: 'cindy', l: 'En cours' };
+    if (pr.p_clientbrief === 'Brief en cours') return { k: 'toi', l: 'Brief à compléter' };
+    if (t.stage === 'inbox') return { k: 'recue', l: 'Reçue' };
+    return { k: 'cindy', l: 'Prévue' };
+  }
+  function cpAccIso(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+  function cpAccOuvre(d) { var w = d.getDay(); return w !== 0 && w !== 6 && !(window.cpHolidayFor && cpHolidayFor(cpAccIso(d))); }
+  function cpAccProchain(from, jours) {
+    var d = new Date(from); d.setHours(12, 0, 0, 0); var n = 0;
+    while (n < jours) { d.setDate(d.getDate() + 1); if (cpAccOuvre(d)) n++; }
+    return cpAccIso(d);
+  }
+  window.cpAccSetTab = function (pid, v) { cpAccTab[pid] = v; cpAccDup = null; renderShell(); };
+  window.cpAccSetFiltre = function (v) { cpAccFiltre = v; renderShell(); };
+  // Reporter : quelques choix rapides, sans jamais tomber un week-end ou un jour de congés.
+  window.cpAccRepOuvrir = function (e, id) { if (e) e.stopPropagation(); cpAccRep = (cpAccRep === id) ? null : id; renderShell(); };
+  window.cpAccReporter = function (pid, id, mode, val) {
+    var pd = getPD(pid); if (!pd) return;
+    var t = (pd.project.tasks || []).filter(function (x) { return x.id === id; })[0]; if (!t) return;
+    var auj = new Date(), cible;
+    if (mode === 'demain') cible = cpAccProchain(auj, 1);
+    else if (mode === 'lundi') { var d = new Date(); d.setDate(d.getDate() + ((8 - d.getDay()) % 7 || 7)); d.setDate(d.getDate() - 1); cible = cpAccProchain(d, 1); }
+    else if (mode === '2sem') { var d2 = new Date(); d2.setDate(d2.getDate() + 13); cible = cpAccProchain(d2, 1); }
+    else cible = val;
+    if (!cible) return;
+    if (window.cpHolidayFor && cpHolidayFor(cible)) { toast('Cindy est en congés ce jour-là, choisis un autre jour.'); return; }
+    var champs = { dueDate: cible };
+    if (t.startDate && t.dueDate && t.startDate < t.dueDate) { var dur = (new Date(t.dueDate) - new Date(t.startDate)); champs.startDate = cpAccIso(new Date(new Date(cible).getTime() - dur)); }
+    cpAccRep = null;
+    cliPatchTask(pid, id, champs);
+    toast('Reportée au ' + fmtDate(cible));
+  };
+  // Dupliquer : on choisit un ou plusieurs jours dans le calendrier, puis « Créer ».
+  window.cpAccDupStart = function (e, pid, id) { if (e) e.stopPropagation(); cpAccTab[pid] = 'cal'; cpAccDup = { pid: pid, id: id, dates: [] }; cpAccRep = null; renderShell(); };
+  window.cpAccDupStop = function () { cpAccDup = null; renderShell(); };
+  window.cpAccDupJour = function (ds) {
+    if (!cpAccDup) return;
+    var i = cpAccDup.dates.indexOf(ds); if (i >= 0) cpAccDup.dates.splice(i, 1); else cpAccDup.dates.push(ds);
+    renderShell();
+  };
+  window.cpAccDupCreer = function () {
+    var D = cpAccDup; if (!D || !D.dates.length) return;
+    var pd = getPD(D.pid); if (!pd) return;
+    var t = (pd.project.tasks || []).filter(function (x) { return x.id === D.id; })[0]; if (!t) return;
+    var dates = D.dates.slice().sort(); cpAccDup = null;
+    toast('Création des copies…');
+    var faits = 0;
+    dates.forEach(function (ds) {
+      var corps = { projectId: D.pid, title: t.title, content: t.content || '', urgency: t.urgency || 'normal', dueDate: ds, properties: t.properties ? JSON.parse(JSON.stringify(t.properties)) : undefined,
+        attachments: (t.attachments || []).map(function (a) { return { key: a.fileKey || a.key, name: a.name }; }).filter(function (a) { return a.key; }) };
+      if (corps.properties) delete corps.properties.ordre;
+      fetch(API_BASE + '/tasks', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corps) })
+        .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+        .then(function (nt) {
+          var tache = nt.task || nt;
+          if (t.blocks || t.table) { cpDupSource = { blocks: t.blocks || null, table: t.table || null }; return cliRecopierBrief(D.pid, tache); }
+          return tache;
+        })
+        .then(function (tache) { if (tache && tache.id) pd.project.tasks.push(tache); })
+        .catch(function () { toast('Une copie n’a pas pu être créée (jour de congés ?)'); })
+        .then(function () { faits++; if (faits === dates.length) { renderShell(); toast(dates.length > 1 ? dates.length + ' copies créées' : 'Copie créée'); } });
+    });
+  };
+  // Tableau : l'ordre des lignes est gardé dans properties.ordre.
+  window.cpAccRowStart = function (e, id) { cpAccRowDrag = id; try { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', id); } catch (x) {} };
+  window.cpAccRowOver = function (e, el) { e.preventDefault(); document.querySelectorAll('.cpa-ligne.dessus').forEach(function (n) { n.classList.remove('dessus'); }); el.classList.add('dessus'); };
+  window.cpAccRowDrop = function (e, pid, groupe, cibleId) {
+    e.preventDefault(); document.querySelectorAll('.cpa-ligne.dessus').forEach(function (n) { n.classList.remove('dessus'); });
+    var id = cpAccRowDrag; cpAccRowDrag = null; if (!id || id === cibleId) return;
+    var pd = getPD(pid); if (!pd) return;
+    var ids = Array.prototype.map.call(document.querySelectorAll('.cpa-ligne[data-g="' + groupe + '"]'), function (n) { return n.getAttribute('data-id'); });
+    if (ids.indexOf(id) === -1) { toast('Glisse la ligne dans son propre groupe.'); return; }
+    ids.splice(ids.indexOf(id), 1); ids.splice(ids.indexOf(cibleId), 0, id);
+    ids.forEach(function (tid, i) {
+      var t = (pd.project.tasks || []).filter(function (x) { return x.id === tid; })[0]; if (!t) return;
+      if (!t.properties) t.properties = {};
+      if (t.properties.ordre === i) return;
+      t.properties.ordre = i;
+      fetch(API_BASE + '/tasks/' + tid, { method: 'PATCH', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ projectId: pid, properties: { ordre: i } }) }).catch(function () {});
+    });
+    renderShell();
+  };
+  function cpAccPil(e) { return '<span class="cpa-pil cpa-pil--' + e.k + '">' + esc(e.l) + '</span>'; }
+  function cpAccActions(pid, t, dansCal, ds) {
+    var menu = (cpAccRep === t.id && (!ds || ds === String(t.dueDate || '').slice(0, 10))) ? ('<div class="cpa-rep" onclick="event.stopPropagation()"><b>Reporter à</b>' +
+      '<button onclick="cpAccReporter(\'' + pid + '\',\'' + t.id + '\',\'demain\')">Demain</button>' +
+      '<button onclick="cpAccReporter(\'' + pid + '\',\'' + t.id + '\',\'lundi\')">Lundi prochain</button>' +
+      '<button onclick="cpAccReporter(\'' + pid + '\',\'' + t.id + '\',\'2sem\')">Dans 2 semaines</button>' +
+      '<label>Choisir une date<input type="date" min="' + _todayStr() + '" onchange="cpAccReporter(\'' + pid + '\',\'' + t.id + '\',\'date\',this.value)"></label></div>') : '';
+    return '<span class="cpa-acts' + (dansCal ? ' cpa-acts--cal' : '') + '"><button onclick="event.stopPropagation();cliOpenTaskDrawer(\'' + pid + '\',\'' + t.id + '\')">Ouvrir</button>' +
+      '<button onclick="cpAccDupStart(event,\'' + pid + '\',\'' + t.id + '\')">Dupliquer</button>' +
+      '<button onclick="cpAccRepOuvrir(event,\'' + t.id + '\')">Reporter</button></span>' + menu;
+  }
+  function cpAccCal(pd) {
+    var p = pd.project, pid = p.id;
+    if (!cliCalMonth[pid]) { var d0 = new Date(); d0.setDate(1); d0.setHours(0, 0, 0, 0); cliCalMonth[pid] = d0; }
+    var cm = cliCalMonth[pid], an = cm.getFullYear(), mo = cm.getMonth();
+    var nomMois = cm.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }); nomMois = nomMois.charAt(0).toUpperCase() + nomMois.slice(1);
+    var auj = _todayStr();
+    var JOURS = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
+    var creneaux = (Array.isArray(p.workSlots) ? p.workSlots : []).map(function (s) { return String(s.day || '').toLowerCase(); });
+    var taches = (p.tasks || []).filter(function (t) {
+      if (t.archived) return false;
+      var e = cpEtat(t);
+      if (cpAccFiltre === 'toi') return e.k === 'toi';
+      if (cpAccFiltre === 'cindy') return e.k === 'cindy' || e.k === 'recue';
+      return true;
+    });
+    var dup = cpAccDup && cpAccDup.pid === pid ? cpAccDup : null;
+    var cells = [], dim = new Date(an, mo + 1, 0).getDate(), premier = (new Date(an, mo, 1).getDay() + 6) % 7;
+    if (premier < 5) for (var k = 0; k < premier; k++) cells.push('<div></div>');
+    for (var dd = 1; dd <= dim; dd++) {
+      var dt = new Date(an, mo, dd), dow = dt.getDay();
+      if (dow === 0 || dow === 6) continue;
+      var ds = cpAccIso(dt), hol = !!(window.cpHolidayFor && cpHolidayFor(ds)), passe = ds < auj;
+      var jour = taches.filter(function (t) { var du = (t.dueDate || '').slice(0, 10), st = (t.startDate || '').slice(0, 10); if (!du) return false; return (st && st < du) ? (ds >= st && ds <= du) : du === ds; });
+      var cindyJour = creneaux.some(function (c) { return c.indexOf(JOURS[dow]) === 0; });
+      var num = ds === auj ? '<span class="cpa-auj">' + dd + '</span>' : '<span class="cpa-num">' + dd + '</span>';
+      var puces = jour.map(function (t) {
+        var e = cpEtat(t), sel = cliSelTask[pid] === t.id;
+        return '<div class="cpa-puce cpa-puce--' + e.k + (sel ? ' sel' : '') + '" draggable="true" ondragstart="cliDragStart(event,\'' + t.id + '\')" onclick="event.stopPropagation();cliOpenTaskDrawer(\'' + pid + '\',\'' + t.id + '\')" title="' + esc(t.title + ' · ' + e.l) + '">' +
+          '<span class="cpa-puce__t">' + esc(t.title || 'Demande') + '</span>' + (dup ? '' : cpAccActions(pid, t, true, ds)) + '</div>';
+      }).join('');
+      var choisi = dup && dup.dates.indexOf(ds) >= 0;
+      var clic = dup ? ((hol || passe) ? '' : ' onclick="cpAccDupJour(\'' + ds + '\')"') : '';
+      var depot = (hol || dup) ? '' : ' ondragover="event.preventDefault();this.classList.add(\'cli-drag-over\')" ondragleave="this.classList.remove(\'cli-drag-over\')" ondrop="this.classList.remove(\'cli-drag-over\');cliDrop(event,\'' + pid + '\',\'' + ds + '\');this.style.background=\'\'"';
+      cells.push('<div class="cpa-jour' + (hol ? ' cpa-jour--conges' : '') + (passe ? ' cpa-jour--passe' : '') + (choisi ? ' cpa-jour--choisi' : '') + (dup && !hol && !passe ? ' cpa-jour--dup' : '') + '"' + clic + depot + '>' +
+        '<div class="cpa-jour__h">' + num + (hol ? '<em>Congés</em>' : (cindyJour ? '<em class="cpa-cindy">Cindy</em>' : '')) +
+          ((!hol && !passe && !dup) ? '<button class="cpa-plus" title="Nouvelle demande ce jour-là" aria-label="Nouvelle demande le ' + dd + '" onclick="event.stopPropagation();cliOpenAddTask(\'' + pid + '\',\'' + ds + '\')">+</button>' : '') + '</div>' +
+        (choisi ? '<em class="cpa-copie">copie</em>' : '') + puces + '</div>');
+    }
+    function f(v, l) { return '<button class="cpl-ong' + (cpAccFiltre === v ? ' on' : '') + '" onclick="cpAccSetFiltre(\'' + v + '\')">' + l + '</button>'; }
+    var nToi = (p.tasks || []).filter(function (t) { return !t.archived && cpEtat(t).k === 'toi'; }).length;
+    var nCindy = (p.tasks || []).filter(function (t) { return !t.archived && (cpEtat(t).k === 'cindy' || cpEtat(t).k === 'recue'); }).length;
+    var tete = '<div class="cpa-calh"><div class="cpa-mois"><button onclick="cliCalNav(\'' + pid + '\',-1)" aria-label="Mois précédent">‹</button><span>' + esc(nomMois) + '</span><button onclick="cliCalNav(\'' + pid + '\',1)" aria-label="Mois suivant">›</button>' +
+      '<button class="cpa-aujbtn" onclick="cliCalGoToday(\'' + pid + '\')">Aujourd’hui</button></div>' +
+      (dup ? '' : '<div class="cpl-ongs">' + f('tout', 'Toutes') + f('toi', 'À toi · ' + nToi) + f('cindy', 'Chez Cindy · ' + nCindy) + '</div>') + '</div>';
+    var noms = '<div class="cpa-grille cpa-grille--noms">' + ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi'].map(function (n) { return '<span>' + n + '</span>'; }).join('') + '</div>';
+    return '<section class="cpb-carte cpa-cal" onclick="if(window.cpAccRepFermer)cpAccRepFermer()">' + tete + noms + '<div class="cpa-grille">' + cells.join('') + '</div></section>';
+  }
+  window.cpAccRepFermer = function () { if (cpAccRep) { cpAccRep = null; renderShell(); } };
+  function cpAccTableau(pd) {
+    var p = pd.project, pid = p.id, mk = _todayStr().slice(0, 7);
+    var actives = (p.tasks || []).filter(function (t) { return !t.archived; });
+    function ord(a, b) { var oa = (a.properties || {}).ordre, ob = (b.properties || {}).ordre; if (oa != null && ob != null && oa !== ob) return oa - ob; if (oa != null && ob == null) return -1; if (ob != null && oa == null) return 1; return String(a.dueDate || '9999').localeCompare(String(b.dueDate || '9999')); }
+    var G = [
+      ['toi', 'À toi', 'elles attendent ta réponse', actives.filter(function (t) { return cpEtat(t).k === 'toi'; })],
+      ['cindy', 'Chez Cindy', 'elle s’en occupe', actives.filter(function (t) { var k = cpEtat(t).k; return k === 'cindy' || k === 'recue'; })],
+      ['fait', 'Terminées ce mois', 'validées', actives.filter(function (t) { return cpEtat(t).k === 'fait' && String(t.completedAt || t.dueDate || '').slice(0, 7) === mk; })]
+    ];
+    var poignee = '<span class="cpa-poignee" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></span>';
+    var html = G.map(function (g) {
+      var ts = g[3].slice().sort(ord);
+      if (!ts.length) return '';
+      return '<div class="cpa-groupe"><div class="cpa-groupe__h"><h3>' + g[1] + '</h3><span>' + ts.length + ' demande' + (ts.length > 1 ? 's' : '') + ' · ' + g[2] + '</span></div>' +
+        ts.map(function (t) {
+          var e = cpEtat(t), n = (t.attachments || []).length, typ = t.missionType || (t.properties || {}).p_typemission || '';
+          var tm = t.timeSpentMinutes ? cpbMin(t.timeSpentMinutes) : '';
+          var date = t.dueDate ? ((t.startDate && t.startDate < t.dueDate) ? fmtShort(t.startDate) + ' → ' + fmtShort(t.dueDate) : fmtShort(t.dueDate)) : 'à planifier';
+          return '<div class="cpa-ligne" data-g="' + g[0] + '" data-id="' + t.id + '" draggable="true" ondragstart="cpAccRowStart(event,\'' + t.id + '\')" ondragover="cpAccRowOver(event,this)" ondrop="cpAccRowDrop(event,\'' + pid + '\',\'' + g[0] + '\',\'' + t.id + '\')" onclick="cliOpenTaskDrawer(\'' + pid + '\',\'' + t.id + '\')">' +
+            poignee + '<div class="cpa-ligne__m"><b>' + esc(t.title || 'Demande') + '</b>' + (typ ? '<span>' + esc(typ) + '</span>' : '') + '</div>' + cpAccPil(e) +
+            '<span>' + esc(date) + '</span><span class="num">' + esc(tm) + '</span><span>' + (n ? n + ' pièce' + (n > 1 ? 's' : '') : '') + '</span>' + cpAccActions(pid, t, false) + '</div>';
+        }).join('') + '</div>';
+    }).join('');
+    return '<section class="cpb-carte cpa-tab">' + (html || '<p>Aucune demande en cours.</p>') + '<div style="padding-top:12px"><a href="#" class="cpl-lien" onclick="cliNewDemande(\'' + pid + '\');return false">Ajouter une demande</a></div></section>';
+  }
+  function cpAccFinies(pd) {
+    var p = pd.project, pid = p.id;
+    var ts = (p.tasks || []).filter(function (t) { return t.archived || t.status === 'done'; });
+    if (!ts.length) return '<section class="cpb-calme">Pas encore de demande terminée.</section>';
+    var parMois = {};
+    ts.forEach(function (t) { var k = String(t.completedAt || t.dueDate || t.createdAt || '').slice(0, 7) || 'autre'; (parMois[k] = parMois[k] || []).push(t); });
+    return '<section class="cpb-carte" style="padding:12px 24px 16px">' + Object.keys(parMois).sort().reverse().map(function (k) {
+      var l = parMois[k], mins = l.reduce(function (s, t) { return s + (t.timeSpentMinutes || 0); }, 0);
+      var titre = k === 'autre' ? 'Sans date' : new Date(k + '-01T12:00:00').toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+      return '<div class="cpa-groupe"><div class="cpa-groupe__h"><h3>' + esc(titre.charAt(0).toUpperCase() + titre.slice(1)) + '</h3><span>' + l.length + ' demande' + (l.length > 1 ? 's' : '') + (mins ? ' · ' + cpbMin(mins) : '') + '</span></div>' +
+        l.map(function (t) {
+          return '<div class="cpa-fini"><b>' + esc(t.title || 'Demande') + '</b><span>' + (t.archived && t.status !== 'done' ? 'archivée' : 'terminée' + (t.completedAt ? ' le ' + fmtShort(t.completedAt) : '')) + '</span><span class="num">' + (t.timeSpentMinutes ? esc(cpbMin(t.timeSpentMinutes)) : '') + '</span>' +
+            '<div class="cpa-fini__a"><button class="cpl-lien" onclick="cliOpenTaskDrawer(\'' + pid + '\',\'' + t.id + '\')">Ouvrir</button><button class="cpl-lien" onclick="cliPatchTask(\'' + pid + '\',\'' + t.id + '\',{status:\'todo\',archived:false})">Rouvrir</button><button class="cpl-lien" onclick="cpAccDupStart(event,\'' + pid + '\',\'' + t.id + '\')">Dupliquer</button></div></div>';
+        }).join('') + '</div>';
+    }).join('') + '</section>';
+  }
+  function cpAccompPage(pd) {
+    var p = pd.project, pid = p.id, tab = cpAccTab[pid] || 'cal';
+    var nums = cpForfaitNums(p);
+    var forf = '';
+    if (nums) { var used = nums.doneMin + nums.wipMin, rest = nums.availMin - used, tot = Math.max(1, Math.round(nums.availMin / 60));
+      forf = '<div class="cpa-forf"><div><span>Forfait de ' + esc(new Date().toLocaleDateString('fr-FR', { month: 'long' })) + '</span><b>' + (rest < 0 ? '−' : '') + esc(cpbMin(Math.abs(rest))) + ' <em>' + (rest < 0 ? 'au-delà' : 'restantes sur ' + esc(cpbMin(nums.availMin))) + '</em></b></div><div class="cpa-forf__bar">' + cpbSeg(Math.min(tot, Math.round(used / 60)), tot, false) + '</div></div>'; }
+    var slots = (Array.isArray(p.workSlots) ? p.workSlots : []);
+    var cren = slots.length ? '<div class="cpa-cren"><span>Cindy travaille pour toi</span><b>' + esc(slots.map(function (s) { return String(s.day || '').toLowerCase() + (s.from ? ' de ' + String(s.from).replace(':', ' h ').replace(' h 00', ' h') + (s.to ? ' à ' + String(s.to).replace(':', ' h ').replace(' h 00', ' h') : '') : ''); }).join(', ')) + '</b></div>' : '';
+    var bande = (forf || cren) ? '<section class="cpb-carte cpa-bande">' + forf + cren + '<a href="#" onclick="cpOpenStats();return false">Voir le temps passé</a></section>' : '';
+    var nFin = (p.tasks || []).filter(function (t) { return t.archived || t.status === 'done'; }).length;
+    function o(v, l) { return '<button class="cpl-ong' + (tab === v ? ' on' : '') + '" onclick="cpAccSetTab(\'' + pid + '\',\'' + v + '\')">' + l + '</button>'; }
+    var onglets = '<div class="cpa-ongs"><div class="cpl-ongs">' + o('cal', 'Calendrier') + o('tableau', 'Tableau') + o('fini', 'Terminées' + (nFin ? ' · ' + nFin : '')) + '</div>' +
+      '<span class="cpa-leg">en paille : à toi · en noir : chez Cindy · en crème : terminé · contour : reçue</span></div>';
+    var dupBande = '';
+    if (cpAccDup && cpAccDup.pid === pid) {
+      var src = (p.tasks || []).filter(function (x) { return x.id === cpAccDup.id; })[0], n = cpAccDup.dates.length;
+      dupBande = '<section class="cpa-dup"><div><span>Dupliquer sur une ou plusieurs dates</span><b>« ' + esc(src ? src.title : '') + ' » · clique sur les jours voulus</b></div>' +
+        '<div class="cpb-hero__a"><span>' + (n ? n + ' date' + (n > 1 ? 's' : '') : 'aucune date') + '</span><button class="cpb-btn cpb-btn--ghost" onclick="cpAccDupStop()">Annuler</button>' +
+        '<button class="cpb-btn cpb-btn--light"' + (n ? '' : ' disabled') + ' onclick="cpAccDupCreer()">' + (n > 1 ? 'Créer ' + n + ' copies' : 'Créer la copie') + '</button></div></section>';
+    }
+    var corps = tab === 'tableau' ? cpAccTableau(pd) : (tab === 'fini' ? cpAccFinies(pd) : cpAccCal(pd));
+    return '<div class="cp-home cpb"><div class="cpb__in cpa fade-up">' +
+      '<header class="cpa-tete"><div><a href="#" class="cpe-retour" onclick="cpGoHome();return false">Accueil</a><h1 class="cpb-h1">' + esc(p.projectTitle || 'Accompagnement créatif') + '</h1>' +
+        '<p class="cpb-lead">Tes demandes du mois. Glisse une demande pour changer sa date, clique sur un jour pour en ajouter une.</p></div>' +
+        '<button class="cpb-btn" style="background:#110704;color:#F8F6F2" onclick="cliNewDemande(\'' + pid + '\')">Nouvelle demande</button></header>' +
+      bande + (dupBande || onglets) + corps +
+    '</div></div>' + (cliSelTask[pid] ? '<div class="cpa-panneau">' + buildPartTaskDrawer(pid, p.tasks || [], pd.files || [], p) + '</div>' : '');
+  }
   function buildProjectView(pd) {
     if (!pd) return '<div class="cp-empty">Projet introuvable.</div>';
     if (appData.type === 'client' && !_isAdminEdit && pd.project.type === 'support') return cpSupportPage(pd);
+    if (!_isAdminEdit && pd.project.type === 'partenaire') return cpAccompPage(pd);
     if (appData.type === 'client' && !_isAdminEdit && ['partenaire', 'maintenance', 'support'].indexOf(pd.project.type) === -1) return cpProjetEtapesPage(pd);
     var project = pd.project, messages = pd.messages, files = pd.files;
     var col = STATUS_COLORS[project.status] || '#aaa';

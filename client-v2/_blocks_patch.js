@@ -789,7 +789,7 @@
       '<span style="font-size:11.5px;color:var(--muted,rgba(17,7,4,.55));margin-left:10px">ou tapez <b style="font-family:monospace;background:#F8F6F2;padding:1px 5px;border-radius:4px">/</b> dans une ligne vide</span>'+
       menu+
     '</div>';
-    var empty = '<div style="font-size:13px;color:var(--muted,#C5DEFF);font-style:italic;padding:8px 0 4px">Votre espace de travail : titres, listes, cases à cocher, citations, fichiers…</div>';
+    var empty = '<div style="font-size:13px;color:var(--muted,#C5DEFF);font-style:italic;padding:8px 0 4px">Ton espace de travail : titres, listes, cases à cocher, citations, fichiers…</div>';
     return (rows || empty) + addBar + stbHistoryHtml(pid, t);
   }
   // Aperçu court d'une version (pour l'historique).
@@ -853,8 +853,8 @@
       if (t._migrated) setTimeout(function(){ stbBlocksSave(pid, t.id); }, 0);
     }
     return '<div style="border-top:2px solid var(--bone-d,#F8F6F2);margin-top:22px;padding-top:20px">'+
-      '<div style="margin-bottom:4px"><span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:20px;color:var(--navy,#110704)">Votre demande</span></div>'+
-      '<div style="font-size:11.5px;color:var(--muted,rgba(17,7,4,.55));margin-bottom:12px">Le brief que vous avez rédigé. Cliquez dans le texte pour le compléter ou le modifier à tout moment.</div>'+
+      '<div style="margin-bottom:4px"><span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:20px;color:var(--navy,#110704)">Ta demande</span></div>'+
+      '<div style="font-size:11.5px;color:var(--muted,rgba(17,7,4,.55));margin-bottom:12px">Le brief que tu as rédigé. Clique dans le texte pour le compléter ou le modifier quand tu veux.</div>'+
       '<div id="stb-blocks-'+t.id+'" style="min-height:120px">'+stbBlocksInner(pid, t)+'</div>'+
     '</div>';
   }

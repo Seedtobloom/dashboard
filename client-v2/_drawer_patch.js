@@ -67,14 +67,14 @@
       filesHtml+
       '<button onclick="cliAddBriefFile(\''+pid+'\',\''+t.id+'\',\'p_elements\')" style="display:inline-flex;align-items:center;gap:7px;margin-top:7px;font-size:12px;padding:7px 13px;border:1px solid #F8F6F2;border-radius:7px;background:#fff;color:var(--navy,#110704);cursor:pointer">'+cpIcon('upload',14)+'<span>Ajouter un fichier</span></button>';
 
-    var MK_E = ' <span title="Modifiable par vous" style="color:rgba(17,7,4,.5);font-size:11px">✎</span>';
-    var MK_L = ' <span title="Suivi par Cindy" style="font-size:10px">🔒</span>';
+    var MK_E = '';
+    var MK_L = '';
     var propertiesHtml =
       // Champ de progression unique « Avancement » : reflète automatiquement
       // le statut réel de la tâche (Pas commencé / En cours / À valider /
       // Livrée). Lecture seule pour le client, mis à jour par Cindy.
       dRow(cpIcon('chart', 15), 'Avancement' + (_isAdminEdit ? MK_E : MK_L), (function(){
-        var map = { todo:'Pas commencé', in_progress:'En cours', review:'À valider chez vous', done:'Livrée' };
+        var map = { todo:'Pas commencé', in_progress:'En cours', review:'À valider de ton côté', done:'Livrée' };
         var col = { todo:'#F8F6F2', in_progress:'#C5DEFF', review:'#E6E5B2', done:'#CD8F6E' };
         var s = t.status || 'todo';
         // Modifiable par Cindy (mode édition), synchronisé avec l'admin ;
@@ -112,7 +112,7 @@
       var isStudio = c.author === 'studio';
       return '<div style="display:flex;'+(isStudio?'justify-content:flex-end':'justify-content:flex-start')+';margin-bottom:8px">'+
         '<div style="max-width:85%;padding:8px 12px;border-radius:'+(isStudio?'12px 12px 2px 12px':'12px 12px 12px 2px')+';background:'+(isStudio?'#F8F6F2':'#F8F6F2')+'">'+
-          '<div style="font-size:10px;font-weight:700;color:#5A2A11;margin-bottom:3px">'+(isStudio?'Studio':'Vous')+' · '+fmtShort(c.createdAt)+'</div>'+
+          '<div style="font-size:10px;font-weight:700;color:#5A2A11;margin-bottom:3px">'+(isStudio?'Cindy':'Toi')+' · '+fmtShort(c.createdAt)+'</div>'+
           '<div style="font-size:13px;color:var(--navy,#110704)">'+esc(c.text)+'</div>'+
         '</div>'+
       '</div>';
@@ -167,8 +167,8 @@
       ? (function(){
           var u = /^https?:\/\//i.test(t.reviewLink) ? t.reviewLink : 'https://' + t.reviewLink;
           return '<div style="margin:18px 0 4px;padding:16px 18px;border-radius:14px;background:#F8F6F2;border:1px solid #F8F6F2">'+
-            '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#5A2A11;margin-bottom:6px">À vérifier de votre côté</div>'+
-            '<div style="font-size:14px;color:var(--navy,#110704);line-height:1.5;margin-bottom:12px">Cindy vous invite à consulter ce travail et à donner votre retour. Une fois vos retours transmis (via le lien ou en commentaire), cliquez « J\'ai fait mes retours » pour la prévenir.</div>'+
+            '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#5A2A11;margin-bottom:6px">À vérifier de ton côté</div>'+
+            '<div style="font-size:14px;color:var(--navy,#110704);line-height:1.5;margin-bottom:12px">Cindy t’invite à regarder ce travail et à donner ton retour. Une fois tes retours transmis (par le lien ou en commentaire), clique sur « J\'ai fait mes retours » pour la prévenir.</div>'+
             '<div style="display:flex;flex-wrap:wrap;gap:8px">'+
               '<a href="'+esc(u)+'" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:8px;padding:11px 20px;border-radius:999px;background:var(--terre,#110704);color:#fff;text-decoration:none;font-size:13px;font-weight:700">'+cpIcon('external',15)+' Vérifier le travail</a>'+
               '<button onclick="cliFeedbackDone(\''+pid+'\',\''+t.id+'\')" style="display:inline-flex;align-items:center;gap:8px;padding:11px 20px;border-radius:999px;background:#fff;border:1.5px solid var(--terre,#110704);color:var(--terre,#110704);cursor:pointer;font-size:13px;font-weight:700">'+cpIcon('check',15)+' J\'ai fait mes retours</button>'+
@@ -183,7 +183,7 @@
           var frd = String(t.proposedDueDate).split('-').reverse().join('/');
           return '<div style="margin:18px 0 4px;padding:16px 18px;border-radius:14px;background:#F8F6F2;border:1px solid #F8F6F2">'+
             '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#5A2A11;margin-bottom:6px">Nouvelle date proposée</div>'+
-            '<div style="font-size:14px;color:var(--navy,#110704);line-height:1.5;margin-bottom:12px">Cindy propose de reporter l\'échéance de cette tâche au <strong>'+esc(frd)+'</strong>. Est-ce que cela vous convient ?</div>'+
+            '<div style="font-size:14px;color:var(--navy,#110704);line-height:1.5;margin-bottom:12px">Cindy propose de reporter l\'échéance de cette tâche au <strong>'+esc(frd)+'</strong>. Est-ce que ça te convient ?</div>'+
             '<div style="display:flex;flex-wrap:wrap;gap:8px">'+
               '<button onclick="cliRespondProposedDate(\''+pid+'\',\''+t.id+'\',true)" style="display:inline-flex;align-items:center;gap:8px;padding:11px 20px;border-radius:999px;background:#5A2A11;color:#fff;border:none;cursor:pointer;font-size:13px;font-weight:700">'+cpIcon('check',15)+' Accepter le report</button>'+
               '<button onclick="cliRespondProposedDate(\''+pid+'\',\''+t.id+'\',false)" style="display:inline-flex;align-items:center;gap:8px;padding:11px 20px;border-radius:999px;background:#fff;border:1.5px solid #F8F6F2;color:var(--navy,#110704);cursor:pointer;font-size:13px;font-weight:600">Refuser</button>'+
@@ -215,7 +215,7 @@
           proposeCallout +
           // 1) Infos (façon Notion) dans un compartiment blanc.
           dWrap('<div style="margin-bottom:2px">'+propertiesHtml+'</div>'+
-            '<div style="font-size:11px;color:var(--muted,rgba(17,7,4,.55));margin-top:10px">✎ modifiable par vous · 🔒 suivi par Cindy</div>')+
+            '')+
           // 2) Livrable (compartiment lavande).
           dWrapLav(stbTaskDeliverables(pid, project, t, ''))+
           // 3) Échanges + historique des révisions.
@@ -299,7 +299,7 @@
     var pd = getPD(pid);
     var t = pd && (pd.project.tasks || []).find(function(x){ return x.id === taskId; });
     if (!t) return;
-    showConfirm('Le fichier sera retiré de la demande et supprimé de votre espace.', function(){
+    showConfirm('Le fichier sera retiré de la demande et supprimé de ton espace.', function(){
       var rest = (Array.isArray(t.attachments) ? t.attachments : []).filter(function(a){ return (a.fileKey || a.key || '') !== fileKey; });
       fetch(API_BASE + '/tasks/' + taskId, { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ projectId: pid, attachments: rest.map(function(a){ return { name: a.name || '', fileKey: a.fileKey || a.key || '' }; }) }) })
         .then(function(r){ if(!r.ok) throw new Error(); return r.json(); })
@@ -321,13 +321,13 @@
     var pd = getPD(pid);
     var t = pd && (pd.project.tasks || []).find(function(x){ return x.id === taskId; });
     if (!t) return;
-    showConfirm('Cindy sera prévenue que vous avez transmis vos retours. La tâche repassera de son côté.', function(){
+    showConfirm('Cindy sera prévenue que tu as transmis tes retours. La tâche repassera de son côté.', function(){
       t.status = 'in_progress';
       fetch(API_BASE + '/tasks/' + taskId + '/feedback', { method:'POST' })
         .then(function(r){ if(!r.ok) throw new Error(); return r.json(); })
         .then(function(updated){ if (updated && updated.status) t.status = updated.status; toast('Cindy est prévenue ✓'); renderShell(); })
         .catch(function(){ toast('Erreur, réessayez.'); });
-    }, { title: 'Confirmer vos retours ?', okLabel: 'Oui, prévenir Cindy' });
+    }, { title: 'Confirmer tes retours ?', okLabel: 'Oui, prévenir Cindy' });
   };
 
   // Report d'échéance proposé par Cindy : la cliente accepte (la date s'applique)
@@ -374,7 +374,7 @@
         '<div><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#C5DEFF);display:block;margin-bottom:6px">Priorité</label>'+
           '<select id="_etask-urg" style="'+S+'">'+urgSel+'</select></div>'+
       '</div>'+
-      '<div style="font-size:11.5px;color:var(--muted,#C5DEFF);line-height:1.5;margin-bottom:18px">Le texte du brief et les fichiers se modifient directement dans la tâche, section « Votre demande ».</div>'+
+      '<div style="font-size:11.5px;color:var(--muted,#C5DEFF);line-height:1.5;margin-bottom:18px">Le texte du brief et les fichiers se modifient directement dans la tâche, section « Ta demande ».</div>'+
       '<div style="display:flex;gap:8px;justify-content:flex-end">'+
         '<button onclick="document.getElementById(\'_cp-edit-task-ov\').remove()" style="padding:9px 18px;border:1.5px solid var(--border,#F8F6F2);border-radius:999px;background:none;cursor:pointer;font-size:13px;color:var(--muted,#C5DEFF)">Annuler</button>'+
         '<button onclick="cliSaveEditPartTask(\''+pid+'\',\''+taskId+'\')" style="padding:9px 20px;border:none;border-radius:999px;background:var(--navy,#110704);color:#fff;cursor:pointer;font-size:13px;font-weight:600">Enregistrer</button>'+

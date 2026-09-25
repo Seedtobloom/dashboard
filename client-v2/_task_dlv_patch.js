@@ -16,8 +16,8 @@
     var rl = t.reviewLink || '';
     var lab = { a_valider:'A valider', valide:'Valide', refuse:'Revision demandee' };
     var col = { a_valider:'#CD8F6E', valide:'#5A2A11', refuse:'#5A2A11' };
-    var hd = '<div style="margin-bottom:8px"><span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted,rgba(17,7,4,.55))">Vos livrables</span></div>';
-    var rlHtml = rl ? '<a href="'+esc(rl)+'" target="_blank" style="display:flex;align-items:center;gap:8px;padding:9px 12px;border:1px solid #F8F6F2;background:#F8F6F2;border-radius:10px;color:#5A2A11;text-decoration:none;font-size:12.5px;margin-bottom:8px">'+cpIcon('link',14)+'<span>Voir le lien de relecture et laisser vos retours</span></a>' : '';
+    var hd = '<div style="margin-bottom:8px"><span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted,rgba(17,7,4,.55))">Tes livrables</span></div>';
+    var rlHtml = rl ? '<a href="'+esc(rl)+'" target="_blank" style="display:flex;align-items:center;gap:8px;padding:9px 12px;border:1px solid #F8F6F2;background:#F8F6F2;border-radius:10px;color:#5A2A11;text-decoration:none;font-size:12.5px;margin-bottom:8px">'+cpIcon('link',14)+'<span>Voir le lien de relecture et laisser tes retours</span></a>' : '';
     var rows = dlv.map(function(l){
       var dl = l.fileKey ? (API_BASE + '/files/' + encodeURIComponent(l.fileKey) + '/download') : null;
       var lnk = l.reviewLink ? (/^https?:\/\//i.test(l.reviewLink) ? l.reviewLink : 'https://' + l.reviewLink) : '';
@@ -25,8 +25,8 @@
       // Livrable-lien : la cliente doit ouvrir le lien avant de pouvoir décider.
       var needConsult = !!(lnk && typeof cpConsulted !== 'undefined' && !cpConsulted[l.id]);
       var openBtn = dl
-        ? '<div style="font-size:12px;color:#5A2A11;margin-top:8px">Votre livrable est prêt, vous pouvez le récupérer ici.</div><a href="'+dl+'" target="_blank" style="display:flex;align-items:center;justify-content:center;gap:7px;margin-top:6px;font-size:13px;font-weight:700;padding:12px;border:none;border-radius:9px;background:#5A2A11;color:#fff;text-decoration:none">'+cpIcon('download',15)+'<span>Télécharger votre livrable</span></a>'
-        : (lnk ? '<div style="font-size:12px;color:#5A2A11;margin-top:8px">Votre livrable est disponible via ce lien.</div><a href="'+esc(lnk)+'" target="_blank" rel="noopener" onclick="window.cpMarkConsulted(\''+l.id+'\')" style="display:flex;align-items:center;justify-content:center;gap:7px;margin-top:6px;font-size:13px;font-weight:700;padding:12px;border:none;border-radius:9px;background:var(--terre,#110704);color:#fff;text-decoration:none">'+cpIcon('external',15)+'<span>Ouvrir le livrable</span></a>' : '');
+        ? '<div style="font-size:12px;color:#5A2A11;margin-top:8px">Ton livrable est prêt, tu peux le récupérer ici.</div><a href="'+dl+'" target="_blank" style="display:flex;align-items:center;justify-content:center;gap:7px;margin-top:6px;font-size:13px;font-weight:700;padding:12px;border:none;border-radius:9px;background:#5A2A11;color:#fff;text-decoration:none">'+cpIcon('download',15)+'<span>Télécharger ton livrable</span></a>'
+        : (lnk ? '<div style="font-size:12px;color:#5A2A11;margin-top:8px">Ton livrable est disponible par ce lien.</div><a href="'+esc(lnk)+'" target="_blank" rel="noopener" onclick="window.cpMarkConsulted(\''+l.id+'\')" style="display:flex;align-items:center;justify-content:center;gap:7px;margin-top:6px;font-size:13px;font-weight:700;padding:12px;border:none;border-radius:9px;background:var(--terre,#110704);color:#fff;text-decoration:none">'+cpIcon('external',15)+'<span>Ouvrir le livrable</span></a>' : '');
       var decideRow = needConsult
         ? '<div style="margin-top:8px;font-size:12px;color:#5A2A11;background:#F8F6F2;border:1px solid #F8F6F2;border-radius:8px;padding:8px 10px">👀 Ouvrez d\'abord le livrable pour pouvoir le valider ou demander une révision.</div>'
         : '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"><button onclick="window.stbValidate(\''+pid+'\',\''+l.id+'\',\'valide\')" style="flex:1;padding:9px;border:none;border-radius:8px;background:#5A2A11;color:#fff;font-size:12px;font-weight:700;cursor:pointer">Valider</button><button onclick="window.stbValidate(\''+pid+'\',\''+l.id+'\',\'refuse\')" style="flex:1;padding:9px;border:1px solid #F8F6F2;border-radius:8px;background:#fff;color:var(--navy,#110704);font-size:12px;cursor:pointer">Demander une révision</button></div>';
@@ -50,6 +50,6 @@
         }).join('')+'</details>'
       : '';
     var body = rlHtml + rows + prevHtml;
-    if (!dlv.length && !rl) { body = '<div style="font-size:12.5px;color:var(--muted,rgba(17,7,4,.55));padding:4px 0;line-height:1.5">Votre livrable apparaîtra ici dès qu\'il sera prêt. Vous pourrez le télécharger, puis le valider ou demander une révision en un clic.</div>'; }
+    if (!dlv.length && !rl) { body = '<div style="font-size:12.5px;color:var(--muted,rgba(17,7,4,.55));padding:4px 0;line-height:1.5">Ton livrable apparaîtra ici dès qu\'il sera prêt. Tu pourras le télécharger, puis le valider ou demander une révision en un clic.</div>'; }
     return hd + '<div style="margin-bottom:4px">' + body + '</div>' + sep;
   }
