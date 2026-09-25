@@ -653,4 +653,60 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 .cp-sidebar__liens a { color: rgba(248,246,242,.7); font-size: 14px; text-decoration: none; }
 .cp-sidebar__liens a:hover { color: #F8F6F2; text-decoration: underline; }
 @media (min-width: 769px) { .cp-ptopbar { display: none !important; } }
+
+/* Page « Tes messages » */
+.cpb__in#cp-inbox { max-width: 1480px; }
+.cpm-grid { display: grid; grid-template-columns: 300px minmax(0,1fr) 290px; gap: 22px; height: calc(100vh - 210px); min-height: 560px; }
+.cpm-gauche { display: flex; flex-direction: column; gap: 4px; min-height: 0; }
+.cpm-list { display: flex; flex-direction: column; gap: 4px; overflow-y: auto; }
+.cpm-item { display: flex; gap: 12px; align-items: center; padding: 12px; border: 0; border-radius: 14px; background: transparent; text-align: left; cursor: pointer; font-family: var(--font-micro); color: #110704; }
+.cpm-item:hover { background: rgba(17,7,4,.04); }
+.cpm-item.on { background: #fff; box-shadow: 0 0 0 1px rgba(17,7,4,.07), 0 2px 6px rgba(17,7,4,.08); }
+.cpm-ini { width: 46px; height: 46px; border-radius: 12px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; background: #110704; color: #F8F6F2; font-family: 'Cormorant Garamond', var(--font-display), serif; font-size: 24px; }
+.cpm-ini--toi { background: #E6E5B2; color: #110704; }
+.cpm-item__m { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.cpm-item__top, .cpm-item__bas { display: flex; justify-content: space-between; gap: 8px; align-items: center; }
+.cpm-item__top b { font-size: 16px; }
+.cpm-item__top span { font-size: 13px; color: #7a5540; flex-shrink: 0; }
+.cpm-item__snip { font-size: 15px; color: #3b2a20; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cpm-badge { font-size: 13px; font-weight: 700; padding: 1px 8px; border-radius: 999px; background: #CD8F6E; color: #110704; flex-shrink: 0; }
+.cpm-oral { margin-top: auto; background: #E6E5B2; border-radius: 16px; padding: 18px; display: flex; flex-direction: column; gap: 4px; color: #110704; font-size: 15px; }
+.cpm-oral span { color: #3b2a20; margin-bottom: 10px; }
+.cpm-oral .cpb-btn { align-self: flex-start; }
+.cpm-conv { border-radius: 18px; overflow: hidden; display: flex; flex-direction: column; background: #fff; box-shadow: 0 0 0 1px rgba(17,7,4,.07), 0 2px 6px rgba(17,7,4,.08); min-height: 0; }
+.cpm-head { display: flex; align-items: center; gap: 14px; padding: 18px 24px; border-bottom: 1px solid #F0E9D6; }
+.cpm-av { width: 48px; height: 48px; border-radius: 999px; background: #C5DEFF; color: #110704; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; font-family: 'Cormorant Garamond', var(--font-display), serif; font-size: 26px; }
+.cpm-head__t { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.cpm-head__t b { font-size: 17px; color: #110704; }
+.cpm-head__t span { font-size: 15px; color: #7a5540; }
+.cpm-cherche { width: 200px; padding: 9px 14px; border-radius: 999px; border: 0; background: #F8F6F2; box-shadow: inset 0 0 0 1px rgba(17,7,4,.14); font: 14px var(--font-micro); color: #110704; }
+.cpm-feed { flex: 1; overflow-y: auto; padding: 22px 28px; display: flex; flex-direction: column; gap: 14px; background: #fff; }
+.cpm-conv .mx-msg { max-width: 72%; }
+.cpm-conv .mx-msg--in { align-self: flex-start; }
+.cpm-conv .mx-msg--out { align-self: flex-end; }
+.cpm-conv .mx-b { padding: 13px 17px; border-radius: 18px; font-size: 16px; line-height: 1.5; }
+.cpm-conv .mx-msg--in .mx-b { background: #110704; color: #F8F6F2; border-radius: 18px 18px 18px 6px; }
+.cpm-conv .mx-msg--out .mx-b { background: #F0E9D6; color: #110704; border-radius: 18px 18px 6px 18px; }
+.cpm-conv .mx-m { font-size: 13px; color: #7a5540; margin-top: 4px; }
+.cpm-conv .mx-msg--out .mx-m { text-align: right; }
+.cpm-compo { padding: 14px 24px 18px; border-top: 1px solid #F0E9D6; display: flex; flex-direction: column; gap: 12px; }
+.cpm-compo--clos { font-size: 15px; color: #3b2a20; }
+.cpm-rapides { display: flex; gap: 8px; flex-wrap: wrap; }
+.cpm-rapides button { padding: 8px 15px; border-radius: 999px; border: 0; background: #fff; box-shadow: inset 0 0 0 1px rgba(17,7,4,.18); font: 500 15px var(--font-micro); color: #110704; cursor: pointer; }
+.cpm-rapides button:hover { background: #F8F6F2; }
+.cpm-compo__row { display: flex; gap: 10px; align-items: center; }
+.cpm-joindre { border: 0; background: none; padding: 0; font: 600 15px var(--font-micro); color: #5A2A11; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.cpm-input { flex: 1; resize: none; min-height: 48px; max-height: 160px; padding: 13px 18px; border-radius: 24px; border: 0; background: #F8F6F2; box-shadow: inset 0 0 0 1px rgba(17,7,4,.14); font: 15px/1.4 var(--font-micro); color: #110704; box-sizing: border-box; }
+.cpm-side { display: flex; flex-direction: column; gap: 14px; overflow-y: auto; }
+.cpm-projet { background: #110704; color: #F8F6F2; border-radius: 18px; padding: 20px; display: flex; flex-direction: column; gap: 10px; }
+.cpm-projet > span { font-size: 15px; color: rgba(248,246,242,.75); }
+.cpm-projet > b { font-family: 'Cormorant Garamond', var(--font-display), serif; font-weight: 400; font-size: 28px; line-height: 1.1; }
+.cpm-projet em { font-style: normal; font-size: 15px; color: rgba(248,246,242,.75); }
+.cpm-projet a { color: #F8F6F2; font-weight: 600; font-size: 15px; }
+.cpm-vignettes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 12px 0; }
+.cpm-vignettes img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 10px; display: block; }
+@media (max-width: 1400px) { .cpm-grid { grid-template-columns: 280px minmax(0,1fr); } .cpm-side { grid-column: 1 / -1; flex-direction: row; } .cpm-side > * { flex: 1; } }
+@media (max-width: 900px) { .cpm-grid { grid-template-columns: 1fr; height: auto; } .cpm-conv { min-height: 70vh; } .cpm-side { flex-direction: column; } }
+.cp-toast { text-transform: none !important; letter-spacing: 0 !important; font-size: 15px !important; }
+.cpm-item__top b { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 `;

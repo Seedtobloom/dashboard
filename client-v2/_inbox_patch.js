@@ -9,17 +9,13 @@
     var p = pd.project; var msgs = pd.messages || [];
     var unread = msgs.filter(function(m){ return m.author === 'cindy' && m.readByClient === false; }).length;
     var last = msgs.length ? msgs[msgs.length - 1] : null;
-    var snippet = last ? ((last.author === 'cindy' ? 'Cindy : ' : 'Vous : ') + esc((last.content || '').slice(0, 44))) : 'Aucun message';
-    var ctx = (typeof CP_TYPE_LABELS !== 'undefined' && CP_TYPE_LABELS[p.type]) ? CP_TYPE_LABELS[p.type] : '';
-    var ini = esc((p.projectTitle || '?').charAt(0));
-    return '<button id="cp-inbox-item-'+p.id+'" class="mx-conv" onclick="window.stbInboxSelect(\''+p.id+'\')">'+
-      '<span class="mx-av" style="background:var(--glycine);color:var(--terre)">'+ini+'</span>'+
-      '<div class="mx-conv__m">'+
-        '<div class="mx-conv__top"><span class="mx-conv__n">'+esc(p.projectTitle || p.id)+'</span></div>'+
-        (ctx ? '<div class="mx-conv__ctx">'+esc(ctx)+'</div>' : '')+
-        '<div class="mx-conv__snip">'+snippet+'</div>'+
-      '</div>'+
-      (unread ? '<span class="mx-conv__badge">'+unread+'</span>' : '')+
+    var snippet = last ? ((last.author === 'cindy' ? 'Cindy : ' : 'Toi : ') + esc(cpbTexte(last.content || '').slice(0, 60))) : 'Pas encore de message';
+    var toi = cpbProjetEtat(pd, cpCollectActions()).toi;
+    var on = window._stbInboxPid === p.id;
+    return '<button id="cp-inbox-item-'+p.id+'" class="cpm-item'+(on?' on':'')+'" onclick="window.stbInboxSelect(\''+p.id+'\')">'+
+      '<span class="cpm-ini'+(toi?' cpm-ini--toi':'')+'">'+esc((p.projectTitle || '?').charAt(0))+'</span>'+
+      '<span class="cpm-item__m"><span class="cpm-item__top"><b>'+esc(p.projectTitle || p.id)+'</b><span>'+(last ? esc(cpbQuand(last.createdAt)) : '')+'</span></span>'+
+        '<span class="cpm-item__bas"><span class="cpm-item__snip">'+snippet+'</span>'+(unread ? '<span class="cpm-badge">'+unread+'</span>' : '')+'</span></span>'+
     '</button>';
   }
   function stbInboxRenderList(){
@@ -99,7 +95,7 @@
     return head + shown.map(function(m){
       var mine = m.author !== 'cindy';
       var body = (m.content ? '<div class="mx-b">'+(q ? stbHi(m.content, q) : fmtMsg(m.content))+'</div>' : '') + stbInboxAtts(m.attachments);
-      var meta = (mine?'Vous':'Cindy')+' · '+fmtDate(m.createdAt)+(m.editedAt?' · modifié':'')+
+      var meta = (mine?'Toi':'Cindy')+' · '+fmtDate(m.createdAt)+(m.editedAt?' · modifié':'')+
         (mine && m.id ? act('modifier', 'window.stbInboxMsgEdit(\''+pid+'\',\''+m.id+'\')') : '')+
         (!mine && m.id ? act(m.readByClient===false?'lu':'marquer non lu', 'window.stbInboxMsgUnread(\''+pid+'\',\''+m.id+'\','+(m.readByClient===false?'false':'true')+')') : '');
       return '<div class="mx-msg mx-msg--'+(mine?'out':'in')+'">'+
@@ -130,27 +126,44 @@
     var subs = stbSupportCreations(pd);
     var curCrea = subs.filter(function(c){ return c.id === topic; })[0];
     var sub = (curCrea ? esc(curCrea.name || 'Création') : (subs.length ? 'Discussion générale' : esc(p.projectTitle || p.id)));
-    return '<div class="mx-head">'+
-        '<span class="mx-av" style="background:var(--terre);color:var(--paille)">C</span>'+
-        '<div class="mx-head__t"><div class="mx-head__n">Cindy</div><div class="mx-head__s">'+sub+'</div></div>'+
-        '<input type="search" class="mx-headsearch" placeholder="Rechercher…" oninput="window.stbInboxSearch(\''+p.id+'\',this.value)">'+
+    var rapides = ['C’est parfait, merci !', 'Je regarde et je reviens vers toi', 'On peut en parler en visio ?'];
+    return '<div class="cpm-head">'+
+        '<span class="cpm-av">C</span>'+
+        '<div class="cpm-head__t"><b>Cindy</b><span>'+sub+' · répond en général dans la journée</span></div>'+
+        '<input type="search" class="cpm-cherche" placeholder="Rechercher" aria-label="Rechercher dans la discussion" oninput="window.stbInboxSearch(\''+p.id+'\',this.value)">'+
       '</div>'+
       stbSubRow(pd)+
-      '<div id="cp-inbox-msgs" class="mx-feed">'+stbInboxBubbles(pd, '', topic)+'</div>'+
+      '<div id="cp-inbox-msgs" class="mx-feed cpm-feed">'+stbInboxBubbles(pd, '', topic)+'</div>'+
       (stbTopicClos(pd, topic)
-        ? '<div class="mx-composer" style="padding:14px 16px;font-size:13.5px;color:var(--terre-600)">'+
-            'Cette creation est terminee. Son fil reste consultable, mais on n y ecrit plus.'+
-          '</div>'
-        : '<div class="mx-composer">'+
-        '<div class="mx-tools">'+cpMsgToolbar('cp-inbox-input')+'</div>'+
-        '<div id="cp-inbox-atts" style="display:flex;flex-wrap:wrap;gap:7px"></div>'+
-        '<div class="mx-composer__row">'+
-          '<input type="file" id="cp-inbox-file" multiple style="display:none" onchange="window.stbInboxAttachFiles(\''+p.id+'\')">'+
-          '<button class="mx-attach" title="Joindre un fichier" onclick="document.getElementById(\'cp-inbox-file\').click()">'+cpIcon('paperclip',16)+'</button>'+
-          '<textarea id="cp-inbox-input" class="mx-input" placeholder="Écris ton message à Cindy…" onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();window.stbInboxSend(\''+p.id+'\');}"></textarea>'+
-          '<button class="mx-send" onclick="window.stbInboxSend(\''+p.id+'\')">'+cpIcon('send',15)+' Envoyer</button>'+
-        '</div>')+
-    '</div>';
+        ? '<div class="cpm-compo cpm-compo--clos">Cette création est terminée. Son fil reste consultable, mais on n’y écrit plus.</div>'
+        : '<div class="cpm-compo">'+
+            '<div class="cpm-rapides">'+rapides.map(function(t){ return '<button type="button" onclick="var i=document.getElementById(\'cp-inbox-input\');i.value=this.textContent;i.focus()">'+esc(t)+'</button>'; }).join('')+'</div>'+
+            '<div id="cp-inbox-atts" style="display:flex;flex-wrap:wrap;gap:7px"></div>'+
+            '<div class="cpm-compo__row">'+
+              '<input type="file" id="cp-inbox-file" multiple style="display:none" onchange="window.stbInboxAttachFiles(\''+p.id+'\')">'+
+              '<button type="button" class="cpm-joindre" onclick="document.getElementById(\'cp-inbox-file\').click()">Joindre</button>'+
+              '<textarea id="cp-inbox-input" class="cpm-input" rows="1" placeholder="Écrire à Cindy" onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();window.stbInboxSend(\''+p.id+'\');}"></textarea>'+
+              '<button type="button" class="cpb-btn" style="background:#110704;color:#F8F6F2" onclick="window.stbInboxSend(\''+p.id+'\')">Envoyer</button>'+
+            '</div>'+
+          '</div>');
+  }
+  // Colonne de droite : où en est le projet, et ce que vous vous êtes envoyé.
+  function stbInboxSide(pd){
+    var el = document.getElementById('cp-inbox-side'); if (!el || !pd) return;
+    var p = pd.project, e = cpbProjetEtat(pd, cpCollectActions());
+    var imgs = [];
+    (pd.messages || []).forEach(function(m){ (m.attachments || []).forEach(function(a){ if (/\.(jpe?g|png|webp|gif|avif)$/i.test(a.name || '')) imgs.push(a); }); });
+    (pd.files || []).forEach(function(f){ if (f.key && /\.(jpe?g|png|webp|gif|avif)$/i.test(f.name || f.key || '')) imgs.push(f); });
+    imgs = imgs.slice(-6).reverse();
+    el.innerHTML = '<div class="cpm-projet"><span>Sur ce projet</span><b>'+esc(p.projectTitle || '')+'</b>'+
+        cpbSeg(e.fait, e.total, true)+
+        '<em>'+esc(e.sous)+'</em>'+
+        '<a href="#" onclick="cpSel(\''+p.id+'\');return false">Ouvrir le projet</a></div>'+
+      '<div class="cpb-carte"><b style="font-size:16px">Vous vous êtes envoyé</b>'+
+        (imgs.length
+          ? '<div class="cpm-vignettes">'+imgs.map(function(a){ var u = API_BASE + '/files/' + encodeURIComponent(a.key) + '/download'; return '<a href="'+u+'" target="_blank" rel="noopener" title="'+esc(a.name || '')+'"><img src="'+u+'" alt="'+esc(a.name || '')+'" loading="lazy"></a>'; }).join('')+'</div>'
+          : '<p>Pas encore d’image dans cette discussion.</p>')+
+        '<a href="#" onclick="cpGoFichiers();return false">Tous les fichiers</a></div>';
   }
   window.stbInboxSelect = function(pid){
     var pd = getPD(pid); if (!pd) return;
@@ -161,6 +174,7 @@
     stbInboxRenderList();
     var act = document.getElementById('cp-inbox-item-'+pid); if (act) act.classList.add('on');
     var conv = document.getElementById('cp-inbox-conv'); if (conv) conv.innerHTML = stbInboxConv(pd);
+    stbInboxSide(pd);
     var box = document.getElementById('cp-inbox-msgs'); if (box) box.scrollTop = box.scrollHeight;
   };
   // Changer de sous-discussion (création) au sein d'un support.
@@ -270,26 +284,13 @@
     stbInboxRenderList();
   };
   window.cpOpenMessages = function(){
-    window.cpCloseInbox();
+    currentView = 'messages';
+    renderShell({ resetScroll: true });
+  };
+  // Remplit la page (appelée par renderShell) : garde la discussion ouverte.
+  window.stbInboxMount = function(){
     var projects = (appData && appData.projects) || [];
-    var ov = document.createElement('div');
-    ov.id = 'cp-inbox';
-    ov.setAttribute('style', 'position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box;background:rgba(28,18,5,0.42)');
-    ov.onclick = function(e){ if (e.target === ov) window.cpCloseInbox(); };
-    ov.innerHTML =
-      '<div class="mx-modal">'+
-        '<div class="mx-modal__h">'+
-          '<span class="mx-modal__title">Messagerie</span>'+
-          '<button class="mx-modal__x" onclick="window.cpCloseInbox()">✕</button>'+
-        '</div>'+
-        '<div class="mx-modal__body">'+
-          '<div id="cp-inbox-list" class="mx-rail"></div>'+
-          '<div id="cp-inbox-conv" class="mx-pane">'+
-            '<div class="mx-empty">Choisis une conversation</div>'+
-          '</div>'+
-        '</div>'+
-      '</div>';
-    document.body.appendChild(ov);
-    stbInboxRenderList();
-    if (projects.length) window.stbInboxSelect(projects[0].project.id);
+    if (!projects.length) return;
+    var pid = window._stbInboxPid && getPD(window._stbInboxPid) ? window._stbInboxPid : projects[0].project.id;
+    window.stbInboxSelect(pid);
   };

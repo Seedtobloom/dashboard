@@ -937,7 +937,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var j0 = new Date(); j0.setHours(0, 0, 0, 0);
     var dj = new Date(d); dj.setHours(0, 0, 0, 0);
     var diff = Math.round((j0 - dj) / 86400000);
-    if (diff <= 0) return 'aujourd’hui';
+    if (diff <= 0) return d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
     if (diff === 1) return 'hier';
     if (diff < 7) return d.toLocaleDateString('fr-FR', { weekday: 'short' });
     return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
@@ -979,7 +979,9 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       '<div class="cpb-tuiles" style="--n:' + Math.min(4, active.length) + '">' + tuiles + '</div></section>' : '';
 
     // 3. Les derniers messages.
-    var msgs = (convData || []).slice().sort(function (a, b) { return String(b.createdAt || '').localeCompare(String(a.createdAt || '')); }).slice(0, 2);
+    var tous = (convData || []).slice();
+    active.forEach(function (pd) { (pd.messages || []).forEach(function (m) { tous.push(m); }); });
+    var msgs = tous.sort(function (a, b) { return String(b.createdAt || '').localeCompare(String(a.createdAt || '')); }).slice(0, 2);
     var msgHtml = '<section class="cpb-carte"><div class="cpb-h2 cpb-h2--sm"><h2>Tes messages</h2><a href="#" onclick="cpOpenMessages();return false">Écrire à Cindy</a></div>' +
       (msgs.length ? msgs.map(function (m) {
         var cindy = m.author === 'cindy';
@@ -6308,7 +6310,24 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     '</div>';
   }
 
+  // Page « Tes messages » (refonte 2026) : la liste des projets à gauche, la
+  // conversation au centre, « Sur ce projet » à droite. Remplie par la greffe
+  // _inbox_patch.js (stbInboxMount), qui garde l'identifiant #cp-inbox.
+  function cpMessagesPage() {
+    var bk = (typeof cpBookingUrl === 'function') ? cpBookingUrl() : '';
+    return '<div class="cp-home cpb"><div class="cpb__in fade-up" id="cp-inbox">' +
+      '<header><h1 class="cpb-h1">Tes messages</h1><p class="cpb-lead">Une discussion par projet, avec Cindy.</p></header>' +
+      '<div class="cpm-grid">' +
+        '<div class="cpm-gauche"><div id="cp-inbox-list" class="cpm-list"></div>' +
+          (bk ? '<div class="cpm-oral"><b>Plus simple à l’oral ?</b><span>Réserve 30 minutes avec Cindy.</span><a class="cpb-btn" style="background:#110704;color:#F8F6F2;text-decoration:none;display:inline-block" href="' + esc(bk) + '" target="_blank" rel="noreferrer">Prendre rendez-vous</a></div>' : '') +
+        '</div>' +
+        '<section id="cp-inbox-conv" class="cpm-conv"><div class="mx-empty">Choisis une conversation</div></section>' +
+        '<aside id="cp-inbox-side" class="cpm-side"></aside>' +
+      '</div>' +
+    '</div></div>';
+  }
   function mainForView() {
+    if (currentView === 'messages') return cpMessagesPage();
     if (currentView === 'project') return buildProjectView(getPD(currentId));
     if (currentView === 'hub') return '<div class="cp-portal-main">' + buildHubView() + '</div>';
     if (currentView === 'fichiers') return '<div class="cp-portal-main">' + buildFichiersView() + '</div>';
@@ -6792,6 +6811,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
         }
       }
       if (currentView === 'project') attachForm();
+      if (currentView === 'messages' && window.stbInboxMount) window.stbInboxMount();
       if (window.stbSizeAll) setTimeout(window.stbSizeAll, 0);
       window.scrollTo(0, scrollY);
       return;
@@ -6812,6 +6832,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
         '<div class="cp-main" id="cp-main">' + buildCongesBanner() + buildTopbar() + mainForView() + '</div>' +
       '</div>' + adminBar + '<div class="cp-toast" id="cp-toast"></div>';
     if (currentView === 'project') attachForm();
+    if (currentView === 'messages' && window.stbInboxMount) window.stbInboxMount();
     if (window.stbSizeAll) setTimeout(window.stbSizeAll, 0);
     window.scrollTo(0, scrollY);
   }
@@ -6940,7 +6961,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
       if (_lv && _lv.v) {
         if (_lv.v === 'project') {
           if (_lv.id && appData.projects.some(function(pd){ return pd.project.id === _lv.id; })) { currentView = 'project'; currentId = _lv.id; }
-        } else if (['home','questionnaires','livrables','fichiers','hub','stats','interventions','cal'].indexOf(_lv.v) !== -1) {
+        } else if (['home','messages','questionnaires','livrables','fichiers','hub','stats','interventions','cal'].indexOf(_lv.v) !== -1) {
           if (_lv.v !== 'home' || portal) { currentView = _lv.v; if (_lv.id) currentId = _lv.id; }
         }
       }
