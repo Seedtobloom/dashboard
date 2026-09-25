@@ -292,6 +292,21 @@
   }
 
   /* ── boot / auth ── */
+  // Une erreur dans l'admin (un clic qui ne répond pas, par exemple) se range
+  // dans Réglages > Incidents, avec l'écran où elle est arrivée.
+  var ERR_VUES = {}, ERR_N = 0;
+  function errNoter(ctx, m) {
+    try {
+      var sig = ctx + '|' + m, t = Date.now();
+      if (ERR_N > 20 || (ERR_VUES[sig] && t - ERR_VUES[sig] < 60000)) return;
+      ERR_VUES[sig] = t; ERR_N++;
+      var ou = 'écran ' + (typeof VIEW !== 'undefined' ? VIEW : '?') + (typeof CKJ !== 'undefined' && CKJ.ouvert ? ', offre ouverte, onglet ' + CKJ.onglet : '');
+      jpost('/api/client-errors', { context: ctx, message: String(m).slice(0, 600), url: ou }).catch(function () {});
+    } catch (e) {}
+  }
+  window.addEventListener('error', function (e) { if (e && e.message) errNoter('js', e.message + (e.lineno ? ' (ligne ' + e.lineno + ')' : '')); });
+  window.addEventListener('unhandledrejection', function (e) { var r = e && e.reason; errNoter('promise', (r && (r.message || String(r))) || 'promesse rejetée'); });
+
   function boot() {
     api('/api/me').then(function (r) {
       if (r.status === 401) { showLogin(); return null; }
@@ -946,7 +961,7 @@
     } else if (REGL_TAB === 'incidents') {
       // Les erreurs rencontrées par tes clients (upload, plantage) remontent ici.
       var bi = el('regl-body');
-      if (bi) bi.innerHTML = '<div class="mdl-barre"><p>Les erreurs rencontrées par tes clients (un envoi de fichier qui échoue, un plantage) remontent ici, pour que tu puisses les corriger.</p></div>' +
+      if (bi) bi.innerHTML = '<div class="mdl-barre"><p>Les erreurs rencontrées par tes clients ou dans ton admin (un envoi de fichier qui échoue, un clic qui ne répond pas) remontent ici, pour que tu puisses les corriger.</p></div>' +
         '<div class="mdl-pied" style="margin:0 0 16px"><button class="tps-lien" onclick="ADM.incSeenAll()">Tout marquer comme vu</button><button class="tps-lien" onclick="ADM.incClear()">Effacer la liste…</button></div>' +
         '<div id="inc-body"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>';
       incLoad();

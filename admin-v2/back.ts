@@ -158,6 +158,21 @@ export default {
           return json({ errors: arr });
         }
         if (method === 'DELETE') { await env.KV_CLIENT.put(EK, JSON.stringify([])); return json({ ok: true }); }
+        if (method === 'POST') { // une erreur de l'admin lui-même, rangée avec celles des clientes
+          const b = await readJson(request);
+          const rec: AnyObj = {
+            id: 'adm' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), at: new Date().toISOString(),
+            clientKey: 'admin', clientName: 'Ton admin',
+            context: String(b.context || '').slice(0, 200), message: String(b.message || '').slice(0, 600),
+            url: String(b.url || '').slice(0, 300), ua: (request.headers.get('user-agent') || '').slice(0, 200), seen: false,
+          };
+          const l = (await env.KV_CLIENT.get(EK, { type: 'json' })) as AnyObj[] | null;
+          const arr = Array.isArray(l) ? l : [];
+          const dup = arr.find((e) => e.clientKey === 'admin' && e.context === rec.context && e.message === rec.message
+            && (Date.parse(rec.at) - Date.parse(e.at)) < 5 * 60 * 1000);
+          if (!dup) { arr.unshift(rec); await env.KV_CLIENT.put(EK, JSON.stringify(arr.slice(0, 200))); }
+          return json({ ok: true });
+        }
       }
       if (pathname === '/api/mail-config') {
         if (method === 'GET') return handleMailConfigGet(env);
