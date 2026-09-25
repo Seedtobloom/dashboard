@@ -6312,13 +6312,25 @@
     var moi = [], eux = [];
     var vives = ckJTachesDe(p).filter(function (t) { return t.statut !== 'done'; })
       .sort(function (a, b) { return (a.echeance || '9999') < (b.echeance || '9999') ? -1 : 1; });
-    x.revisions.forEach(function (r) { moi.push({ t: r.name || r.taskTitle || 'Livrable', etat: 'À reprendre', k: 'retard', sous: r.comment ? '« ' + String(r.comment).slice(0, 120) + ' »' : qui + ' a fait un retour' }); });
+    // Un livrable renvoyé par la cliente avec ses retours : on le nomme par sa
+    // tâche (le nom du livrable est souvent générique, « Lien du livrable »)
+    // et le clic mène là où l'on peut le reprendre.
+    var retours = {};
+    x.revisions.forEach(function (r) { if (r.taskId && vives.some(function (t) { return t.id === r.taskId; })) retours[r.taskId] = r; });
+    x.revisions.forEach(function (r) {
+      if (retours[r.taskId] === r) return;   // montré sur la ligne de sa tâche
+      var nom = r.taskTitle || r.name || 'Livrable';
+      moi.push({ t: nom, etat: 'Retours à reprendre', k: 'retard', id: r.taskId || null,
+        go: r.taskId ? null : (r.creationId ? 'creations' : 'liv'),
+        sous: 'Retours de ' + qui + (r.comment ? ' : « ' + String(r.comment).slice(0, 120) + ' »' : '') });
+    });
     vives.forEach(function (t) {
       if (t.statut === 'review' || t.statut === 'waiting_client') {
         eux.push({ t: t.titre, etat: qui + ' regarde', k: 'client', id: t.id, sous: t.echeance ? 'prévue ' + ckpQuand(t.echeance) : '' });
         return;
       }
-      var late = t.echeance && t.echeance < auj, r = ckpRestant(t);
+      var late = t.echeance && t.echeance < auj, r = ckpRestant(t), rv = retours[t.id];
+      if (rv) { moi.push({ t: t.titre, id: t.id, etat: 'Retours à reprendre', k: 'retard', sous: 'Retours de ' + qui + (rv.comment ? ' : « ' + String(rv.comment).slice(0, 120) + ' »' : '') }); return; }
       moi.push({ t: t.titre, id: t.id, estimer: r === null,
         etat: late ? 'En retard' + (ckJRetardJ(t.echeance) ? ' de ' + ckJRetardJ(t.echeance) + ' j' : '') : (r === null ? 'À estimer' : (t.statut === 'in_progress' ? 'En cours' : 'À faire')),
         k: late ? 'retard' : (r === null ? 'rien' : (t.statut === 'in_progress' ? 'toi' : 'rien')),
@@ -6517,8 +6529,12 @@
       // Le nom et la flèche ouvrent la tâche entière ; « Estimer le temps »
       // s'ouvre sur place, sans quitter l'offre.
       var tp = ouvre ? '<span></span>' : (m.estimer && m.id ? '<button class="tps-lien" onclick="ADM.ckJEstimOuvrir(\'' + id + '\')">Estimer le temps</button>' : '<span class="pj-t__q">' + esc(m.sous || '') + '</span>');
-      var nom = m.id ? '<button class="pj-t__n pj-t__n--lien" onclick="ADM.ckTVoir(\'' + id + '\')">' + esc(m.t) + '</button>' : '<span class="pj-t__n">' + esc(m.t) + '</span>';
-      var fl = m.id ? '<button class="pj-t__fl" onclick="ADM.ckTVoir(\'' + id + '\')" aria-label="Ouvrir la tâche ' + esc(m.t) + '">' + FLECHE + '</button>' : '<span></span>';
+      // Sans la section visée (pas encore chargée), on garde un chemin qui mène quelque part.
+      var go = m.go && !aSec(m.go) ? (aSec('taches') ? 'taches' : 'echanges') : m.go;
+      var clic = m.id ? 'ADM.ckTVoir(\'' + id + '\')' : (go ? 'ADM.ckJOnglet(\'' + go + '\')' : '');
+      var quoi = m.id ? 'Ouvrir la tâche ' : 'Voir ';
+      var nom = clic ? '<button class="pj-t__n pj-t__n--lien" onclick="' + clic + '">' + esc(m.t) + '</button>' : '<span class="pj-t__n">' + esc(m.t) + '</span>';
+      var fl = clic ? '<button class="pj-t__fl" onclick="' + clic + '" aria-label="' + quoi + esc(m.t) + '">' + FLECHE + '</button>' : '<span></span>';
       return '<div class="pj-t' + (CKJ.flash && CKJ.flash === m.id ? ' pj-t--flash' : '') + '">' + nom + tp + '<span class="pj-pil pj-pil--' + m.k + '">' + esc(m.etat) + '</span>' + fl + '</div>' +
         (ouvre ? ckJEstimPanneau(m.id) : '');
     }).join('');
