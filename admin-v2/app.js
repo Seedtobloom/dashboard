@@ -8727,13 +8727,14 @@
     var _qnrNew = (CUR.questionnaires || []).filter(function (q) {
       return (q.status === 'completed' || q.status === 'to_review') && q.seenByAdmin !== true;
     }).length;
-    tabs.push(['qnranswers', 'Questionnaires', _qnrNew]);
+    tabs.push(['echanges', 'Historique', 0]);
     tabs.push(['fichiers', 'Fichiers', 0]);
-    tabs.push(['echanges', 'Échanges', 0]);
+    tabs.push(['qnranswers', 'Questionnaires', _qnrNew]);
     tabs.push(['forfait', 'Réglages', 0]);
     var tabsHtml = tabs.map(function (t) {
       var active = (TAB === t[0]);
-      return '<button class="tab' + (active ? ' active' : '') + '" onclick="ADM.tab(\'' + t[0] + '\')">' + esc(t[1]) + badge(t[2]) + '</button>';
+      return '<button role="tab" aria-selected="' + active + '" class="pg-ong pg-ong--seul pj-ong' + (active ? ' on' : '') + '" onclick="ADM.tab(\'' + t[0] + '\')"><span class="pg-ong__n">' + esc(t[1]) + '</span>' +
+        (t[2] ? '<span class="pj-ong__c num">' + t[2] + '</span>' : '') + '</button>';
     }).join('');
     var ml = (CUR.meetingLink || '').trim();
     var visioBtn = ml ? '<a class="btn btn--dark btn--sm" href="' + esc(ml.indexOf('http') === 0 ? ml : 'https://' + ml) + '" target="_blank" rel="noopener" title="Ouvrir la salle de visioconférence">' + admIcon('video') + ' Rejoindre la visio</a>' : '';
@@ -8743,38 +8744,15 @@
     var fil = '<nav class="cl-fil" aria-label="Fil d’Ariane"><button class="ckt-pl" onclick="ADM.nav(\'clients\')">Clients</button><span aria-hidden="true">/</span>' +
       (_projOuvert ? '<button class="ckt-pl" onclick="ADM.tab(\'apercu\')">' + esc(nm) + '</button><span aria-hidden="true">/</span><span>' + esc(DOMAIN_LABELS[_projOuvert.id] || _projOuvert.label || 'Projet') + '</span>'
         : '<span>' + esc(nm) + '</span>') + '</nav>';
-    var cdhead = '<div class="cdhead"><span class="cdhead__a">' + esc(_cdInit) + '</span>' +
-      '<div class="cdhead__m"><h1 class="cdhead__n">' + esc(nm) + '</h1><div class="cdhead__p">' + esc(_cdProj) + ' · ' + esc(_cdPr.label.charAt(0).toLowerCase() + _cdPr.label.slice(1)) + '</div></div>' +
-      (visioBtn ? '<span class="cdhead__v">' + visioBtn + '</span>' : '') + '</div>';
-    setMain('<div class="wrap cl2">' + fil + cdhead + clientAlerts() + '<div class="tabs">' + tabsHtml + '</div><div id="tabbody"></div></div>');
+    var _ent = (CUR.entreprise && CUR.entreprise.nom) || '';
+    var _pren = (_cl.prenom || nm.split(' ')[0] || '').trim();
+    var _menu = [['Réglages et coordonnées', 'ADM.tab(\'forfait\')'], ['Tout son historique', 'ADM.tab(\'echanges\')']];
+    if (ml) _menu.unshift(['Rejoindre la visio', 'window.open(\'' + esc(ml.indexOf('http') === 0 ? ml : 'https://' + ml) + '\',\'_blank\',\'noopener\')']);
+    var cdhead = '<div class="cf-h"><div class="cf-h__id"><span class="cf-av" aria-hidden="true">' + esc(_cdInit) + '</span>' +
+      '<div><h1 class="pg-h1">' + esc(nm) + '</h1><p class="cf-sous">' + esc([_ent, _cdPr.label.charAt(0).toLowerCase() + _cdPr.label.slice(1)].filter(Boolean).join(' · ')) + '</p></div></div>' +
+      '<div class="cf-h__a"><button class="tps-lien" onclick="ADM.cliEcrire(\'' + esc(CUR.key) + '\')">Écrire à ' + esc(_pren) + '</button>' + ckMenuHtml(_menu) + '</div></div>';
+    setMain('<div class="wrap tps pj-page cf-page">' + fil + cdhead + '<div class="pj-ongs" role="tablist" aria-label="' + esc(nm) + '">' + tabsHtml + '</div><div id="tabbody"></div></div>');
     renderTab();
-  }
-  // Bandeau de 4 tuiles (maquette cdstats) : avancement, prochaine livraison,
-  // forfait restant, dernier échange. Valeurs dérivées des données réelles.
-  // Ce qui attend, dit en une phrase : ce qui est à toi d'abord, puis ce qui
-  // attend le client. Les pastilles ressemblaient à des boutons sans en être.
-  function clientAlerts() {
-    var unread = 0, aValider = 0, review = 0, waitClient = 0;
-    function scan(list) {
-      (list || []).forEach(function (d) {
-        var c = d.content || {}; unread += d.unread || 0;
-        (c.livrables || []).forEach(function (l) { if (l.status === 'a_valider') aValider++; });
-        (c.taches || []).forEach(function (t) { if (t.status === 'review') review++; });
-        (c.suivi || []).forEach(function (s) { if (s.status === 'waiting_client') waitClient++; });
-      });
-    }
-    scan(CUR.domains); scan(CUR.supports);
-    var n = function (k, un, plus) { return '<b>' + k + ' ' + (k > 1 ? plus : un) + '</b>'; };
-    var toi = [], lui = [];
-    if (unread) toi.push(n(unread, 'message à lire', 'messages à lire'));
-    if (review) toi.push(n(review, 'tâche à valider', 'tâches à valider'));
-    if (aValider) lui.push(n(aValider, 'livrable à valider', 'livrables à valider'));
-    if (waitClient) lui.push(n(waitClient, 'étape à remplir', 'étapes à remplir'));
-    var et = function (l) { return l.length > 1 ? l.slice(0, -1).join(', ') + ' et ' + l[l.length - 1] : l[0]; };
-    var p = [];
-    if (toi.length) p.push('Pour toi : ' + et(toi) + '.');
-    if (lui.length) p.push('De son côté : ' + et(lui) + '.');
-    return '<p class="cl-att">' + (p.length ? p.join(' ') : 'Rien n’attend, ni de ton côté ni du sien.') + '</p>';
   }
   function tab(t) { navPas(function () { TAB = t; if (CURKEY) TAB_BY_CLIENT[CURKEY] = t; renderClient(); renderNav(); }); }
 
@@ -8819,13 +8797,12 @@
       var day = e.at.slice(0, 10);
       if (day !== lastDay) {
         lastDay = day;
-        out += '<div style="font-family:var(--font-micro);font-size:13px;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin:18px 0 8px">' + esc(fmtDate(e.at)) + '</div>';
+        out += '<div style="font-family:var(--font-micro);font-size:13px;letter-spacing:0;color:#7a5540;margin:18px 0 8px">' + esc(fmtDate(e.at)) + '</div>';
       }
       out += '<div style="display:flex;gap:12px;padding:9px 0;border:none">' +
-        '<div style="flex-shrink:0;font-size:16px;width:26px;text-align:center;line-height:1.4">' + e.icon + '</div>' +
         '<div style="flex:1;min-width:0"><div style="font-size:15px;color:var(--terre);font-weight:500;line-height:1.35">' + esc(e.title) + '</div>' +
           (e.sub ? '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:2px">' + esc(e.sub) + '</div>' : '') + '</div>' +
-        '<div style="flex-shrink:0;font-family:var(--font-micro);font-size:15px;color:var(--muted);padding-top:3px">' + esc(fmtDT(e.at).split(' ')[1] || '') + '</div>' +
+        '<div style="flex-shrink:0;font-family:var(--font-micro);font-size:15px;color:var(--muted);padding-top:3px">' + esc((fmtDT(e.at).split(' ')[1] || '').slice(0, 5).replace(':', ' h ')) + '</div>' +
       '</div>';
     });
     return '<div class="card infocard" style="background:var(--card)"><h3>Journal de projet</h3>' +
@@ -8836,36 +8813,85 @@
   function findDomain(id) { if (!CUR) return null; var d = (CUR.domains || []).filter(function (x) { return x.id === id; })[0]; if (d) return d; return (CUR.supports || []).filter(function (x) { return x.id === id; })[0] || null; }
 
   // Vue d'ensemble (onglet par défaut, style maquette) : là où on en est + activité récente.
-  function apercuTab() {
-    // Ne calcule plus que ce qui s'affiche ici : les messages non lus et le
-    // fil d'activité. L'avancement, la prochaine échéance et le forfait sont
-    // déjà dits par les tuiles du haut ; l'état de chaque projet, par la liste
-    // « Ses projets ». Les recalculer ici, c'était trois fois le même chiffre.
-    var doms = (CUR.domains || []).concat(CUR.supports || []);
-    var unread = 0, recent = [];
+  /* Fiche client, vue d'ensemble (option B) : une seule chose forte en noir,
+     ses offres et ce qui s'est passé à gauche, ce qu'elle doit faire et ses
+     coordonnées à droite. Les offres et les côtés viennent des mêmes calculs
+     que l'écran Projets : une offre ne dit jamais deux choses différentes. */
+  function cfProjets() {
+    return ((CKP.dash && CKP.dash.projets) || []).filter(function (p) { return p.key === CURKEY && p.actif && !p.clotureAt; });
+  }
+  function cfHero(l) {
+    var rang = { retard: 0, toi: 1, client: 2 };
+    var best = null;
+    l.forEach(function (p) {
+      var pr = ckJProchain(p); if (!pr || pr.qui === 'rien') return;
+      var r = rang[pr.qui] != null ? rang[pr.qui] : 3;
+      if (!best || r < best.r) best = { r: r, pr: pr, p: p };
+    });
+    if (!best) return '<section class="pj-mnt cf-mnt"><div><div class="pj-mnt__k">Rien d’urgent</div><p class="pj-mnt__p">Tout est à jour avec ' + esc(ckJPrenom(l[0] || { client: '' }) || 'ce client') + '</p></div></section>';
+    var pr = best.pr, p = best.p;
+    var tete = (pr.qui === 'client' ? 'C’est à ' + esc(ckJPrenom(p)) : 'À faire maintenant pour ' + esc(ckJPrenom(p))) +
+      (pr.qui === 'retard' ? ' <span class="pj-pil pj-pil--retard">en retard' + (pr.retardJ ? ' de ' + pr.retardJ + ' j' : '') + '</span>' : '');
+    var act = pr.tache ? '<button class="btn pj-mnt__b" onclick="ADM.ckTVoir(\'' + esc(pr.tache.id) + '\')">Ouvrir la tâche</button>'
+      : '<button class="btn pj-mnt__b" onclick="ADM.cliOuvrirOffre(\'' + esc(ckJId(p)) + '\')">Ouvrir l’offre</button>';
+    return '<section class="pj-mnt cf-mnt" aria-label="Ce qu’il faut faire maintenant"><div><div class="pj-mnt__k">' + tete + '</div>' +
+      '<p class="pj-mnt__p">' + esc(pr.phrase) + '</p><p class="pj-mnt__q">' + esc(p.projectLabel) + (pr.quand && pr.qui !== 'retard' ? ', ' + esc(pr.quand) : '') + '</p></div>' + act + '</section>';
+  }
+  function cfHistorique() {
+    var doms = (CUR.domains || []).concat(CUR.supports || []), ev = [], pren = (CUR.client && CUR.client.prenom) || 'Le client';
     doms.forEach(function (d) {
-      unread += d.unread || 0;
       var c = d.content || {};
       (c.livrables || []).forEach(function (l) {
-        if (l.createdAt) recent.push({ at: l.createdAt, t: 'Livrable envoyé · ' + (l.name || ''), s: 'Livrable' });
+        if (l.createdAt) ev.push({ at: l.createdAt, t: 'Tu as envoyé « ' + (l.name || 'un livrable') + ' »' });
+        if (l.validatedAt && l.status === 'valide') ev.push({ at: l.validatedAt, t: pren + ' a validé « ' + (l.name || 'le livrable') + ' »' });
+        if (l.validatedAt && (l.status === 'refuse' || l.status === 'revision')) ev.push({ at: l.validatedAt, t: pren + ' a renvoyé des retours sur « ' + (l.taskTitle || l.name || 'un livrable') + ' »' });
       });
       (c.taches || []).forEach(function (t) {
         if (t.archived) return;
-        if (t.createdAt) recent.push({ at: t.createdAt, t: (t.title || 'Tâche'), s: 'Demande créée' });
-        if (t.completedAt) recent.push({ at: t.completedAt, t: (t.title || 'Tâche'), s: 'Terminé' });
+        if (t.createdAt) ev.push({ at: t.createdAt, t: 'Demande « ' + (t.title || 'sans titre') + ' » créée' });
+        if (t.completedAt) ev.push({ at: t.completedAt, t: 'Tu as terminé « ' + (t.title || 'sans titre') + ' »' });
       });
     });
-    var pr = presence(CUR.lastSeen);
-    var acts = '';
-    if (unread) acts += '<div class="inrow inrow--recu"><span class="inrow__ic"><svg viewBox="0 0 24 24" style="width:16px;height:16px" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 5h16v11H9l-4 3v-3H4z"/></svg></span><div class="inrow__m"><div class="inrow__t">' + unread + ' message' + (unread > 1 ? 's' : '') + ' non lu' + (unread > 1 ? 's' : '') + '</div><div class="inrow__s">Messagerie</div></div></div>';
-    recent.sort(function (a, b) { return String(b.at).localeCompare(String(a.at)); });
-    recent.slice(0, 3).forEach(function (r) {
-      acts += '<div class="inrow"><span class="inrow__ic"><svg viewBox="0 0 24 24" style="width:16px;height:16px" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M14 3v4a1 1 0 0 0 1 1h4M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z"/></svg></span><div class="inrow__m"><div class="inrow__t">' + esc(r.t) + '</div><div class="inrow__s">' + esc(r.s) + ' · ' + esc(fmtDate(r.at)) + '</div></div></div>';
-    });
-    acts += '<div class="inrow"><span class="inrow__ic"><svg viewBox="0 0 24 24" style="width:16px;height:16px" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2"/></svg></span><div class="inrow__m"><div class="inrow__t">' + esc(pr.label) + '</div><div class="inrow__s">Dernière connexion</div></div></div>';
-    var activity = '<div class="ovcard"><h2>Activité récente</h2>' + acts + '</div>';
-    return projetsCard() + activity;
+    ev.sort(function (a, b) { return String(b.at).localeCompare(String(a.at)); });
+    var auj = ckpAuj();
+    var quand = function (at) { var d = String(at).slice(0, 10); return d === auj ? 'aujourd’hui' : (d === ckpPlus(auj, -1) ? 'hier' : ckpJourMois(d)); };
+    return '<section class="cf-card"><h2 class="cf-h2">Ce qui s’est passé</h2>' +
+      (ev.length ? ev.slice(0, 5).map(function (e) { return '<div class="cf-ev"><span>' + esc(quand(e.at)) + '</span><span>' + esc(e.t) + '</span></div>'; }).join('') : '<p class="pj-vide">Rien pour l’instant.</p>') +
+      (ev.length > 5 ? '<p class="cf-plus"><button class="tps-lien" onclick="ADM.tab(\'echanges\')">Tout voir</button></p>' : '') + '</section>';
   }
+  function cfChezElle(l) {
+    var pren = (CUR.client && CUR.client.prenom) || 'le client', items = [];
+    l.forEach(function (p) { ckJCotes(p).eux.forEach(function (m) { items.push({ m: m, p: p }); }); });
+    var r = items.filter(function (x) { return x.m.relance; })[0];
+    return '<section class="cf-eux"><h2 class="cf-h2">Chez ' + esc(pren) + '</h2>' +
+      (items.length ? items.slice(0, 5).map(function (x) {
+        return '<div class="cf-eux__l"><b>' + esc(x.m.t) + '</b><span>' + esc(x.p.projectLabel + (x.m.sous ? ' · ' + x.m.sous : '')) + '</span></div>';
+      }).join('') : '<p class="cf-eux__v">Rien n’attend sa réponse.</p>') +
+      (r ? '<p class="cf-plus"><button class="tps-lien" onclick="ADM.remind(\'' + esc(r.p.key) + '\',\'deliverable\',\'' + jsq(r.m.t) + '\',\'' + jsq(r.p.projectLabel) + '\')">Relancer ' + esc(pren) + '</button></p>' : '') + '</section>';
+  }
+  function cfCoordonnees() {
+    var c = CUR.client || {}, e = CUR.entreprise || {};
+    var li = function (k, v) { return v ? '<div class="cf-co"><span>' + k + '</span><b>' + esc(v) + '</b></div>' : ''; };
+    var corps = li('E-mail', c.email) + li('Téléphone', c.telephone) + li('Société', [e.nom, e.siret ? 'SIRET ' + e.siret : ''].filter(Boolean).join(', '));
+    return '<section class="cf-card"><h2 class="cf-h3">Ses coordonnées</h2>' + (corps || '<p class="pj-vide">Aucune coordonnée enregistrée.</p>') +
+      '<p class="cf-plus"><button class="tps-lien" onclick="ADM.tab(\'forfait\')">Modifier</button></p></section>';
+  }
+  function apercuTab() {
+    if (!CKP.pret) { ckpCharger(function () { if (VIEW === 'client' && TAB === 'apercu') renderTab(); }); return '<div class="empty"><div class="spin" style="margin:20px auto"></div></div>'; }
+    var l = cfProjets();
+    var tuiles = l.length ? '<div class="cf-tus">' + l.map(function (p) { return ckJTuile(p).replace('ADM.ckJOuvrir(', 'ADM.cliOuvrirOffre('); }).join('') + '</div>' : '<p class="pj-vide">Aucune offre en cours.</p>';
+    return cfHero(l) +
+      '<div class="cf-2"><div class="cf-g">' +
+        '<section class="cf-card"><div class="cf-card__h"><h2 class="cf-h2">Ses offres</h2><button class="tps-lien" onclick="ADM.cliNouveauProjet(\'' + esc(CURKEY) + '\')">Nouveau projet de com</button></div>' + tuiles + '</section>' +
+        cfHistorique() + '</div>' +
+      '<div class="cf-g">' + cfChezElle(l) + cfCoordonnees() + '</div></div>';
+  }
+  function cliOuvrirOffre(id) { nav('ckprojets'); ckJOuvrir(id); }
+  function cliNouveauProjet(key) {
+    CKJ.ouvert = null; CKJ.neuf = '*'; nav('ckprojets');
+    setTimeout(function () { var sel = el('ckj-neuf-cli'); if (sel) sel.value = key; var ch = el('ckj-neuf-*'); if (ch) ch.focus(); }, 60);
+  }
+  function cliEcrire(key) { CHAT.key = key; nav('chat'); }
   function renderTab() {
     // Depuis l'écran Projets, les mêmes blocs sont montés ailleurs : on y
     // redessine, au lieu de ne rien faire (le geste semblerait sans effet).
@@ -12862,7 +12888,7 @@
     ckLChoisir: ckLChoisir, ckLSemaine: ckLSemaine, ckLPoser: ckLPoser, ckLRetirer: ckLRetirer,
     ckLRegSet: ckLRegSet, ckLRegEnregistrer: ckLRegEnregistrer, ckLRegAnnuler: ckLRegAnnuler,
     ckLSetSimH: ckLSetSimH, ckLSetSimHz: ckLSetSimHz, ckLDepuis: ckLDepuis,
-    ckJSetFiltre: ckJSetFiltre, ckJSetClient: ckJSetClient, ckJEstimOuvrir: ckJEstimOuvrir, ckJCrOuvrir: ckJCrOuvrir, ckJCrNouvelle: ckJCrNouvelle, cliSetFiltre: cliSetFiltre, visPassees: visPassees, chatSetFiltre: chatSetFiltre, ckJRevRouvrir: ckJRevRouvrir, ckJRevClasser: ckJRevClasser, ckJEstimChoix: ckJEstimChoix, ckJEstimer: ckJEstimer, ckJOuvrir: ckJOuvrir, ckJFermer: ckJFermer, ckJOnglet: ckJOnglet,
+    ckJSetFiltre: ckJSetFiltre, ckJSetClient: ckJSetClient, ckJEstimOuvrir: ckJEstimOuvrir, ckJCrOuvrir: ckJCrOuvrir, ckJCrNouvelle: ckJCrNouvelle, cliSetFiltre: cliSetFiltre, cliOuvrirOffre: cliOuvrirOffre, cliNouveauProjet: cliNouveauProjet, cliEcrire: cliEcrire, visPassees: visPassees, chatSetFiltre: chatSetFiltre, ckJRevRouvrir: ckJRevRouvrir, ckJRevClasser: ckJRevClasser, ckJEstimChoix: ckJEstimChoix, ckJEstimer: ckJEstimer, ckJOuvrir: ckJOuvrir, ckJFermer: ckJFermer, ckJOnglet: ckJOnglet,
     ckJNeuf: ckJNeuf, ckJCreer: ckJCreer,
     tblStart: tblStart, tblCancel: tblCancel, tblSave: tblSave,
     tblDragStart: tblDragStart, tblDragEnd: tblDragEnd, tblDragOver: tblDragOver,
