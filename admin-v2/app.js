@@ -3484,7 +3484,7 @@
   function renderVisios() {
     // « Trames d'appel » vit dans Modèles mais partage le chargement des Visios.
     if (VIEW === 'trames') setMain('<div class="wrap mdl">' + modelesTete('trames') + '<div id="vis-body"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div></div>');
-    else setMain(topbar('') + '<div class="wrap" id="vis-body" style="max-width:none"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
+    else setMain('<div class="wrap tps pj-page vis-page" id="vis-body"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
     if (!NAV_CLIENTS.length) { clientsGet().then(function (d) { NAV_CLIENTS = d.clients || []; if (VIEW === 'visios' || VIEW === 'trames') renderVisiosBody(); }).catch(function () {}); }
     visLoadCalendar();
     // Bibliothèque de trames (serveur) — chargée une fois, avec migration douce
@@ -3548,12 +3548,12 @@
     var body = el('vis-body'); if (!body) return;
     if (VIEW === 'trames') { body.innerHTML = visTramesHtml(); return; }
     if (VIS_TAB === 'trames') VIS_TAB = 'cards';
-    var head = '<div class="clhead"><div><p class="hello">Visios</p><p class="hello__s">Tes rendez-vous avec tes clientes, à venir et passés.</p></div></div>';
-    var tabs = '<div class="ttabs">' +
-      '<button class="ttab' + (VIS_TAB === 'cards' ? ' is-on' : '') + '" onclick="ADM.visTab(\'cards\')">Rendez-vous</button>' +
-      '<button class="ttab' + (VIS_TAB === 'templates' ? ' is-on' : '') + '" onclick="ADM.visTab(\'templates\')">Modèles de déroulé</button>' +
-      '<button class="ttab' + (VIS_TAB === 'fiche' ? ' is-on' : '') + '" onclick="ADM.visTab(\'fiche\')">Fiche d\'appel</button>' +
-    '</div>';
+    var nouvelle = '<div class="ckm vis-nv"><button class="btn ckm-b" aria-haspopup="menu" aria-expanded="false" onclick="event.stopPropagation();ADM.ckMenu(this)">Nouvelle visio</button>' +
+      '<div class="ckm-l" role="menu" hidden><button role="menuitem" class="ckm-i" onclick="ADM.visAdd(\'suivi\')">Avec un client suivi</button>' +
+      '<button role="menuitem" class="ckm-i" onclick="ADM.visAdd(\'nouveau\')">Avec un nouveau contact</button></div></div>';
+    var head = '<div class="cl-h"><h1 class="pg-h1">Visios</h1>' + nouvelle + '</div>';
+    var ong = function (k, t) { var on = VIS_TAB === k; return '<button role="tab" aria-selected="' + on + '" class="pg-ong pg-ong--seul pj-ong' + (on ? ' on' : '') + '" onclick="ADM.visTab(\'' + k + '\')"><span class="pg-ong__n">' + t + '</span></button>'; };
+    var tabs = '<div class="pj-ongs" role="tablist" aria-label="Visios">' + ong('cards', 'Rendez-vous') + ong('templates', 'Modèles de déroulé') + ong('fiche', 'Fiche d’appel') + '</div>';
     body.innerHTML = head + tabs + (VIS_TAB === 'trames' ? visTramesHtml() : VIS_TAB === 'fiche' ? visFicheHtml() : VIS_TAB === 'templates' ? visTemplatesHtml() : visCardsHtml());
   }
   function visTab(t) { VIS_TAB = t; renderVisiosBody(); }
@@ -4080,102 +4080,63 @@
     var right = '<aside style="position:sticky;top:12px">' + rtoggle + (CALL_RIGHT === 'trame' ? callTrame() : callAntiseche()) + '</aside>';
     return '<div style="display:grid;grid-template-columns:210px minmax(0,1fr) 560px;gap:18px;align-items:start">' + list + editor + right + '</div>';
   }
+  /* Visios : la prochaine en grand, les autres en liste, le calendrier dans
+     une carte calme. Les visios viennent des fiches du tableau de bord et des
+     événements iCloud qui portent un lien de visio. */
+  var VIS_PASSEES = false;
+  function visPassees() { VIS_PASSEES = !VIS_PASSEES; renderVisiosBody(); }
   function visCardsHtml() {
     var now = Date.now();
-    function ts(c) { var t = c.date ? +new Date(c.date) : NaN; return isNaN(t) ? null : t; }
-    var cardsF = VIS_TYPEFILTER === 'all' ? VISIOS.cards : VISIOS.cards.filter(function (c) { return (c.visioType || 'autre') === VIS_TYPEFILTER; });
-    var upcoming = cardsF.filter(function (c) { return !c.done && (ts(c) == null || ts(c) >= now); })
-      .sort(function (a, b) { return (ts(a) || 8.64e15) - (ts(b) || 8.64e15); });
-    var past = cardsF.filter(function (c) { return c.done || (ts(c) != null && ts(c) < now); })
-      .sort(function (a, b) { return (ts(b) || 0) - (ts(a) || 0); });
-    function row(c, soon, past) {
-      var name = c.client || (c.category === 'suivi' ? 'Cliente à choisir' : 'Nouveau prospect');
-      var ini = (name.trim().charAt(0) || '?').toUpperCase();
-      var dt = c.date ? new Date(c.date) : null;
-      var dayB = dt ? dt.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }).replace('.', '') : '—';
-      var hourS = dt ? dt.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '';
-      var catLbl = c.category === 'suivi' ? 'Cliente suivie' : 'Nouveau contact';
-      var tChip = c.visioType ? ' ' + visTypeChip(c.visioType) : '';
-      var nSteps = (c.steps || []).length, nQ = (c.questions || []).length;
-      var hasContent = nSteps || nQ;
-      var icalBtn = (VIS_CAL.configured && c.date && !c.done)
-        ? '<button class="ibbtn' + (c.icalPushed ? '' : ' ibbtn--cal') + '" title="' + (c.icalPushed ? 'Déjà dans ton calendrier iCloud' : 'Ajouter ce rendez-vous à ton calendrier iCloud (visible dans Spark)') + '" onclick="event.stopPropagation();ADM.visPushICloud(\'' + c.id + '\')">' + (c.icalPushed ? '✓ iCloud' : '📅 Ajouter à iCloud') + '</button>'
-        : '';
+    var jour = function (d) { var x = d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric' }); return x; };
+    var heure = function (d) { return ckpHM(d.getHours() * 60 + d.getMinutes()); };
+    var items = [];
+    VISIOS.cards.forEach(function (c) {
+      var t = c.date ? +new Date(c.date) : NaN;
+      var name = c.client || (c.category === 'suivi' ? 'Client à choisir' : 'Nouveau contact');
+      var m = visTypeMeta(c.visioType), ns = (c.steps || []).length, nq = (c.questions || []).length;
       var ml = (c.meetingUrl || '').trim();
-      var joinBtn = ml ? '<a class="ibbtn ibbtn--dark" href="' + esc(/^https?:\/\//i.test(ml) ? ml : 'https://' + ml) + '" target="_blank" rel="noopener" title="Rejoindre la visio" onclick="event.stopPropagation()">Rejoindre</a>' : '';
-      var actions = joinBtn +
-        (hasContent && !c.done ? '<button class="ibbtn' + (ml ? '' : ' ibbtn--dark') + '" onclick="event.stopPropagation();ADM.visPresent(\'' + c.id + '\')">Mode appel</button>' : '') +
-        icalBtn +
-        '<button class="ibbtn" onclick="event.stopPropagation();ADM.visOpen(\'' + c.id + '\')">' + (c.done ? 'Compte-rendu' : 'Détails') + '</button>';
-      return '<div class="viorow' + (soon ? ' viorow--soon' : '') + (past || c.done ? ' viorow--past' : '') + '" style="cursor:pointer" tabindex="0" data-kb onclick="ADM.visOpen(\'' + c.id + '\')">' +
-        '<div class="vio__d"><b>' + esc(dayB.charAt(0).toUpperCase() + dayB.slice(1)) + '</b><span>' + esc(hourS) + '</span></div>' +
-        '<span class="vio__a">' + esc(ini) + '</span>' +
-        '<div class="vio__m"><div class="vio__t">' + esc(name) + '</div><div class="vio__s" style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">' + esc(catLbl) + (nSteps ? ' · ' + nSteps + ' étape' + (nSteps > 1 ? 's' : '') : '') + tChip + '</div></div>' +
-        actions + '<span class="caltag" style="background:var(--glycine);color:var(--glycine-900)">Visio</span></div>';
+      items.push({ t: isNaN(t) ? null : t, passe: c.done || (!isNaN(t) && t < now), nom: name,
+        objet: m ? m[1] : (c.category === 'suivi' ? 'Point client' : 'Premier échange'),
+        prep: [ns ? ns + ' étape' + (ns > 1 ? 's' : '') + ' de déroulé' : '', nq ? nq + ' question' + (nq > 1 ? 's' : '') + ' à poser' : ''].filter(Boolean).join(' · '),
+        ouvrir: 'ADM.visOpen(\'' + esc(c.id) + '\')', fait: c.done,
+        lien: ml ? (/^https?:\/\//i.test(ml) ? ml : 'https://' + ml) : '' });
+    });
+    ((VIS_CAL.configured && Array.isArray(VIS_CAL.events)) ? VIS_CAL.events : []).forEach(function (e) {
+      if (!e.joinUrl) return;
+      var t = e.start ? +new Date(e.start) : NaN; if (isNaN(t)) return;
+      items.push({ t: t, passe: t < now, nom: e.title || 'Visio', objet: 'Depuis ton calendrier', prep: '', ouvrir: '', lien: e.joinUrl });
+    });
+    var avenir = items.filter(function (x) { return !x.passe; }).sort(function (a, b) { return (a.t || 8.64e15) - (b.t || 8.64e15); });
+    var passees = items.filter(function (x) { return x.passe; }).sort(function (a, b) { return (b.t || 0) - (a.t || 0); });
+    var actions = function (x) {
+      return '<span class="vis-a">' + (x.ouvrir ? '<button class="tps-lien" onclick="' + x.ouvrir + '">' + (x.passe ? 'Compte-rendu' : 'Préparer') + '</button>' : '') +
+        (x.lien && !x.passe ? '<a class="tps-lien" href="' + esc(x.lien) + '" target="_blank" rel="noopener">Rejoindre</a>' : '') + '</span>';
+    };
+    var ligne = function (x) {
+      var d = x.t ? new Date(x.t) : null;
+      return '<div class="vis-l"><b>' + (d ? esc(jour(d)) : 'Date à fixer') + '</b><span class="num">' + (d ? esc(heure(d)) : '') + '</span>' +
+        '<span><b>' + esc(x.nom) + '</b><span class="cl-sous">' + esc(x.objet) + '</span></span>' + actions(x) + '</div>';
+    };
+    var hero = '';
+    if (avenir.length) {
+      var p = avenir[0], d0 = p.t ? new Date(p.t) : null;
+      hero = '<section class="pj-mnt vis-mnt" aria-label="Ta prochaine visio"><div><div class="pj-mnt__k">Ta prochaine visio' + (d0 ? ', ' + esc(jour(d0)) + ' à ' + esc(heure(d0)) : '') + '</div>' +
+        '<p class="pj-mnt__p">' + esc(p.nom) + ' · ' + esc(p.objet.charAt(0).toLowerCase() + p.objet.slice(1)) + '</p>' +
+        '<p class="pj-mnt__q">' + esc(p.prep || 'Pas encore de déroulé : prépare les questions à poser.') + '</p></div>' +
+        '<div class="vis-mnt__a">' + (p.lien ? '<a class="btn vis-mnt__j" href="' + esc(p.lien) + '" target="_blank" rel="noopener">Rejoindre</a>' : '') +
+        (p.ouvrir ? '<button class="btn pj-mnt__b" onclick="' + p.ouvrir + '">Préparer l’appel</button>' : '') + '</div></section>';
     }
-    // Événements iCloud (lecture seule). Un événement avec lien de visio est une
-    // « visio » ; sinon c'est un simple rendez-vous d'agenda (section à part).
-    function icalRow(ev, soon, past) {
-      var dt = ev.start ? new Date(ev.start) : null;
-      var dayB = dt && !isNaN(dt) ? dt.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }).replace('.', '') : '—';
-      var hourS = (dt && !isNaN(dt) && !ev.allDay) ? dt.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : (ev.allDay ? 'journée' : '');
-      var vis = !!ev.joinUrl;
-      var av = vis
-        ? '<span class="vio__a"><svg class="ico" viewBox="0 0 24 24" style="width:16px;height:16px" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M23 7l-7 5 7 5V7zM14 5H3a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2z"/></svg></span>'
-        : '<span class="vio__a" style="background:var(--paille-200);color:var(--muted)"><svg class="ico" viewBox="0 0 24 24" style="width:16px;height:16px" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 5h16v15H4zM4 9h16M8 3v4M16 3v4"/></svg></span>';
-      var join = vis ? '<a class="ibbtn ibbtn--dark" href="' + esc(ev.joinUrl) + '" target="_blank" rel="noopener" onclick="event.stopPropagation()">Rejoindre</a>' : '';
-      var tag = vis ? '<span class="caltag" style="background:var(--glycine);color:var(--glycine-900)">Visio · iCloud</span>' : '<span class="caltag" style="background:var(--paille-200);color:var(--muted)">Perso</span>';
-      return '<div class="viorow' + (soon ? ' viorow--soon' : '') + (vis ? '' : ' viorow--perso') + (past ? ' viorow--past' : '') + '">' +
-        '<div class="vio__d"><b>' + esc(dayB.charAt(0).toUpperCase() + dayB.slice(1)) + '</b><span>' + esc(hourS) + '</span></div>' + av +
-        '<div class="vio__m"><div class="vio__t">' + esc(ev.title || 'Événement') + '</div><div class="vio__s">' + esc(ev.location || 'Depuis ton calendrier') + '</div></div>' +
-        join + tag + '</div>';
-    }
-    var icalEvents = (VIS_CAL.configured && Array.isArray(VIS_CAL.events)) ? VIS_CAL.events : [];
-    function icalTs(ev) { var t = ev.start ? +new Date(ev.start) : NaN; return isNaN(t) ? null : t; }
-    var icalVisios = icalEvents.filter(function (e) { return e.joinUrl; });
-    var icalOthers = icalEvents.filter(function (e) { return !e.joinUrl; });
-    function icalUpF(list) { return list.filter(function (e) { var t = icalTs(e); return t != null && t >= now; }).sort(function (a, b) { return icalTs(a) - icalTs(b); }); }
-    function icalPastF(list) { return list.filter(function (e) { var t = icalTs(e); return t != null && t < now; }).sort(function (a, b) { return icalTs(b) - icalTs(a); }); }
-    // Visios (cartes du dashboard + événements iCloud avec lien) — triées par date.
-    var upItems = upcoming.map(function (c, i) { return { t: (ts(c) || 8.64e15), h: row(c, false, false) }; })
-      .concat(icalUpF(icalVisios).map(function (e) { return { t: icalTs(e), h: icalRow(e, false, false) }; }))
-      .sort(function (a, b) { return a.t - b.t; });
-    var pastItems = past.map(function (c) { return { t: (ts(c) || 0), h: row(c, false, true) }; })
-      .concat(icalPastF(icalVisios).map(function (e) { return { t: icalTs(e), h: icalRow(e, false, true) }; }))
-      .sort(function (a, b) { return b.t - a.t; });
-    // Regroupe des items {t,h} par mois (ordre décroissant), avec en-têtes.
-    function byMonth(items) {
-      if (!items.length) return '';
-      var groups = {}, order = [];
-      items.forEach(function (x) { var d = new Date(x.t); var k = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); if (!groups[k]) { groups[k] = []; order.push(k); } groups[k].push(x); });
-      order.sort(function (a, b) { return a < b ? 1 : -1; });
-      return order.map(function (k) {
-        var p = k.split('-'); var lbl = new Date(p[0], p[1] - 1, 1).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
-        lbl = lbl.charAt(0).toUpperCase() + lbl.slice(1);
-        return '<div class="secmark2" style="margin-top:20px">' + esc(lbl) + ' · ' + groups[k].length + '</div>' + groups[k].map(function (x) { return x.h; }).join('');
-      }).join('');
-    }
-    // La section Visios ne montre QUE les visios (dashboard + iCloud avec lien).
-    // Les autres événements iCloud (blocs de temps de travail, rendez-vous perso)
-    // ne sont PAS affichés ici : inutiles dans cette partie.
-    var agendaSection = '';
-    // Bandeau d'état du calendrier.
-    var calbar;
-    if (VIS_CAL.configured && !VIS_CAL.error) {
-      calbar = '<div class="calbar"><span class="calbar__ic"><svg class="ico" viewBox="0 0 24 24" style="width:17px;height:17px" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 5h16v15H4zM4 9h16M8 3v4M16 3v4"/></svg></span>' +
-        '<div class="calbar__t"><span class="calbar__dot"></span><b>Calendrier iCloud connecté</b>' + (VIS_CAL.calName ? ' · ' + esc(VIS_CAL.calName) : '') + '. Seules tes <b>visios</b> (avec lien) remontent ici ; tes visios planifiées sont ajoutées à iCloud.</div>' +
-        '<button class="ibbtn" onclick="ADM.nav(\'reglages\');setTimeout(function(){ADM.reglSetTab(\'calendar\')},60)">Gérer</button></div>';
-    } else if (VIS_CAL.configured && VIS_CAL.error) {
-      calbar = '<div class="calbar" style="background:#f7ede6"><span class="calbar__ic" style="background:var(--gold-chip);color:var(--gold-ink)">!</span><div class="calbar__t"><b>Calendrier iCloud</b> · ' + esc(VIS_CAL.error) + '</div><button class="ibbtn" onclick="ADM.nav(\'reglages\');setTimeout(function(){ADM.reglSetTab(\'calendar\')},60)">Vérifier</button></div>';
-    } else if (VIS_CAL.loaded) {
-      calbar = '<div class="calbar"><span class="calbar__ic"><svg class="ico" viewBox="0 0 24 24" style="width:17px;height:17px" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 5h16v15H4zM4 9h16M8 3v4M16 3v4"/></svg></span><div class="calbar__t">Connecte ton <b>calendrier iCloud</b> (Apple / Spark) pour voir tes rendez-vous ici et y ajouter tes visios.</div><button class="ibbtn ibbtn--dark" onclick="ADM.nav(\'reglages\');setTimeout(function(){ADM.reglSetTab(\'calendar\')},60)">Connecter</button></div>';
-    } else calbar = '';
-    var typeFilters = '<div class="clfilters" style="margin-bottom:12px"><button class="chip' + (VIS_TYPEFILTER === 'all' ? ' on' : '') + '" onclick="ADM.visSetTypeFilter(\'all\')">Toutes</button>' +
-      VIS_TYPES.map(function (t) { var n = VISIOS.cards.filter(function (c) { return (c.visioType || 'autre') === t[0]; }).length; return n ? '<button class="chip' + (VIS_TYPEFILTER === t[0] ? ' on' : '') + '" onclick="ADM.visSetTypeFilter(\'' + t[0] + '\')">' + esc(t[1]) + ' · ' + n + '</button>' : ''; }).join('') + '</div>';
-    var addBar = '<div class="qbar"><div class="clfilters"><button class="ibbtn" onclick="ADM.visAdd(\'suivi\')">Suivre un client</button><button class="ibbtn" onclick="ADM.visAdd(\'nouveau\')">Nouveau contact</button></div></div>' + typeFilters;
-    var up = upItems.length ? upItems.map(function (x) { return x.h; }).join('') : '<div class="empty">Aucune visio à venir. Planifie ton prochain rendez-vous.</div>';
-    var pa = pastItems.length ? '<div class="secmark2" style="margin-top:26px;color:var(--terre)">Passées</div>' + byMonth(pastItems) : '';
-    return calbar + addBar + '<div class="secmark2">À venir</div>' + up + agendaSection + pa;
+    var liste = '<section class="vis-t"><div class="vis-th"><h2>À venir</h2><span class="num">' + avenir.length + ' visio' + (avenir.length > 1 ? 's' : '') + '</span></div>' +
+      (avenir.length ? avenir.map(ligne).join('') : '<p class="pj-vide" style="margin:12px 0">Aucune visio à venir. Planifie la prochaine avec « Nouvelle visio ».</p>') +
+      (passees.length ? '<div class="vis-pass"><button class="tps-lien" onclick="ADM.visPassees()">' + (VIS_PASSEES ? 'Masquer' : 'Voir') + (passees.length > 1 ? ' les ' + passees.length + ' visios passées' : ' la visio passée') + '</button></div>' +
+        (VIS_PASSEES ? '<div class="vis-passees">' + passees.map(ligne).join('') + '</div>' : '') : '') + '</section>';
+    var cal;
+    if (VIS_CAL.configured && !VIS_CAL.error) cal = '<b>Calendrier iCloud connecté' + (VIS_CAL.calName ? ' : ' + esc(VIS_CAL.calName) : '') + '</b><span>Tes visios avec lien remontent ici, celles que tu planifies y sont ajoutées.</span>';
+    else if (VIS_CAL.configured) cal = '<b>Le calendrier iCloud ne répond pas</b><span>' + esc(VIS_CAL.error) + '</span>';
+    else cal = '<b>Ton calendrier iCloud n’est pas connecté</b><span>Connecte-le pour voir ici tous tes rendez-vous, et y ajouter tes visios.</span>';
+    var calCarte = VIS_CAL.loaded || VIS_CAL.configured ? '<section class="vis-cal"><div>' + cal + '</div><button class="tps-lien" onclick="ADM.nav(\'reglages\');setTimeout(function(){ADM.reglSetTab(\'calendar\')},60)">' +
+      (VIS_CAL.configured && !VIS_CAL.error ? 'Gérer' : 'Connecter le calendrier') + '</button></section>' : '';
+    return hero + liste + calCarte;
   }
   // Champ « nom » : sélecteur de cliente (suivi) ou texte libre (prospect).
   function visNameField(c) {
@@ -12874,7 +12835,7 @@
     ckLChoisir: ckLChoisir, ckLSemaine: ckLSemaine, ckLPoser: ckLPoser, ckLRetirer: ckLRetirer,
     ckLRegSet: ckLRegSet, ckLRegEnregistrer: ckLRegEnregistrer, ckLRegAnnuler: ckLRegAnnuler,
     ckLSetSimH: ckLSetSimH, ckLSetSimHz: ckLSetSimHz, ckLDepuis: ckLDepuis,
-    ckJSetFiltre: ckJSetFiltre, ckJSetClient: ckJSetClient, ckJEstimOuvrir: ckJEstimOuvrir, ckJCrOuvrir: ckJCrOuvrir, ckJCrNouvelle: ckJCrNouvelle, cliSetFiltre: cliSetFiltre, chatSetFiltre: chatSetFiltre, ckJRevRouvrir: ckJRevRouvrir, ckJRevClasser: ckJRevClasser, ckJEstimChoix: ckJEstimChoix, ckJEstimer: ckJEstimer, ckJOuvrir: ckJOuvrir, ckJFermer: ckJFermer, ckJOnglet: ckJOnglet,
+    ckJSetFiltre: ckJSetFiltre, ckJSetClient: ckJSetClient, ckJEstimOuvrir: ckJEstimOuvrir, ckJCrOuvrir: ckJCrOuvrir, ckJCrNouvelle: ckJCrNouvelle, cliSetFiltre: cliSetFiltre, visPassees: visPassees, chatSetFiltre: chatSetFiltre, ckJRevRouvrir: ckJRevRouvrir, ckJRevClasser: ckJRevClasser, ckJEstimChoix: ckJEstimChoix, ckJEstimer: ckJEstimer, ckJOuvrir: ckJOuvrir, ckJFermer: ckJFermer, ckJOnglet: ckJOnglet,
     ckJNeuf: ckJNeuf, ckJCreer: ckJCreer,
     tblStart: tblStart, tblCancel: tblCancel, tblSave: tblSave,
     tblDragStart: tblDragStart, tblDragEnd: tblDragEnd, tblDragOver: tblDragOver,

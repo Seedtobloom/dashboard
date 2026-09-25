@@ -3171,3 +3171,25 @@ h1.cdhead__n{margin:0;font-weight:400;font-size:36px}
 .ck-verdict{color:#110704}.ck-verdict--tendu{color:#7a5540}.ck-verdict--surcharge{color:#5A2A11}
 .ckl-page .ck-semp{font-family:var(--font-micro);font-size:15px;color:#3b2a20}
 .ckl-page .ckl-troul{opacity:1;color:#110704;letter-spacing:0;text-transform:none;font-size:13px;font-weight:600}
+
+/* Visios : la prochaine en grand, les autres en liste, le calendrier en carte calme */
+.vis-page .pj-ongs{margin:0 0 20px}
+.vis-nv .ckm-b{width:auto;height:auto;min-height:44px;padding:10px 20px;border-radius:999px;background:#110704;color:#F8F6F2;font-size:15px;font-weight:600}
+.vis-nv .ckm-b:hover{background:#3b2a20}
+.vis-mnt{margin:0 0 20px}
+.vis-mnt__a{display:flex;align-items:center;gap:12px;flex-shrink:0}
+.vis-mnt .vis-mnt__j{background:none;color:#F8F6F2;border:1px solid rgba(248,246,242,.5);border-radius:999px;padding:10px 20px;min-height:44px;display:inline-flex;align-items:center;font-weight:600;text-decoration:none}
+.vis-t,.vis-cal{background:#fff;border-radius:16px;box-shadow:0 0 0 1px rgba(17,7,4,.07),0 2px 6px rgba(17,7,4,.08);margin:0 0 20px}
+.vis-t{padding:16px 24px 18px}
+.vis-th{display:flex;justify-content:space-between;align-items:baseline;padding-bottom:6px}
+.vis-th h2{margin:0;font-size:17px;font-weight:700;color:#110704}
+.vis-th span{font-size:15px;color:#7a5540}
+.vis-l{display:grid;grid-template-columns:140px 110px minmax(0,1fr) auto;gap:20px;align-items:center;padding:14px 0;border-top:1px solid #F0E9D6;font-size:15px}
+.vis-l>b::first-letter{text-transform:uppercase}
+.vis-l b{font-weight:600}
+.vis-a{display:flex;gap:16px}
+.vis-pass{padding-top:14px}
+.vis-passees .vis-l{color:#3b2a20}
+.vis-cal{display:flex;justify-content:space-between;align-items:center;gap:20px;padding:18px 24px;font-size:15px}
+.vis-cal b{display:block}
+.vis-cal span{color:#3b2a20}
