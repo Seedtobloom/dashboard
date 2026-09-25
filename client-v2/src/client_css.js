@@ -1095,4 +1095,11 @@ button.cpnd-j:hover { box-shadow: inset 0 0 0 1px #110704; }
   .cpa-mois { flex-wrap: wrap; }
   .cpa-mois span { min-width: 0; font-size: 22px; }
 }
+
+.cpnd-fichiers { flex-wrap: wrap; }
+.cpnd-ress { flex-basis: 100%; display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 6px; max-height: 200px; overflow-y: auto; padding-top: 6px; }
+.cpnd-ress__i { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; text-align: left; border: 0; background: #fff; border-radius: 8px; padding: 8px 10px; cursor: pointer; font: 500 14px var(--font-micro); color: #110704; }
+.cpnd-ress__i:hover { box-shadow: inset 0 0 0 1px #110704; }
+.cpnd-ress__i b { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.cpnd-ress__i span { font-size: 12px; color: #7a5540; flex-shrink: 0; }
 `;

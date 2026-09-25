@@ -303,8 +303,31 @@
   function cpNDFichiersHtml() {
     var l = cpND.t.attachments || [];
     return '<span>' + (l.length ? l.map(function (a) { return '<span class="cpnd-fich">' + esc(a.name) + '<button aria-label="Retirer ' + esc(a.name) + '" onclick="cpNDRetirerFichier(\'' + esc(a.key) + '\')">retirer</button></span>'; }).join('') : 'Glisse tes fichiers ici') + '</span>' +
-      '<span class="cpnd-fichiers__a"><label class="cpnd-lien">Ajouter un fichier<input type="file" multiple hidden onchange="cpNDFichiers(this.files)"></label><button class="cpnd-lien" onclick="cpNDAjoutBloc(\'link\')">Ajouter un lien</button></span>';
+      '<span class="cpnd-fichiers__a"><label class="cpnd-lien">Ajouter un fichier<input type="file" multiple hidden onchange="cpNDFichiers(this.files)"></label><button class="cpnd-lien" onclick="cpNDAjoutBloc(\'link\')">Ajouter un lien</button><button class="cpnd-lien" aria-expanded="' + !!cpND.ress + '" onclick="cpNDRess()">Depuis tes ressources</button></span>' + cpNDRessHtml();
   }
+  // Un fichier ou un lien déjà présent dans l'espace, sans le renvoyer.
+  function cpNDRessHtml() {
+    if (!cpND.ress) return '';
+    var pd = getPD(cpND.pid), pris = (cpND.t.attachments || []).map(function (a) { return a.key; });
+    var fichiers = ((pd && pd.files) || []).filter(function (f) { return f && f.key && pris.indexOf(f.key) < 0; }).slice(-40).reverse();
+    var liens = ((pd && pd.project.resources) || []).filter(function (r) { return r && r.url; });
+    if (!fichiers.length && !liens.length) return '<div class="cpnd-ress"><span class="cpnd-note">Rien pour l’instant dans tes fichiers ou tes ressources.</span></div>';
+    return '<div class="cpnd-ress">' +
+      fichiers.map(function (f) { return '<button class="cpnd-ress__i" onclick="cpNDRessFichier(this.getAttribute(\'data-k\'))" data-k="' + esc(f.key) + '"><b>' + esc(f.name || 'fichier') + '</b><span>fichier</span></button>'; }).join('') +
+      liens.map(function (r, i) { return '<button class="cpnd-ress__i" onclick="cpNDRessLien(' + i + ')"><b>' + esc(r.title || r.url) + '</b><span>lien</span></button>'; }).join('') + '</div>';
+  }
+  window.cpNDRess = function () { cpND.ress = !cpND.ress; cpNDRenderFichiers(); };
+  window.cpNDRessFichier = function (k) {
+    var pd = getPD(cpND.pid), f = ((pd && pd.files) || []).filter(function (x) { return x.key === k; })[0]; if (!f) return;
+    cpND.t.attachments.push({ key: f.key, name: f.name || 'fichier', type: f.type || '' });
+    cpNDRenderFichiers(); window.cpNDSaveDraft();
+  };
+  window.cpNDRessLien = function (i) {
+    var pd = getPD(cpND.pid), r = ((pd && pd.project.resources) || []).filter(function (x) { return x && x.url; })[i]; if (!r) return;
+    cpND.t.blocks.push({ id: stbBid(), type: 'link', text: r.title || r.url, url: r.url });
+    stbRenderBlocks(cpND.pid, cpND.t.id); cpND.ress = false; cpNDRenderFichiers(); window.cpNDSaveDraft();
+    toast('Lien ajouté à ton brief');
+  };
   function cpNDRenderFichiers() { var el = document.getElementById('cpnd-fichiers'); if (el) el.innerHTML = cpNDFichiersHtml(); }
   function cpNDEtape2(pd) {
     var det = cpNDDetail();

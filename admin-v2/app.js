@@ -1466,7 +1466,8 @@
     var x = it.x, k = esc(x.key), i = esc(x.id), t = it.type;
     var faits = [];
     if (t === 'demande') {
-      faits.push(['Souhaitée pour', x.dueDate ? ckpDateLongue(String(x.dueDate).slice(0, 10)) : 'Pas de date', '']);
+      faits.push(['Souhaitée pour', x.dueDate ? ckpDateLongue(String(x.dueDate).slice(0, 10)) : 'Pas de date', x.exception ? 'date exceptionnelle, plus proche que le délai du type' : '']);
+      faits.push(['Temps estimé', x.estMinutes ? ckpDuree(x.estMinutes) : 'À estimer', x.estMinutes ? 'déjà dans ton planning' : '']);
       faits.push(['Forfait', x.forfaitConfigured ? (x.forfaitRemaining <= 0 ? 'Épuisé' : ckpDuree(Math.round(x.forfaitRemaining * 60))) : 'Non défini', x.forfaitConfigured && x.forfaitRemaining > 0 ? 'restant ce mois' : '']);
       faits.push(['Ce mois-ci', (x.monthCount || 0) + ' demande' + (x.monthCount > 1 ? 's' : ''), x.avgMinutes ? fmtMin(x.avgMinutes) + ' en moyenne' : '']);
     } else if (t === 'revision' && x.wishDate) {
@@ -1475,7 +1476,9 @@
     var corps = '', titreCorps = 'Le détail';
     if (t === 'demande') {
       var bf = taskBrief(x); titreCorps = 'Sa demande';
-      corps = (bf.blocks ? ptBlocksHtml(x, x.key, '').replace(/<div class="micro"[^>]*>[^<]*<\/div>/, '') : (bf.text ? '<p class="ckp-bt">' + mtLinkify(bf.text) + '</p>' : '')) + briefTableHtml(x.table);
+      if (x.missionType) corps += '<p class="inb-type"><b>' + esc(x.missionType) + '</b>' + (x.precisions ? ' · ' + esc(x.precisions) : '') + '</p>';
+      if (x.besoins && x.besoins.length) corps += '<div class="inb-besoins"><b>Ce dont tu as besoin</b>' + x.besoins.map(function (b) { return '<span class="inb-besoin' + (b.ok ? ' ok' : '') + '">' + esc(b.texte || '') + (b.ok ? ', fourni' : ', pas encore') + '</span>'; }).join('') + '</div>';
+      corps += (bf.blocks ? ptBlocksHtml(x, x.key, '').replace(/<div class="micro"[^>]*>[^<]*<\/div>/, '') : (bf.text ? '<p class="ckp-bt">' + mtLinkify(bf.text) + '</p>' : '')) + briefTableHtml(x.table);
     } else if (t === 'revision') {
       titreCorps = 'Son retour';
       corps = x.comment ? '<p class="ckp-bt">« ' + esc(x.comment) + ' »</p>' : '<p class="ckg-doux">Pas de commentaire.</p>';
@@ -1490,7 +1493,8 @@
     var vu = 'ADM.inboxSeen(\'' + t + '\',\'' + k + '\',\'' + i + '\'' + ((t === 'validated' || t === 'revision') ? ',\'' + esc(x.project || 'partner') + '\'' : '') + ')';
     var actions;
     if (t === 'demande') {
-      actions = '<button class="btn btn--dark" onclick="ADM.inboxTriage(\'' + k + '\',\'' + i + '\',\'accept\')">Accepter en tâche</button>' +
+      actions = (x.exception ? '<button class="btn btn--dark" onclick="ADM.inbExceptionOk(\'' + k + '\',\'' + i + '\')">Accepter la date proche</button>' : '') +
+        '<button class="btn btn--dark" onclick="ADM.inboxTriage(\'' + k + '\',\'' + i + '\',\'accept\')">Accepter en tâche</button>' +
         '<button class="pjc-lien" onclick="ADM.inboxProposeDate(\'' + k + '\',\'' + i + '\',\'' + esc(String(x.dueDate || '').slice(0, 10)) + '\')">Proposer une date</button>' +
         '<span class="ck-esp"></span>' + ckMenuHtml([['Hors forfait', 'ADM.inboxTriage(\'' + k + '\',\'' + i + '\',\'hors_forfait\')'], fiche],
           'ADM.inbRefuser(\'' + k + '\',\'' + i + '\')', 'haut', 'Refuser…');
@@ -1701,6 +1705,16 @@
   // Depuis l'inbox : proposer une AUTRE date que celle souhaitée par la cliente
   // (elle la voit dans son espace et l'accepte ou non). Réutilise le mécanisme
   // proposedDueDate des tâches, mais par clé cliente (l'inbox est multi-clientes).
+  // Date exceptionnelle demandée par le client : on l'accepte telle quelle (le
+  // marqueur disparaît), ou on propose une autre date avec « Proposer une date ».
+  function inbExceptionOk(key, id) {
+    jpost('/api/clients/' + key + '/tasks/' + id, { projectId: 'partner', properties: { p_exception: '', p_exceptionOk: new Date().toISOString().slice(0, 10) }, urgency: 'normal' }, 'PATCH').then(function (r) {
+      if (!r.ok) { toast('Erreur'); return; }
+      toast('Date acceptée');
+      inboxItems().forEach(function (it) { if (it.x.key === key && String(it.x.id) === String(id)) it.x.exception = ''; });
+      if (typeof renderInbox === 'function') renderInbox();
+    }).catch(function () { toast('Erreur'); });
+  }
   function inboxProposeDate(key, id, curDue) {
     var ov = document.createElement('div');
     ov.className = 'admconfirm';
@@ -1718,7 +1732,7 @@
       if (!date) { toast('Choisis une date'); return; }
       ov.remove();
       notifyConfirm('Proposer cette date à la cliente et la prévenir par e-mail ?', function (notify) {
-        jpost('/api/clients/' + key + '/tasks/' + id, { projectId: 'partner', proposedDueDate: date, notify: notify }, 'PATCH').then(function (r) {
+        jpost('/api/clients/' + key + '/tasks/' + id, { projectId: 'partner', proposedDueDate: date, notify: notify, properties: { p_exception: '' } }, 'PATCH').then(function (r) {
           if (r.ok) { toast('Date proposée' + (notify ? ' · cliente prévenue ✓' : ' (sans e-mail)')); } else toast('Erreur');
         }).catch(function () { toast('Erreur'); });
       });
@@ -12996,7 +13010,7 @@
     prioDone: prioDone, prioCloseDlv: prioCloseDlv, prioPostpone: prioPostpone, prioProposeDate: prioProposeDate, prioTicketStart: prioTicketStart, prioAddDlv: prioAddDlv, prioAddDlvLink: prioAddDlvLink, revResolve: revResolve, prioDragStart: prioDragStart, prioDragEnd: prioDragEnd, prioDayOver: prioDayOver, prioDayLeave: prioDayLeave, prioDropDay: prioDropDay, prioSetDoDate: prioSetDoDate, prioClearDoDate: prioClearDoDate, prioPlan: prioPlan,
     atCloseTask: atCloseTask, atCopyLink: atCopyLink, atAddEntry: atAddEntry, atDelEntry: atDelEntry,
     atSetSec: atSetSec, atWide: atWide, atReviewUpdated: atReviewUpdated, atEditNote: atEditNote, atSaveNote: atSaveNote, atNoteRestore: atNoteRestore, atCalMove: atCalMove, atCalToday: atCalToday,
-    atSetFilter: atSetFilter, atRenderBody: atRenderBody, atOnQ: atOnQ, atOnClient: atOnClient, atOnOffer: atOnOffer, atPlan: atPlan, atPlan2: atPlan2, atOpen: atOpen, atClose: atClose, prioSetCat: prioSetCat, prioSendReview: prioSendReview, prioSetTime: prioSetTime, prioAddTaskTime: prioAddTaskTime, prioSetGroup: prioSetGroup, prioSetFilter: prioSetFilter, prioSetTab: prioSetTab, prioMainTab: prioMainTab, prioWkView: prioWkView, prioConsultQnr: prioConsultQnr, qnrDelete: qnrDelete, qnrExportPdf: qnrExportPdf, qnrSetTab: qnrSetTab, qnrRepToggle: qnrRepToggle, qnrRepPdf: qnrRepPdf, capSave: capSave, inboxTriage: inboxTriage, ptDemandeTriage: ptDemandeTriage, inboxProposeDate: inboxProposeDate, inboxSeen: inboxSeen, inboxDrawer: inboxDrawer, inboxDrawerClose: inboxDrawerClose, inboxResend: inboxResend, inboxResendLink: inboxResendLink, kpiSetTab: kpiSetTab, kpiExport: kpiExport, tempsSetTab: tempsSetTab, tdbAvisOuvrir: tdbAvisOuvrir, tdbBilanChoisir: tdbBilanChoisir, tdbBilanEnvoyer: tdbBilanEnvoyer, tdbPanneauFermer: tdbPanneauFermer, tempsOnglet: tempsOnglet, tempsSetPer: tempsSetPer, doneSetTab: doneSetTab, doneExport: doneExport, remind: remind,
+    atSetFilter: atSetFilter, atRenderBody: atRenderBody, atOnQ: atOnQ, atOnClient: atOnClient, atOnOffer: atOnOffer, atPlan: atPlan, atPlan2: atPlan2, atOpen: atOpen, atClose: atClose, prioSetCat: prioSetCat, prioSendReview: prioSendReview, prioSetTime: prioSetTime, prioAddTaskTime: prioAddTaskTime, prioSetGroup: prioSetGroup, prioSetFilter: prioSetFilter, prioSetTab: prioSetTab, prioMainTab: prioMainTab, prioWkView: prioWkView, prioConsultQnr: prioConsultQnr, qnrDelete: qnrDelete, qnrExportPdf: qnrExportPdf, qnrSetTab: qnrSetTab, qnrRepToggle: qnrRepToggle, qnrRepPdf: qnrRepPdf, capSave: capSave, inboxTriage: inboxTriage, ptDemandeTriage: ptDemandeTriage, inboxProposeDate: inboxProposeDate, inbExceptionOk: inbExceptionOk, inboxSeen: inboxSeen, inboxDrawer: inboxDrawer, inboxDrawerClose: inboxDrawerClose, inboxResend: inboxResend, inboxResendLink: inboxResendLink, kpiSetTab: kpiSetTab, kpiExport: kpiExport, tempsSetTab: tempsSetTab, tdbAvisOuvrir: tdbAvisOuvrir, tdbBilanChoisir: tdbBilanChoisir, tdbBilanEnvoyer: tdbBilanEnvoyer, tdbPanneauFermer: tdbPanneauFermer, tempsOnglet: tempsOnglet, tempsSetPer: tempsSetPer, doneSetTab: doneSetTab, doneExport: doneExport, remind: remind,
     notifToggle: notifToggle, notifOpen: notifOpen, notifAck: notifAck, notifAckRework: notifAckRework, notifAckComment: notifAckComment,
     myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, myTaskArchive: myTaskArchive, mtStart: mtStart, mtPause: mtPause, mtQuickAdd: mtQuickAdd, mtQuickDue: mtQuickDue, mtSubAdd: mtSubAdd, mtSubToggle: mtSubToggle, mtSubDel: mtSubDel, mtGoTask: mtGoTask, mtEditNote: mtEditNote, mtSaveNote: mtSaveNote, mtNoteRestore: mtNoteRestore, mtEditOpen: mtEditOpen, mtToggleRow: mtToggleRow,
     visTab: visTab, trameOpen: trameOpen, trameEditLib: trameEditLib, trameBackLib: trameBackLib, trameQToggle: trameQToggle, trameQNote: trameQNote, callNoteNew: callNoteNew, callNoteSel: callNoteSel, callNoteDel: callNoteDel, callNoteSet: callNoteSet, callRight: callRight, trameNew: trameNew, trameSel: trameSel, trameDel: trameDel, trameSet: trameSet, trameEditToggle: trameEditToggle, trameEdField: trameEdField, trameEdQ: trameEdQ, trameEdQAdd: trameEdQAdd, trameEdQDel: trameEdQDel, trameEdSecAdd: trameEdSecAdd, trameEdSecDel: trameEdSecDel, trameEdSecMove: trameEdSecMove, visAdd: visAdd, visSet: visSet, visSetClient: visSetClient, visOpen: visOpen, visCloseDrawer: visCloseDrawer, visPresent: visPresent, visPushICloud: visPushICloud, visSetTypeFilter: visSetTypeFilter, visNoteSave: visNoteSave, visDel: visDel, visStepAdd: visStepAdd, visStepSet: visStepSet, visStepDel: visStepDel, visStepMove: visStepMove, visSaveEditor: visSaveEditor, visQAdd: visQAdd, visQToggle: visQToggle, visQSet: visQSet, visQDel: visQDel, visApplyTpl: visApplyTpl, visTplAdd: visTplAdd, visTplSet: visTplSet, visTplDel: visTplDel, visTplStepAdd: visTplStepAdd, visTplStepSet: visTplStepSet, visTplStepDel: visTplStepDel, visTplStepMove: visTplStepMove, visTplQAdd: visTplQAdd, visTplQSet: visTplQSet, visTplQDel: visTplQDel, visFmt: visFmt, visEdActive: visEdActive,

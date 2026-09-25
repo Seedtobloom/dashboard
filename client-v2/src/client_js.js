@@ -2128,7 +2128,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     // Ligne d'encouragement selon l'avancement
     var headline = allDone
       ? 'Projet livré, bravo ! ✨'
-      : (remaining === 1 ? 'Plus qu’une étape avant la livraison 🎉' : 'Plus que ' + remaining + ' étapes avant la livraison 🎉');
+      : (remaining === 1 ? 'Plus qu’une étape avant la livraison' : 'Plus que ' + remaining + ' étapes avant la livraison 🎉');
 
     // Barre de progression
     var bar = '<div style="display:flex;align-items:center;gap:12px;margin-top:14px">' +

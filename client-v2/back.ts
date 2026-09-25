@@ -1152,6 +1152,8 @@ async function handleTaskCreate(request: Request, env: Env, masterKey: string, d
     pole: body.pole,
     properties: body.properties && typeof body.properties === 'object' ? body.properties : {},
     missionType: body.missionType ? String(body.missionType).slice(0, 200) : undefined,
+    // Temps estimé (type ou précisions choisies) : alimente directement le planning du studio.
+    estMinutes: Number(body.properties && body.properties.p_estime) > 0 ? Math.min(2400, Math.round(Number(body.properties.p_estime))) : undefined,
     // Brief rédigé dans l'éditeur par blocs de la nouvelle demande.
     blocks: Array.isArray(body.blocks) ? body.blocks.slice(0, 400) : undefined,
     contentMigrated: Array.isArray(body.blocks) && body.blocks.length ? true : undefined,
