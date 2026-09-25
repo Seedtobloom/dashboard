@@ -6447,7 +6447,7 @@
         '<button class="tps-lien" onclick="ADM.openClient(\'' + esc(p.key) + '\')">' + esc(p.client) + '</button></nav>' +
       '<div class="pj-tete"><div><h1 class="pg-h1">' + esc(p.projectLabel) + '</h1><p class="pj-tete__s">' + esc(ckJSousTete(p)) + '</p></div>' +
         '<div class="pj-tete__a"><button class="tps-lien" onclick="ADM.ckJOnglet(\'echanges\')">Écrire à ' + esc(ckJPrenom(p)) + '</button>' + menu + '</div></div>' +
-      ckJMaintenant(p) +
+      (p.prestation === 'support' ? ckJSupHero(p) : ckJMaintenant(p)) +
       '<div class="pj-ongs" role="tablist" aria-label="' + esc(p.projectLabel) + '">' + ong('ensemble', 'Suivi', 0) + ong('echanges', 'Échanges', msgN) + ong('fichiers', 'Fichiers', 0) + '</div>';
     var corps;
     if (CKJ.onglet === 'ensemble') corps = ckJSuivi(p, d);
@@ -6615,12 +6615,70 @@
       ckpCharger(renderCockpitProjetsBody);
     }).catch(function () { toast('Erreur'); });
   }
+  /* Support de com (option A) : la création à avancer en premier, en grand,
+     puis UNE liste dans l'ordre où faire les choses. Chaque création n'est
+     montrée qu'une fois ; qui a la main se lit à sa pastille. */
+  function ckJSupCreas(p) {
+    // Le planning d'une création vient des plannings éditoriaux (rattachés par creationId).
+    var parCrea = {};
+    ckJPlannings(p).forEach(function (x) { if (x.pl.creationId) parCrea[x.pl.creationId] = x.si; });
+    return ckJCreations(p).filter(function (c) { return !c.clotureAt; }).map(function (c) {
+      var si = parCrea[c.id] || null;
+      if (si && !si.total) si = null;
+      var eux = c.status === 'attente_client', late = si && !si.ended ? si.late.length : 0;
+      return { c: c, si: si, eux: eux, late: late, rang: eux ? 2 : (late ? 0 : 1) };
+    }).sort(function (a, b) { return a.rang - b.rang || b.late - a.late; });
+  }
+  function ckJSupJalon(x) {
+    if (!x.si) return 'Poser le planning de la création';
+    if (x.si.ended) return 'Tous les jalons sont faits';
+    var cu = x.si.current;
+    return cu ? 'Jalon en cours : ' + (cu.j.title || 'sans titre') + (cu.label ? ', ' + cu.label : '') : '';
+  }
+  function ckJSupBarre(x) { return x.si ? ckJBarre({ fait: x.si.done, total: x.si.total }) : ''; }
+  function ckJSupHero(p) {
+    var l = ckJSupCreas(p);
+    if (!l.length) return ckJMaintenant(p);
+    var x = l[0], id = '\'' + esc(x.c.id) + '\'';
+    var tete = x.eux ? 'C’est à ' + esc(ckJPrenom(p)) : 'À faire maintenant' +
+      (x.late ? ' <span class="pj-pil pj-pil--retard">' + x.late + ' jalon' + (x.late > 1 ? 's' : '') + ' en retard</span>' : '');
+    return '<section class="pj-mnt pj-mnt--sup" aria-label="Ce qu’il faut faire maintenant"><div class="pj-mnt__h"><div><div class="pj-mnt__k">' + tete + '</div>' +
+      '<p class="pj-mnt__p">' + esc(x.c.name || 'Sans nom') + '</p><p class="pj-mnt__q">' + esc(x.eux ? ckJPrenom(p) + ' doit répondre' : ckJSupJalon(x)) + '</p></div>' +
+      '<button class="btn pj-mnt__b" onclick="ADM.ckJCrOuvrir(' + id + ')">Ouvrir la création</button></div>' +
+      (x.si ? '<div class="pj-mnt__bar">' + ckJSupBarre(x) + '<span class="num">Jalon ' + Math.min(x.si.total, x.si.done + 1) + ' sur ' + x.si.total + '</span></div>' : '') + '</section>';
+  }
+  function ckJSupEnsuite(p) {
+    var l = ckJSupCreas(p).slice(1), qui = ckJPrenom(p);
+    var faites = ckJCreations(p).filter(function (c) { return c.clotureAt; });
+    var rows = l.map(function (x) {
+      var pil = x.eux ? ['Chez ' + qui, 'client'] : (x.late ? ['À toi, en retard', 'retard'] : ['À toi', 'toi']);
+      var det = x.eux ? qui + ' doit répondre' : ckJSupJalon(x);
+      if (x.c.clientNotif) det += ' · nouveau message de ' + qui;
+      return '<div class="pj-sup__l"><button class="pj-t__n pj-t__n--lien" onclick="ADM.ckJCrOuvrir(\'' + esc(x.c.id) + '\')">' + esc(x.c.name || 'Sans nom') + '</button>' +
+        '<span>' + (x.si ? ckJSupBarre(x) : '<span class="cl-vide">Pas encore de planning</span>') + '</span>' +
+        '<span class="pj-sup__d">' + esc(det) + '</span><span><span class="pj-pil pj-pil--' + pil[1] + '">' + esc(pil[0]) + '</span></span>' +
+        '<button class="pj-t__fl" onclick="ADM.ckJCrOuvrir(\'' + esc(x.c.id) + '\')" aria-label="Ouvrir ' + esc(x.c.name || 'la création') + '">' + FLECHE + '</button></div>';
+    }).join('');
+    return '<section class="pj-sup"><div class="pj-sup__h"><h2>Ensuite</h2><div class="pj-sup__a">' +
+        (ckJPlannings(p).length ? '<button class="tps-lien" onclick="ADM.ckJOnglet(\'planning\')">Voir le planning</button>' : '') +
+        '<button class="btn pj-sup__b" onclick="ADM.ckJCrNouvelle()">Nouvelle création</button></div></div>' +
+      (rows || '<p class="pj-vide" style="margin:10px 0">Rien d’autre en cours.</p>') +
+      (faites.length ? '<p class="pj-sup__f">' + faites.length + ' création' + (faites.length > 1 ? 's' : '') + ' terminée' + (faites.length > 1 ? 's' : '') + ' : ' +
+        esc(faites.slice(-3).map(function (c) { return c.name || 'Sans nom'; }).join(', ')) + ' <button class="tps-lien" onclick="ADM.ckJOnglet(\'creations\')">Voir</button></p>' : '') +
+      '</section>';
+  }
+  // Ouvrir une création : la galerie des créations, cette carte dépliée.
+  function ckJCrOuvrir(cid) { CG_OPEN.id = cid; ckJOnglet('creations'); window.scrollTo(0, 0); }
+  function ckJCrNouvelle() {
+    CG_OPEN.id = null; CG_OPEN.neuve = true; ckJOnglet('creations');
+    var i = document.querySelector('[id^="cr-new-"]'); if (i) { i.scrollIntoView({ block: 'center' }); i.focus(); }
+  }
   function ckJSuivi(p, d) {
     var cartes = (p.prestation === 'support' || p.prestation === 'maintenance') ? '' : ckJCoteCarte(p, d, 'moi') + ckJCoteCarte(p, d, 'eux');
     var extra = '';
     // Un support de com vit par ses créations, l'espace tickets par ses tickets :
     // leur outil de travail vient directement sous le suivi.
-    if (d && p.prestation === 'support') extra = ckJBandePlanning(p) + '<h2 class="pj-h2">Les créations</h2><div class="cl2 ckj-sec">' + sectionContent(d, 'creations') + '</div>';
+    if (p.prestation === 'support') extra = ckJSupEnsuite(p);
     else if (d && p.prestation === 'maintenance') extra = '<h2 class="pj-h2">Les tickets</h2><div class="cl2 ckj-sec">' + sectionContent(d, 'tickets') + '</div>';
     else if (!d && (p.prestation === 'support' || p.prestation === 'maintenance')) extra = '<div class="empty"><div class="spin" style="margin:20px auto"></div></div>';
     else if (!ckJEtapes(p).length) extra = ckJBandePlanning(p);
@@ -12805,7 +12863,7 @@
     ckLChoisir: ckLChoisir, ckLSemaine: ckLSemaine, ckLPoser: ckLPoser, ckLRetirer: ckLRetirer,
     ckLRegSet: ckLRegSet, ckLRegEnregistrer: ckLRegEnregistrer, ckLRegAnnuler: ckLRegAnnuler,
     ckLSetSimH: ckLSetSimH, ckLSetSimHz: ckLSetSimHz, ckLDepuis: ckLDepuis,
-    ckJSetFiltre: ckJSetFiltre, ckJSetClient: ckJSetClient, ckJEstimOuvrir: ckJEstimOuvrir, cliSetFiltre: cliSetFiltre, chatSetFiltre: chatSetFiltre, ckJRevRouvrir: ckJRevRouvrir, ckJRevClasser: ckJRevClasser, ckJEstimChoix: ckJEstimChoix, ckJEstimer: ckJEstimer, ckJOuvrir: ckJOuvrir, ckJFermer: ckJFermer, ckJOnglet: ckJOnglet,
+    ckJSetFiltre: ckJSetFiltre, ckJSetClient: ckJSetClient, ckJEstimOuvrir: ckJEstimOuvrir, ckJCrOuvrir: ckJCrOuvrir, ckJCrNouvelle: ckJCrNouvelle, cliSetFiltre: cliSetFiltre, chatSetFiltre: chatSetFiltre, ckJRevRouvrir: ckJRevRouvrir, ckJRevClasser: ckJRevClasser, ckJEstimChoix: ckJEstimChoix, ckJEstimer: ckJEstimer, ckJOuvrir: ckJOuvrir, ckJFermer: ckJFermer, ckJOnglet: ckJOnglet,
     ckJNeuf: ckJNeuf, ckJCreer: ckJCreer,
     tblStart: tblStart, tblCancel: tblCancel, tblSave: tblSave,
     tblDragStart: tblDragStart, tblDragEnd: tblDragEnd, tblDragOver: tblDragOver,
