@@ -5863,26 +5863,6 @@
       '<div class="ckl-aide">' + esc(aide) + '</div></div>';
   }
 
-  /* ── Les quatre natures de capacité ──────────────────────────────────── */
-
-  function ckLCapacites(s) {
-    var jours = s.jours.filter(function (j) { return !j.passe; });
-    var somme = function (k) { return jours.reduce(function (a, j) { return a + j[k]; }, 0); };
-    var l = [
-      ['Capacité certaine', somme('certaine'), 'Ce qui reste de tes heures de travail cette semaine, marge déduite.'],
-      ['Déjà engagée', somme('engagee'), 'Créneaux posés, rendez-vous fixes et consultations de messages.'],
-      ['Libre', s.libre, 'Ce que tu peux promettre sans rien déplacer.'],
-      ['Potentiellement mobilisable', somme('mobilisable'), 'Ta marge. Elle existe, mais l’entamer supprime l’amortisseur.']
-    ];
-    return '<section class="ck-sec">' + ckpTitre('Ce dont tu disposes vraiment',
-      'Quatre natures qui ne se recouvrent pas, et qui ne se soustraient jamais deux fois. Toujours la semaine en cours.') +
-      '<div class="ckl-cap">' + l.map(function (x) {
-        return '<div class="ckl-capb"><div class="ckl-capv">' + esc(ckpDuree(x[1])) + '</div>' +
-          '<div class="ckl-capn">' + esc(x[0]) + '</div>' +
-          '<div class="ckl-capx">' + esc(x[2]) + '</div></div>';
-      }).join('') + '</div></section>';
-  }
-
   /* ── La semaine de référence : tout le cockpit en découle ─────────────── */
 
   // Une copie locale qu'on modifie librement, et UNE écriture à la fin. Le
@@ -6054,26 +6034,57 @@
     setMain('<div class="wrap"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
     ckpCharger(renderCockpitPlanningBody);
   }
+  /* Planning : la seule chose forte est ce qui n'a pas encore de créneau.
+     Les chiffres de la semaine tiennent dans une bande calme, la grille
+     vient ensuite, les réglages de la semaine type en dessous. */
+  function ckLTete() {
+    var lundi = ckLJours()[0] || ckpAuj();
+    var nom = CKL.off === 0 ? 'Cette semaine' : (CKL.off === 1 ? 'La semaine prochaine' : 'Semaine du ' + ckpJourCourt(lundi));
+    return '<div class="cl-h"><h1 class="pg-h1">Planning</h1><div class="cl-fis" role="group" aria-label="Semaine affichée">' +
+      '<button class="cl-fi" onclick="ADM.ckLSemaine(-1)"' + (CKL.off ? '' : ' disabled') + '>Semaine précédente</button>' +
+      '<span class="cl-fi on" aria-current="true">' + esc(nom) + '</span>' +
+      '<button class="cl-fi" onclick="ADM.ckLSemaine(1)">Semaine suivante</button></div></div>';
+  }
+  function ckLAcaser() {
+    var l = ckLSansPlace();
+    if (!l.length) {
+      return '<section class="pj-mnt ckl-mnt"><div><div class="pj-mnt__k">Cette semaine</div>' +
+        '<p class="pj-mnt__p">Tout ce qui a un temps connu a une place</p><p class="pj-mnt__q">Rien à poser : ' + esc(ckpDuree(ckpSemaine().libre)) + ' restent libres.</p></div></section>';
+    }
+    var t = l[0], choisie = CKL.choisie && ckTTrouve(CKL.choisie) ? ckTTrouve(CKL.choisie) : null;
+    var cible = choisie || t;
+    var autres = l.filter(function (x) { return x.id !== cible.id; }).slice(0, 4);
+    var act = choisie
+      ? '<button class="btn pj-mnt__b" onclick="ADM.ckLChoisir(\'' + esc(cible.id) + '\')">Annuler</button>'
+      : '<button class="btn pj-mnt__b" onclick="ADM.ckLChoisir(\'' + esc(cible.id) + '\')">Choisir un créneau</button>';
+    return '<section class="pj-mnt ckl-mnt" aria-label="À caser cette semaine"><div class="pj-mnt__h"><div>' +
+      '<div class="pj-mnt__k">' + (choisie ? 'Tu poses' : 'À caser cette semaine') + '</div>' +
+      '<p class="pj-mnt__p">' + esc(cible.titre) + ' : ' + esc(ckpDuree(ckpAPlanifier(cible))) + '</p>' +
+      '<p class="pj-mnt__q">' + (choisie ? 'Clique sur un trou allumé dans la grille. La durée s’adapte au trou.' : 'Choisis-le : les trous où il peut aller s’allument dans la grille.') + '</p></div>' + act + '</div>' +
+      (autres.length ? '<p class="ckl-ens">Ensuite : ' + autres.map(function (x) {
+        return '<button class="ckl-ens__b" onclick="ADM.ckLChoisir(\'' + esc(x.id) + '\')">' + esc(x.titre) + ' (' + esc(ckpDuree(ckpAPlanifier(x))) + ')</button>';
+      }).join(', ') + '</p>' : '') + '</section>';
+  }
+  function ckLChiffres(s) {
+    var jours = s.jours.filter(function (j) { return !j.passe; });
+    var marge = jours.reduce(function (a, j) { return a + j.mobilisable; }, 0);
+    var n = ckLSansPlace().length;
+    var semaine = Math.round(ckpEnv('cliente') + ckpEnv('stb') + ckpEnv('marge'));
+    var c = function (k, v, sous, fort) { return '<div class="ckl-ch"><span class="ckl-ch__k">' + k + '</span><b class="num' + (fort ? ' ckl-ch--f' : '') + '">' + v + '</b><span class="ckl-ch__s">' + sous + '</span></div>'; };
+    return '<section class="ckl-chs" aria-label="La semaine en chiffres">' +
+      c('Encore libre', esc(ckpDuree(s.libre)), 'sur ' + esc(ckpDuree(semaine)) + ' cette semaine') +
+      c('À caser', esc(ckpDuree(s.besoin)), n + ' tâche' + (n > 1 ? 's' : '') + ' sans créneau') +
+      c('Marge protégée', esc(ckpDuree(marge)), 'pour l’imprévu') +
+      c('À estimer', s.inconnu + ' tâche' + (s.inconnu > 1 ? 's' : ''), s.inconnu ? 'le calcul est optimiste' : 'tout est estimé', s.inconnu > 0) + '</section>';
+  }
   function renderCockpitPlanningBody() {
     var s = ckpSemaine();
-    var jour = ckpJoursSemaine().length ? Math.round(ckpEnv('cliente') + ckpEnv('stb') + ckpEnv('marge')) : 0;
-    setMain('<div class="wrap ck">' +
-        '<div class="ck-tete"><div>' +
-          '<h1 class="ck-h1">Ta <span class="ck-accent">semaine</span></h1></div>' +
-          '<div class="ck-date">' + esc(ckpDuree(jour) + ' par semaine, dont ' +
-            ckpDuree(ckpMargeJour() * (ckpJoursSemaine().length || 5)) + ' de marge') + '</div></div>' +
-        
-        ckpHero('Cette semaine',
-          esc(ckpDuree(s.libre)) + ' <em>encore libres</em>',
-          'Le planning décide de ce qui est possible. Tout le reste du cockpit lit ces créneaux : si une heure n’est pas ici, elle n’existe nulle part.',
-          ckpHeroPuce('var(--ciel)', ckpDuree(s.besoin) + ' restent à caser d’ici la fin de la semaine') +
-          ckpHeroPuce('var(--paille)', ckpDuree(jour) + ' par semaine, dont ' +
-            ckpDuree(ckpMargeJour() * (ckpJoursSemaine().length || 5)) + ' de marge protégée') +
-          (s.inconnu ? ckpHeroPuce('var(--terracotta)', s.inconnu + ' tâche' + (s.inconnu > 1 ? 's n’ont' : ' n’a') +
-            ' pas de temps estimé : ce calcul est optimiste') : '')) +
-        ckLBarreSansPlace() + ckLGrille() +
-        ckLCapacites(s) + ckLReglages() + ckLProjection(s) +
-      '</div>');
+    var j = ckLJours();
+    var d1 = j.length ? ckpD(j[j.length - 1]) : null;
+    var titre = d1 ? 'Du ' + ckpD(j[0]).getDate() + ' au ' + d1.getDate() + ' ' + CKP_MOIS[d1.getMonth()] : 'La semaine';
+    setMain('<div class="wrap tps pj-page ck ckl-page">' + ckLTete() + ckLAcaser() + ckLChiffres(s) +
+      '<section class="ckl-grc"><h2 class="ckl-h2">' + esc(titre) + '</h2>' + ckLGrille() + '</section>' +
+      ckLReglages() + ckLProjection(s) + '</div>');
   }
   // Arriver ici avec une tâche déjà en main : le bouton « Planifier » de
   // l'Accueil et de l'écran Tâches n'a alors plus rien à réexpliquer.
