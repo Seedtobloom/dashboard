@@ -168,9 +168,9 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
   }
   // Vocabulaire de statut unique (cycle projet / étape). « waiting_client » se dit
   // « En attente de vous » PARTOUT ; « done »/« delivered » se disent « Terminé ».
-  var STATUS_LABELS = { maintenance:'En préparation', discovery:'Découverte', in_progress:'En cours', waiting_client:'En attente de vous', review:'En révision', delivered:'Terminé', archived:'Archivé' };
+  var STATUS_LABELS = { maintenance:'En préparation', discovery:'Découverte', in_progress:'En cours', waiting_client:'À toi', review:'En révision', delivered:'Terminé', archived:'Archivé' };
   var STEP_STATUS_COLORS = { in_progress:'var(--st-progress)', waiting_client:'var(--st-review)', done:'var(--st-done)', upcoming:'var(--terre-200)', todo:'var(--st-todo)', open:'var(--st-todo)', closed:'#ccc' };
-  var STEP_STATUS_LABELS = { in_progress:'En cours', waiting_client:'En attente de vous', done:'Terminé', upcoming:'À venir', todo:'À faire', review:'En révision', open:'À faire', closed:'Fermé' };
+  var STEP_STATUS_LABELS = { in_progress:'En cours', waiting_client:'À toi', done:'Terminé', upcoming:'À venir', todo:'À faire', review:'En révision', open:'À faire', closed:'Fermé' };
   function cpStatusPill(status) {
     var col = STEP_STATUS_COLORS[status] || 'var(--bone-d)';
     var label = STEP_STATUS_LABELS[status] || status;
@@ -1923,7 +1923,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       '<div style="display:flex;align-items:center;justify-content:' + ((_isAdminEdit || (!_isAdminEdit && step.status === 'waiting_client')) ? 'space-between' : 'flex-end') + ';gap:12px;padding:14px 24px;border-top:1px solid var(--bone-d);flex-shrink:0;background:var(--bone,#F8F6F2)">' +
         (_isAdminEdit ? '<span style="font-family:var(--font-micro);font-size:10px;color:var(--terre-400);letter-spacing:0.06em;text-transform:uppercase">' + cpIcon('check', 11, 'color:var(--terre-400)') + ' Enregistré automatiquement</span>' : '') +
         // Côté cliente : quand l'étape attend son retour, un vrai bouton d'action.
-        ((!_isAdminEdit && step.status === 'waiting_client') ? '<span style="font-family:var(--font-micro);font-size:10px;color:var(--st-review,#5A2A11);letter-spacing:0.06em;text-transform:uppercase">' + cpIcon('clock', 11, 'color:var(--st-review,#5A2A11)') + ' Cette étape attend votre retour</span>' : '') +
+        ((!_isAdminEdit && step.status === 'waiting_client') ? '<span style="font-family:var(--font-micro);font-size:10px;color:var(--st-review,#5A2A11);letter-spacing:0.06em;text-transform:uppercase">' + cpIcon('clock', 11, 'color:var(--st-review,#5A2A11)') + ' Cette étape attend ta réponse</span>' : '') +
         '<div style="display:flex;gap:10px;align-items:center">' +
           '<button onclick="cpCloseStepModal()" style="padding:9px 22px;border-radius:8px;border:1.5px solid var(--bone-d);background:transparent;color:var(--terre-600);font-family:var(--font-micro);font-size:11px;font-weight:500;letter-spacing:0.07em;cursor:pointer">FERMER</button>' +
           ((!_isAdminEdit && step.status === 'waiting_client') ? '<button onclick="cpValidateStep(\'' + pid + '\',\'' + stepId + '\')" style="padding:9px 22px;border-radius:8px;border:none;background:var(--terre);color:var(--paille);font-family:var(--font-micro);font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer">J\'ai fait ma part</button>' : '') +
@@ -1931,7 +1931,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       '</div>' +
     '</div>';
 
-    return '<div style="position:fixed;inset:0;background:rgba(20,12,6,0.45);z-index:200;display:flex;align-items:center;justify-content:center;padding:24px" onclick="cpCloseStepModal()">' +
+    return '<div class="cp-stepmodal" style="position:fixed;inset:0;background:rgba(20,12,6,0.45);z-index:200;display:flex;align-items:center;justify-content:center;padding:24px" onclick="cpCloseStepModal()">' +
       panel +
     '</div>';
   }
@@ -2282,8 +2282,130 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
           '<p style="font-size:13.5px;color:var(--muted);line-height:1.55;margin:0 0 22px">Les étapes de ce projet, qui fait quoi et pour quand. Vous êtes prévenue dès qu\'une action vous revient.</p>' + rows + '</div>';
     return { banner:banner, html:html };
   }
+  // Page d'un projet par étapes (refonte 2026 : site, identité…). Ce qui attend le
+  // client en noir, les étapes en tuiles (paille à toi, noir chez Cindy, blanc
+  // fait, contour ensuite), puis ses livrables et ses échanges.
+  function cpProjetEtapesPage(pd) {
+    var p = pd.project, pid = p.id;
+    var steps = (p.steps || []).slice().sort(function (a, b) { return (a.order || 0) - (b.order || 0); });
+    var nb = steps.length, fait = steps.filter(function (x) { return x.status === 'done'; }).length;
+    var dlv = (p.deliverables || []).filter(function (d) { return d.fileKey || d.reviewLink; });
+    var aValider = dlv.filter(function (d) { return (d.status || 'a_valider') === 'a_valider'; });
+    var etapeToi = steps.filter(function (x) { return x.status === 'waiting_client'; })[0];
+    var enCours = steps.filter(function (x) { return x.status === 'in_progress'; })[0];
+    var lead = [p.startDate ? 'Commencé le ' + fmtDate(p.startDate) : '', p.deadline ? 'livraison prévue le ' + fmtDate(p.deadline) : ''].filter(Boolean).join(' · ');
+    var hero;
+    if (etapeToi || aValider.length) {
+      var titre = etapeToi ? (etapeToi.clientAction || ('Donne ton avis sur « ' + etapeToi.title + ' »')) : ('Valider « ' + (aValider[0].name || 'le livrable') + ' »');
+      var n = etapeToi ? steps.indexOf(etapeToi) + 1 : 0;
+      var sous = [n ? 'Étape ' + n + ' sur ' + nb : '', aValider.length ? aValider.length + ' livrable' + (aValider.length > 1 ? 's' : '') + ' à valider' : '', 'Cindy reprend dès ta réponse'].filter(Boolean).join(' · ');
+      hero = '<section class="cpb-hero"><div class="cpb-hero__txt"><div class="cpb-hero__k">À toi, pour avancer</div><h2 class="cpb-hero__t">' + esc(titre) + '</h2><div class="cpb-hero__s">' + esc(sous) + '</div></div>' +
+        '<div class="cpb-hero__a">' +
+          (etapeToi ? '<button class="cpb-btn cpb-btn--ghost" onclick="cpOpenStepModal(\'' + esc(etapeToi.id) + '\')">Voir l’étape</button>' : '') +
+          (aValider.length ? '<button class="cpb-btn cpb-btn--light" onclick="cpGoLivrables()">Voir et valider</button>' : '<button class="cpb-btn cpb-btn--light" onclick="cpOpenStepModal(\'' + esc(etapeToi.id) + '\')">Répondre</button>') +
+        '</div></section>';
+    } else {
+      hero = '<section class="cpb-calme"><b>Rien n’attend ta réponse.</b> ' + (enCours ? 'Cindy avance sur « ' + esc(enCours.title) + ' ».' : (nb && fait === nb ? 'Toutes les étapes sont faites.' : 'Cindy prépare la suite.')) + '</section>';
+    }
+    var tuiles = steps.map(function (x, i) {
+      var st = x.status === 'done' ? 'fait' : (x.status === 'waiting_client' ? 'toi' : (x.status === 'in_progress' || x.status === 'review' ? 'cindy' : 'apres'));
+      var lab = { fait: 'Fait', toi: 'À toi', cindy: 'Chez Cindy', apres: 'Ensuite' }[st];
+      var quand = x.status === 'done' ? (x.completedAt ? 'faite le ' + fmtDate(x.completedAt) : '') : (x.dueDate ? 'prévue le ' + fmtDate(x.dueDate) : '');
+      return '<button class="cpe-etape cpe-etape--' + st + '" onclick="cpOpenStepModal(\'' + esc(x.id) + '\')"><span>Étape ' + (i + 1) + '</span><b>' + esc(x.title || '') + '</b>' + (quand ? '<span>' + esc(quand) + '</span>' : '') + '<em>' + lab + '</em></button>';
+    }).join('');
+    var etapes = nb ? '<section><div class="cpb-h2"><h2>Les étapes</h2><span>en paille : à toi · en noir : chez Cindy · en blanc : fait</span></div><div class="cpe-etapes" style="--n:' + Math.min(4, nb) + '">' + tuiles + '</div></section>' : '';
+    var livr = '<section class="cpb-carte"><div class="cpb-h2 cpb-h2--sm"><h2>Les livrables</h2><a href="#" onclick="cpGoLivrables();return false">Tous les livrables</a></div>' +
+      (dlv.length ? dlv.slice().sort(function (a, b) { return String(b.createdAt || '').localeCompare(String(a.createdAt || '')); }).slice(0, 5).map(function (d) {
+        var ok = d.status === 'valide' || d.status === 'validated', toi = (d.status || 'a_valider') === 'a_valider';
+        var u = d.fileKey ? (API_BASE + '/files/' + encodeURIComponent(d.fileKey) + '/download') : '';
+        var img = u && /\.(jpe?g|png|webp|gif|avif)$/i.test(d.name || '');
+        return '<div class="cpl-ligne">' + (img ? '<img class="cpl-vign" src="' + esc(u) + '" alt="" loading="lazy">' : '<span class="cpl-vign"></span>') +
+          '<div class="cpl-ligne__m"><b>' + esc(d.name || 'Livrable') + '</b><span>' + esc((ok ? 'validé le ' : 'envoyé le ') + fmtDate(d.validatedAt || d.createdAt)) + '</span></div>' +
+          '<span class="cpl-pil' + (toi ? ' cpl-pil--toi' : (ok ? ' cpl-pil--ok' : '')) + '">' + (toi ? 'À valider' : (ok ? 'Validé' : (d.status === 'refuse' || d.status === 'revision' ? 'En révision' : 'Reçu'))) + '</span></div>';
+      }).join('') : '<p>Les livrables de ce projet apparaîtront ici.</p>') + '</section>';
+    var msgs = (pd.messages || []).slice(-2);
+    var ech = '<section class="cpb-carte cpe-ech"><div class="cpb-h2 cpb-h2--sm"><h2>Vos échanges</h2><a href="#" onclick="window._stbInboxPid=\'' + esc(pid) + '\';cpOpenMessages();return false">Tout voir</a></div>' +
+      (msgs.length ? msgs.map(function (m) { var c = m.author === 'cindy'; return '<div class="cpe-bulle' + (c ? '' : ' cpe-bulle--toi') + '"><span>' + (c ? 'Cindy' : 'Toi') + ' · ' + esc(cpbQuand(m.createdAt)) + '</span><div>' + esc(cpbTexte(m.content)) + '</div></div>'; }).join('') : '<p>Pas encore de message sur ce projet.</p>') +
+      '<div class="cpm-compo__row"><textarea id="cpe-msg-' + esc(pid) + '" class="cpm-input" rows="1" placeholder="Écrire à Cindy" onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();cpProjEnvoyer(\'' + esc(pid) + '\');}"></textarea>' +
+      '<button class="cpb-btn" style="background:#110704;color:#F8F6F2" onclick="cpProjEnvoyer(\'' + esc(pid) + '\')">Envoyer</button></div></section>';
+    var prac = ((p.practicalInfo || {}).sections || []);
+    var bonAsavoir = (prac.length || p.meetingLink) ? '<section class="cpb-carte"><div class="cpb-h2 cpb-h2--sm"><h2>Bon à savoir</h2>' +
+        (p.meetingLink ? '<a href="' + esc(/^https?:\/\//i.test(p.meetingLink) ? p.meetingLink : 'https://' + p.meetingLink) + '" target="_blank" rel="noopener">Rejoindre la visio</a>' : '') + '</div>' +
+        prac.map(function (x) { return '<details class="cp-prac"><summary>' + esc(x.title) + '</summary><div class="cp-prac__body">' + renderMd(x.content) + '</div></details>'; }).join('') + '</section>' : '';
+    return '<div class="cp-home cpb"><div class="cpb__in fade-up">' +
+      '<header><a href="#" class="cpe-retour" onclick="cpGoHome();return false">Accueil</a><h1 class="cpb-h1">' + esc(p.projectTitle || 'Projet') + '</h1>' + (lead ? '<p class="cpb-lead">' + esc(lead) + '</p>' : '') + '</header>' +
+      hero + etapes + '<div class="cpe-bas">' + livr + ech + '</div>' + bonAsavoir +
+    '</div></div>' + buildStepModal(pid, steps);
+  }
+  window.cpProjEnvoyer = function (pid) {
+    var inp = document.getElementById('cpe-msg-' + pid); var v = ((inp && inp.value) || '').trim(); if (!v) return;
+    fetch('/api/client/' + TOKEN + '/message', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ projectId: pid, content: v, topic: '', attachments: [] }) })
+      .then(function (r) { if (!r.ok) throw new Error(); return r.json(); })
+      .then(function (res) { var pd = getPD(pid); if (pd) { if (!Array.isArray(pd.messages)) pd.messages = []; pd.messages.push(res.message); } toast('Message envoyé'); renderShell(); })
+      .catch(function () { toast('Erreur, réessaie.'); });
+  };
+  // Page Support de com (refonte 2026) : ce qui attend le client en noir, puis chaque
+  // création avec son planning en tuiles (paille à toi, noir chez Cindy, crème fait)
+  // et ses séries de retours ; versions, fichiers et commentaires dans un volet.
+  function cpSupportPage(pd) {
+    var p = pd.project, pid = p.id, supPid = (pid || '').replace(/^support-/, '');
+    var crs = (p.creations || []).filter(function (c) { return c.status !== 'archive'; });
+    var dlv = p.deliverables || [];
+    var CR_TY = { print: 'print', digital: 'digital', reseaux: 'réseaux sociaux', evenementiel: 'événementiel', autre: '' };
+    var today = new Date(); today.setHours(0, 0, 0, 0);
+    function crToi(c) { return c.status === 'attente_client' || dlv.some(function (d) { return d.creationId === c.id && d.status === 'a_valider'; }); }
+    var waitV = dlv.filter(function (d) { return d.status === 'a_valider'; })[0];
+    var waitC = waitV ? crs.filter(function (c) { return c.id === waitV.creationId; })[0] : null;
+    var act = cpCollectActions().filter(function (a) { return a.pid === pid || a.kind === 'qnr'; })[0];
+    var hero;
+    if (waitV) {
+      hero = '<section class="cpb-hero"><div class="cpb-hero__txt"><div class="cpb-hero__k">À toi, pour avancer</div><h2 class="cpb-hero__t">Donne ton avis sur « ' + esc(waitC ? waitC.name : (waitV.name || 'la création')) + ' »</h2>' +
+        '<div class="cpb-hero__s">' + esc((waitV.name || '') + ' · envoyé le ' + fmtDate(waitV.createdAt)) + '</div></div><div class="cpb-hero__a">' +
+        '<button class="cpb-btn cpb-btn--ghost" onclick="window.stbValidate(\'' + esc(pid) + '\',\'' + esc(waitV.id) + '\',\'refuse\')">Demander des modifications</button>' +
+        '<button class="cpb-btn cpb-btn--light" onclick="window.stbValidate(\'' + esc(pid) + '\',\'' + esc(waitV.id) + '\',\'valide\')">Valider</button></div></section>';
+    } else if (act) {
+      hero = '<section class="cpb-hero"><div class="cpb-hero__txt"><div class="cpb-hero__k">À toi, pour avancer</div><h2 class="cpb-hero__t">' + esc(act.label) + '</h2><div class="cpb-hero__s">Cindy commence dès que tu as répondu</div></div>' +
+        '<div class="cpb-hero__a"><button class="cpb-btn cpb-btn--light" onclick="' + act.onclick + '">' + esc(act.cta) + '</button></div></section>';
+    } else {
+      hero = '<section class="cpb-calme"><b>Rien n’attend ta réponse.</b> Cindy avance sur tes créations.</section>';
+    }
+    var lignes = crs.map(function (c) {
+      var toi = crToi(c), fini = c.status === 'valide';
+      var etat = fini ? '<span class="cpl-pil cpl-pil--ok">Terminé</span>' : (toi ? '<span class="cpl-pil cpl-pil--toi">À toi</span>' : '<span class="cpl-pil cpl-pil--cindy">Chez Cindy</span>');
+      var vs = dlv.filter(function (d) { return d.creationId === c.id; });
+      var revUsed = Math.max(0, vs.filter(function (d) { return d.status === 'refuse'; }).length + (typeof c.revExtra === 'number' ? c.revExtra : 0));
+      var revMax = typeof c.revisionsMax === 'number' ? c.revisionsMax : 0;
+      var rev = revMax ? (revUsed ? revUsed + ' série' + (revUsed > 1 ? 's' : '') + ' de retours utilisée' + (revUsed > 1 ? 's' : '') + ' sur ' + revMax : revMax + ' série' + (revMax > 1 ? 's' : '') + ' de retours incluse' + (revMax > 1 ? 's' : '')) : '';
+      var jal = planCompute(c.planning, c.planningStart).map(function (r) {
+        var j = r.j, st;
+        if (j.status === 'fait') st = 'fait'; else if (j.status === 'en_cours') st = 'maint';
+        else if (r.end && r.end < today) st = 'fait'; else if (r.start && r.start <= today && (!r.end || r.end >= today)) st = 'maint'; else st = 'apres';
+        if (st === 'maint') st = toi ? 'toi' : 'cindy';
+        return '<span class="cps-jal cps-jal--' + st + '"><b>' + esc(j.jalon || j.title || '') + '</b>' + (r.label ? '<em>' + esc(r.label) + '</em>' : '') + '</span>';
+      }).join('');
+      var crFiles = Array.isArray(c.files) ? c.files : [], crCom = Array.isArray(c.comments) ? c.comments : [];
+      var volet = '<details class="cps-volet"><summary class="cpl-lien">Versions, fichiers et commentaires' + ((vs.length + crFiles.length + crCom.length) ? ' (' + (vs.length + crFiles.length + crCom.length) + ')' : '') + '</summary><div>' +
+        stbVersionsList(pid, vs) +
+        (crFiles.length ? '<div class="cps-fichiers">' + crFiles.slice().reverse().map(function (f) { var fu = API_BASE + '/files/' + encodeURIComponent(f.key) + '/download'; return '<a class="cpl-lien" href="' + fu + '" target="_blank" rel="noopener">' + esc(f.name || 'fichier') + '</a>'; }).join('') + '</div>' : '') +
+        crCom.map(function (m) { var c2 = m.author === 'cindy'; return '<div class="cpe-bulle' + (c2 ? '' : ' cpe-bulle--toi') + '"><span>' + (c2 ? 'Cindy' : 'Toi') + ' · ' + esc(fmtDate(m.createdAt)) + '</span><div>' + esc(m.text || '') + '</div></div>'; }).join('') +
+        (c.clotureAt ? '' : '<div class="cpm-compo__row"><button class="cpm-joindre" onclick="cpCrFile(\'' + esc(supPid) + '\',\'' + esc(c.id) + '\')">Joindre</button><input id="cp-crc-' + esc(c.id) + '" class="cpm-input" placeholder="Un commentaire sur cette création" onkeydown="if(event.key===\'Enter\'){cpCrComment(\'' + esc(supPid) + '\',\'' + esc(c.id) + '\')}"><button class="cpb-btn" style="background:#110704;color:#F8F6F2" onclick="cpCrComment(\'' + esc(supPid) + '\',\'' + esc(c.id) + '\')">Envoyer</button></div>') +
+        '</div></details>';
+      return '<div class="cps-crea" id="cp-sp-' + esc(c.id) + '"><div class="cps-crea__h"><div><b>' + esc(c.name || 'Création') + '</b>' + (CR_TY[c.type] ? '<span> · ' + esc(CR_TY[c.type]) + '</span>' : '') + '</div>' +
+        '<div class="cps-crea__d">' + (rev ? '<span>' + esc(rev) + '</span>' : '') + etat + '</div></div>' +
+        (jal ? '<div class="cps-jals">' + jal + '</div>' : '') + volet + '</div>';
+    }).join('');
+    var autres = dlv.filter(function (d) { return !d.creationId; });
+    return '<div class="cp-home cpb"><div class="cpb__in fade-up">' +
+      '<header><a href="#" class="cpe-retour" onclick="cpGoHome();return false">Accueil</a><h1 class="cpb-h1">' + esc(p.projectTitle || 'Support de com') + '</h1><p class="cpb-lead">' + crs.length + ' création' + (crs.length > 1 ? 's' : '') + '</p></header>' +
+      hero +
+      (crs.length ? '<section class="cpb-carte" style="padding:20px 24px 8px"><div class="cpb-h2 cpb-h2--sm"><h2>Tes créations</h2><span>en paille : à toi · en noir : chez Cindy · en crème : fait</span></div>' + lignes + '</section>' : '<section class="cpb-calme">Les créations apparaîtront ici dès que Cindy les aura lancées.</section>') +
+      (autres.length ? '<section class="cpb-carte"><div class="cpb-h2 cpb-h2--sm"><h2>Autres livrables</h2></div>' + stbVersionsList(pid, autres) + '</section>' : '') +
+    '</div></div>';
+  }
   function buildProjectView(pd) {
     if (!pd) return '<div class="cp-empty">Projet introuvable.</div>';
+    if (appData.type === 'client' && !_isAdminEdit && pd.project.type === 'support') return cpSupportPage(pd);
+    if (appData.type === 'client' && !_isAdminEdit && ['partenaire', 'maintenance', 'support'].indexOf(pd.project.type) === -1) return cpProjetEtapesPage(pd);
     var project = pd.project, messages = pd.messages, files = pd.files;
     var col = STATUS_COLORS[project.status] || '#aaa';
     var steps = (project.steps||[]).slice().sort(function(a,b){ return (a.order||0)-(b.order||0); });
