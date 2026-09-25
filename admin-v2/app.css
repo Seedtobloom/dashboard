@@ -3268,3 +3268,7 @@ h1.cdhead__n{margin:0;font-weight:400;font-size:36px}
 .cf-page #tabbody label{font-size:15px;font-weight:600;color:#110704}
 .cf-page #tabbody .inp,.cf-page #tabbody textarea,.cf-page #tabbody select{background:#F8F6F2;border:none;box-shadow:inset 0 0 0 1px rgba(17,7,4,.12)}
 .cf-page #tabbody h3{font-family:'Cormorant Garamond',Georgia,serif;font-style:italic;font-weight:400;font-size:26px;color:#110704}
+/* Sous-discussions par création : alignées dans la carte, sans capitales */
+.chat-sub{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:14px 24px;border-bottom:1px solid #F0E9D6}
+.chat-sub__k{font-size:15px;color:#7a5540;margin-right:4px}
+.pj-page .chat-sub{margin:0}
