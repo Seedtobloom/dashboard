@@ -6258,6 +6258,60 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
       '</div>' +
     '</div></div>';
   }
+  // Page « Temps passé » (refonte 2026, accompagnement créatif) : le forfait du
+  // mois en grand, les 5 derniers mois par type de travail, le détail du mois.
+  function cpTempsPage(pd) {
+    var p = pd.project, pid = p.id;
+    var nums = cpForfaitNums(p);
+    var billable = cpBillable(p.tasks || []);
+    var now = new Date(), mk = _todayStr().slice(0, 7);
+    var moisLbl = now.toLocaleDateString('fr-FR', { month: 'long' });
+    var finMois = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate() - now.getDate();
+    var cap = (p.rolloverCapHours != null && p.rolloverCapHours !== '') ? parseFloat(p.rolloverCapHours) : 2;
+    function catOf(t) { var c = (t.missionType && String(t.missionType).trim()) || (t.properties && t.properties.p_typemission) || ''; return c || 'Autre'; }
+    var hero = '';
+    if (nums) {
+      var used = nums.doneMin + nums.wipMin, rest = nums.availMin - used, tot = Math.max(1, Math.round(nums.availMin / 60));
+      hero = '<section class="cpt-hero"><div>' +
+          '<div class="cpb-hero__k">Ton forfait de ' + esc(moisLbl) + '</div>' +
+          '<div class="cpt-hero__v">' + (rest < 0 ? '−' : '') + esc(cpbMin(Math.abs(rest))) + ' <span>' + (rest < 0 ? 'au-delà du forfait' : 'restantes sur ' + esc(cpbMin(nums.availMin))) + '</span></div>' +
+          cpbSeg(Math.min(tot, Math.round(used / 60)), tot, true) +
+          '<div class="cpb-hero__s" style="margin-top:10px">' + esc(cpbMin(used)) + ' utilisées · le mois se termine ' + (finMois <= 0 ? 'aujourd’hui' : 'dans ' + finMois + ' jour' + (finMois > 1 ? 's' : '')) + (cap > 0 ? ' · jusqu’à ' + cpbMin(cap * 60) + ' peuvent passer sur le mois suivant' : '') + '</div>' +
+        '</div>' +
+        (rest > 30 ? '<div class="cpt-reste"><b>Il te reste du temps</b><span>Un sujet en tête ? Confie-le à Cindy avant la fin du mois.</span><button class="cpb-btn" style="background:#110704;color:#F8F6F2" onclick="cliNewDemande(\'' + esc(pid) + '\')">Proposer un sujet</button></div>' : '') +
+      '</section>';
+    }
+    // 5 derniers mois, par type de travail (4 types + « Autres »).
+    var tot = {}; billable.forEach(function (t) { var bm = cpTaskMinByMonth(t), m = 0; for (var k in bm) m += bm[k]; tot[catOf(t)] = (tot[catOf(t)] || 0) + m; });
+    var cats = Object.keys(tot).filter(function (c) { return tot[c] > 0; }).sort(function (a, b) { return tot[b] - tot[a]; });
+    var COUL = ['#110704', '#CD8F6E', '#C5DEFF', '#E6E5B2'];
+    var aff = cats.slice(0, 4); if (cats.length > 4) aff.push('Autres');
+    function coulOf(c) { var i = aff.indexOf(c); return i >= 0 && i < 4 ? COUL[i] : '#F0E9D6'; }
+    function cat5(c) { return aff.indexOf(c) >= 0 && aff.indexOf(c) < 4 ? c : 'Autres'; }
+    var mois = [];
+    for (var i = 4; i >= 0; i--) { var d = new Date(now.getFullYear(), now.getMonth() - i, 1); mois.push({ k: d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'), l: d.toLocaleDateString('fr-FR', { month: 'short' }), par: {}, tot: 0 }); }
+    billable.forEach(function (t) { var bm = cpTaskMinByMonth(t), c = cat5(catOf(t)); mois.forEach(function (m) { var v = bm[m.k] || 0; if (v) { m.par[c] = (m.par[c] || 0) + v; m.tot += v; } }); });
+    var maxi = Math.max.apply(null, mois.map(function (m) { return m.tot; }).concat([nums ? nums.availMin : 60, 60]));
+    var cols = mois.map(function (m, i) {
+      var segs = aff.slice().reverse().map(function (c) { var v = m.par[c] || 0; return v ? '<span style="height:' + Math.max(2, Math.round(v / maxi * 190)) + 'px;background:' + coulOf(c) + '" title="' + esc(c + ' : ' + cpbMin(v)) + '"></span>' : ''; }).join('');
+      return '<div class="cpt-col' + (i === 4 ? ' on' : '') + '"><b>' + (m.tot ? esc(cpbMin(m.tot)) : '') + '</b><div class="cpt-col__barre">' + segs + '</div><span>' + esc(m.l) + '</span></div>';
+    }).join('');
+    var legende = aff.map(function (c) { return '<span><i style="background:' + coulOf(c) + '"></i>' + esc(c) + '</span>'; }).join('');
+    var graphe = '<section class="cpb-carte"><div class="cpb-h2 cpb-h2--sm"><h2>Les 5 derniers mois</h2></div>' +
+      (aff.length ? '<div class="cpt-graphe"><div class="cpt-cols">' + cols + '</div><div class="cpt-legende">' + legende + '</div></div>' : '<p>Pas encore de temps passé à afficher.</p>') + '</section>';
+    // Le détail du mois.
+    var lignes = billable.map(function (t) { return { t: t, m: cpTaskMinByMonth(t)[mk] || 0 }; }).filter(function (x) { return x.m > 0; }).sort(function (a, b) { return b.m - a.m; });
+    var totMois = lignes.reduce(function (s, x) { return s + x.m; }, 0);
+    var detail = '<section class="cpb-carte"><div class="cpb-h2 cpb-h2--sm"><h2>Ce mois-ci</h2></div>' +
+      (lignes.length ? lignes.map(function (x) {
+        var t = x.t, quand = t.status === 'done' ? (t.completedAt ? 'le ' + fmtDate(t.completedAt) : 'terminée') : 'en cours';
+        return '<div class="cpt-ligne"><div><b>' + esc(t.title || 'Demande') + '</b><span>' + esc(quand) + '</span></div><span>' + esc(catOf(t)) + '</span><b class="num">' + esc(cpbMin(x.m)) + '</b></div>';
+      }).join('') + '<div class="cpt-ligne cpt-ligne--tot"><b>Total</b><span></span><b class="num">' + esc(cpbMin(totMois)) + '</b></div>' : '<p>Rien encore ce mois-ci.</p>') + '</section>';
+    return '<div class="cp-home cpb"><div class="cpb__in fade-up">' +
+      '<header><h1 class="cpb-h1">Temps passé</h1><p class="cpb-lead">Ce que Cindy a fait pour toi, heure par heure.</p></header>' +
+      hero + '<div class="cpt-bas">' + graphe + detail + '</div>' +
+    '</div></div>';
+  }
   function mainForView() {
     if (currentView === 'messages') return cpMessagesPage();
     if (currentView === 'project') return buildProjectView(getPD(currentId));
@@ -6281,6 +6335,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
       var pd0 = getPD(currentId);
       if (!pd0) { var _mp = (appData.projects || []).filter(function(pd){ return pd.project && (pd.project.type === 'partenaire' || pd.project.type === 'maintenance'); })[0]; pd0 = _mp || null; }
       if (!pd0) return buildHome();
+      if (pd0.project.type !== 'maintenance') return cpTempsPage(pd0);
       var _b = pd0.project.type === 'maintenance' ? buildMaintStats(pd0) : buildPartStats(pd0);
       return '<div class="cp-portal-main">' + _b + '</div>';
     }
