@@ -11624,26 +11624,36 @@
   function lockDoc(k, pid, lock) { jpost('/api/clients/' + CURKEY + '/files/lock', { key: decodeURIComponent(k), projectId: pid, locked: lock }, 'PATCH').then(function (r) { if (r.ok) { toast(lock ? 'Fichier verrouillé' : 'Fichier déverrouillé'); loadAllDocs(); } else toast('Erreur'); }); }
 
   /* ── Messagerie globale : clients -> projet -> fil ── */
+  // Messagerie : la liste à gauche, la conversation à droite, la plus
+  // récente (ou celle qui attend une réponse) ouverte d'office.
+  var CHAT_FILTRE = 'toutes';
+  function chatSetFiltre(f) { CHAT_FILTRE = f; renderChat(); }
   function renderChat() {
-    setMain(topbar('Messagerie') + '<div class="wrap"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
+    setMain('<div class="wrap tps pj-page msg-page"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
     clientsGet().then(function (d) {
-      var clients = (d.clients || []).slice().sort(function (a, b) { return (b.unread || 0) - (a.unread || 0); });
-      var waiting = clients.filter(function (c) { return (c.unread || 0) > 0; }).length;
-      var list = clients.map(function (c) {
-        var nm = ((c.prenom || '') + ' ' + (c.nom || '')).trim() || c.entreprise || c.email || c.key;
-        var u = c.unread || 0;
-        var ini = (nm ? nm[0] : '?').toUpperCase();
-        return '<button class="chatperson' + (u ? ' unread' : '') + '" id="cp-' + c.key + '" onclick="ADM.chatClient(\'' + c.key + '\')">' +
-          '<span class="aavatar aavatar--client">' + esc(ini) + '</span>' +
-          '<span class="chatperson__nm">' + esc(nm) + '</span>' +
-          (u ? '<span class="pill pill--a_valider">' + u + '</span>' : '') + '</button>';
-      }).join('') || '<div class="empty">Aucun client.</div>';
-      var head = '<div class="chathead__t" style="font-size:18px">Conversations</div>' + (waiting ? '<div class="micro" style="color:#6a4a0b;font-weight:700;margin-top:3px">' + waiting + ' en attente</div>' : '<div class="micro" style="color:#456039;margin-top:3px">Tout est lu ✓</div>');
-      setMain(topbar('Messagerie') + '<div class="wrap" style="max-width:1180px">' +
+      var clients = (d.clients || []).filter(function (c) { return !c.archived; }).sort(function (a, b) {
+        return (b.unread || 0) - (a.unread || 0) || (b.lastSeen || 0) - (a.lastSeen || 0);
+      });
+      var nonLus = clients.filter(function (c) { return (c.unread || 0) > 0; });
+      var l = CHAT_FILTRE === 'nonlus' ? nonLus : clients;
+      var list = l.map(function (c) {
+        var nm = clientName(c), u = c.unread || 0;
+        var sous = (c.sections || []).map(function (x) { return x.label; }).join(', ') || c.entreprise || 'Espace client';
+        return '<button class="chatperson' + (u ? ' unread' : '') + '" id="cp-' + esc(c.key) + '" onclick="ADM.chatClient(\'' + esc(c.key) + '\')">' +
+          '<span class="cl-av" aria-hidden="true">' + esc(nm.charAt(0).toUpperCase()) + '</span>' +
+          '<span class="chatperson__t"><b class="chatperson__nm">' + esc(nm) + '</b><span class="chatperson__s">' + esc(sous) + '</span></span>' +
+          (u ? '<span class="cl-msg num" aria-label="' + u + ' non lu' + (u > 1 ? 's' : '') + '">' + u + '</span>' : '') + '</button>';
+      }).join('') || '<p class="pj-vide" style="padding:14px">' + (CHAT_FILTRE === 'nonlus' ? 'Tout est lu.' : 'Aucun client.') + '</p>';
+      var filtre = function (k, t) { return '<button role="tab" aria-selected="' + (CHAT_FILTRE === k) + '" class="cl-fi' + (CHAT_FILTRE === k ? ' on' : '') + '" onclick="ADM.chatSetFiltre(\'' + k + '\')">' + t + '</button>'; };
+      setMain('<div class="wrap tps pj-page msg-page"><h1 class="pg-h1">Messagerie</h1>' +
         '<div class="chatwrap">' +
-          '<div class="chatlist"><div class="chatlist__head">' + head + '</div><div class="chatlist__scroll">' + list + '</div></div>' +
+          '<div class="chatlist"><div class="chatlist__head"><div class="cl-fis" role="tablist" aria-label="Quelles conversations">' +
+            filtre('nonlus', 'Non lus' + (nonLus.length ? ' (' + nonLus.length + ')' : '')) + filtre('toutes', 'Toutes') + '</div></div>' +
+            '<div class="chatlist__scroll">' + list + '</div></div>' +
           '<div class="chatpane" id="chatpane"><div class="empty" style="margin:auto">Choisis une conversation.</div></div>' +
         '</div></div>');
+      var premier = (CHAT.key && l.some(function (c) { return c.key === CHAT.key; })) ? CHAT.key : (l[0] && l[0].key);
+      if (premier) chatClient(premier);
     }).catch(showError);
   }
   function chatClient(key) {
@@ -11663,7 +11673,8 @@
       var pane = el('chatpane');
       if (pane) pane.innerHTML =
         '<div class="chathead"><span class="aavatar aavatar--client" style="width:42px;height:42px;font-size:18px">' + esc((nm[0] || '?').toUpperCase()) + '</span>' +
-          '<div><div class="chathead__t">' + esc(nm) + '</div><div class="chathead__s">' + (d.client.email ? esc(d.client.email) : 'Client') + '</div></div>' + visioBtn + '</div>' +
+          '<div><div class="chathead__t">' + esc(nm) + '</div><div class="chathead__s">' + esc(items.map(function (p) { return p[1]; }).join(', ') || d.client.email || 'Client') + '</div></div>' + visioBtn +
+          '<button class="tps-lien chathead__f" onclick="ADM.openClient(\'' + esc(key) + '\')">Ouvrir la fiche</button></div>' +
         chips + '<div class="chatbody" id="chatthread"></div>';
       var auto = items.filter(function (p) { return p[2] > 0; })[0] || items[0];
       if (auto) chatProject(auto[0]);
@@ -11678,8 +11689,8 @@
       '<div style="padding:0 4px">' + admMsgToolbar('gmsg') + '</div>' +
       '<div id="gmsg-att" style="display:flex;flex-wrap:wrap;gap:6px;padding:0 4px 6px"></div>' +
       '<div class="chatcompose">' + admAttachBtn('gmsg', pid) + '<textarea class="inp" id="gmsg" placeholder="Répondre au client…" onkeydown="ADM.chatKey(event)" oninput="ADM.taGrow(this)"></textarea>' +
-      '<button class="btn btn--outline" title="Insérer une réponse rapide" onclick="ADM.qrPick(\'gmsg\')">⚡</button>' +
-      '<button class="btn btn--dark" onclick="ADM.gsend()">Envoyer</button></div>';
+      '<button class="tps-lien" onclick="ADM.qrPick(\'gmsg\')">Réponse rapide</button>' +
+      '<button class="btn btn--dark chat-env" onclick="ADM.gsend()">Envoyer</button></div>';
     var box2 = el('chatmsgs'); if (box2) box2.scrollTop = box2.scrollHeight;
     if (d.unread > 0) { jpost('/api/clients/' + CHAT.key + '/message/read', { projectId: pid }, 'POST'); d.unread = 0; var self = el('cp-' + CHAT.key); if (self) self.classList.remove('unread'); }
   }
@@ -12794,7 +12805,7 @@
     ckLChoisir: ckLChoisir, ckLSemaine: ckLSemaine, ckLPoser: ckLPoser, ckLRetirer: ckLRetirer,
     ckLRegSet: ckLRegSet, ckLRegEnregistrer: ckLRegEnregistrer, ckLRegAnnuler: ckLRegAnnuler,
     ckLSetSimH: ckLSetSimH, ckLSetSimHz: ckLSetSimHz, ckLDepuis: ckLDepuis,
-    ckJSetFiltre: ckJSetFiltre, ckJSetClient: ckJSetClient, ckJEstimOuvrir: ckJEstimOuvrir, cliSetFiltre: cliSetFiltre, ckJRevRouvrir: ckJRevRouvrir, ckJRevClasser: ckJRevClasser, ckJEstimChoix: ckJEstimChoix, ckJEstimer: ckJEstimer, ckJOuvrir: ckJOuvrir, ckJFermer: ckJFermer, ckJOnglet: ckJOnglet,
+    ckJSetFiltre: ckJSetFiltre, ckJSetClient: ckJSetClient, ckJEstimOuvrir: ckJEstimOuvrir, cliSetFiltre: cliSetFiltre, chatSetFiltre: chatSetFiltre, ckJRevRouvrir: ckJRevRouvrir, ckJRevClasser: ckJRevClasser, ckJEstimChoix: ckJEstimChoix, ckJEstimer: ckJEstimer, ckJOuvrir: ckJOuvrir, ckJFermer: ckJFermer, ckJOnglet: ckJOnglet,
     ckJNeuf: ckJNeuf, ckJCreer: ckJCreer,
     tblStart: tblStart, tblCancel: tblCancel, tblSave: tblSave,
     tblDragStart: tblDragStart, tblDragEnd: tblDragEnd, tblDragOver: tblDragOver,

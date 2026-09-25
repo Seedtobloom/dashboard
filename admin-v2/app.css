@@ -3094,3 +3094,32 @@ h1.cdhead__n{margin:0;font-weight:400;font-size:36px}
 .cl-fis .cl-fi.on{background:#fff;box-shadow:0 1px 2px rgba(17,7,4,.12)}
 .cl-h .btn{background:#110704;color:#F8F6F2;border:none;border-radius:999px;padding:10px 20px;min-height:44px;font-size:15px;font-weight:600}
 .cl-h .btn:hover{background:#3b2a20}
+
+/* Messagerie : liste blanche à gauche, conversation à droite */
+.msg-page .pg-h1{margin:0 0 20px}
+.msg-page .chatwrap{height:calc(100vh - 170px);gap:20px}
+.msg-page .chatlist{width:360px;background:#fff;border-radius:16px;box-shadow:0 0 0 1px rgba(17,7,4,.07),0 2px 6px rgba(17,7,4,.08)}
+.msg-page .chatlist__head{padding:14px 12px 6px}
+.msg-page .chatlist__scroll{padding:6px 12px 12px}
+.msg-page .chatperson{gap:12px;padding:14px;border-radius:12px;margin-bottom:4px;background:none}
+.msg-page .chatperson:hover{background:#F8F6F2}
+.msg-page .chatperson.unread{background:none}
+.msg-page .chatperson.active{background:#C5DEFF}
+.msg-page .chatperson .cl-av{background:#F0E9D6}
+.msg-page .chatperson.active .cl-av{background:#fff}
+.chatperson__t{flex:1;min-width:0;display:flex;flex-direction:column}
+.msg-page .chatperson__nm{font-family:inherit;font-size:15px;font-weight:700;color:#110704}
+.chatperson__s{font-size:15px;color:#7a5540;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.msg-page .chatperson.active .chatperson__s{color:#3b2a20}
+.msg-page .chatpane{border-radius:16px;box-shadow:0 0 0 1px rgba(17,7,4,.07),0 2px 6px rgba(17,7,4,.08)}
+.msg-page .chathead{padding:18px 24px;border-bottom:1px solid #F0E9D6}
+.msg-page .chathead__t{font-family:inherit;font-size:17px;font-weight:700;color:#110704}
+.msg-page .chathead__s{font-family:inherit;font-size:15px;letter-spacing:0;color:#7a5540}
+.chathead__f{margin-left:auto}
+.msg-page .chatscroll{padding:22px 24px}
+.msg-page .msg--cindy .bubble{background:#110704;color:#F8F6F2}
+.msg-page .msg--client .bubble{background:#F0E9D6;color:#110704}
+.msg-page .chatcompose{padding:16px 24px;border-top:1px solid #F0E9D6;align-items:center}
+.msg-page .chatcompose textarea{background:#F8F6F2;border:none;border-radius:12px}
+.msg-page .chat-env{background:#110704;color:#F8F6F2;border:none;border-radius:999px;padding:10px 20px;min-height:44px}
+.msg-page .chatperson:focus-visible{outline:2px solid #110704;outline-offset:2px}
