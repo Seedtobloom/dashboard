@@ -989,8 +989,9 @@
       }).catch(function () { var b = el('regl-body'); if (b) b.innerHTML = '<div class="empty">Erreur de chargement.</div>'; });
     } else {
       api('/api/mission-types').then(function (r) { return r.json(); }).then(function (d) {
-        MISSION_LIST = Array.isArray(d.types) ? d.types.slice() : [];
+        mtFromApi(d); MT_OPEN = -1;
         renderReglagesBody();
+        mtChargerMoyennes();
       }).catch(showError);
     }
   }
@@ -1141,22 +1142,114 @@
       .then(function (res) { if (res.ok) { HOLIDAYS = res.d.holidays || []; toast('Congés enregistrés ✓'); renderCongesBody(); } else toast((res.d && res.d.error) || 'Erreur'); })
       .catch(function () { toast('Erreur'); });
   }
-  function missionReadInputs() { return MISSION_LIST.map(function (_, i) { var e = el('mt-type-' + i); return e ? e.value : MISSION_LIST[i]; }); }
-  var MT_DOTS = ['#5A2A11', '#CD8F6E', '#2c4a72', '#8a5c3f', '#8fb0d8', '#d8b9a2', '#8a6414'];
+  // ── Types de mission : liste + détail par type (temps, délai, retours,
+  // ce que le client fournit, précisions). Le client s'en sert dans « Nouvelle
+  // demande » pour voir le temps et la date au plus tôt. Défauts : shared/mission-types.js.
+  var MT = [], MT_EXC = 'mois', MT_MOY = {}, MT_OPEN = -1, MT_DRAG = -1;
+  function mtFromApi(d) {
+    var types = Array.isArray(d.types) ? d.types : [];
+    MT = types.map(function (n, i) { var x = stbMissionDetail(d.details || {}, n, i); return x; });
+    MT_EXC = d.exceptionnel === 'jamais' ? 'jamais' : 'mois';
+    MISSION_LIST = types.slice();
+  }
+  // « 30 min à 1 h », « 15 à 30 min », « 1 h 30 » → minutes
+  function mtParseTemps(txt) {
+    var s = String(txt || '').toLowerCase().replace(/,/g, '.');
+    if (!/\d/.test(s)) return { tMin: 0, tMax: 0 };
+    var cotes = s.split(/\s(?:à|a|-)\s|–/);
+    function un(p, uniteParDefaut) {
+      var h = p.match(/(\d+(?:\.\d+)?)\s*h\s*(\d+)?/);
+      if (h) return Math.round(parseFloat(h[1]) * 60 + (h[2] ? parseInt(h[2], 10) : 0));
+      var m = p.match(/(\d+)\s*(min|mn|m)?/);
+      if (!m) return 0;
+      var unite = m[2] ? 'min' : uniteParDefaut;
+      return unite === 'h' ? parseInt(m[1], 10) * 60 : parseInt(m[1], 10);
+    }
+    var fin = cotes[cotes.length - 1], uFin = /h/.test(fin) && !/min/.test(fin) ? 'h' : 'min';
+    var b = un(fin, 'min'), a = cotes.length > 1 ? un(cotes[0], uFin) : b;
+    if (a > b) { var x = a; a = b; b = x; }
+    return { tMin: a, tMax: b };
+  }
+  function mtMin(m) { var h = Math.floor(m / 60), r = Math.round(m % 60); return h ? h + ' h' + (r ? ' ' + (r < 10 ? '0' : '') + r : '') : r + ' min'; }
   function missionBody() {
-    var rows = MISSION_LIST.map(function (t, i) {
-      return '<div class="setline">' +
-        '<span class="setline__dot" style="background:' + MT_DOTS[i % MT_DOTS.length] + '"></span>' +
-        '<input class="inp" id="mt-type-' + i + '" value="' + esc(t) + '" aria-label="Type de mission ' + (i + 1) + '">' +
-        '<button class="setline__x" onclick="ADM.missionTypeDel(' + i + ')" title="Retirer" aria-label="Retirer ce type">' + IC_X + '</button></div>';
+    var head = '<div class="mt-row mt-row--head"><span></span><span>Type de mission</span><span>Temps de travail</span><span>Délai minimum</span><span>Retours inclus</span><span></span></div>';
+    var rows = MT.map(function (t, i) {
+      var moy = MT_MOY[t.nom];
+      var ligne = '<div class="mt-row" draggable="true" ondragstart="ADM.mtDragStart(' + i + ')" ondragover="event.preventDefault();this.classList.add(\'mt-over\')" ondragleave="this.classList.remove(\'mt-over\')" ondrop="ADM.mtDrop(' + i + ')">' +
+        '<span class="mt-grip" title="Glisser pour changer l’ordre"><i></i><i></i><i></i><i></i><i></i><i></i></span>' +
+        '<span class="mt-nomw"><b class="mt-nom" onclick="ADM.mtOpen(' + i + ')">' + esc(t.nom) + '</b>' +
+          '<span class="mt-moy">' + (moy ? 'chez toi en moyenne ' + esc(mtMin(moy.min)) + ' · ' + moy.n + ' demande' + (moy.n > 1 ? 's' : '') : (t.fournir ? 'le client fournit ' + esc(t.fournir) : '')) + '</span></span>' +
+        '<input class="mt-inp" value="' + esc(t.tMax ? stbMissionTemps(t).replace(/^environ /, '') : '') + '" placeholder="Cindy estime" aria-label="Temps de travail" onchange="ADM.mtSet(' + i + ',\'temps\',this.value)">' +
+        '<label class="mt-inp mt-delai"><input type="number" min="0" max="30" value="' + t.delai + '" aria-label="Délai minimum en jours ouvrés" onchange="ADM.mtSet(' + i + ',\'delai\',this.value)"><span>' + (t.delai ? (t.delai > 1 ? 'jours ouvrés' : 'jour ouvré') : 'à réception') + '</span></label>' +
+        '<input class="mt-inp" value="' + esc(t.retours) + '" aria-label="Retours inclus" onchange="ADM.mtSet(' + i + ',\'retours\',this.value)">' +
+        '<span class="mt-actions"><button class="mt-lien" onclick="ADM.mtOpen(' + i + ')">' + (MT_OPEN === i ? 'Fermer' : 'Modifier') + '</button></span></div>';
+      if (MT_OPEN !== i) return ligne;
+      var coul = STB_MISSION_COULEURS.map(function (c) { return '<button class="mt-coul' + (c === t.couleur ? ' on' : '') + '" style="background:' + c + '" title="Couleur de la carte" onclick="ADM.mtSet(' + i + ',\'couleur\',\'' + c + '\')"></button>'; }).join('');
+      var prec = t.precisions.map(function (p, j) {
+        return '<div class="mt-prec"><input class="mt-inp" value="' + esc(p.nom) + '" aria-label="Précision" onchange="ADM.mtPrec(' + i + ',' + j + ',\'nom\',this.value)">' +
+          '<label class="mt-inp mt-delai"><input type="number" min="0" step="5" value="' + (p.temps || '') + '" aria-label="Temps en minutes" onchange="ADM.mtPrec(' + i + ',' + j + ',\'temps\',this.value)"><span>min</span></label>' +
+          '<input class="mt-fournir" value="' + esc(p.besoins.join(', ')) + '" placeholder="ce qu’il te faut, séparé par des virgules" aria-label="Ce qu’il te faut" onchange="ADM.mtPrec(' + i + ',' + j + ',\'besoins\',this.value)">' +
+          '<button class="mt-lien" onclick="ADM.mtPrecDel(' + i + ',' + j + ')">Retirer</button></div>';
+      }).join('');
+      return ligne + '<div class="mt-detail">' +
+        '<div class="mt-detail__l mt-detail__p"><label>Nom du type</label><input class="mt-fournir" value="' + esc(t.nom) + '" onchange="ADM.mtSet(' + i + ',\'nom\',this.value)"></div>' +
+        '<div class="mt-detail__l mt-detail__p"><label>Ce que le client doit fournir</label><input class="mt-fournir" value="' + esc(t.fournir) + '" placeholder="les textes, les photos…" onchange="ADM.mtSet(' + i + ',\'fournir\',this.value)"></div>' +
+        '<div class="mt-detail__l"><label>Sous-titre de la carte, vu par le client</label><input class="mt-fournir" value="' + esc(t.exemples) + '" placeholder="post, story, carrousel…" onchange="ADM.mtSet(' + i + ',\'exemples\',this.value)"></div>' +
+        '<div class="mt-detail__l"><label>Couleur de la carte</label><div class="mt-coulrs">' + coul + '</div></div>' +
+        '<div class="mt-detail__p"><div class="mt-detail__ph"><b>Les précisions de ce type, chacune avec ce qu’il te faut</b><button class="mt-lien" onclick="ADM.mtPrecAdd(' + i + ')">Ajouter une précision</button></div>' +
+          (prec || '<div class="mt-vide">Pas de précision : le client voit « ' + esc(t.fournir || 'une description du besoin') + ' ».</div>') + '</div>' +
+        '<div class="mt-detail__f"><button class="mt-lien" onclick="ADM.missionTypeDel(' + i + ')">Retirer ce type</button></div></div>';
     }).join('');
-    return '<div class="card infocard" style="background:var(--card)"><h3>Types de mission</h3>' +
-      '<div class="micro mb" style="text-transform:none;letter-spacing:0;line-height:1.6;color:var(--terre-600)">Ces catégories sont proposées au client quand il crée une tâche, et servent au suivi du temps par type. Modifie, ajoute ou retire selon tes besoins, puis enregistre.</div>' +
-      (rows || '<div class="empty">Aucun type. Ajoutez-en un ci-dessous.</div>') +
-      '<div class="setadd"><input class="inp" id="mt-type-new" aria-label="Nouveau type de mission" placeholder="Nouveau type de mission" onkeydown="if(event.key===\'Enter\'){event.preventDefault();ADM.missionTypeAdd();}"><button class="btn btn--outline btn--sm" onclick="ADM.missionTypeAdd()">Ajouter</button></div>' +
+    return '<div class="mt">' +
+      '<p class="mt-intro">Pour chaque type, le temps et le délai. Ton client voit le temps en choisissant, et ne peut pas demander une date plus proche que le délai (tes congés et tes jours complets sont sautés). « Chez toi en moyenne » vient de ton temps réellement passé.</p>' +
+      '<section class="mt-carte">' + head + (rows || '<div class="mt-vide">Aucun type.</div>') +
+        '<div class="mt-pied"><input class="mt-fournir" id="mt-type-new" placeholder="Nouveau type de mission" aria-label="Nouveau type de mission" onkeydown="if(event.key===\'Enter\'){event.preventDefault();ADM.missionTypeAdd();}"><button class="mt-lien" onclick="ADM.missionTypeAdd()">Ajouter un type</button><span>glisse les lignes pour choisir l’ordre dans lequel tes clients les voient</span></div>' +
+      '</section>' +
+      '<div class="mt-bas">' +
+        '<section class="mt-carte mt-info"><b>Comment la date au plus tôt est calculée</b><p>Aujourd’hui plus le délai du type, en jours ouvrés. Tes week-ends, tes congés et les jours déjà complets sont sautés.</p></section>' +
+        '<section class="mt-carte mt-info"><b>Les dates exceptionnelles</b><p>Un client peut demander une date plus proche, par un lien discret. Tu la vois dans la demande, et tu acceptes ou tu proposes une autre date.</p>' +
+          '<div class="mt-ongs"><button class="mt-ong' + (MT_EXC === 'mois' ? ' on' : '') + '" onclick="ADM.mtExc(\'mois\')">1 par mois au plus</button><button class="mt-ong' + (MT_EXC === 'jamais' ? ' on' : '') + '" onclick="ADM.mtExc(\'jamais\')">Jamais</button></div></section>' +
+        '<section class="mt-carte mt-info"><b>Dans ton planning</b><p>Chaque demande arrive avec son temps estimé, pris sur le type ou sur la précision choisie.</p></section>' +
+      '</div>' +
       '<div class="row row--end mt"><button class="btn btn--dark btn--sm" onclick="ADM.missionTypeSave()">Enregistrer</button></div></div>';
   }
   function renderReglagesBody() { var b = el('regl-body'); if (b) b.innerHTML = missionBody(); }
+  function mtSet(i, champ, v) {
+    var t = MT[i]; if (!t) return;
+    if (champ === 'temps') { var p = mtParseTemps(v); t.tMin = p.tMin; t.tMax = p.tMax; }
+    else if (champ === 'delai') t.delai = Math.max(0, Math.min(30, parseInt(v, 10) || 0));
+    else t[champ] = String(v || '').trim();
+    renderReglagesBody();
+  }
+  function mtOpen(i) { MT_OPEN = MT_OPEN === i ? -1 : i; renderReglagesBody(); }
+  function mtPrec(i, j, champ, v) {
+    var p = MT[i] && MT[i].precisions[j]; if (!p) return;
+    if (champ === 'temps') p.temps = Math.max(0, parseInt(v, 10) || 0);
+    else if (champ === 'besoins') p.besoins = String(v || '').split(',').map(function (s) { return s.trim(); }).filter(Boolean);
+    else p.nom = String(v || '').trim();
+  }
+  function mtPrecAdd(i) { if (!MT[i]) return; MT[i].precisions.push({ nom: 'Nouvelle précision', temps: 0, besoins: [] }); renderReglagesBody(); }
+  function mtPrecDel(i, j) { if (!MT[i]) return; MT[i].precisions.splice(j, 1); renderReglagesBody(); }
+  function mtExc(v) { MT_EXC = v; renderReglagesBody(); }
+  function mtDragStart(i) { MT_DRAG = i; }
+  function mtDrop(i) {
+    var de = MT_DRAG; MT_DRAG = -1; if (de < 0 || de === i) { renderReglagesBody(); return; }
+    var x = MT.splice(de, 1)[0]; MT.splice(i, 0, x); MT_OPEN = -1; renderReglagesBody();
+  }
+  // Temps réellement passé par type, depuis les demandes terminées (tous clients).
+  function mtChargerMoyennes() {
+    api('/api/done').then(function (r) { return r.json(); }).then(function (d) {
+      var acc = {};
+      ((d && d.completed) || []).forEach(function (c) {
+        if (!c.missionType || !c.timeSpentMinutes) return;
+        var a = acc[c.missionType] = acc[c.missionType] || { tot: 0, n: 0 };
+        a.tot += c.timeSpentMinutes; a.n++;
+      });
+      MT_MOY = {};
+      Object.keys(acc).forEach(function (k) { MT_MOY[k] = { min: Math.round(acc[k].tot / acc[k].n), n: acc[k].n }; });
+      renderReglagesBody();
+    }).catch(function () {});
+  }
   // ── Calendrier iCloud (CalDAV) ──
   function calConfigBody(d) {
     var on = !!d.configured;
@@ -1202,20 +1295,23 @@
     });
   }
   function missionTypeAdd() {
-    MISSION_LIST = missionReadInputs();
     var nv = (el('mt-type-new').value || '').trim();
-    if (nv) MISSION_LIST.push(nv);
+    if (!nv) return;
+    MT.push(stbMissionDetail(null, nv, MT.length)); MT_OPEN = MT.length - 1;
     renderReglagesBody();
   }
   function missionTypeDel(i) {
-    MISSION_LIST = missionReadInputs();
-    MISSION_LIST.splice(i, 1);
-    renderReglagesBody();
+    var t = MT[i]; if (!t) return;
+    admConfirm({ title: 'Retirer « ' + t.nom + ' » ?', message: 'Les demandes déjà faites gardent leur type. Tes clients ne pourront plus le choisir.', yes: 'Retirer', no: 'Annuler' }, function () {
+      MT.splice(i, 1); MT_OPEN = -1; renderReglagesBody();
+    });
   }
   function missionTypeSave() {
-    var list = missionReadInputs().map(function (s) { return (s || '').trim(); }).filter(Boolean);
+    var list = MT.map(function (t) { return (t.nom || '').trim(); }).filter(Boolean);
     if (!list.length) { toast('La liste ne peut pas être vide'); return; }
-    jpost('/api/mission-types', { types: list }, 'PUT').then(function (r) { if (r.ok) { toast('Types de mission enregistrés ✓'); MISSION_LIST = list; renderReglagesBody(); } else toast('Erreur'); });
+    var details = {};
+    MT.forEach(function (t) { if (t.nom) details[t.nom] = t; });
+    jpost('/api/mission-types', { types: list, details: details, exceptionnel: MT_EXC }, 'PUT').then(function (r) { if (r.ok) { toast('Types de mission enregistrés'); MISSION_LIST = list; renderReglagesBody(); } else toast('Erreur'); });
   }
   var PRIO_GROUP = 'date', PRIO_FILTER = 'all', PRIO_D = null, PRIO_TAB = 'todo', PRIO_MAINTAB = 'jour';
   function prioMainTab(v) { PRIO_MAINTAB = v; if (PRIO_D) renderPrioBody(PRIO_D); }
@@ -12896,7 +12992,7 @@
     taskStatus: taskStatus, ptFinishPrompt: ptFinishPrompt, ptTimePrompt: ptTimePrompt, taskDelete: taskDelete, taskDuplicate: taskDuplicate, taskTime: taskTime, ptToggleContent: ptToggleContent, taskComment: taskComment, taskReview: taskReview, taskSendReview: taskSendReview, taskClearRework: taskClearRework, uploadTaskDlv: uploadTaskDlv, addDlvLink: addDlvLink, delDeliverable: delDeliverable, taskArchive: taskArchive, taskMilestone: taskMilestone, taskProposeDate: taskProposeDate, taskEditOpen: taskEditOpen, ptStart: ptStart, ptPause: ptPause, tkStart: tkStart, tkPause: tkPause, navTimerPause: navTimerPause,
     bilanRequest: bilanRequest, beneficeAdd: beneficeAdd, beneficeDel: beneficeDel,
     emailSave: emailSave, emailReset: emailReset, reglSetTab: reglSetTab, reglOuvrir: reglOuvrir, bookingSave: bookingSave, calSave: calSave, calTest: calTest, calDisconnect: calDisconnect, congesAdd: congesAdd, congesDel: congesDel, congesSave: congesSave, wsAdd: wsAdd, wsDel: wsDel, wsSave: wsSave, backupRun: backupRun, backupDownload: backupDownload, backupRestoreOpen: backupRestoreOpen,
-    missionTypeAdd: missionTypeAdd, missionTypeDel: missionTypeDel, missionTypeSave: missionTypeSave,
+    missionTypeAdd: missionTypeAdd, missionTypeDel: missionTypeDel, missionTypeSave: missionTypeSave, mtSet: mtSet, mtOpen: mtOpen, mtPrec: mtPrec, mtPrecAdd: mtPrecAdd, mtPrecDel: mtPrecDel, mtExc: mtExc, mtDragStart: mtDragStart, mtDrop: mtDrop,
     prioDone: prioDone, prioCloseDlv: prioCloseDlv, prioPostpone: prioPostpone, prioProposeDate: prioProposeDate, prioTicketStart: prioTicketStart, prioAddDlv: prioAddDlv, prioAddDlvLink: prioAddDlvLink, revResolve: revResolve, prioDragStart: prioDragStart, prioDragEnd: prioDragEnd, prioDayOver: prioDayOver, prioDayLeave: prioDayLeave, prioDropDay: prioDropDay, prioSetDoDate: prioSetDoDate, prioClearDoDate: prioClearDoDate, prioPlan: prioPlan,
     atCloseTask: atCloseTask, atCopyLink: atCopyLink, atAddEntry: atAddEntry, atDelEntry: atDelEntry,
     atSetSec: atSetSec, atWide: atWide, atReviewUpdated: atReviewUpdated, atEditNote: atEditNote, atSaveNote: atSaveNote, atNoteRestore: atNoteRestore, atCalMove: atCalMove, atCalToday: atCalToday,

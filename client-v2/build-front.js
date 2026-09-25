@@ -22,7 +22,8 @@ let js = read('src/client_js.js');       // var CLIENT_JS  = String.raw`...`;
 // cliente (donc dans le template String.raw — d'où l'interdiction de backtick
 // dans ce fichier). La ligne `export {...}`, utile au Worker, est retirée ici.
 {
-  const sharedModel = read('../shared/forfait-model.js').replace(/^export\s*\{[^}]*\};?\s*$/m, '');
+  const sharedModel = read('../shared/forfait-model.js').replace(/^export\s*\{[^}]*\};?\s*$/m, '') +
+    '\n' + read('../shared/mission-types.js').replace(/^export\s*\{[^}]*\};?\s*$/m, '');
   const anchor = 'var CLIENT_JS = String.raw`';
   if (js.indexOf(anchor) !== 0) throw new Error('client_js.js : en-tête String.raw introuvable');
   // remplacement par fonction : évite toute interprétation des $ du modèle

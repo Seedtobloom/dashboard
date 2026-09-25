@@ -16,6 +16,8 @@ const css = fs.readFileSync(path.join(dir, 'app.css'), 'utf8');
 // (utile au Worker) est retirée puisqu'ici c'est un script classique.
 const sharedModel = fs
   .readFileSync(path.join(dir, '..', 'shared', 'forfait-model.js'), 'utf8')
+  .replace(/^export\s*\{[^}]*\};?\s*$/m, '') + '\n' + fs
+  .readFileSync(path.join(dir, '..', 'shared', 'mission-types.js'), 'utf8')
   .replace(/^export\s*\{[^}]*\};?\s*$/m, '');
 const js = sharedModel + '\n' + fs.readFileSync(path.join(dir, 'app.js'), 'utf8');
 const favicon = fs.readFileSync(path.join(dir, 'favicon.svg'), 'utf8');

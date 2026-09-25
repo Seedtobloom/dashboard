@@ -3276,3 +3276,47 @@ h1.cdhead__n{margin:0;font-weight:400;font-size:36px}
 .pj-cote-c .pj-t{grid-template-columns:minmax(200px,1fr) minmax(0,2fr) auto 36px}
 .pj-cote-c .pj-t__n{min-width:0;overflow-wrap:anywhere}
 .pj-cote-c .pj-t__q{min-width:0;text-align:right;line-height:1.4}
+/* Réglages · Types de mission (temps, délai, précisions) */
+.mt-intro{font-size:15px;line-height:1.6;color:var(--terre-600);margin:0 0 14px;max-width:880px}
+.mt-carte{background:#fff;border-radius:14px;box-shadow:0 0 0 1px rgba(17,7,4,.08);padding:6px 18px 12px}
+.mt-carte .mt-fournir,.mt-detail .mt-fournir{background:#fff;box-shadow:inset 0 0 0 1px rgba(17,7,4,.12)}
+.mt-row{display:grid;grid-template-columns:16px minmax(0,1fr) 140px 150px 100px 64px;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid rgba(17,7,4,.07)}
+.mt-row--head{font-size:13px;font-weight:600;color:#7a5540;padding:10px 0 8px}
+.mt-row.mt-over{box-shadow:inset 0 2px 0 #110704}
+.mt-grip{display:grid;grid-template-columns:repeat(2,3px);gap:3px;cursor:grab;opacity:.45}
+.mt-grip i{width:3px;height:3px;border-radius:50%;background:#110704}
+.mt-nom{font:600 15px/1.35 var(--font-micro);color:#110704;padding:2px 4px;cursor:pointer}
+.mt-fournir:focus{outline:none;box-shadow:0 0 0 1px #110704}
+.mt-inp{display:flex;align-items:center;gap:6px;border:0;background:#F8F6F2;border-radius:8px;padding:8px 10px;font:500 14px var(--font-micro);color:#110704;min-width:0;width:100%;box-sizing:border-box}
+.mt-inp:focus-within,.mt-inp:focus{outline:none;box-shadow:0 0 0 1px #110704}
+.mt-delai input{width:34px;border:0;background:transparent;font:600 14px var(--font-micro);color:#110704;padding:0}
+.mt-delai input:focus{outline:none}
+.mt-delai span{font-size:13px;color:#7a5540;white-space:nowrap}
+.mt-nomw{display:flex;flex-direction:column;min-width:0}
+.mt-moy{font-size:13px;color:#7a5540;padding:0 4px}
+.mt-fournir{border:0;background:transparent;font:400 14px var(--font-micro);color:#3b2a20;padding:8px 6px;border-radius:8px;min-width:0;width:100%;box-sizing:border-box}
+.mt-actions{text-align:right}
+.mt-lien{border:0;background:none;padding:0;cursor:pointer;font:600 14px var(--font-micro);color:#5A2A11;text-decoration:underline;text-underline-offset:3px;white-space:nowrap}
+.mt-detail{background:#F8F6F2;border-radius:12px;padding:14px 16px;margin:4px 0 10px 28px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px 28px}
+.mt-detail__l label{display:block;font-size:13px;font-weight:600;color:#7a5540;margin-bottom:4px}
+.mt-detail__l .mt-fournir{background:#fff}
+.mt-coulrs{display:flex;gap:6px}
+.mt-coul{width:24px;height:24px;border-radius:6px;border:0;cursor:pointer;box-shadow:inset 0 0 0 1px rgba(17,7,4,.12)}
+.mt-coul.on{box-shadow:0 0 0 1px #F8F6F2,0 0 0 2px #110704}
+.mt-detail__p,.mt-detail__f{grid-column:1/-1}
+.mt-detail__ph{display:flex;justify-content:space-between;align-items:baseline;font-size:14px;margin-bottom:4px}
+.mt-prec{display:grid;grid-template-columns:170px 110px minmax(0,1fr) 60px;gap:12px;align-items:center;padding:6px 0;border-top:1px solid rgba(17,7,4,.08)}
+.mt-prec .mt-inp{background:#fff}
+.mt-prec .mt-fournir{background:#fff}
+.mt-vide{font-size:14px;color:#7a5540;padding:8px 0}
+.mt-pied{display:flex;align-items:center;gap:16px;padding:12px 0 2px}
+.mt-pied .mt-fournir{max-width:300px;background:#F8F6F2}
+.mt-pied span{font-size:14px;color:#7a5540}
+.mt-bas{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-top:14px}
+.mt-info{padding:16px 18px}
+.mt-info b{font-size:15px;color:#110704}
+.mt-info p{font-size:14px;line-height:1.55;color:#3b2a20;margin:6px 0 10px}
+.mt-ongs{display:flex;gap:6px}
+.mt-ong{white-space:nowrap;border:0;border-radius:999px;padding:8px 16px;font:600 14px var(--font-micro);cursor:pointer;background:#fff;color:#110704;box-shadow:inset 0 0 0 1px rgba(17,7,4,.16)}
+.mt-ong.on{background:#110704;color:#F8F6F2;box-shadow:none}
+@media (max-width:900px){.mt-row{grid-template-columns:16px minmax(0,1fr) 120px 64px}.mt-row>*:nth-child(4),.mt-row>*:nth-child(5){display:none}}

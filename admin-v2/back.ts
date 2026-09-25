@@ -16,6 +16,7 @@
  */
 
 import { stbTaskMinByMonth, stbForfaitState, stbSessionMin } from '../shared/forfait-model.js';
+import { stbMissionDetail } from '../shared/mission-types.js';
 
 export interface Env {
   KV_CLIENT: KVNamespace;
@@ -2381,7 +2382,7 @@ async function handleDone(env: Env): Promise<Response> {
     const who = clientName(data);
     const pc = getDomainObj(esp, 'partenaireCreative');
     if (pc) (pc.taches || []).forEach((t: AnyObj) => {
-      if (t.status === 'done' && t.completedAt) completed.push({ key: ci.key, client: who, projectLabel: 'Partenaire créative', kind: 'tâche', title: t.title, completedAt: t.completedAt, timeSpentMinutes: t.timeSpentMinutes || 0 });
+      if (t.status === 'done' && t.completedAt) completed.push({ key: ci.key, client: who, projectLabel: 'Partenaire créative', kind: 'tâche', title: t.title, completedAt: t.completedAt, timeSpentMinutes: t.timeSpentMinutes || 0, missionType: t.missionType || (t.properties && t.properties.p_typemission) || '' });
     });
     const sw = getDomainObj(esp, 'siteWeb');
     if (sw) (sw.suivi || []).forEach((s: AnyObj) => { if (s.status === 'done' && s.completedAt) completed.push({ key: ci.key, client: who, projectLabel: 'Site web', kind: 'étape', title: s.title, completedAt: s.completedAt, timeSpentMinutes: 0 }); });
@@ -2930,7 +2931,13 @@ const MISSION_TYPES_DEFAULT = [
 async function handleMissionTypesGet(env: Env): Promise<Response> {
   const stored = (await env.KV_CLIENT.get('global:missionTypes', { type: 'json' })) as string[] | null;
   const has = Array.isArray(stored) && stored.length > 0;
-  return json({ types: has ? stored : MISSION_TYPES_DEFAULT, isDefault: !has });
+  const types = has ? stored : MISSION_TYPES_DEFAULT;
+  // Détail par type (temps, délai, retours, à fournir, précisions) : ce qui est
+  // enregistré, complété par les valeurs par défaut de shared/mission-types.js.
+  const extra = ((await env.KV_CLIENT.get('global:missionTypeDetails', { type: 'json' })) || {}) as AnyObj;
+  const details: AnyObj = {};
+  types.forEach((n, i) => { details[n] = stbMissionDetail(extra.details || {}, n, i); });
+  return json({ types, isDefault: !has, details, exceptionnel: extra.exceptionnel === 'jamais' ? 'jamais' : 'mois' });
 }
 async function handleMissionTypesSave(request: Request, env: Env): Promise<Response> {
   const body = await readJson(request);
@@ -2939,6 +2946,12 @@ async function handleMissionTypesSave(request: Request, env: Env): Promise<Respo
     : [];
   if (!arr.length) return json({ error: 'La liste ne peut pas être vide' }, 400);
   await env.KV_CLIENT.put('global:missionTypes', JSON.stringify(arr));
+  // Le détail n'est réécrit que s'il est envoyé (l'ancien écran n'envoie que les noms).
+  if (body.details && typeof body.details === 'object') {
+    const details: AnyObj = {};
+    arr.forEach((n: string, i: number) => { if (body.details[n]) details[n] = stbMissionDetail(body.details, n, i); });
+    await env.KV_CLIENT.put('global:missionTypeDetails', JSON.stringify({ details, exceptionnel: body.exceptionnel === 'jamais' ? 'jamais' : 'mois' }));
+  }
   return json({ ok: true, types: arr });
 }
 

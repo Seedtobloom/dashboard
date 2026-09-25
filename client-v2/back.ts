@@ -237,6 +237,9 @@ async function handleClientApi(
 
   // Tâches
   if (method === 'POST' && sub === '/tasks') return handleTaskCreate(request, env, masterKey, data);
+  // Brouillons de demande (Accompagnement créatif) : enregistrés au fil de l'eau,
+  // gardés à part des tâches pour que le studio ne les voie pas.
+  if ((method === 'PUT' || method === 'DELETE') && sub === '/brouillons') return handleBrouillon(request, env, method, masterKey, data, url);
   let t = sub.match(/^\/tasks\/([a-f0-9]+)$/);
   if (t && method === 'PATCH') return handleTaskUpdate(request, env, masterKey, data, t[1], editor);
   if (t && method === 'DELETE') return handleTaskDelete(request, env, masterKey, data, t[1], url);
@@ -572,6 +575,9 @@ async function buildAppData(env: Env, masterKey: string, data: AnyObj): Promise<
   const projects: AnyObj[] = [];
   // Types de mission personnalisés par le studio (partagés via KV_CLIENT)
   const globalMissionTypes = (await globalKey(env, 'global:missionTypes', true)) as string[] | null;
+  // Détail des types (temps, délai, précisions…) : null = valeurs par défaut côté SPA.
+  const missionDetails = ((await globalKey(env, 'global:missionTypeDetails', true)) || null) as AnyObj | null;
+  const missionInfo = { types: Array.isArray(globalMissionTypes) && globalMissionTypes.length ? globalMissionTypes : null, details: missionDetails && missionDetails.details || null, exceptionnel: missionDetails && missionDetails.exceptionnel === 'jamais' ? 'jamais' : 'mois' };
   const withMissionTypes = (schema: AnyObj[]): AnyObj[] => {
     if (!Array.isArray(globalMissionTypes) || !globalMissionTypes.length) return schema;
     return (schema || []).map((d) => (d && d.id === 'p_typemission' ? { ...d, options: globalMissionTypes } : d));
@@ -604,6 +610,8 @@ async function buildAppData(env: Env, masterKey: string, data: AnyObj): Promise<
         propertySchema: withMissionTypes(Array.isArray(pc.propertySchema) && pc.propertySchema.length ? pc.propertySchema : DEFAULT_PARTNER_SCHEMA),
         monthlyHours: pc.monthlyHours || 0,
         workSlots: Array.isArray(pc.workSlots) ? pc.workSlots : [],
+        // Demandes commencées puis laissées pour plus tard : jamais visibles du studio.
+        brouillons: Array.isArray(pc.brouillons) ? pc.brouillons : [],
         rolloverCapHours: pc.rolloverCapHours,
         overageRate: pc.overageRate,
         forfaitOverrides: pc.forfaitOverrides || {},
@@ -788,6 +796,7 @@ async function buildAppData(env: Env, masterKey: string, data: AnyObj): Promise<
       files: only.files,
       conversation,
       studioHolidays,
+      missionInfo,
       bilan,
       bookingLink,
       questionnaires,
@@ -802,6 +811,7 @@ async function buildAppData(env: Env, masterKey: string, data: AnyObj): Promise<
     conversation,
     home: espace.home || null,
     studioHolidays,
+    missionInfo,
     bilan,
     bookingLink,
     questionnaires,
@@ -1141,6 +1151,10 @@ async function handleTaskCreate(request: Request, env: Env, masterKey: string, d
     startDate: body.startDate,
     pole: body.pole,
     properties: body.properties && typeof body.properties === 'object' ? body.properties : {},
+    missionType: body.missionType ? String(body.missionType).slice(0, 200) : undefined,
+    // Brief rédigé dans l'éditeur par blocs de la nouvelle demande.
+    blocks: Array.isArray(body.blocks) ? body.blocks.slice(0, 400) : undefined,
+    contentMigrated: Array.isArray(body.blocks) && body.blocks.length ? true : undefined,
     attachments: Array.isArray(body.attachments) ? body.attachments.slice(0, 10).map((a: AnyObj) => ({ key: String(a && a.key || ''), name: String(a && a.name || 'fichier'), type: String(a && a.type || '') })).filter((a: AnyObj) => a.key) : [],
     comments: [],
     pinned: false,
@@ -1165,6 +1179,39 @@ async function handleTaskCreate(request: Request, env: Env, masterKey: string, d
     (task.content ? `<br><span style="color:#412F21">${escHtml(task.content)}</span>` : '') + `</p>`);
 
   return json(task, 201);
+}
+
+async function handleBrouillon(request: Request, env: Env, method: string, masterKey: string, data: AnyObj, url: URL): Promise<Response> {
+  const pc = getDomainObj(getEspace(data), 'partenaireCreative');
+  if (!pc) return json({ error: 'Project not found' }, 404);
+  if (!Array.isArray(pc.brouillons)) pc.brouillons = [];
+  if (method === 'DELETE') {
+    const id = (url.searchParams.get('id') || '').toString();
+    pc.brouillons = pc.brouillons.filter((b: AnyObj) => b && b.id !== id);
+    await save(env, masterKey, data);
+    return json({ ok: true });
+  }
+  const body = await readJson(request);
+  const b = body && body.brouillon;
+  if (!b || typeof b !== 'object' || !/^brouillon-[a-z0-9]+$/.test(String(b.id || ''))) return json({ error: 'Brouillon invalide' }, 400);
+  const propre: AnyObj = {
+    id: String(b.id),
+    title: String(b.title || '').slice(0, 200),
+    missionType: String(b.missionType || '').slice(0, 200),
+    precisions: Array.isArray(b.precisions) ? b.precisions.slice(0, 20).map(String) : [],
+    besoins: Array.isArray(b.besoins) ? b.besoins.slice(0, 40).map(String) : [],
+    blocks: Array.isArray(b.blocks) ? b.blocks.slice(0, 400) : [],
+    attachments: Array.isArray(b.attachments) ? b.attachments.slice(0, 20) : [],
+    dueDate: b.dueDate ? String(b.dueDate).slice(0, 10) : null,
+    etape: Math.min(3, Math.max(1, Number(b.etape) || 1)),
+    updatedAt: nowIso(),
+  };
+  if (JSON.stringify(propre).length > 400000) return json({ error: 'Brouillon trop volumineux' }, 413);
+  const i = pc.brouillons.findIndex((x: AnyObj) => x && x.id === propre.id);
+  if (i >= 0) pc.brouillons[i] = propre; else pc.brouillons.unshift(propre);
+  pc.brouillons = pc.brouillons.slice(0, 20);
+  await save(env, masterKey, data);
+  return json({ ok: true, brouillon: propre });
 }
 
 const TASK_ALLOWED = ['content', 'status', 'briefStatus', 'timeSpentMinutes', 'archived', 'pinned', 'dueDate', 'startDate', 'title', 'urgency', 'pole', 'missionType', 'imageUrl', 'livrableUrl', 'deliverableFileKey', 'customProps', 'blocks', 'v1Date', 'v2Date', 'attachments', 'table', 'contentMigrated'];
