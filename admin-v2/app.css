@@ -3205,3 +3205,27 @@ h1.cdhead__n{margin:0;font-weight:400;font-size:36px}
 .pl-n{display:block;font-size:13px;color:#7a5540;margin-top:6px}
 .pl-j{color:#110704}
 .pl-page .pj-cote-c{margin:0 0 20px}
+
+/* Réglages : menu par thème à gauche, contenu en carte blanche à droite */
+.rg-page .pg-h1{margin:0 0 20px}
+.rg-2{display:grid;grid-template-columns:280px minmax(0,1fr);gap:24px;align-items:start}
+.rg-m{background:#fff;border-radius:16px;box-shadow:0 0 0 1px rgba(17,7,4,.07),0 2px 6px rgba(17,7,4,.08);padding:14px 10px;position:sticky;top:16px}
+.rg-g{margin:10px 14px 6px;font-family:'Cormorant Garamond',Georgia,serif;font-style:italic;font-size:22px;color:#110704}
+.rg-g:first-child{margin-top:4px}
+.rg-i{display:flex;justify-content:space-between;align-items:center;width:100%;padding:10px 14px;border:none;border-radius:10px;background:none;font:inherit;font-size:15px;color:#110704;text-align:left;cursor:pointer}
+.rg-i:hover{background:#F8F6F2}
+.rg-i.on{background:#C5DEFF;font-weight:600}
+.rg-i:focus-visible{outline:2px solid #110704;outline-offset:2px}
+.rg-b{background:#5A2A11}
+.rg-c{background:#fff;border-radius:16px;box-shadow:0 0 0 1px rgba(17,7,4,.07),0 2px 6px rgba(17,7,4,.08);padding:26px 28px;min-width:0}
+.rg-c .card,.rg-c .infocard{background:none!important;box-shadow:none;padding:0;margin:0 0 20px;border:none}
+.rg-c h3{font-size:17px;font-weight:700;color:#110704}
+.rg-c h3{font-family:var(--font-micro);font-style:normal;font-size:17px;font-weight:700;color:#110704;letter-spacing:0;margin:0 0 6px}
+.rg-c label,.rg-c .micro{text-transform:none!important;letter-spacing:0!important;font-size:15px}
+.rg-c label{font-weight:600;color:#110704}
+.rg-c .inp,.rg-c textarea,.rg-c input[type="text"],.rg-c input[type="email"],.rg-c input[type="url"],.rg-c input:not([type]){background:#F8F6F2;border:none;box-shadow:inset 0 0 0 1px rgba(17,7,4,.12)}
+.rg-c .setline{background:none;border-radius:0;border-top:1px solid #F0E9D6;padding:10px 0;margin:0;gap:12px}
+.rg-c .setline .inp{background:none;box-shadow:none;font-size:15px;font-weight:500;padding:6px 8px}
+.rg-c .setline .inp:focus{background:#F8F6F2}
+.rg-c .setadd{margin-top:14px}
+.rg-c a{text-decoration:underline;text-underline-offset:3px}

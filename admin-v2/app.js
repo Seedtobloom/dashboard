@@ -831,8 +831,8 @@
     var vars = (t.vars || []).map(function (v) { return '<code class="emailvar">{' + esc(v) + '}</code>'; }).join(' ');
     return '<div class="card infocard" style="background:var(--card)">' +
       '<h3><span class="infocard__dot" style="background:#9c6f18"></span>' + esc(t.label) + '</h3>' +
-      '<div class="field"><label>Objet de l\'e-mail</label><input id="em-subj-' + t.key + '" class="inp" value="' + esc(t.subject) + '"></div>' +
-      '<div class="field mt"><label>Message</label><textarea id="em-body-' + t.key + '" class="inp" style="min-height:150px">' + esc(t.body) + '</textarea></div>' +
+      '<div class="field"><label for="em-subj-' + t.key + '">Objet de l\'e-mail</label><input id="em-subj-' + t.key + '" class="inp" value="' + esc(t.subject) + '"></div>' +
+      '<div class="field mt"><label for="em-body-' + t.key + '">Message</label><textarea id="em-body-' + t.key + '" class="inp" style="min-height:150px">' + esc(t.body) + '</textarea></div>' +
       (vars ? '<div class="micro mt">Variables : ' + vars + '</div>' : '') +
       '<div class="between mt"><button class="btn btn--outline btn--sm" onclick="ADM.emailReset(\'' + t.key + '\')">Rétablir le texte d\'origine</button>' +
       '<button class="btn btn--dark btn--sm" onclick="ADM.emailSave(\'' + t.key + '\')">Enregistrer</button></div></div>';
@@ -856,12 +856,19 @@
   /* ── Réglages : types de mission + textes des e-mails (sections en onglets) ── */
   var MISSION_LIST = [];
   var REGL_TAB = 'types';
+  // Réglages : un menu rangé par thème à gauche, au lieu de neuf onglets sur deux lignes.
+  var REGL_MENU = [
+    ['Ton travail', [['types', 'Types de mission'], ['conges', 'Congés'], ['rdv', 'Rendez-vous']]],
+    ['Tes messages', [['quick', 'Réponses rapides'], ['emails', 'Textes des e-mails']]],
+    ['Technique', [['calendar', 'Calendrier iCloud'], ['backups', 'Sauvegardes'], ['kv', 'Consommation'], ['incidents', 'Incidents']]]
+  ];
   function reglTabs() {
-    var items = [['types', 'Types de mission'], ['conges', 'Congés'], ['quick', 'Réponses rapides'], ['emails', 'Textes des e-mails'], ['rdv', 'Rendez-vous'], ['calendar', 'Calendrier iCloud'], ['backups', 'Sauvegardes'], ['kv', 'Consommation KV'], ['incidents', 'Incidents']];
-    return '<div class="subtabs">' + items.map(function (it) {
-      var n = it[0] === 'incidents' && BADGE_CACHE.incidents ? ' ' + BADGE_CACHE.incidents : '';
-      return '<button class="subtab' + (REGL_TAB === it[0] ? ' active' : '') + '" onclick="ADM.reglSetTab(\'' + it[0] + '\')">' + it[1] + n + '</button>';
-    }).join('') + '</div>';
+    return '<nav class="rg-m" aria-label="Réglages">' + REGL_MENU.map(function (g) {
+      return '<p class="rg-g">' + g[0] + '</p>' + g[1].map(function (it) {
+        var n = it[0] === 'incidents' && BADGE_CACHE.incidents ? '<span class="cl-msg num rg-b">' + String(BADGE_CACHE.incidents).replace(/<[^>]*>/g, '') + '</span>' : '';
+        return '<button class="rg-i' + (REGL_TAB === it[0] ? ' on' : '') + '"' + (REGL_TAB === it[0] ? ' aria-current="page"' : '') + ' onclick="ADM.reglSetTab(\'' + it[0] + '\')"><span>' + it[1] + '</span>' + n + '</button>';
+      }).join('');
+    }).join('') + '</nav>';
   }
   function reglSetTab(t) { REGL_TAB = t; renderReglages(); }
   // Ouvrir Réglages directement sur un onglet (les incidents y vivent).
@@ -938,7 +945,7 @@
   }
   function kvReset() { KV_SEEN = { r: 0, w: 0, d: 0, l: 0, n: 0, since: Date.now() }; renderKvBody(null); }
   function renderReglages() {
-    setMain(topbar('Réglages', '', 'Les paramètres partagés avec l\'espace de tes clients') + '<div class="wrap" style="max-width:820px">' + reglTabs() + '<div id="regl-body"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div></div>');
+    setMain('<div class="wrap tps pj-page rg-page"><h1 class="pg-h1">Réglages</h1><div class="rg-2">' + reglTabs() + '<div id="regl-body" class="rg-c"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div></div></div>');
     if (REGL_TAB === 'emails') {
       Promise.all([
         api('/api/email-templates').then(function (r) { return r.json(); }),
