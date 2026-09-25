@@ -3272,3 +3272,7 @@ h1.cdhead__n{margin:0;font-weight:400;font-size:36px}
 .chat-sub{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:14px 24px;border-bottom:1px solid #F0E9D6}
 .chat-sub__k{font-size:15px;color:#7a5540;margin-right:4px}
 .pj-page .chat-sub{margin:0}
+/* Ligne « De ton côté » : le nom garde sa place, le texte long passe à la ligne à côté */
+.pj-cote-c .pj-t{grid-template-columns:minmax(200px,1fr) minmax(0,2fr) auto 36px}
+.pj-cote-c .pj-t__n{min-width:0;overflow-wrap:anywhere}
+.pj-cote-c .pj-t__q{min-width:0;text-align:right;line-height:1.4}
