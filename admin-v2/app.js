@@ -4448,6 +4448,7 @@
   }
   var CKP_JOURS = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
   var CKP_MOIS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+  function ckpJourMois(iso) { var d = ckpD(iso); return d.getDate() + ' ' + CKP_MOIS[d.getMonth()]; }
   function ckpJourCourt(iso) { var d = ckpD(iso); return CKP_JOURS[d.getDay()].slice(0, 3) + ' ' + d.getDate(); }
   function ckpQuand(iso) {
     if (!iso) return '';
@@ -6299,10 +6300,16 @@
       var tache = r.taskId ? ckJTachesDe(p).filter(function (t) { return t.id === r.taskId; })[0] : null;
       var fini = !!(tache && tache.statut === 'done');
       var nom = r.taskTitle || (tache && tache.titre) || r.name || 'Livrable';
+      // Qui est arrivé en premier, la clôture ou les retours ? C'est ce qui dit
+      // si les retours restent à reprendre ou s'ils ont été traités avant.
+      var brut = fini ? ((CKP.dash && CKP.dash.tasksAll) || []).filter(function (t) { return t.id === r.taskId && t.key === r.key; })[0] : null;
+      var clos = brut && brut.completedAt ? String(brut.completedAt).slice(0, 10) : '', recu = r.at ? String(r.at).slice(0, 10) : '';
+      var quand = fini ? ', sur une tâche terminée' + (clos ? ' le ' + ckpJourMois(clos) : '') +
+        (recu && clos ? (recu > clos ? ' : ses retours sont arrivés après, le ' + ckpJourMois(recu) : ' : ses retours dataient d’avant, le ' + ckpJourMois(recu)) : '') : '';
       moi.push({ t: nom, etat: 'Retours à reprendre', k: 'retard', id: null,
         go: r.creationId ? 'creations' : 'liv',
         rev: { key: r.key, id: r.id, projet: r.project || 'partner', tache: fini ? tache.id : null },
-        sous: 'Retours de ' + qui + (r.comment ? ' : « ' + String(r.comment).slice(0, 120) + ' »' : '') + (fini ? ', sur une tâche terminée' : '') });
+        sous: 'Retours de ' + qui + (r.comment ? ' : « ' + String(r.comment).slice(0, 120) + ' »' : '') + quand });
     });
     vives.forEach(function (t) {
       if (t.statut === 'review' || t.statut === 'waiting_client') {
@@ -6519,6 +6526,7 @@
         (ouvre ? ckJEstimPanneau(m.id) : '') +
         (m.rev ? '<div class="pj-t__act">' +
           (m.rev.tache ? '<button class="tps-lien" onclick="ADM.ckJRevRouvrir(\'' + esc(m.rev.tache) + '\')">Rouvrir la tâche</button>' : '') +
+          (m.rev.tache ? '<button class="tps-lien" onclick="ADM.nav(\'done\')">La retrouver dans le journal</button>' : '') +
           '<button class="tps-lien" onclick="ADM.ckJRevClasser(\'' + esc(m.rev.key) + '\',\'' + esc(m.rev.id) + '\',\'' + esc(m.rev.projet) + '\')">C’est déjà traité</button></div>' : '');
     }).join('');
     var pied = cote === 'moi'
