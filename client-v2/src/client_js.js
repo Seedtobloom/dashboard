@@ -6264,7 +6264,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     if (currentView === 'hub') return '<div class="cp-portal-main">' + buildHubView() + '</div>';
     if (currentView === 'fichiers') return buildFichiersView();
     if (currentView === 'livrables') return buildLivrablesView();
-    if (currentView === 'questionnaires') return '<div class="cp-portal-main">' + buildQuestionnairesView() + '</div>';
+    if (currentView === 'questionnaires') return (cpQnrOpenId && cpQnrInstance()) ? '<div class="cp-portal-main">' + buildQuestionnairesView() + '</div>' : buildQuestionnairesView();
     if (currentView === 'interventions') {
       var pd0 = getPD(currentId);
       return pd0 ? '<div class="cp-content" style="padding:36px 52px 80px">' + buildClientMaintenance(pd0) + '</div>' : buildHome();
@@ -6295,7 +6295,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     assigned:    ['À remplir',  '#5A2A11', '#F8F6F2'],
     in_progress: ['En cours',   '#5A2A11', '#C5DEFF'],
     to_review:   ['À revoir',   '#5A2A11', '#F8F6F2'],
-    completed:   ['Complété ✓', '#5A2A11', '#F8F6F2'],
+    completed:   ['Complété', '#5A2A11', '#F8F6F2'],
   };
   function cpQnrInstance() { return (appData.questionnaires || []).filter(function(q){ return q.id === cpQnrOpenId; })[0] || null; }
   function cpQnrIsStatic(t) { return t === 'title' || t === 'paragraph'; }
@@ -6310,38 +6310,44 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     if (cpQnrOpenId && cpQnrInstance()) return buildQnrFiller(cpQnrInstance());
     return buildQnrList();
   }
+  // Page « Tes questionnaires » (refonte 2026) : celui à remplir en grand, en noir,
+  // avec où le client en est ; ceux déjà remplis en liste, pour relire ses réponses.
   function buildQnrList() {
-    var list = (appData.questionnaires || []);
-    if (!list.length) return '<div class="cp-content" style="padding:36px 52px 80px"><div style="max-width:640px;margin:0 auto"><h1 style="font-family:var(--font-display);font-style:italic;font-size:30px;margin-bottom:8px">Questionnaires</h1><p style="color:var(--muted)">Aucun questionnaire pour l\'instant. Cindy vous en enverra ici quand elle aura besoin de vos réponses.</p></div></div>';
-    var cards = list.map(function(inst){
-      var st = CP_QNR_STATUS[inst.status] || CP_QNR_STATUS.assigned;
-      var col = '#5A2A11'; // lila (DA glycine) pour tous les questionnaires
-      var pr = cpQnrProgress(inst);
-      var pct = pr.total ? Math.round(pr.done / pr.total * 100) : 0;
-      var cta = inst.status === 'completed' ? 'Voir mes réponses' : (inst.status === 'in_progress' ? 'Continuer' : (inst.status === 'to_review' ? 'Revoir' : 'Commencer'));
-      var due = inst.dueDate ? '<div style="font-size:12.5px;color:var(--muted);margin-top:4px">À rendre pour le ' + esc(inst.dueDate.split('-').reverse().join('/')) + '</div>' : '';
-      return '<button type="button" onclick="cpQnrFill(\'' + esc(inst.id) + '\')" style="width:100%;text-align:left;border:1px solid #C5DEFF;background:#C5DEFF;cursor:pointer;border-radius:16px;overflow:hidden;box-shadow:none;margin-bottom:16px;display:block">' +
-        '<div style="padding:20px 22px">' +
-          '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">' +
-            '<div style="min-width:0">' +
-              '<div style="font-family:var(--font-display);font-style:italic;font-size:21px;color:var(--nuit);line-height:1.2">' + esc(inst.name || 'Questionnaire') + '</div>' +
-              (inst.description ? '<div style="font-size:13.5px;color:var(--muted);line-height:1.5;margin-top:5px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">' + esc(inst.description.replace(/\s+/g, ' ').trim()) + '</div>' : '') +
-              due +
-            '</div>' +
-            '<span style="flex-shrink:0;font-size:11.5px;font-weight:600;color:' + st[1] + ';background:' + st[2] + ';padding:4px 11px;border-radius:999px;white-space:nowrap">' + esc(st[0]) + '</span>' +
-          '</div>' +
-          '<div style="margin-top:14px;display:flex;align-items:center;gap:12px">' +
-            '<div style="flex:1;height:7px;background:var(--brume,#eee);border-radius:999px;overflow:hidden"><div style="height:100%;width:' + pct + '%;background:' + esc(col) + '"></div></div>' +
-            '<span style="font-size:12.5px;color:var(--muted);white-space:nowrap">' + pr.done + ' / ' + pr.total + '</span>' +
-            '<span style="font-size:13px;font-weight:600;color:' + esc(col) + ';white-space:nowrap">' + cta + ' →</span>' +
-          '</div>' +
+    var list = (appData.questionnaires || []).slice();
+    var tete = '<header><h1 class="cpb-h1">Tes questionnaires</h1><p class="cpb-lead">Tes réponses aident Cindy à partir dans la bonne direction. Elles s’enregistrent au fur et à mesure.</p></header>';
+    if (!list.length) return '<div class="cp-home cpb"><div class="cpb__in fade-up">' + tete + '<section class="cpb-calme">Aucun questionnaire pour le moment.</section></div></div>';
+    var ordre = { in_progress: 0, to_review: 1, assigned: 2, completed: 3 };
+    list.sort(function (a, b) { return (ordre[a.status] || 2) - (ordre[b.status] || 2); });
+    var ouverts = list.filter(function (q) { return q.status !== 'completed'; });
+    var remplis = list.filter(function (q) { return q.status === 'completed'; });
+    function verbe(q) { return q.status === 'in_progress' ? 'Continuer' : (q.status === 'to_review' ? 'Revoir mes réponses' : 'Commencer'); }
+    var hero = '';
+    var q0 = ouverts[0];
+    if (q0) {
+      var pr = cpQnrProgress(q0);
+      var real = cpQnrRealBlocks(q0), ans = q0.answers || {};
+      var suiv = real.filter(function (bk) { return !cpQAnswered(ans[bk.id]); })[0];
+      var minutes = Math.max(5, Math.round(pr.total * 0.8 / 5) * 5);
+      hero = '<section class="cpq-hero"><div>' +
+          '<div class="cpb-hero__k">' + (q0.status === 'to_review' ? 'À revoir' : 'À remplir') + (q0.dueDate ? ' · pour le ' + esc(q0.dueDate.split('-').reverse().join('/')) : '') + '</div>' +
+          '<h2 class="cpb-hero__t">' + esc(q0.name || 'Questionnaire') + '</h2>' +
+          '<div class="cpb-hero__s">' + pr.total + ' question' + (pr.total > 1 ? 's' : '') + ' · environ ' + minutes + ' minutes · tu peux t’arrêter et reprendre plus tard</div>' +
+          '<div class="cpb-hero__a" style="margin-top:20px"><button class="cpb-btn cpb-btn--light" onclick="cpQnrFill(\'' + esc(q0.id) + '\')">' + verbe(q0) + '</button></div>' +
         '</div>' +
-      '</button>';
-    }).join('');
-    return '<div class="cp-content" style="padding:36px 52px 80px"><div style="max-width:680px;margin:0 auto">' +
-      '<h1 style="font-family:var(--font-display);font-style:italic;font-size:30px;margin-bottom:6px">Questionnaires</h1>' +
-      '<p style="color:var(--muted);margin-bottom:24px">Prenez le temps d\'y répondre, vos réponses sont enregistrées automatiquement.</p>' +
-      cards +
+        (pr.total ? '<div class="cpq-hero__av"><div class="cpq-hero__l"><span>Tu en es à</span><b>' + pr.done + ' sur ' + pr.total + '</b></div>' + cpbSeg(Math.round(pr.done / pr.total * 12), 12, true) +
+          (suiv && suiv.label ? '<p>Prochaine question : « ' + esc(String(suiv.label).replace(/<[^>]*>/g, '').slice(0, 90)) + ' »</p>' : '') + '</div>' : '') +
+      '</section>';
+    }
+    function ligne(q) {
+      var pr = cpQnrProgress(q);
+      var sous = q.status === 'completed' ? ('Rempli' + (q.completedAt ? ' le ' + fmtDate(q.completedAt) : '')) : (pr.done + ' sur ' + pr.total + ' réponses');
+      return '<div class="cpq-ligne"><div><b>' + esc(q.name || 'Questionnaire') + '</b><span>' + esc(sous) + '</span></div>' +
+        '<button class="cpl-lien" onclick="cpQnrFill(\'' + esc(q.id) + '\')">' + (q.status === 'completed' ? 'Revoir mes réponses' : verbe(q)) + '</button></div>';
+    }
+    var autres = ouverts.slice(1);
+    return '<div class="cp-home cpb"><div class="cpb__in fade-up">' + tete + hero +
+      (autres.length ? '<section class="cpb-carte"><div class="cpb-h2 cpb-h2--sm"><h2>Aussi à remplir</h2></div>' + autres.map(ligne).join('') + '</section>' : '') +
+      (remplis.length ? '<section class="cpb-carte"><div class="cpb-h2 cpb-h2--sm"><h2>Déjà remplis</h2></div>' + remplis.map(ligne).join('') + '</section>' : '') +
     '</div></div>';
   }
 

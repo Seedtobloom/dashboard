@@ -756,4 +756,15 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 .cpf-tag--toi { background: #E6E5B2; color: #110704; }
 .cpf-dossier { display: flex; justify-content: space-between; align-items: baseline; font-size: 15px; color: #3b2a20; padding-top: 6px; }
 .cpf-vide { margin: 0; font-size: 15px; color: #7a5540; padding: 14px 16px; border-radius: 12px; background: #fff; box-shadow: inset 0 0 0 1px rgba(17,7,4,.1); }
+
+/* Page « Tes questionnaires » */
+.cpq-hero { background: #110704; color: #F8F6F2; border-radius: 22px; padding: 30px 36px; display: grid; grid-template-columns: minmax(0,1fr) 320px; gap: 36px; align-items: center; }
+.cpq-hero__av { display: flex; flex-direction: column; gap: 10px; }
+.cpq-hero__l { display: flex; justify-content: space-between; font-size: 15px; }
+.cpq-hero__av p { margin: 4px 0 0; font-size: 15px; color: rgba(248,246,242,.75); line-height: 1.5; }
+.cpq-ligne { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 14px 0; border-top: 1px solid #F0E9D6; }
+.cpq-ligne > div { display: flex; flex-direction: column; gap: 2px; }
+.cpq-ligne b { font-size: 16px; color: #110704; }
+.cpq-ligne span { font-size: 15px; color: #7a5540; }
+@media (max-width: 900px) { .cpq-hero { grid-template-columns: 1fr; } }
 `;
