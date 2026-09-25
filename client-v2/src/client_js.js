@@ -614,19 +614,19 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       // Réponse à une date proposée (prioritaire)
       (p.tasks || []).forEach(function(t) {
         if (t.archived) return;
-        if (t.proposedDueDate) acts.push({ pr: 1, label: 'Confirmer la nouvelle date proposée pour « ' + t.title + ' »', cta: 'Répondre', onclick: "cpSel('" + p.id + "')" });
-        else if (t.status === 'waiting_client' || t.needsRework) acts.push({ pr: 3, label: 'Ton retour est attendu sur « ' + t.title + ' »', cta: 'Voir', onclick: "cliOpenTaskFromHome('" + p.id + "','" + t.id + "')" });
+        if (t.proposedDueDate) acts.push({ pid: p.id, pname: p.projectTitle, pr: 1, label: 'Confirmer la nouvelle date proposée pour « ' + t.title + ' »', cta: 'Répondre', onclick: "cpSel('" + p.id + "')" });
+        else if (t.status === 'waiting_client' || t.needsRework) acts.push({ pid: p.id, pname: p.projectTitle, pr: 3, label: 'Ton retour est attendu sur « ' + t.title + ' »', cta: 'Voir', onclick: "cliOpenTaskFromHome('" + p.id + "','" + t.id + "')" });
       });
       (p.tickets || []).forEach(function(t) {
-        if (t.proposedDueDate) acts.push({ pr: 1, label: 'Confirmer la date proposée pour ton ticket « ' + (t.title || '') + ' »', cta: 'Répondre', onclick: "cpOpenInterventions()" });
+        if (t.proposedDueDate) acts.push({ pid: p.id, pname: p.projectTitle, pr: 1, label: 'Confirmer la date proposée pour ton ticket « ' + (t.title || '') + ' »', cta: 'Répondre', onclick: "cpOpenInterventions()" });
       });
       // Étapes en attente d'une action cliente
       (p.steps || []).forEach(function(s) {
-        if (s.status === 'waiting_client') acts.push({ pr: 3, label: s.clientAction ? s.clientAction : ('Ton retour est attendu sur l’étape « ' + s.title + ' »'), cta: 'Voir', onclick: "cpSel('" + p.id + "')" });
+        if (s.status === 'waiting_client') acts.push({ pid: p.id, pname: p.projectTitle, pr: 3, label: s.clientAction ? s.clientAction : ('Ton retour est attendu sur l’étape « ' + s.title + ' »'), cta: 'Voir', onclick: "cpSel('" + p.id + "')" });
       });
       // Livrables à valider
       (p.deliverables || []).forEach(function(dv) {
-        if ((dv.status || 'a_valider') === 'a_valider' && (dv.fileKey || dv.reviewLink)) acts.push({ pr: 2, label: 'Un livrable attend ta validation' + (dv.name || dv.taskTitle ? ' : ' + (dv.name || dv.taskTitle) : ''), cta: 'Valider', onclick: "cpGoLivrables()", view: "cpGoLivrables()" });
+        if ((dv.status || 'a_valider') === 'a_valider' && (dv.fileKey || dv.reviewLink)) acts.push({ pid: p.id, pname: p.projectTitle, pr: 2, label: 'Un livrable attend ta validation' + (dv.name || dv.taskTitle ? ' : ' + (dv.name || dv.taskTitle) : ''), cta: 'Valider', onclick: "cpGoLivrables()", view: "cpGoLivrables()" });
       });
     });
     // Questionnaires non complétés
@@ -893,7 +893,122 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       return cpForfaitCard(eyebrow, nums, project.id);
     }).join('');
   }
+  /* ────────────────────────────────────────────────────────────────────────
+   * Accueil de l'espace (maquette « Espace client B ») : une seule action en
+   * grand (en noir), les projets en tuiles (paille = à toi, noir = chez
+   * Cindy), puis les derniers messages et le forfait, en calme.
+   * ──────────────────────────────────────────────────────────────────────── */
+  function cpbSeg(done, total, dark) {
+    total = Math.max(0, Math.min(12, total || 0));
+    if (!total) return '';
+    var out = '';
+    for (var i = 0; i < total; i++) out += '<span class="cpb-seg__i' + (i < done ? ' on' : '') + '"></span>';
+    return '<div class="cpb-seg' + (dark ? ' cpb-seg--dark' : '') + '">' + out + '</div>';
+  }
+  function cpbProjetEtat(pd, acts) {
+    var p = pd.project || {};
+    var mine = acts.filter(function (a) { return a.pid === p.id; });
+    var steps = (p.steps || []).slice().sort(function (a, b) { return (a.order || 0) - (b.order || 0); });
+    var sous = '', fait = 0, total = 0;
+    if (p.type === 'partenaire') {
+      var mk = _todayStr().slice(0, 7);
+      var ts = (p.tasks || []).filter(function (t) { return !t.archived && t.stage !== 'inbox' && t.stage !== 'refused' && (String(t.dueDate || '').slice(0, 7) === mk || t.status !== 'done'); });
+      total = ts.length; fait = ts.filter(function (t) { return t.status === 'done'; }).length;
+      var enCours = ts.filter(function (t) { return t.status !== 'done'; }).sort(function (a, b) { return (a.dueDate || '9999').localeCompare(b.dueDate || '9999'); })[0];
+      sous = enCours ? enCours.title : 'Rien en cours ce mois-ci';
+    } else if (p.type === 'support') {
+      var crs = p.creations || [];
+      total = crs.length; fait = crs.filter(function (c) { return c.status === 'valide' || c.status === 'archive'; }).length;
+      var cr = crs.filter(function (c) { return c.status !== 'valide' && c.status !== 'archive'; })[0];
+      sous = cr ? cr.name : (crs.length ? 'Toutes les créations sont livrées' : 'Brief et questionnaire');
+    } else if (p.type === 'maintenance') {
+      var tk = (p.tickets || []).filter(function (t) { return t.status !== 'done' && t.status !== 'closed'; });
+      sous = tk.length ? (tk.length + ' ticket' + (tk.length > 1 ? 's' : '') + ' en cours') : 'Aucun ticket en cours';
+    } else {
+      total = steps.length; fait = steps.filter(function (s) { return s.status === 'done'; }).length;
+      var nx = steps.filter(function (s) { return s.status !== 'done'; })[0];
+      sous = nx ? ('Étape ' + (fait + 1) + ' sur ' + total + ' : ' + nx.title) : (total ? 'Toutes les étapes sont faites' : 'Projet en préparation');
+    }
+    return { toi: mine.length > 0, sous: sous, fait: fait, total: total };
+  }
+  function cpbQuand(iso) {
+    if (!iso) return '';
+    var d = new Date(iso); if (isNaN(d)) return '';
+    var j0 = new Date(); j0.setHours(0, 0, 0, 0);
+    var dj = new Date(d); dj.setHours(0, 0, 0, 0);
+    var diff = Math.round((j0 - dj) / 86400000);
+    if (diff <= 0) return 'aujourd’hui';
+    if (diff === 1) return 'hier';
+    if (diff < 7) return d.toLocaleDateString('fr-FR', { weekday: 'short' });
+    return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+  }
+  function cpbTexte(html) { var t = String(html || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim(); return t.length > 90 ? t.slice(0, 88) + '…' : t; }
+  function cpbMin(m) { m = Math.max(0, Math.round(m || 0)); var h = Math.floor(m / 60), r = m % 60; return h ? (h + ' h' + (r ? ' ' + String(r).padStart(2, '0') : '')) : (r + ' min'); }
+  function cpHomeB() {
+    var first = (appData.clientName || '').split(' ')[0];
+    var acts = cpCollectActions();
+    var active = appData.projects.filter(function (pd) { return pd.project && pd.project.status !== 'archived'; });
+
+    // 1. La seule chose forte : ce qui attend sa réponse, en premier.
+    var hero;
+    if (acts.length) {
+      var a0 = acts[0], a1 = acts[1];
+      var sous = [a0.pname, a1 ? ('ensuite : ' + a1.label.charAt(0).toLowerCase() + a1.label.slice(1)) : ''].filter(Boolean).join(' · ');
+      hero = '<section class="cpb-hero">' +
+        '<div class="cpb-hero__txt"><div class="cpb-hero__k">Ce qui attend ta réponse, en premier</div>' +
+          '<h2 class="cpb-hero__t">' + esc(a0.label) + '</h2>' +
+          (sous ? '<div class="cpb-hero__s">' + esc(sous) + '</div>' : '') + '</div>' +
+        '<div class="cpb-hero__a">' +
+          (a0.view ? '<button class="cpb-btn cpb-btn--ghost" onclick="' + a0.view + '">Voir</button>' : '') +
+          '<button class="cpb-btn cpb-btn--light" onclick="' + a0.onclick + '">' + esc(a0.cta) + '</button>' +
+        '</div></section>';
+    } else {
+      hero = '<section class="cpb-calme"><b>Rien n’attend ta réponse pour le moment.</b> Cindy avance sur tes projets, tu seras prévenu dès qu’elle a besoin de toi.</section>';
+    }
+
+    // 2. Les projets en tuiles.
+    var tuiles = active.map(function (pd) {
+      var p = pd.project, e = cpbProjetEtat(pd, acts);
+      return '<button class="cpb-tuile' + (e.toi ? ' cpb-tuile--toi' : '') + '" onclick="cpSel(\'' + esc(p.id) + '\')">' +
+        '<span class="cpb-tuile__h"><b>' + esc(p.projectTitle || 'Projet') + '</b><span aria-hidden="true">→</span></span>' +
+        '<span class="cpb-tuile__s">' + esc(e.sous) + '</span>' +
+        cpbSeg(e.fait, e.total, !e.toi) +
+        '<b class="cpb-tuile__e">' + (e.toi ? 'À toi' : 'Chez Cindy') + '</b></button>';
+    }).join('');
+    var projets = active.length ? '<section><div class="cpb-h2"><h2>Tes projets</h2><span>en paille : à toi · en noir : chez Cindy</span></div>' +
+      '<div class="cpb-tuiles" style="--n:' + Math.min(4, active.length) + '">' + tuiles + '</div></section>' : '';
+
+    // 3. Les derniers messages.
+    var msgs = (convData || []).slice().sort(function (a, b) { return String(b.createdAt || '').localeCompare(String(a.createdAt || '')); }).slice(0, 2);
+    var msgHtml = '<section class="cpb-carte"><div class="cpb-h2 cpb-h2--sm"><h2>Tes messages</h2><a href="#" onclick="cpOpenMessages();return false">Écrire à Cindy</a></div>' +
+      (msgs.length ? msgs.map(function (m) {
+        var cindy = m.author === 'cindy';
+        return '<div class="cpb-msg"><span>' + esc(cpbQuand(m.createdAt)) + '</span><span><b>' + (cindy ? 'Cindy' : 'Toi') + ' :</b> « ' + esc(cpbTexte(m.content || m.text)) + ' »</span></div>';
+      }).join('') : '<div class="cpb-msg cpb-msg--vide">Pas encore de message. Une question ? Écris à Cindy, elle répond en général dans la journée.</div>') +
+      '</section>';
+
+    // 4. Le forfait du mois.
+    var fp = active.filter(function (pd) { return (pd.project.type === 'partenaire' || pd.project.type === 'maintenance') && cpForfaitNums(pd.project); })[0];
+    var forfHtml = '';
+    if (fp) {
+      var n = cpForfaitNums(fp.project), used = n.doneMin + n.wipMin, rest = n.availMin - used;
+      var mois = new Date().toLocaleDateString('fr-FR', { month: 'long' });
+      var tot = Math.max(1, Math.round(n.availMin / 60));
+      forfHtml = '<section class="cpb-carte"><div class="cpb-forf__k">Ton forfait de ' + esc(mois) + '</div>' +
+        '<div class="cpb-forf__v">' + (rest < 0 ? '−' : '') + esc(cpbMin(Math.abs(rest))) + ' <span>' + (rest < 0 ? 'de dépassement' : 'restantes sur ' + esc(cpbMin(n.availMin))) + '</span></div>' +
+        '<div class="cpb-forf__bar">' + cpbSeg(Math.min(tot, Math.round(used / 60)), tot, false) + '</div>' +
+        '<p>Les heures non utilisées ne se reportent pas, au-delà de 2 h. C’est le bon moment pour confier tes sujets.</p>' +
+        '<a href="#" onclick="cpSel(\'' + esc(fp.project.id) + '\');return false">Proposer un sujet</a></section>';
+    }
+
+    return '<div class="cp-home cpb"><div class="cpb__in fade-up">' +
+      '<header><h1 class="cpb-h1">Bonjour ' + esc(first) + '</h1><p class="cpb-lead">Voici où en sont tes projets, et ce qui attend ta réponse.</p></header>' +
+      hero + projets +
+      '<div class="cpb-bas' + (forfHtml ? '' : ' cpb-bas--1') + '">' + msgHtml + forfHtml + '</div>' +
+    '</div></div>';
+  }
   function buildHome() {
+    if (appData.type === 'client' && !_isAdminEdit) return cpHomeB();
     var active = appData.projects.filter(function(pd) { return pd.project.status !== 'archived'; });
     var archived = appData.projects.filter(function(pd) { return pd.project.status === 'archived'; });
 
@@ -1413,20 +1528,19 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     function navBtn(id, icon, label, onclick, badge) {
       var active = (currentView === id) || (id === 'project' && currentView === 'project');
       return '<button data-nav="' + id + '" class="cp-nav__item' + (active?' active':'') + '" onclick="'+onclick+'">' +
-        cpIcon(icon, 16) +
         '<span class="cp-nav__text"><div class="cp-nav__title">' + label + '</div></span>' +
         (badge ? '<span class="cp-nav__badge">' + badge + '</span>' : '') +
       '</button>';
     }
 
     // Votre espace group
-    var mainNav = '<div class="cp-nav">' +
-      '<div class="cp-nav__label">Votre espace</div>' +
+    var mainNav = '<div class="cp-nav cp-nav--espace">' +
+      '<div class="cp-nav__label">Ton espace</div>' +
       (portal ? navBtn('home','home','Accueil','cpGoHome()','') : '') +
       (appData.projects.length === 1 && clientType === 'maintenance' ? navBtn('interventions','settings','Tickets','cpOpenInterventions()','') : '') +
       (appData.projects.length === 1 && clientType === 'partenaire' ? navBtn('project','tasks','Mon espace','cpSel(\''+esc(firstProj.id)+'\')', '') : '') +
       (appData.projects.length === 1 && clientType !== 'maintenance' && clientType !== 'partenaire' ? navBtn('project','tasks','Suivi','cpSel(\''+esc(firstProj.id)+'\')', '') : '') +
-    '</div>';
+    '';
 
     var hasPartner = (appData.projects || []).some(function(pd){ return pd.project && pd.project.type === 'partenaire'; });
     var hasMaintenance = (appData.projects || []).some(function(pd){ return pd.project && pd.project.type === 'maintenance'; });
@@ -1439,13 +1553,12 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var qnrPending = qnrList.filter(function(q){ return q.status !== 'completed'; }).length;
 
     // Echanges group — on masque « Livrables » tant qu'il n'y en a aucun (idée 13).
-    var exchangeNav = '<div class="cp-nav">' +
-      '<div class="cp-nav__label" style="padding-top:16px">Échanges</div>' +
-      navBtn('messages','chat','Messagerie','cpOpenMessages()', unread > 0 ? String(unread) : '') +
+    var exchangeNav =
+      navBtn('messages','chat','Messages','cpOpenMessages()', unread > 0 ? String(unread) : '') +
       (hasDeliverables ? navBtn('livrables','download','Livrables','cpGoLivrables()', dlvToValidate > 0 ? String(dlvToValidate) : '') : '') +
       (qnrList.length ? navBtn('questionnaires','tasks','Questionnaires','cpOpenQuestionnaires()', qnrPending > 0 ? String(qnrPending) : '') : '') +
-      (hasPartner || hasMaintenance ? navBtn('stats','chart','Temps passé','cpOpenStats()','') : '') +
       navBtn('fichiers','paperclip','Fichiers','cpGoFichiers()','') +
+      (hasPartner || hasMaintenance ? navBtn('stats','chart','Temps passé','cpOpenStats()','') : '') +
       (portal ? navBtn('hub','folder','Ressources','cpGoHub()','') : '') +
     '</div>';
 
@@ -1454,22 +1567,14 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       var p = pd.project;
       var act = (currentView==='project' && p.id === currentId) ? ' active' : '';
       return '<button class="cp-nav__item' + act + '" onclick="cpSel(\'' + p.id + '\')">' +
-        cpIcon('folder',15) +
-        '<span class="cp-nav__text">' +
-          '<div class="cp-nav__title">' + esc(p.projectTitle) + '</div>' +
-          '<div class="cp-nav__status">' + (STATUS_LABELS[p.status]||p.status) + '</div>' +
-        '</span>' +
+        '<span class="cp-nav__text"><div class="cp-nav__title">' + esc(p.projectTitle) + '</div></span>' +
       '</button>';
     }
     var navActive = appData.projects.filter(function(pd){ return pd.project.status !== 'archived'; });
     var navArchived = appData.projects.filter(function(pd){ return pd.project.status === 'archived'; });
     var navGroups = groupByType(navActive);
-    var projNav = (appData.projects.length > 1) ? '<div class="cp-nav">' +
-      (navGroups.length ? '<div class="cp-nav__label">Mes projets</div>' : '') +
-      (navGroups.length ? navGroups.map(function(g) {
-          return (navGroups.length > 1 ? '<div class="cp-nav__sublabel">' + esc(g.label) + '</div>' : '') +
-            g.items.map(navItem).join('');
-        }).join('') : '') +
+    var projNav = (appData.projects.length > 1 || portal) ? '<div class="cp-nav">' +
+      (navActive.length ? '<div class="cp-nav__label">Tes projets</div>' + navActive.map(navItem).join('') : '') +
       (navArchived.length ? '<div class="cp-nav__sublabel">Archives</div>' + navArchived.map(navItem).join('') : '') +
     '</div>' : '';
 
@@ -1496,24 +1601,16 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     return '<aside class="cp-sidebar">' +
       // Brand header
       '<div class="cp-sidebar__brand">' +
-        '<div>' +
-          '<div class="cp-sidebar__logo" style="width:92px;margin-bottom:12px">' + CP_LOGO + '</div>' +
-          '<div class="cp-sidebar__name">' + esc(appData.clientName) + '</div>' +
-        '</div>' +
-        (clientType ? '<div style="margin-top:14px">' + cpTypeBadge(clientType, true) + '</div>' : '') +
+        '<div class="cp-sidebar__marque">Seed to bloom</div>' +
+        '<div class="cp-sidebar__name">L’espace de ' + esc(appData.clientName) + '</div>' +
       '</div>' +
       // Nav
       mainNav + exchangeNav + projNav +
       // Footer: visio + Cindy
       '<div class="cp-sidebar__footer" style="display:block">' +
         visioHtml +
-        '<div style="display:flex;align-items:center;gap:11px">' +
-          cpAvatar('Cindy','cindy',34) +
-          '<div style="line-height:1.2;min-width:0">' +
-            '<div style="font-family:var(--font-display);font-style:italic;font-size:16px;color:var(--brume)">Cindy</div>' +
-            '<div style="font-family:var(--font-micro);font-size:9px;color:rgba(242,229,194,0.62);letter-spacing:0.1em;text-transform:uppercase">Votre interlocutrice</div>' +
-          '</div>' +
-        '</div>' +
+        '<a href="#" class="cp-sidebar__question" onclick="cpOpenMessages();return false">Une question pour Cindy ?</a>' +
+        '<div class="cp-sidebar__liens"><a href="#" onclick="cpOpenGuide();return false">Le guide</a><a href="#" onclick="cpConfirmLogout();return false">Se déconnecter</a></div>' +
       '</div>' +
     '</aside>';
   }
@@ -6771,6 +6868,8 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
       '.cp-sidebar__footer{border-top-color:rgba('+rgb+',.1)}',
       '.cp-sidebar a:focus-visible,.cp-sidebar button:focus-visible{outline-color:rgba('+rgb+',.8)}',
     ].join('');
+    // Refonte 2026 : le menu garde partout ses couleurs (ébène, paille), quel que soit le type d'offre.
+    css = '';
     var el = document.getElementById('cp-type-style');
     if (!el) { el = document.createElement('style'); el.id = 'cp-type-style'; document.head.appendChild(el); }
     el.textContent = css;
@@ -7172,28 +7271,16 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     try { if (localStorage.getItem('bloom_seen_' + pid)) return; } catch(e) {}
     try { localStorage.setItem('bloom_seen_' + pid, '1'); } catch(e) {}
     var clientType = appData.projects[0].project.type || 'identite';
-    var items = clientType === 'maintenance'
-      ? [
-          { icon:'tasks', text: 'Ouvrez un ticket pour chaque besoin : bug, mise à jour de contenu, question technique…' },
-          { icon:'clock', text: 'La barre de forfait indique les heures utilisées ce mois-ci sur votre contrat.' },
-          { icon:'chat', text: 'La messagerie vous connecte directement à Cindy. Réponse sous 24h.' },
-        ]
-      : clientType === 'partenaire'
-      ? [
-          { icon:'tasks', text: 'Suivez vos demandes en cours et leur statut en temps réel depuis le tableau de bord.' },
-          { icon:'zap', text: 'Quand votre retour est attendu, une bannière orange apparaît : cliquez pour confirmer.' },
-          { icon:'chat', text: 'La messagerie vous connecte directement à Cindy. Réponse sous 24h.' },
-        ]
-      : [
-          { icon:'tasks', text: 'Suivez les étapes de votre projet et leur statut en temps réel.' },
-          { icon:'zap', text: 'Quand votre action est requise (valider un rendu, fournir des éléments), une bannière orange apparaît.' },
-          { icon:'chat', text: 'La messagerie vous connecte directement à Cindy. Réponse sous 24h.' },
+    var items = [
+          { icon:'zap', text: 'En haut de ton accueil, en noir : ce qui attend ta réponse en premier.' },
+          { icon:'tasks', text: 'Tes projets : en paille ce qui est à toi, en noir ce que Cindy prépare.' },
+          { icon:'chat', text: 'Une question ? Écris à Cindy dans Messages, elle répond en général dans la journée.' },
         ];
     var ov = document.createElement('div');
     ov.style.cssText = 'position:fixed;inset:0;background:rgba(28,18,5,0.55);z-index:9900;display:flex;align-items:center;justify-content:center;padding:20px';
     ov.innerHTML = '<div style="background:#fff;border-radius:24px;padding:36px 32px;max-width:460px;width:100%;box-shadow:none">' +
-      '<div style="font-family:var(--font-display);font-style:italic;font-size:26px;color:var(--terre);margin-bottom:8px">Bienvenue dans votre espace ✨</div>' +
-      '<p style="font-size:14px;color:var(--terre-600);line-height:1.6;margin-bottom:22px">Voici les points essentiels pour bien démarrer :</p>' +
+      '<div style="font-family:\'Cormorant Garamond\',var(--font-display),serif;font-size:34px;line-height:1.05;color:#110704;margin-bottom:8px">Bienvenue dans ton espace</div>' +
+      '<p style="font-size:15px;color:#3b2a20;line-height:1.6;margin-bottom:22px">Trois repères pour bien démarrer :</p>' +
       '<div style="display:grid;gap:14px;margin-bottom:26px">' +
         items.map(function(item){
           return '<div style="display:flex;align-items:flex-start;gap:14px">' +
@@ -7203,8 +7290,8 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
         }).join('') +
       '</div>' +
       '<div style="display:flex;gap:10px;align-items:center">' +
-        '<button id="_cpob-ok" class="cp-btn" style="flex:1;justify-content:center">C\'est parti ' + cpIcon('arrow',14) + '</button>' +
-        '<button id="_cpob-guide" style="padding:9px 16px;background:none;border:1.5px solid var(--bone-d);border-radius:var(--radius-pill);cursor:pointer;color:var(--terre-600);font-family:var(--font-micro);font-size:11px;font-weight:500;letter-spacing:0.06em">Voir le guide complet</button>' +
+        '<button id="_cpob-ok" class="cpb-btn" style="background:#110704;color:#F8F6F2">C\'est parti</button>' +
+        '<button id="_cpob-guide" style="background:none;border:0;padding:0;cursor:pointer;color:#5A2A11;font:600 15px var(--font-micro);text-decoration:underline;text-underline-offset:3px">Voir le guide</button>' +
       '</div>' +
     '</div>';
     document.body.appendChild(ov);

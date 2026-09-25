@@ -267,7 +267,7 @@ js = js.replace("var project = pd.project, messages = pd.messages, files = pd.fi
 
 // ── Onglet « Bilan » (sidebar Échanges) quand Cindy sollicite un retour + « Votre avis » permanent ──
 must(js.indexOf("navBtn('fichiers','paperclip','Fichiers','cpGoFichiers()','') +") !== -1, 'fichiers nav present pour bilan');
-js = js.replace("navBtn('fichiers','paperclip','Fichiers','cpGoFichiers()','') +", "navBtn('fichiers','paperclip','Fichiers','cpGoFichiers()','') + navBtn('avis','pencil','Votre avis','cpOpenAvis()','') + ((appData.bilan && appData.bilan.requestedAt) ? navBtn('bilan','star','Bilan','cpOpenBilan()', (appData.bilan.submittedAt ? '' : '1')) : '') +");
+js = js.replace("navBtn('fichiers','paperclip','Fichiers','cpGoFichiers()','') +", "navBtn('fichiers','paperclip','Fichiers','cpGoFichiers()','') + navBtn('avis','pencil','Ton avis','cpOpenAvis()','') + ((appData.bilan && appData.bilan.requestedAt) ? navBtn('bilan','star','Bilan','cpOpenBilan()', (appData.bilan.submittedAt ? '' : '1')) : '') +");
 
 // ── Statut « En préparation » (maintenance) : désormais directement dans la source (STATUS_LABELS / STATUS_COLORS). ──
 
