@@ -3038,7 +3038,7 @@ h1.cdhead__n{margin:0;font-weight:400;font-size:36px}
 /* Projets : fond lin pour que les blocs blancs se détachent (plus de blanc sur blanc) */
 .main:has(.pj-page){background:#F8F6F2}
 .pj-of,.pj-clis,.pj-cli,.pj-cote-c,.pj-page .pj-ongs button{box-shadow:0 0 0 1px rgba(17,7,4,.07),0 2px 6px rgba(17,7,4,.08)}
-.pj-page .tabs button:not([aria-selected="true"]),.pj-page [role="tab"]:not([aria-selected="true"]){background:#fff}
+.pj-page .pj-ongs [role="tab"]:not([aria-selected="true"]){background:#fff}
 
 /* Offre ouverte : chaque tâche s'ouvre par son nom ou sa flèche ; le temps s'estime sur place */
 .pj-cote-c .pj-t{grid-template-columns:minmax(0,1fr) auto auto 36px}
@@ -3061,3 +3061,36 @@ h1.cdhead__n{margin:0;font-weight:400;font-size:36px}
 .pj-est__ou .inp{box-shadow:inset 0 0 0 1px rgba(17,7,4,.25)}
 .pj-est .btn{border-radius:999px;padding:10px 20px;font-size:15px}
 .pj-t__act{display:flex;gap:22px;padding:0 0 12px;margin-top:-4px}
+
+/* Clients : une ligne par client */
+.cl-h{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;margin-bottom:18px}
+.cl-h .pg-h1{margin:0}
+.cl-h__a{display:flex;align-items:center;gap:16px}
+.cl-bar{display:flex;align-items:center;gap:22px;margin:0 0 20px;font-size:15px}
+.cl-fis{display:inline-flex;gap:2px;padding:4px;border-radius:999px;background:#E4D9C5}
+.cl-fi{border:none;border-radius:999px;padding:8px 14px;background:none;font:inherit;font-size:15px;color:#5A2A11;cursor:pointer}
+.cl-fi.on{background:#fff;color:#110704;font-weight:600;box-shadow:0 1px 2px rgba(17,7,4,.12)}
+.cl-fi:focus-visible,.cl-l:focus-visible{outline:2px solid #110704;outline-offset:2px}
+.cl-t{background:#fff;border-radius:16px;box-shadow:0 0 0 1px rgba(17,7,4,.07),0 2px 6px rgba(17,7,4,.08);padding:8px 12px 10px}
+.cl-th,.cl-l{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1.6fr) 220px 150px 28px;gap:20px;align-items:center}
+.cl-th{padding:12px 12px 8px;font-size:13px;color:#7a5540}
+.cl-l{width:100%;padding:16px 12px;border:none;border-top:1px solid rgba(17,7,4,.08);background:none;font:inherit;text-align:left;color:#110704;cursor:pointer;border-radius:0}
+.cl-l:hover{background:#F8F6F2}
+.cl-c{display:flex;align-items:center;gap:14px;min-width:0}
+.cl-c b{display:block;font-size:16px;font-weight:600}
+.cl-av{width:40px;height:40px;flex-shrink:0;border-radius:50%;background:#C5DEFF;display:grid;place-items:center;font-family:'Cormorant Garamond',Georgia,serif;font-style:italic;font-size:20px}
+.cl-msg{display:inline-block;margin-left:6px;padding:2px 8px;border-radius:999px;background:#110704;color:#F8F6F2;font-size:13px;font-weight:700;vertical-align:1px}
+.cl-sous{display:block;font-size:15px;color:#7a5540}
+.cl-f .cl-sous{font-size:13px;margin-top:5px}
+.cl-p{font-size:15px}
+.cl-vide{font-size:15px;color:#7a5540}
+.cl-cases{display:flex;gap:3px}
+.cl-cases i{flex:1;height:14px;border-radius:4px;background:#C5DEFF}
+.cl-cases i.on{background:#110704}
+.cl-fl{display:inline-flex;color:#110704}
+.cl-t .pj-pil--toi{background:#110704;color:#F8F6F2}
+.pj-pil--rien{background:#F0E9D6;color:#110704}
+.cl-fis .cl-fi{background:none;box-shadow:none}
+.cl-fis .cl-fi.on{background:#fff;box-shadow:0 1px 2px rgba(17,7,4,.12)}
+.cl-h .btn{background:#110704;color:#F8F6F2;border:none;border-radius:999px;padding:10px 20px;min-height:44px;font-size:15px;font-weight:600}
+.cl-h .btn:hover{background:#3b2a20}

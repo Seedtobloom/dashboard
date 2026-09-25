@@ -8516,27 +8516,63 @@
   }
 
   /* ── Clients ── */
+  /* Clients : une ligne par client, ses projets en cours, son forfait du mois
+     en cases et qui a la main (toi en noir, le client en paille, comme Projets). */
+  var CLI_FILTRE = 'actifs';
+  function cliSetFiltre(f) { CLI_FILTRE = f; renderClients(); }
+  function cliQui(c, dash) {
+    var auj = ckpAuj(), mien = function (x) { return x.key === c.key; };
+    var vives = (dash.tasksAll || []).filter(function (t) { return mien(t) && !t.archived && t.stage !== 'inbox' && t.status !== 'done'; });
+    var eux = vives.filter(function (t) { return t.status === 'review' || t.status === 'waiting_client'; }).length + (dash.pendingValidation || []).filter(mien).length;
+    var moi = vives.filter(function (t) { return t.status !== 'review' && t.status !== 'waiting_client'; });
+    var revs = (dash.revisions || []).filter(mien).length;
+    if (revs || moi.some(function (t) { return t.dueDate && String(t.dueDate).slice(0, 10) < auj; })) return ['Toi, en retard', 'retard'];
+    if (moi.length) return ['Toi', 'toi'];
+    if (eux) return [clientName(c), 'client'];
+    return ['Rien en cours', 'rien'];
+  }
+  function cliForfait(f) {
+    if (!f || !f.configured) return '<span class="cl-vide">Pas de forfait</span>';
+    var avail = f.available || f.base || 0, used = f.used || 0, rem = f.remaining || 0;
+    var n = Math.max(1, Math.min(24, Math.round(avail))), u = Math.min(n, Math.round(used));
+    var cases = '';
+    for (var i = 0; i < n; i++) cases += '<i' + (i < u ? ' class="on"' : '') + '></i>';
+    var h = function (v) { return esc(ckpDuree(Math.round((v || 0) * 60))); };
+    return '<span class="cl-cases" role="img" aria-label="' + h(used) + ' utilisées sur ' + h(avail) + '">' + cases + '</span>' +
+      '<span class="cl-sous num">' + (rem < 0 ? 'Dépassé de ' + h(-rem) : h(rem) + ' restantes ce mois') + '</span>';
+  }
+  function cliLigne(c, dash, forf, projs) {
+    var q = cliQui(c, dash), nm = clientName(c), pr = presence(c.lastSeen);
+    return '<button class="cl-l" onclick="ADM.openClient(\'' + esc(c.key) + '\')">' +
+      '<span class="cl-c"><span class="cl-av" aria-hidden="true">' + esc(nm.charAt(0).toUpperCase()) + '</span><span><b>' + esc(nm) +
+        (c.unread ? ' <span class="cl-msg num" aria-label="' + c.unread + ' message' + (c.unread > 1 ? 's' : '') + ' non lu' + (c.unread > 1 ? 's' : '') + '">' + c.unread + '</span>' : '') + '</b>' +
+        '<span class="cl-sous">' + esc(c.entreprise || pr.label) + '</span></span></span>' +
+      '<span class="cl-p">' + (projs.length ? esc(projs.map(function (p) { return p.projectLabel || 'Projet'; }).join(', ')) : '<span class="cl-vide">Aucun projet en cours</span>') + '</span>' +
+      '<span class="cl-f">' + cliForfait(forf) + '</span>' +
+      '<span><span class="pj-pil pj-pil--' + q[1] + '">' + esc(q[0]) + '</span></span>' +
+      '<span class="cl-fl" aria-hidden="true">' + FLECHE + '</span></button>';
+  }
   function renderClients() {
-    var right = '<button class="btn btn--outline btn--sm" onclick="ADM.scan()" title="Reconstruit la liste : rattrape les clientes / demandes qui ne remontent pas (ex. une demande créée côté cliente).">🔄 Retrouver mes clientes</button><button class="btn" onclick="ADM.nav(\'newclient\')">Nouveau client</button>';
-    setMain(topbar('Clients', right) + '<div class="wrap"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
-    // On récupère aussi le tableau de bord pour la vue rapide : forfaits + projets en cours par client.
-    Promise.all([
-      clientsGet(),
-      dashGet().catch(function () { return {}; })
-    ]).then(function (res) {
+    setMain('<div class="wrap tps pj-page"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
+    Promise.all([clientsGet(), dashGet().catch(function () { return {}; })]).then(function (res) {
       var d = res[0], dash = res[1] || {};
       var forfByKey = {}; (dash.forfaits || []).forEach(function (f) { forfByKey[f.key] = f; });
       var projByKey = {}; (dash.activeProjects || []).forEach(function (p) { (projByKey[p.key] = projByKey[p.key] || []).push(p); });
-      var clients = (d.clients || []).slice().sort(function (a, b) {
-        if ((b.unread || 0) !== (a.unread || 0)) return (b.unread || 0) - (a.unread || 0);
-        if (!!b.isActive !== !!a.isActive) return (b.isActive ? 1 : 0) - (a.isActive ? 1 : 0);
-        return clientName(a).localeCompare(clientName(b));
-      });
-      var actifs = clients.filter(function (c) { return c.isActive; }).length;
-      var totalUnread = clients.reduce(function (s, c) { return s + (c.unread || 0); }, 0);
-      var head = '<div class="micro" style="margin:-2px 0 16px;color:var(--terre-600)">' + clients.length + ' espace' + (clients.length > 1 ? 's' : '') + ' · ' + actifs + ' actif' + (actifs > 1 ? 's' : '') + (totalUnread ? ' · ' + totalUnread + ' message' + (totalUnread > 1 ? 's' : '') + ' à lire' : '') + '</div>';
-      var list = clients.map(function (c) { return clientCard(c, forfByKey[c.key], projByKey[c.key] || []); }).join('');
-      setMain(topbar('Clients', right, 'Forfaits et projets en cours, en un coup d\'œil') + '<div class="wrap">' + (list ? head + '<div class="ccards">' + list + '</div>' : '<div class="empty">Aucun client. Crée-en un, ou scanne le KV pour récupérer les clés existantes.</div>') + '</div>');
+      var tous = d.clients || [];
+      var actif = function (c) { return c.isActive && !c.archived; };
+      var l = tous.filter(function (c) { return CLI_FILTRE === 'tous' || (CLI_FILTRE === 'actifs' ? actif(c) : !actif(c)); })
+        .sort(function (a, b) { return (b.unread || 0) - (a.unread || 0) || clientName(a).localeCompare(clientName(b)); });
+      var nAct = tous.filter(actif).length, nMsg = tous.reduce(function (s, c) { return s + (c.unread || 0); }, 0);
+      var filtre = function (k, t) { return '<button role="tab" aria-selected="' + (CLI_FILTRE === k) + '" class="cl-fi' + (CLI_FILTRE === k ? ' on' : '') + '" onclick="ADM.cliSetFiltre(\'' + k + '\')">' + t + '</button>'; };
+      setMain('<div class="wrap tps pj-page">' +
+        '<div class="cl-h"><h1 class="pg-h1">Clients</h1><div class="cl-h__a">' +
+          ckMenuHtml([['Retrouver mes clientes', 'ADM.scan()']]) +
+          '<button class="btn" onclick="ADM.nav(\'newclient\')">Nouveau client</button></div></div>' +
+        '<div class="cl-bar"><div class="cl-fis" role="tablist" aria-label="Quels clients">' + filtre('actifs', 'Actifs') + filtre('archives', 'Archivés') + filtre('tous', 'Tous') + '</div>' +
+          '<span class="num">' + nAct + ' client' + (nAct > 1 ? 's' : '') + ' actif' + (nAct > 1 ? 's' : '') + (nMsg ? ', ' + nMsg + ' message' + (nMsg > 1 ? 's' : '') + ' non lu' + (nMsg > 1 ? 's' : '') : '') + '</span></div>' +
+        '<section class="cl-t"><div class="cl-th" aria-hidden="true"><span>Client</span><span>Projets en cours</span><span>Forfait du mois</span><span>Qui a la main</span><span></span></div>' +
+          (l.length ? l.map(function (c) { return cliLigne(c, dash, forfByKey[c.key], projByKey[c.key] || []); }).join('') : '<p class="pj-vide" style="padding:18px 12px">Aucun client ici.</p>') +
+        '</section></div>');
     }).catch(showError);
   }
   // Présence : « En ligne » si activité < 5 min (le poll client entretient
@@ -8556,56 +8592,6 @@
     var parts = src.replace(/[^\p{L}\s]/gu, ' ').trim().split(/\s+/).filter(Boolean);
     var ini = parts.length >= 2 ? (parts[0][0] + parts[1][0]) : (parts[0] ? parts[0].slice(0, 2) : '?');
     return ini.toUpperCase();
-  }
-  function clientCard(c, forfait, projects) {
-    var nm = clientName(c);
-    var co = c.entreprise || '';
-    var active = c.isActive;
-    var unread = c.unread || 0;
-    // Vue rapide forfait : jauge consommé / disponible + reste coloré.
-    var forfHtml = '';
-    if (forfait && forfait.configured) {
-      var used = forfait.used || 0, avail = forfait.available || forfait.base || 0, rem = forfait.remaining || 0;
-      var over = rem < 0;
-      var low = !over && avail && rem <= avail * 0.2;
-      var pctU = avail > 0 ? Math.min(100, Math.round(used / avail * 100)) : (used > 0 ? 100 : 0);
-      var barc = over ? '#8a4a2c' : (low ? 'var(--orange)' : 'var(--green)');
-      var restLbl = over ? ('dépassé de ' + fmtHrs(-rem)) : ('reste ' + fmtHrs(rem));
-      forfHtml = '<div class="ctile__forf">' +
-        '<div class="ctile__forfh"><span>Forfait</span><span style="color:' + barc + ';font-weight:700">' + restLbl + '</span></div>' +
-        '<div class="ctile__bar' + (over ? ' over' : '') + '"><span style="width:' + pctU + '%;background:' + barc + '"></span></div>' +
-        '<div class="ctile__forfm">' + fmtHrs(used) + ' / ' + fmtHrs(avail) + ' ce mois' + (forfait.carryIn > 0 ? ' · +' + fmtHrs(forfait.carryIn) + ' report' : (forfait.carryIn < 0 ? ' · −' + fmtHrs(-forfait.carryIn) + ' report' : '')) + '</div>' +
-      '</div>';
-    }
-    // Projets en cours : petites lignes titre + % d'avancement.
-    var projHtml = '';
-    if (projects && projects.length) {
-      projHtml = '<div class="ctile__projs">' + projects.slice(0, 3).map(function (p) {
-        return '<div class="ctile__proj"><span class="ctile__projn">' + esc(p.projectLabel || 'Projet') + '</span>' + (typeof p.pct === 'number' ? '<span class="ctile__projp">' + p.pct + '%</span>' : '') + '</div>';
-      }).join('') + (projects.length > 3 ? '<div class="ctile__projmore">+ ' + (projects.length - 3) + ' autre' + (projects.length - 3 > 1 ? 's' : '') + '</div>' : '') + '</div>';
-    }
-    // Carte cliente au style maquette (.ccard) : avatar, nom, projet, %, barre,
-    // étape en cours, drapeaux (messages / forfait). Le forfait (forfHtml/projHtml)
-    // reste disponible dans le détail de la cliente.
-    var p0 = (projects && projects.length) ? projects[0] : null;
-    var projLine = p0 ? (esc(p0.projectLabel || 'Projet') + (co ? ' · ' + esc(co) : '')) : (co ? esc(co) : 'Espace client');
-    var pct = (p0 && typeof p0.pct === 'number') ? p0.pct : null;
-    var pr = presence(c.lastSeen);
-    var stepTxt = p0 ? (p0.currentStep ? '<span class="k">En cours</span>' + esc(p0.currentStep) : (p0.nextStep ? '<span class="k">Ensuite</span>' + esc(p0.nextStep) : '')) + (p0.delivery ? ' · livraison ' + fmtDate(p0.delivery) : '') : '';
-    var flags = '';
-    if (unread > 0) flags += '<span class="flag flag--new">' + unread + ' message' + (unread > 1 ? 's' : '') + '</span>';
-    if (forfait && forfait.configured && (forfait.remaining || 0) < 0) flags += '<span class="flag flag--attn">Forfait dépassé</span>';
-    if (!active) flags += '<span class="flag flag--calm">En pause</span>';
-    if (projects && projects.length) flags += '<span class="flag flag--calm">' + projects.length + ' projet' + (projects.length > 1 ? 's' : '') + '</span>';
-    return '<button class="ccard" type="button" onclick="ADM.openClient(\'' + c.key + '\')">' +
-      '<div class="ccard__top"><span class="ccard__a">' + esc(clientInitials(c)) + '</span>' +
-        '<div><div class="ccard__n">' + esc(nm) + '</div><div class="ccard__p">' + projLine + '</div></div>' +
-        (pct != null ? '<span class="ccard__pct">' + pct + '%</span>' : '<span class="ccard__pres' + (pr.online ? ' on' : '') + '" title="' + esc(pr.label) + '"></span>') +
-      '</div>' +
-      (pct != null ? '<div class="cbar"><i style="width:' + pct + '%"></i></div>' : '') +
-      (stepTxt ? '<div class="ccard__step">' + stepTxt + '</div>' : '') +
-      (flags ? '<div class="ccard__flags">' + flags + '</div>' : '') +
-    '</button>';
   }
   function scan() { api('/api/clients/scan', { method: 'POST' }).then(function (r) { return r.json(); }).then(function (d) { toast((d.added || 0) + ' client(s) ajouté(s)'); renderClients(); }); }
 
@@ -12808,7 +12794,7 @@
     ckLChoisir: ckLChoisir, ckLSemaine: ckLSemaine, ckLPoser: ckLPoser, ckLRetirer: ckLRetirer,
     ckLRegSet: ckLRegSet, ckLRegEnregistrer: ckLRegEnregistrer, ckLRegAnnuler: ckLRegAnnuler,
     ckLSetSimH: ckLSetSimH, ckLSetSimHz: ckLSetSimHz, ckLDepuis: ckLDepuis,
-    ckJSetFiltre: ckJSetFiltre, ckJSetClient: ckJSetClient, ckJEstimOuvrir: ckJEstimOuvrir, ckJRevRouvrir: ckJRevRouvrir, ckJRevClasser: ckJRevClasser, ckJEstimChoix: ckJEstimChoix, ckJEstimer: ckJEstimer, ckJOuvrir: ckJOuvrir, ckJFermer: ckJFermer, ckJOnglet: ckJOnglet,
+    ckJSetFiltre: ckJSetFiltre, ckJSetClient: ckJSetClient, ckJEstimOuvrir: ckJEstimOuvrir, cliSetFiltre: cliSetFiltre, ckJRevRouvrir: ckJRevRouvrir, ckJRevClasser: ckJRevClasser, ckJEstimChoix: ckJEstimChoix, ckJEstimer: ckJEstimer, ckJOuvrir: ckJOuvrir, ckJFermer: ckJFermer, ckJOnglet: ckJOnglet,
     ckJNeuf: ckJNeuf, ckJCreer: ckJCreer,
     tblStart: tblStart, tblCancel: tblCancel, tblSave: tblSave,
     tblDragStart: tblDragStart, tblDragEnd: tblDragEnd, tblDragOver: tblDragOver,
