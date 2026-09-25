@@ -3561,6 +3561,8 @@
     var head = '<div class="cl-h"><h1 class="pg-h1">Visios</h1>' + nouvelle + '</div>';
     var ong = function (k, t) { var on = VIS_TAB === k; return '<button role="tab" aria-selected="' + on + '" class="pg-ong pg-ong--seul pj-ong' + (on ? ' on' : '') + '" onclick="ADM.visTab(\'' + k + '\')"><span class="pg-ong__n">' + t + '</span></button>'; };
     var tabs = '<div class="pj-ongs" role="tablist" aria-label="Visios">' + ong('cards', 'Rendez-vous') + ong('templates', 'Modèles de déroulé') + ong('fiche', 'Fiche d’appel') + '</div>';
+    // La fiche d'appel travaille sur trois colonnes : elle prend toute la largeur.
+    body.classList.toggle('vis-page--large', VIS_TAB === 'fiche');
     body.innerHTML = head + tabs + (VIS_TAB === 'trames' ? visTramesHtml() : VIS_TAB === 'fiche' ? visFicheHtml() : VIS_TAB === 'templates' ? visTemplatesHtml() : visCardsHtml());
   }
   function visTab(t) { VIS_TAB = t; renderVisiosBody(); }
@@ -4056,9 +4058,9 @@
   function callEditor(n) {
     return '<div>' +
       '<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">' +
-        '<input id="call-title" value="' + esc(n.title || '') + '" oninput="ADM.callNoteSet(\'' + n.id + '\',\'title\',this.value)" placeholder="Nom de l\'appel…" style="flex:1;border:none;outline:none;background:none;font-family:var(--font-micro);font-weight:700;font-size:22px;color:var(--terre)">' +
+        '<input id="call-title" value="' + esc(n.title || '') + '" oninput="ADM.callNoteSet(\'' + n.id + '\',\'title\',this.value)" placeholder="Nom de l\'appel…" aria-label="Nom de l\'appel" style="flex:1;min-width:0;border:none;outline:none;background:none;font-family:var(--font-micro);font-weight:700;font-size:22px;color:var(--terre)">' +
         '<span style="font-family:var(--font-micro);font-size:15px;color:var(--muted);white-space:nowrap">' + esc(n.date || '') + '</span>' +
-        '<button class="btn btn--outline btn--sm" onclick="ADM.callNoteDel(\'' + n.id + '\')">Suppr.</button>' +
+        '<button class="tps-lien" onclick="ADM.callNoteDel(\'' + n.id + '\')">Supprimer</button>' +
       '</div>' +
       '<textarea oninput="ADM.callNoteSet(\'' + n.id + '\',\'text\',this.value)" placeholder="Note à l\'arrache : mots-clés, verbatims, ce que tu retiens…" style="width:100%;box-sizing:border-box;min-height:calc(100vh - 220px);resize:vertical;border:none;background:#F8F6F2;border-radius:12px;padding:16px 18px;font-family:var(--font-micro);font-size:16px;line-height:1.65;color:var(--terre);outline:none">' + esc(n.text || '') + '</textarea>' +
     '</div>';
@@ -4081,8 +4083,8 @@
       ? '<div style="background:#fff;border-radius:16px;padding:18px 20px">' + callEditor(cur) + '</div>'
       : '<div style="background:#fff;border-radius:16px;padding:60px 26px;text-align:center;color:var(--muted);font-family:var(--font-micro);font-size:15px">Crée une note pour préparer et suivre ton appel.<br>L\'anti-sèche reste affichée à droite.</div>';
     var rtoggle = '<div class="subtabs" style="margin-bottom:10px">' +
-      '<button class="subtab' + (CALL_RIGHT === 'trame' ? ' active' : '') + '" onclick="ADM.callRight(\'trame\')">📋 Trame</button>' +
-      '<button class="subtab' + (CALL_RIGHT === 'anti' ? ' active' : '') + '" onclick="ADM.callRight(\'anti\')">🌱 Anti-sèche</button>' +
+      '<button class="subtab' + (CALL_RIGHT === 'trame' ? ' active' : '') + '" onclick="ADM.callRight(\'trame\')">Trame</button>' +
+      '<button class="subtab' + (CALL_RIGHT === 'anti' ? ' active' : '') + '" onclick="ADM.callRight(\'anti\')">Anti-sèche</button>' +
     '</div>';
     var right = '<aside style="position:sticky;top:12px">' + rtoggle + (CALL_RIGHT === 'trame' ? callTrame() : callAntiseche()) + '</aside>';
     return '<div style="display:grid;grid-template-columns:210px minmax(0,1fr) 560px;gap:18px;align-items:start">' + list + editor + right + '</div>';
