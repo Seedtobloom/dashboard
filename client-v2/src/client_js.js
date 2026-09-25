@@ -6207,107 +6207,59 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
           dlUrl: API_BASE + '/files/' + encodeURIComponent(f.key) + '/download', reviewLink: '' });
       });
     });
-    var multi = projects.length > 1;
-    var visible = items.filter(function(it) { return cpLivrFilter === 'all' || it.pid === cpLivrFilter; });
-    function ts(it) { return it.date ? new Date(it.date).getTime() : 0; }
-    visible.sort(function(a, b) {
-      var aa = a.status === 'a_valider' ? 0 : 1, bb = b.status === 'a_valider' ? 0 : 1;
-      if (aa !== bb) return aa - bb;
-      return ts(b) - ts(a);
-    });
-    // Un seul lien "Voir/Télécharger" — réutilisé comme secondaire (à valider)
-    // ou comme bouton principal neutre (déjà traités).
-    function openBtn(it, primary) {
-      var pri = primary
-        ? 'padding:11px 20px;font-weight:700;font-size:10.5px;background:var(--terre);color:var(--paille)'
-        : 'padding:9px 15px;font-weight:600;font-size:10px;background:#C5DEFF;color:#5A2A11';
-      var base = 'display:inline-flex;align-items:center;gap:6px;border-radius:999px;text-decoration:none;font-family:var(--font-micro);letter-spacing:0.06em;text-transform:uppercase;border:none;cursor:pointer;';
-      if (it.dlUrl) return '<a href="' + esc(it.dlUrl) + '" target="_blank" style="' + base + pri + '">' + cpIcon('download', 14) + ' Télécharger</a>';
-      if (it.reviewLink) return '<a href="' + esc(/^https?:\/\//i.test(it.reviewLink) ? it.reviewLink : 'https://' + it.reviewLink) + '" target="_blank" rel="noopener" onclick="window.cpMarkConsulted(\'' + esc(it.id) + '\')" style="' + base + pri + '">' + cpIcon('external', 13) + ' Voir</a>';
+    // Refonte 2026 (maquette « Espace client · livrables ») : le livrable qui attend
+    // une validation en grand, en noir ; les autres rangés par projet.
+    function estImage(it) { return /\.(jpe?g|png|webp|gif|avif)$/i.test(it.name || ''); }
+    function voir(it) {
+      if (it.dlUrl) return '<a class="cpl-lien" href="' + esc(it.dlUrl) + '" target="_blank">' + (estImage(it) ? 'Voir' : 'Télécharger') + '</a>';
+      if (it.reviewLink) return '<a class="cpl-lien" href="' + esc(/^https?:\/\//i.test(it.reviewLink) ? it.reviewLink : 'https://' + it.reviewLink) + '" target="_blank" rel="noopener" onclick="window.cpMarkConsulted(\'' + esc(it.id) + '\')">Voir</a>';
       return '';
     }
-    function row(it) {
-      var todo = it.status === 'a_valider' && it.id;
-      var tone = todo ? 'todo' : 'ok';
-      var cardBg = todo ? '#F8F6F2' : '#F8F6F2';
-      var icBg = todo ? '#F8F6F2' : '#F8F6F2';
-      var icCol = todo ? '#5A2A11' : '#5A2A11';
-      var metaCol = todo ? '#110704' : '#5A2A11';
-      var pillBg = todo ? '#F8F6F2' : '#F8F6F2';
-      var pillCol = todo ? '#110704' : '#5A2A11';
-      var validated = it.status === 'valide' || it.status === 'validated';
-      var pillTxt = todo ? 'À valider' : (validated ? '✓ Validé' : 'Reçu');
-      var dateLbl = it.date ? ((validated ? 'Validé le ' : 'Reçu le ') + fmtDate(it.date)) : '';
-      var line1 = [it.projLabel, dateLbl].filter(Boolean).join(' · ');
-      var vTag = it.version > 0 ? '<span style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.05em;padding:2px 7px;border-radius:6px;background:rgba(255,255,255,0.6);color:var(--terre);margin-left:8px;vertical-align:2px">V' + it.version + '</span>' : '';
-      // À valider : on invite à ouvrir le livrable, sans jamais bloquer la validation.
-      var needConsult = !!(it.reviewLink && it.id && !cpConsulted[it.id]);
-      var hint = (todo && needConsult)
-        ? '<div style="margin-top:12px;font-family:var(--font-body);font-size:12.5px;color:#110704;background:rgba(255,255,255,0.7);border-radius:10px;padding:9px 13px">👀 Ouvrez le livrable avec « Voir » avant de vous prononcer.</div>'
-        : '';
-      var priBtn = 'display:inline-flex;align-items:center;gap:6px;border-radius:999px;font-family:var(--font-micro);letter-spacing:0.06em;text-transform:uppercase;border:none;cursor:pointer;padding:11px 20px;font-weight:700;font-size:10.5px;';
-      var secBeige = 'display:inline-flex;align-items:center;gap:6px;border-radius:999px;font-family:var(--font-micro);letter-spacing:0.06em;text-transform:uppercase;border:none;cursor:pointer;padding:9px 15px;font-weight:600;font-size:10px;background:var(--surface,#F8F6F2);color:var(--terre);';
-      var actions;
-      if (todo) {
-        actions = '<div style="display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin-top:16px">' +
-            '<button onclick="window.stbValidate(\'' + esc(it.pid) + '\',\'' + esc(it.id) + '\',\'valide\')" style="' + priBtn + 'background:#5A2A11;color:#fff">' + cpIcon('check', 14, 'color:#fff') + ' Valider</button>' +
-            openBtn(it, false) +
-            '<button onclick="window.stbValidate(\'' + esc(it.pid) + '\',\'' + esc(it.id) + '\',\'refuse\')" style="' + secBeige + '">Demander une révision</button>' +
-          '</div>';
-      } else {
-        var ob = openBtn(it, true);
-        actions = ob ? '<div style="display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin-top:16px">' + ob + '</div>' : '';
-      }
-      var comment = (it.status === 'refuse' && it.clientComment)
-        ? '<div style="font-family:var(--font-body);font-style:italic;font-size:12.5px;color:#5A2A11;margin-top:6px;line-height:1.45">Votre retour : « ' + esc(it.clientComment) + ' »</div>'
-        : '';
-      return '<div style="background:' + cardBg + ';border-radius:16px;padding:20px 22px;margin-bottom:12px">' +
-        '<div style="display:flex;align-items:flex-start;gap:14px">' +
-          '<span style="width:44px;height:44px;border-radius:12px;background:' + icBg + ';color:' + icCol + ';display:grid;place-items:center;flex-shrink:0">' + cpIcon(it.dlUrl ? 'file' : 'link', 18) + '</span>' +
-          '<div style="flex:1;min-width:0">' +
-            '<div style="font-family:var(--font-display);font-size:19px;color:var(--terre);line-height:1.25">' + esc(it.name) + vTag + '</div>' +
-            (line1 ? '<div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.05em;text-transform:uppercase;margin-top:5px;font-weight:600;color:' + metaCol + '">' + esc(line1) + '</div>' : '') +
-            (it.taskTitle ? '<div style="font-size:12.5px;font-style:italic;color:#110704;margin-top:4px">Pour la tâche « ' + esc(it.taskTitle) + ' »</div>' : '') +
-            comment +
-          '</div>' +
-          '<span style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;padding:4px 10px;border-radius:999px;background:' + pillBg + ';color:' + pillCol + ';flex-shrink:0">' + pillTxt + '</span>' +
-        '</div>' + hint + actions +
-      '</div>';
+    function vignette(it, grand) {
+      if (it.dlUrl && estImage(it)) return '<img class="' + (grand ? 'cpl-apercu' : 'cpl-vign') + '" src="' + esc(it.dlUrl) + '" alt="" loading="lazy">';
+      return '<span class="' + (grand ? 'cpl-apercu' : 'cpl-vign') + '"></span>';
     }
-    function chip(v, lbl) {
-      var on = cpLivrFilter === v;
-      return '<button onclick="cpLivrSetFilter(\'' + esc(v) + '\')" style="padding:6px 14px;border-radius:999px;border:none;cursor:pointer;font-family:var(--font-micro);font-size:10px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;background:' + (on ? 'var(--terre)' : 'var(--glycine-50)') + ';color:' + (on ? 'var(--paille)' : 'var(--terre-600)') + '">' + esc(lbl) + '</button>';
+    function etat(it) {
+      if (it.status === 'a_valider' && it.id) return '<span class="cpl-pil cpl-pil--toi">À valider</span>';
+      if (it.status === 'valide' || it.status === 'validated') return '<span class="cpl-pil cpl-pil--ok">Validé</span>';
+      return '<span class="cpl-pil">Reçu</span>';
     }
-    var chips = multi ? '<div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:22px">' + chip('all', 'Tous') + projects.map(function(pd) { return chip(pd.project.id, pd.project.projectTitle || 'Projet'); }).join('') + '</div>' : '';
-    // Deux sections : à valider (chaud) en premier, puis déjà traités (sauge).
-    var toValidate = visible.filter(function(it){ return it.status === 'a_valider' && it.id; });
-    var done = visible.filter(function(it){ return !(it.status === 'a_valider' && it.id); });
-    function sectionHead(tone, title, n) {
-      var todo = tone === 'todo';
-      var icBg = todo ? '#F8F6F2' : '#F8F6F2';
-      var icCol = todo ? '#5A2A11' : '#5A2A11';
-      var nBg = todo ? '#F8F6F2' : '#F8F6F2';
-      var nCol = todo ? '#110704' : '#5A2A11';
-      var ic = todo
-        ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="14" r="7"/><path d="M9 14l2 2 4-4"/></svg>'
-        : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l4 4 10-10"/></svg>';
-      return '<div style="display:flex;align-items:center;gap:11px;margin-bottom:14px">' +
-        '<span style="width:34px;height:34px;border-radius:10px;display:grid;place-items:center;flex-shrink:0;background:' + icBg + ';color:' + icCol + '">' + ic + '</span>' +
-        '<span style="font-family:var(--font-display);font-style:italic;font-size:24px;color:var(--terre)">' + title + '</span>' +
-        '<span style="font-family:var(--font-micro);font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:' + nBg + ';color:' + nCol + '">' + n + '</span>' +
-      '</div>';
-    }
-    var sections = '';
-    if (toValidate.length) sections += '<section style="margin-bottom:30px">' + sectionHead('todo', 'À valider', toValidate.length) + toValidate.map(row).join('') + '</section>';
-    if (done.length) sections += '<section style="margin-bottom:30px">' + sectionHead('ok', 'Reçus et validés', done.length) + done.map(row).join('') + '</section>';
-    var listHtml = visible.length ? sections
-      : '<div style="padding:50px 24px;text-align:center"><div style="font-size:38px;margin-bottom:12px;opacity:0.3">📦</div>' +
-        '<div style="font-family:var(--font-display);font-style:italic;font-size:20px;color:var(--terre);margin-bottom:6px">Pas encore de livrable</div>' +
-        '<div style="font-family:var(--font-micro);font-size:11px;color:var(--terre-400);letter-spacing:0.06em">Vos livrables apparaîtront ici dès que Cindy les dépose.</div></div>';
-    return '<div class="fade-up">' +
-      '<p style="font-size:16px;color:#5A2A11;line-height:1.6;margin-bottom:24px;max-width:560px">Tous vos livrables réunis au même endroit. Ce qui attend votre validation est mis en avant, tout en haut.</p>' +
-      chips + listHtml +
-    '</div>';
+    var aValider = items.filter(function (it) { return it.status === 'a_valider' && it.id; }).sort(function (a, b) { return String(a.date || '').localeCompare(String(b.date || '')); });
+    var valides = items.filter(function (it) { return !(it.status === 'a_valider' && it.id); });
+    var f = (cpLivrFilter === 'valides' || cpLivrFilter === 'all') ? cpLivrFilter : 'avalider';
+    if (f === 'avalider' && !aValider.length) f = 'all';
+    var premier = aValider[0];
+    var hero = premier ? ('<section class="cpl-hero">' + vignette(premier, true) +
+        '<div><div class="cpb-hero__k">Attend ta validation</div><h2 class="cpb-hero__t">' + esc(premier.name) + '</h2>' +
+        '<div class="cpb-hero__s">' + esc([premier.projLabel, premier.date ? 'envoyé le ' + fmtDate(premier.date) : '', premier.taskTitle ? 'pour « ' + premier.taskTitle + ' »' : ''].filter(Boolean).join(' · ')) + '</div>' +
+        '<div class="cpb-hero__a" style="margin-top:20px">' +
+          (premier.dlUrl || premier.reviewLink ? voir(premier).replace('class="cpl-lien"', 'class="cpb-btn cpb-btn--ghost" style="text-decoration:none"') : '') +
+          '<button class="cpb-btn cpb-btn--ghost" onclick="window.stbValidate(\'' + esc(premier.pid) + '\',\'' + esc(premier.id) + '\',\'refuse\')">Demander des modifications</button>' +
+          '<button class="cpb-btn cpb-btn--light" onclick="window.stbValidate(\'' + esc(premier.pid) + '\',\'' + esc(premier.id) + '\',\'valide\')">Valider</button>' +
+        '</div></div></section>') : '';
+    function ong(v, lbl) { return '<button class="cpl-ong' + (f === v ? ' on' : '') + '" onclick="cpLivrSetFilter(\'' + v + '\')">' + lbl + '</button>'; }
+    var onglets = '<div class="cpl-ongs">' + (aValider.length ? ong('avalider', 'À valider · ' + aValider.length) : '') + ong('valides', 'Validés · ' + valides.length) + ong('all', 'Tous · ' + items.length) + '</div>';
+    var liste = (f === 'avalider' ? aValider.slice(1) : (f === 'valides' ? valides : aValider.concat(valides)));
+    function ts(it) { return it.date ? new Date(it.date).getTime() : 0; }
+    liste = liste.slice().sort(function (a, b) { return ts(b) - ts(a); });
+    var groupes = '';
+    projects.forEach(function (pd) {
+      var its = liste.filter(function (it) { return it.pid === pd.project.id; });
+      if (!its.length) return;
+      groupes += '<div class="cpl-groupe"><div class="cpl-groupe__t">' + esc(pd.project.projectTitle || 'Projet') + '</div>' + its.map(function (it) {
+        var a = (it.status === 'a_valider' && it.id)
+          ? '<button class="cpl-lien" onclick="window.stbValidate(\'' + esc(it.pid) + '\',\'' + esc(it.id) + '\',\'valide\')">Valider</button>'
+          : '';
+        return '<div class="cpl-ligne">' + vignette(it, false) +
+          '<div class="cpl-ligne__m"><b>' + esc(it.name) + '</b><span>' + esc([it.date ? ((it.status === 'valide' || it.status === 'validated') ? 'validé le ' : 'reçu le ') + fmtDate(it.date) : '', it.taskTitle ? 'pour « ' + it.taskTitle + ' »' : ''].filter(Boolean).join(' · ')) + '</span></div>' +
+          etat(it) + '<div class="cpl-ligne__a">' + voir(it) + a + '</div></div>';
+      }).join('') + '</div>';
+    });
+    var vide = f === 'avalider' ? 'C’est le seul livrable qui attend ta validation.' : 'Pas encore de livrable ici. Ils apparaissent dès que Cindy les dépose.';
+    return '<div class="cp-home cpb"><div class="cpb__in fade-up">' +
+      '<header><h1 class="cpb-h1">Tes livrables</h1><p class="cpb-lead">Tout ce que Cindy t’a envoyé, à valider ou déjà prêt à télécharger.</p></header>' +
+      hero + (items.length ? onglets + '<section class="cpb-carte cpl-liste">' + (groupes || '<p>' + vide + '</p>') + '</section>' : '<section class="cpb-calme">Pas encore de livrable. Ils apparaîtront ici dès que Cindy les dépose.</section>') +
+    '</div></div>';
   }
 
   // Page « Tes messages » (refonte 2026) : la liste des projets à gauche, la
@@ -6331,7 +6283,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     if (currentView === 'project') return buildProjectView(getPD(currentId));
     if (currentView === 'hub') return '<div class="cp-portal-main">' + buildHubView() + '</div>';
     if (currentView === 'fichiers') return '<div class="cp-portal-main">' + buildFichiersView() + '</div>';
-    if (currentView === 'livrables') return '<div class="cp-portal-main">' + buildLivrablesView() + '</div>';
+    if (currentView === 'livrables') return buildLivrablesView();
     if (currentView === 'questionnaires') return '<div class="cp-portal-main">' + buildQuestionnairesView() + '</div>';
     if (currentView === 'interventions') {
       var pd0 = getPD(currentId);

@@ -709,4 +709,24 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 @media (max-width: 900px) { .cpm-grid { grid-template-columns: 1fr; height: auto; } .cpm-conv { min-height: 70vh; } .cpm-side { flex-direction: column; } }
 .cp-toast { text-transform: none !important; letter-spacing: 0 !important; font-size: 15px !important; }
 .cpm-item__top b { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+
+/* Page « Tes livrables » */
+.cpl-hero { background: #110704; color: #F8F6F2; border-radius: 22px; padding: 26px; display: grid; grid-template-columns: 300px minmax(0,1fr); gap: 32px; align-items: center; }
+.cpl-apercu { width: 100%; height: 200px; border-radius: 14px; background: #E4D9C5; object-fit: cover; display: block; }
+.cpl-ongs { display: flex; gap: 8px; flex-wrap: wrap; }
+.cpl-ong { padding: 9px 18px; border-radius: 999px; border: 0; cursor: pointer; font: 600 15px var(--font-micro); background: #fff; color: #110704; box-shadow: inset 0 0 0 1px rgba(17,7,4,.16); }
+.cpl-ong.on { background: #110704; color: #F8F6F2; box-shadow: none; }
+.cpl-liste { padding: 8px 24px 12px; }
+.cpl-groupe__t { font-size: 15px; font-weight: 600; color: #5A2A11; padding: 14px 0 4px; }
+.cpl-ligne { display: flex; align-items: center; gap: 16px; padding: 12px 0; border-top: 1px solid #F0E9D6; }
+.cpl-vign { width: 64px; height: 48px; border-radius: 8px; background: #E4D9C5; object-fit: cover; flex-shrink: 0; display: inline-block; }
+.cpl-ligne__m { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.cpl-ligne__m b { font-size: 16px; color: #110704; }
+.cpl-ligne__m span { font-size: 15px; color: #7a5540; }
+.cpl-ligne__a { display: flex; gap: 16px; min-width: 150px; justify-content: flex-end; }
+.cpl-pil { font-size: 13px; font-weight: 700; padding: 4px 11px; border-radius: 999px; white-space: nowrap; background: #fff; color: #110704; box-shadow: inset 0 0 0 1px rgba(17,7,4,.22); }
+.cpl-pil--toi { background: #E6E5B2; box-shadow: none; }
+.cpl-pil--ok { background: #F0E9D6; color: #5A2A11; box-shadow: none; }
+.cpl-lien { border: 0; background: none; padding: 0; cursor: pointer; font: 600 15px var(--font-micro); color: #5A2A11; text-decoration: underline; text-underline-offset: 3px; }
+@media (max-width: 900px) { .cpl-hero { grid-template-columns: 1fr; } }
 `;
