@@ -6091,7 +6091,7 @@
      pas afficher un total que la liste des tâches contredirait.
      ════════════════════════════════════════════════════════════════════════ */
 
-  var CKJ = { ouvert: null, onglet: 'ensemble', filtre: 'actifs', client: null, charge: null, chargeFait: null, y: 0, neuf: null };
+  var CKJ = { ouvert: null, onglet: 'ensemble', filtre: 'actifs', client: null, charge: null, chargeFait: null, y: 0, neuf: null, estim: null, estimMin: null, flash: null };
   var CKJ_PRESTA = { partenaire: 'Partenaire créative', site: 'Site web', identite: 'Identité visuelle',
     support: 'Support de com', maintenance: 'Espace tickets' };
 
@@ -6513,9 +6513,14 @@
     var co = ckJCotes(p), l = cote === 'moi' ? co.moi : co.eux, qui = ckJPrenom(p);
     var aSec = function (k) { return d && sectionsFor(d).some(function (x) { return x[0] === k; }); };
     var lignes = l.map(function (m) {
-      var tp = m.estimer && m.id ? '<button class="tps-lien" onclick="ADM.ckTVoir(\'' + esc(m.id) + '\')">Estimer le temps</button>' : '<span class="pj-t__q">' + esc(m.sous || '') + '</span>';
-      var nom = m.id ? '<button class="pj-t__n" onclick="ADM.ckTVoir(\'' + esc(m.id) + '\')">' + esc(m.t) + '</button>' : '<span class="pj-t__n">' + esc(m.t) + '</span>';
-      return '<div class="pj-t">' + nom + tp + '<span class="pj-pil pj-pil--' + m.k + '">' + esc(m.etat) + '</span></div>';
+      var id = m.id ? esc(m.id) : '', ouvre = CKJ.estim && CKJ.estim === m.id;
+      // Le nom et la flèche ouvrent la tâche entière ; « Estimer le temps »
+      // s'ouvre sur place, sans quitter l'offre.
+      var tp = ouvre ? '<span></span>' : (m.estimer && m.id ? '<button class="tps-lien" onclick="ADM.ckJEstimOuvrir(\'' + id + '\')">Estimer le temps</button>' : '<span class="pj-t__q">' + esc(m.sous || '') + '</span>');
+      var nom = m.id ? '<button class="pj-t__n pj-t__n--lien" onclick="ADM.ckTVoir(\'' + id + '\')">' + esc(m.t) + '</button>' : '<span class="pj-t__n">' + esc(m.t) + '</span>';
+      var fl = m.id ? '<button class="pj-t__fl" onclick="ADM.ckTVoir(\'' + id + '\')" aria-label="Ouvrir la tâche ' + esc(m.t) + '">' + FLECHE + '</button>' : '<span></span>';
+      return '<div class="pj-t' + (CKJ.flash && CKJ.flash === m.id ? ' pj-t--flash' : '') + '">' + nom + tp + '<span class="pj-pil pj-pil--' + m.k + '">' + esc(m.etat) + '</span>' + fl + '</div>' +
+        (ouvre ? ckJEstimPanneau(m.id) : '');
     }).join('');
     var pied = cote === 'moi'
       ? (aSec('taches') ? '<button class="tps-lien" onclick="ADM.ckJOnglet(\'taches\')">Voir toutes les demandes</button>' : '')
@@ -6526,6 +6531,44 @@
       '<span class="num">' + (cote === 'moi' ? (n ? n + ' chose' + (n > 1 ? 's' : '') + ' à faire' : 'rien à faire') : (n ? n + ' en attente de sa réponse' : 'rien en attente')) + '</span></div>' +
       '<div class="pj-cote-c__c">' + (lignes || '<p class="pj-vide" style="margin:12px 0">' + (cote === 'moi' ? 'Rien à faire de ton côté pour l’instant.' : 'Rien n’attend sa réponse.') + '</p>') +
       (pied ? '<div class="pj-carte__p pj-cote-c__p">' + pied + '</div>' : '') + '</div></section>';
+  }
+  var CKJ_DUREES = [30, 60, 90, 120, 180];
+  function ckJEstimPanneau(id) {
+    var a = '\'' + esc(id) + '\'';
+    return '<div class="pj-est" role="group" aria-label="Estimer le temps"><p class="pj-est__q">Combien de temps pour cette tâche ?</p><div class="pj-est__l">' +
+      CKJ_DUREES.map(function (n) {
+        return '<button class="pj-est__c" aria-pressed="' + (CKJ.estimMin === n) + '" onclick="ADM.ckJEstimChoix(' + n + ')">' + esc(ckpDuree(n)) + '</button>';
+      }).join('') +
+      '<label class="pj-est__ou">ou <input class="inp" id="ckj-est" placeholder="4 h 30" aria-label="Autre durée" ' +
+      'oninput="ADM.ckJEstimChoix(null, true)" onkeydown="if(event.key===\'Enter\'){event.preventDefault();ADM.ckJEstimer(' + a + ');}else if(event.key===\'Escape\'){ADM.ckJEstimOuvrir(null);}"></label>' +
+      '<span class="pj-est__esp"></span><button class="tps-lien" onclick="ADM.ckJEstimOuvrir(null)">Annuler</button>' +
+      '<button class="btn" onclick="ADM.ckJEstimer(' + a + ')">Enregistrer</button></div></div>';
+  }
+  function ckJEstimOuvrir(id) {
+    CKJ.estim = id || null; CKJ.estimMin = null; renderCockpitProjetsBody();
+    var c = el('ckj-est'); if (c) c.focus();
+  }
+  function ckJEstimChoix(n, tape) {
+    CKJ.estimMin = tape ? null : n;
+    document.querySelectorAll('.pj-est__c').forEach(function (b) { b.setAttribute('aria-pressed', String(!tape && b.textContent === ckpDuree(n))); });
+    if (!tape) { var c = el('ckj-est'); if (c) c.value = ''; }
+  }
+  function ckJEstimer(id) {
+    var t = ckpToutes().filter(function (x) { return x.id === id; })[0];
+    if (!t) return;
+    var c = el('ckj-est'), v = c ? c.value.trim() : '';
+    var min = v ? ckpParseDuree(v) : CKJ.estimMin;
+    if (min === null || min === undefined || min <= 0) { toast(v ? 'Écris par exemple 2 h, 90 ou 1,5' : 'Choisis une durée'); if (c) c.focus(); return; }
+    var body = { estMinutes: min, forceEst: true };
+    if (t.src === 'client') body.projectId = t.projet || 'partner';
+    if (t.src === 'ticket') body.projectId = 'maintenance';
+    jpost(ckpUrl(t), body, 'PATCH').then(function (r) {
+      if (!r || r.error) { toast('Erreur'); return; }
+      toast('Estimé : ' + ckpDuree(min));
+      CKJ.estim = null; CKJ.estimMin = null; CKJ.flash = id;
+      setTimeout(function () { if (CKJ.flash === id) { CKJ.flash = null; var x = document.querySelector('.pj-t--flash'); if (x) x.classList.remove('pj-t--flash'); } }, 1400);
+      ckpCharger(renderCockpitProjetsBody);
+    }).catch(function () { toast('Erreur'); });
   }
   function ckJSuivi(p, d) {
     var cartes = (p.prestation === 'support' || p.prestation === 'maintenance') ? '' : ckJCoteCarte(p, d, 'moi') + ckJCoteCarte(p, d, 'eux');
@@ -12720,7 +12763,7 @@
     ckLChoisir: ckLChoisir, ckLSemaine: ckLSemaine, ckLPoser: ckLPoser, ckLRetirer: ckLRetirer,
     ckLRegSet: ckLRegSet, ckLRegEnregistrer: ckLRegEnregistrer, ckLRegAnnuler: ckLRegAnnuler,
     ckLSetSimH: ckLSetSimH, ckLSetSimHz: ckLSetSimHz, ckLDepuis: ckLDepuis,
-    ckJSetFiltre: ckJSetFiltre, ckJSetClient: ckJSetClient, ckJOuvrir: ckJOuvrir, ckJFermer: ckJFermer, ckJOnglet: ckJOnglet,
+    ckJSetFiltre: ckJSetFiltre, ckJSetClient: ckJSetClient, ckJEstimOuvrir: ckJEstimOuvrir, ckJEstimChoix: ckJEstimChoix, ckJEstimer: ckJEstimer, ckJOuvrir: ckJOuvrir, ckJFermer: ckJFermer, ckJOnglet: ckJOnglet,
     ckJNeuf: ckJNeuf, ckJCreer: ckJCreer,
     tblStart: tblStart, tblCancel: tblCancel, tblSave: tblSave,
     tblDragStart: tblDragStart, tblDragEnd: tblDragEnd, tblDragOver: tblDragOver,

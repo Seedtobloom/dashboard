@@ -3039,3 +3039,24 @@ h1.cdhead__n{margin:0;font-weight:400;font-size:36px}
 .main:has(.pj-page){background:#F8F6F2}
 .pj-of,.pj-clis,.pj-cli,.pj-cote-c,.pj-page .pj-ongs button{box-shadow:0 0 0 1px rgba(17,7,4,.07),0 2px 6px rgba(17,7,4,.08)}
 .pj-page .tabs button:not([aria-selected="true"]),.pj-page [role="tab"]:not([aria-selected="true"]){background:#fff}
+
+/* Offre ouverte : chaque tâche s'ouvre par son nom ou sa flèche ; le temps s'estime sur place */
+.pj-cote-c .pj-t{grid-template-columns:minmax(0,1fr) auto auto 36px}
+.pj-t__n--lien{text-decoration:underline;text-decoration-color:rgba(17,7,4,.25);text-underline-offset:4px}
+.pj-t__n--lien:hover{text-decoration-color:#110704}
+.pj-t__fl{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border:none;border-radius:999px;background:#F0E9D6;color:#110704;cursor:pointer}
+.pj-t__fl:hover{background:#E4D9C5}
+.pj-t__fl:focus-visible,.pj-est__c:focus-visible{outline:2px solid #110704;outline-offset:2px}
+.pj-t--flash{background:#C5DEFF;margin:0 -28px;padding-left:28px;padding-right:28px;transition:background .6s}
+.pj-est{background:#F8F6F2;border-radius:14px;padding:18px 20px;margin:0 0 13px}
+.pj-est__q{margin:0 0 12px;font-size:15px;font-weight:600}
+.pj-est__l{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+.pj-est__c{padding:8px 16px;border:none;border-radius:999px;background:#fff;box-shadow:inset 0 0 0 1px rgba(17,7,4,.25);font:inherit;font-size:15px;font-weight:600;color:#110704;cursor:pointer}
+.pj-est__c[aria-pressed="true"]{background:#110704;color:#F8F6F2;box-shadow:none}
+.pj-est__ou{display:inline-flex;align-items:center;gap:10px;margin-left:8px;font-size:15px;color:#7a5540}
+.pj-est__ou .inp{width:110px;background:#fff}
+.pj-est__esp{flex:1}
+.pj-est .btn{background:#110704;color:#F8F6F2;border:none}
+.pj-est .btn:hover{background:#3b2a20}
+.pj-est__ou .inp{box-shadow:inset 0 0 0 1px rgba(17,7,4,.25)}
+.pj-est .btn{border-radius:999px;padding:10px 20px;font-size:15px}
