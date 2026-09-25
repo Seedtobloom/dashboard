@@ -11865,40 +11865,50 @@
   function planGo(key, pid) { SUBTAB[pid] = 'planning'; navClientTab(key, pid); }
   function planSetFilter(f) { PLAN_FILTER = f; renderPlanBody(); }
   function renderPlannings() {
-    setMain(topbar('Plannings', '', 'Où en est chaque planning prévisionnel, toutes clientes confondues') +
-      '<div class="wrap" id="plan-body"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
+    setMain('<div class="wrap tps pj-page pl-page" id="plan-body"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
     if (PLAN_D) { renderPlanBody(); }
     dashGet().then(function (d) {
       PLAN_D = d; if (VIEW === 'plannings') renderPlanBody();
     }).catch(showError);
   }
+  /* Plannings éditoriaux : séparés comme les Projets. « À toi » en noir (le
+     jalon en cours est de ton côté), « Chez tes clients » en paille. */
+  function planLigne(x) {
+    var pl = x.pl, si = x.si, cur = si.current;
+    var nom = pl.creationName || pl.projectLabel || 'Planning';
+    var late = !si.ended && si.late.length;
+    var jal = si.ended ? 'Tous les jalons sont faits' : (cur ? esc(cur.j.title || 'Sans titre') + (cur.label ? ' · ' + esc(cur.label) : '') : '');
+    return '<div class="pl-l"><span><button class="pj-t__n pj-t__n--lien" onclick="ADM.planGo(\'' + esc(pl.key) + '\',\'' + esc(pl.projectId) + '\')">' + esc(nom) + '</button>' +
+        '<span class="cl-sous">' + esc(pl.client || '') + ' · ' + esc(pl.projectLabel || '') + '</span></span>' +
+      '<span>' + ckJBarre({ fait: si.done, total: si.total }) + '<span class="pl-n num">' + si.done + ' jalon' + (si.done > 1 ? 's faits' : ' fait') + ' sur ' + si.total + '</span></span>' +
+      '<span class="pl-j">' + jal + (late ? ' <span class="pj-pil pj-pil--retard">' + si.late.length + ' en retard</span>' : '') +
+        ((si.stale || []).length ? ' <span class="pj-pil pj-pil--rien">' + si.stale.length + ' à cocher</span>' : '') + '</span>' +
+      '<button class="pj-t__fl" onclick="ADM.planGo(\'' + esc(pl.key) + '\',\'' + esc(pl.projectId) + '\')" aria-label="Ouvrir le planning ' + esc(nom) + '">' + FLECHE + '</button></div>';
+  }
+  function planCote(cls, titre, sous, l, vide) {
+    return '<section class="pj-cote-c pj-cote-c--' + cls + '"><div class="pj-cote-c__h"><h2>' + titre + '</h2><span class="num">' + sous + '</span></div>' +
+      '<div class="pj-cote-c__c">' + (l.length ? '<div class="pl-th" aria-hidden="true"><span>Planning</span><span>Avancement</span><span>Prochain jalon</span><span></span></div>' + l.map(planLigne).join('') : '<p class="pj-vide" style="margin:14px 0">' + vide + '</p>') + '</div></section>';
+  }
   function renderPlanBody() {
     var body = el('plan-body'); if (!body) return;
-    var all = ((PLAN_D && PLAN_D.plannings) || []).map(function (pl) { return { pl: pl, si: planSituation(pl) }; });
+    var all = ((PLAN_D && PLAN_D.plannings) || []).map(function (pl) { return { pl: pl, si: planSituation(pl) }; }).filter(function (x) { return x.si.total; });
     all.sort(function (a, b) { return planSortKey(a.si) - planSortKey(b.si); });
-    var nLate = all.filter(function (x) { return x.si.late.length && !x.si.ended; }).length;
-    var nDone = all.filter(function (x) { return x.si.ended; }).length;
-    var nWait = all.filter(function (x) { return !x.si.ended && x.si.current && (x.si.current.j.owner === 'cliente'); }).length;
-    var list = all.filter(function (x) {
-      if (PLAN_FILTER === 'retard') return x.si.late.length && !x.si.ended;
-      if (PLAN_FILTER === 'cliente') return !x.si.ended && x.si.current && x.si.current.j.owner === 'cliente';
-      if (PLAN_FILTER === 'acocher') return (x.si.stale || []).length > 0;
-      if (PLAN_FILTER === 'termines') return x.si.ended;
-      return !x.si.ended;                    // « actifs » par défaut
-    });
-    var nStale = all.filter(function (x) { return (x.si.stale || []).length; }).length;
-    var tabs = [['actifs', 'En cours', all.filter(function (x) { return !x.si.ended; }).length],
-                ['retard', 'En retard', nLate],
-                ['cliente', 'Chez la cliente', nWait],
-                ['acocher', 'À mettre à jour', nStale],
-                ['termines', 'Terminés', nDone]];
-    // Des filtres, pas des boutons : le même contrôle groupé que partout ailleurs.
-    var bar = '<div class="qbar"><div class="ck-segm" role="group" aria-label="Filtrer les plannings">' + tabs.map(function (t) {
-      return '<button class="ck-segb' + (PLAN_FILTER === t[0] ? ' on' : '') + '" aria-pressed="' + (PLAN_FILTER === t[0]) + '" onclick="ADM.planSetFilter(\'' + t[0] + '\')">' + esc(t[1]) + (t[2] ? ' · ' + t[2] : '') + '</button>';
-    }).join('') + '</div></div>';
-    if (!all.length) { body.innerHTML = bar + '<div class="empty">Aucun planning prévisionnel pour l\'instant. Ils se remplissent depuis la fiche d\'une cliente, sous-onglet « Planning ».</div>'; return; }
-    if (!list.length) { body.innerHTML = bar + '<div class="empty">Rien dans cette sélection.</div>'; return; }
-    body.innerHTML = bar + list.map(planCardHtml).join('');
+    if (PLAN_FILTER !== 'termines') PLAN_FILTER = 'actifs';
+    var enCours = all.filter(function (x) { return !x.si.ended; }), finis = all.filter(function (x) { return x.si.ended; });
+    var nLate = enCours.filter(function (x) { return x.si.late.length; }).length;
+    var filtre = function (k, t) { return '<button role="tab" aria-selected="' + (PLAN_FILTER === k) + '" class="cl-fi' + (PLAN_FILTER === k ? ' on' : '') + '" onclick="ADM.planSetFilter(\'' + k + '\')">' + t + '</button>'; };
+    var tete = '<h1 class="pg-h1">Plannings éditoriaux</h1><div class="cl-bar"><div class="cl-fis" role="tablist" aria-label="Quels plannings">' + filtre('actifs', 'En cours') + filtre('termines', 'Terminés') + '</div>' +
+      '<span class="num">' + enCours.length + ' planning' + (enCours.length > 1 ? 's' : '') + (nLate ? ', <b class="pl-r">' + nLate + ' en retard</b>' : '') + '</span></div>';
+    if (!all.length) { body.innerHTML = tete + '<p class="pj-vide">Aucun planning prévisionnel pour l’instant. Ils se remplissent depuis un projet, onglet « Le planning ».</p>'; return; }
+    if (PLAN_FILTER === 'termines') {
+      body.innerHTML = tete + '<section class="cl-t" style="padding:8px 24px 12px">' + (finis.length ? finis.map(planLigne).join('') : '<p class="pj-vide" style="margin:14px 0">Aucun planning terminé.</p>') + '</section>';
+      return;
+    }
+    var chezEux = function (x) { return x.si.current && x.si.current.j.owner === 'cliente'; };
+    var toi = enCours.filter(function (x) { return !chezEux(x); }), eux = enCours.filter(chezEux);
+    body.innerHTML = tete +
+      planCote('moi', 'À toi', toi.length + ' planning' + (toi.length > 1 ? 's attendent' : ' attend') + ' quelque chose de toi', toi, 'Rien n’attend de ton côté.') +
+      planCote('eux', 'Chez tes clients', eux.length + ' planning' + (eux.length > 1 ? 's attendent' : ' attend') + ' leur réponse', eux, 'Rien n’attend tes clients.');
   }
   function planCardHtml(x, surPage) {
     var pl = x.pl, si = x.si;

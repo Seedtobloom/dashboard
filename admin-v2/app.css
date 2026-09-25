@@ -3193,3 +3193,15 @@ h1.cdhead__n{margin:0;font-weight:400;font-size:36px}
 .vis-cal{display:flex;justify-content:space-between;align-items:center;gap:20px;padding:18px 24px;font-size:15px}
 .vis-cal b{display:block}
 .vis-cal span{color:#3b2a20}
+
+/* Plannings éditoriaux : « À toi » en noir, « Chez tes clients » en paille */
+.pl-page .cl-bar{margin-top:18px}
+.pl-r{color:#5A2A11}
+.pl-th,.pl-l{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) minmax(0,1.3fr) 36px;gap:24px;align-items:center}
+.pl-th{padding:12px 0 6px;font-size:13px;color:#7a5540}
+.pl-l{padding:14px 0;border-top:1px solid #F0E9D6;font-size:15px}
+.pl-l .pj-t__n{font-size:16px}
+.pl-l .pj-av{margin:0}
+.pl-n{display:block;font-size:13px;color:#7a5540;margin-top:6px}
+.pl-j{color:#110704}
+.pl-page .pj-cote-c{margin:0 0 20px}
