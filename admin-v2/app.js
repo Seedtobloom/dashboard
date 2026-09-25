@@ -5171,6 +5171,9 @@
   // Ouvrir une tâche précise depuis un autre écran (l'Accueil, par exemple).
   function ckTVoir(id) {
     var t = ckTTrouve(id);
+    // Une tâche terminée n'est plus dans la liste : sans ce garde-fou, la page
+    // Tâches s'ouvrait sur une autre tâche, sans rien dire.
+    if (!t) { toast('Cette tâche est terminée : elle n’est plus dans la liste'); return; }
     if (t) CKT.cote = t.src === 'perso' ? 'stb' : 'clients';
     CKT.ouverte = id; CKT.grand = false; CKT.filtre = 'tout'; nav('cktaches');
   }
@@ -6319,10 +6322,15 @@
     x.revisions.forEach(function (r) { if (r.taskId && vives.some(function (t) { return t.id === r.taskId; })) retours[r.taskId] = r; });
     x.revisions.forEach(function (r) {
       if (retours[r.taskId] === r) return;   // montré sur la ligne de sa tâche
-      var nom = r.taskTitle || r.name || 'Livrable';
-      moi.push({ t: nom, etat: 'Retours à reprendre', k: 'retard', id: r.taskId || null,
-        go: r.taskId ? null : (r.creationId ? 'creations' : 'liv'),
-        sous: 'Retours de ' + qui + (r.comment ? ' : « ' + String(r.comment).slice(0, 120) + ' »' : '') });
+      // Des retours sur une tâche déjà terminée : sans geste, la ligne resterait
+      // là pour toujours. On le dit, et on propose de rouvrir ou de classer.
+      var tache = r.taskId ? ckJTachesDe(p).filter(function (t) { return t.id === r.taskId; })[0] : null;
+      var fini = !!(tache && tache.statut === 'done');
+      var nom = r.taskTitle || (tache && tache.titre) || r.name || 'Livrable';
+      moi.push({ t: nom, etat: 'Retours à reprendre', k: 'retard', id: null,
+        go: r.creationId ? 'creations' : 'liv',
+        rev: { key: r.key, id: r.id, projet: r.project || 'partner', tache: fini ? tache.id : null },
+        sous: 'Retours de ' + qui + (r.comment ? ' : « ' + String(r.comment).slice(0, 120) + ' »' : '') + (fini ? ', sur une tâche terminée' : '') });
     });
     vives.forEach(function (t) {
       if (t.statut === 'review' || t.statut === 'waiting_client') {
@@ -6536,7 +6544,10 @@
       var nom = clic ? '<button class="pj-t__n pj-t__n--lien" onclick="' + clic + '">' + esc(m.t) + '</button>' : '<span class="pj-t__n">' + esc(m.t) + '</span>';
       var fl = clic ? '<button class="pj-t__fl" onclick="' + clic + '" aria-label="' + quoi + esc(m.t) + '">' + FLECHE + '</button>' : '<span></span>';
       return '<div class="pj-t' + (CKJ.flash && CKJ.flash === m.id ? ' pj-t--flash' : '') + '">' + nom + tp + '<span class="pj-pil pj-pil--' + m.k + '">' + esc(m.etat) + '</span>' + fl + '</div>' +
-        (ouvre ? ckJEstimPanneau(m.id) : '');
+        (ouvre ? ckJEstimPanneau(m.id) : '') +
+        (m.rev ? '<div class="pj-t__act">' +
+          (m.rev.tache ? '<button class="tps-lien" onclick="ADM.ckJRevRouvrir(\'' + esc(m.rev.tache) + '\')">Rouvrir la tâche</button>' : '') +
+          '<button class="tps-lien" onclick="ADM.ckJRevClasser(\'' + esc(m.rev.key) + '\',\'' + esc(m.rev.id) + '\',\'' + esc(m.rev.projet) + '\')">C’est déjà traité</button></div>' : '');
     }).join('');
     var pied = cote === 'moi'
       ? (aSec('taches') ? '<button class="tps-lien" onclick="ADM.ckJOnglet(\'taches\')">Voir toutes les demandes</button>' : '')
@@ -6547,6 +6558,24 @@
       '<span class="num">' + (cote === 'moi' ? (n ? n + ' chose' + (n > 1 ? 's' : '') + ' à faire' : 'rien à faire') : (n ? n + ' en attente de sa réponse' : 'rien en attente')) + '</span></div>' +
       '<div class="pj-cote-c__c">' + (lignes || '<p class="pj-vide" style="margin:12px 0">' + (cote === 'moi' ? 'Rien à faire de ton côté pour l’instant.' : 'Rien n’attend sa réponse.') + '</p>') +
       (pied ? '<div class="pj-carte__p pj-cote-c__p">' + pied + '</div>' : '') + '</div></section>';
+  }
+  // Des retours restés sans suite : on rouvre la tâche pour les reprendre, ou
+  // on les classe s'ils ont déjà été traités ailleurs.
+  function ckJRevRouvrir(id) {
+    var t = ckpToutes().filter(function (x) { return x.id === id; })[0];
+    if (!t) return;
+    var body = { status: 'todo' };
+    if (t.src === 'client') body.projectId = t.projet || 'partner';
+    jpost(ckpUrl(t), body, 'PATCH').then(function (r) {
+      if (!r || !r.ok) { toast('Erreur'); return; }
+      toast('Tâche rouverte'); ckpCharger(renderCockpitProjetsBody);
+    }).catch(function () { toast('Erreur'); });
+  }
+  function ckJRevClasser(key, id, projet) {
+    jpost('/api/clients/' + key + '/deliverables/' + id, { projectId: projet || 'partner', resolved: true, seenByAdmin: true }, 'PATCH').then(function (r) {
+      if (!r || !r.ok) { toast('Erreur'); return; }
+      toast('Retours classés'); ckpCharger(renderCockpitProjetsBody);
+    }).catch(function () { toast('Erreur'); });
   }
   var CKJ_DUREES = [30, 60, 90, 120, 180];
   function ckJEstimPanneau(id) {
@@ -12779,7 +12808,7 @@
     ckLChoisir: ckLChoisir, ckLSemaine: ckLSemaine, ckLPoser: ckLPoser, ckLRetirer: ckLRetirer,
     ckLRegSet: ckLRegSet, ckLRegEnregistrer: ckLRegEnregistrer, ckLRegAnnuler: ckLRegAnnuler,
     ckLSetSimH: ckLSetSimH, ckLSetSimHz: ckLSetSimHz, ckLDepuis: ckLDepuis,
-    ckJSetFiltre: ckJSetFiltre, ckJSetClient: ckJSetClient, ckJEstimOuvrir: ckJEstimOuvrir, ckJEstimChoix: ckJEstimChoix, ckJEstimer: ckJEstimer, ckJOuvrir: ckJOuvrir, ckJFermer: ckJFermer, ckJOnglet: ckJOnglet,
+    ckJSetFiltre: ckJSetFiltre, ckJSetClient: ckJSetClient, ckJEstimOuvrir: ckJEstimOuvrir, ckJRevRouvrir: ckJRevRouvrir, ckJRevClasser: ckJRevClasser, ckJEstimChoix: ckJEstimChoix, ckJEstimer: ckJEstimer, ckJOuvrir: ckJOuvrir, ckJFermer: ckJFermer, ckJOnglet: ckJOnglet,
     ckJNeuf: ckJNeuf, ckJCreer: ckJCreer,
     tblStart: tblStart, tblCancel: tblCancel, tblSave: tblSave,
     tblDragStart: tblDragStart, tblDragEnd: tblDragEnd, tblDragOver: tblDragOver,
