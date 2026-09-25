@@ -4663,7 +4663,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
           var pd = getPD(pid);
           if (pd){ if(!Array.isArray(pd.project.files)) pd.project.files=[]; pd.project.files.push(fileData); }
           window.cliSaveTaskProp(pid, taskId, propId, JSON.stringify({ key:fileData.key, name:fileData.name||file.name }));
-          toast('Fichier ajouté ✓'); renderShell();
+          toast('Fichier ajouté'); renderShell();
         })
         .catch(function(){ toast('Erreur lors du dépôt', true); });
     };
@@ -6026,90 +6026,70 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
 
   // ── Vue « Fichiers » UNIFIÉE : par projet, par dossier, sans contour, teintée
   //    par source (Cindy = glycine, cliente = doré). Remplace l'ancien panneau. ──
+  // Page « Tes fichiers » (refonte 2026) : des vignettes rangées par projet,
+  // « Cindy » en noir, « Toi » en paille ; filtres et recherche.
+  var cpFichFiltre = 'tous';
+  window.cpFichSetFiltre = function (v) { cpFichFiltre = v; renderShell(); };
+  window.cpFichCherche = function (v) {
+    var q = String(v || '').toLowerCase().trim();
+    document.querySelectorAll('.cpf-carte').forEach(function (el) { el.style.display = (!q || (el.getAttribute('data-n') || '').indexOf(q) !== -1) ? '' : 'none'; });
+  };
   function buildFichiersView() {
     var projects = (appData && appData.projects) ? appData.projects.slice() : [];
-    projects.sort(function(a, b){ return (a.project.id === 'branding' ? 0 : 1) - (b.project.id === 'branding' ? 0 : 1); });
-    // fichier -> titre de la demande à laquelle il est joint
     var taskOfFile = {};
-    projects.forEach(function(pd){
-      ((pd.project && pd.project.tasks) || []).forEach(function(t){
-        (Array.isArray(t.attachments) ? t.attachments : []).forEach(function(a){ var k = a.fileKey || a.key || ''; if (k) taskOfFile[k] = t.title || 'Demande'; });
+    projects.forEach(function (pd) {
+      ((pd.project && pd.project.tasks) || []).forEach(function (t) {
+        (Array.isArray(t.attachments) ? t.attachments : []).forEach(function (a) { var k = a.fileKey || a.key || ''; if (k) taskOfFile[k] = t.title || 'Demande'; });
         var bv = briefVal((t.properties || {}).p_elements);
-        (bv.files || []).forEach(function(fx){ if (fx && fx.key) taskOfFile[fx.key] = t.title || 'Demande'; });
+        (bv.files || []).forEach(function (fx) { if (fx && fx.key) taskOfFile[fx.key] = t.title || 'Demande'; });
       });
     });
-    function fRow(pd, f){
-      var pid = pd.project.id;
-      var cindy = f.source !== 'client';
-      var bg = cindy ? 'var(--glycine-50,#C5DEFF)' : '#F8F6F2';
-      var icBg = cindy ? 'var(--glycine,#C5DEFF)' : '#F8F6F2';
-      var icCol = cindy ? 'var(--glycine-900,#5A2A11)' : '#5A2A11';
-      var metaCol = cindy ? 'var(--glycine-900,#5A2A11)' : '#5A2A11';
-      var sub = (cindy ? 'Reçu de Cindy' : 'Déposé par vous') + (f.uploadedAt ? ' · ' + fmtShort(f.uploadedAt) : '');
+    var nCindy = 0, nToi = 0;
+    projects.forEach(function (pd) { (pd.files || []).forEach(function (f) { if (f.source === 'client') nToi++; else nCindy++; }); });
+    function garde(f) { return cpFichFiltre === 'tous' || (cpFichFiltre === 'toi' ? f.source === 'client' : f.source !== 'client'); }
+    function ext(f) { var m = String(f.name || '').match(/\.([a-z0-9]{2,5})$/i); return m ? m[1].toUpperCase() : 'FICHIER'; }
+    var FOND = { PDF: '#5A2A11', ZIP: '#C5DEFF', DOC: '#F0E9D6', DOCX: '#F0E9D6', XLS: '#F0E9D6', XLSX: '#F0E9D6', PPT: '#E4D9C5', PPTX: '#E4D9C5', AI: '#110704', PSD: '#110704', INDD: '#110704' };
+    function carte(pd, f) {
+      var pid = pd.project.id, toi = f.source === 'client';
       var dl = API_BASE + '/files/' + encodeURIComponent(f.key) + '/download';
-      var del = (!cindy && !f.locked) ? '<button onclick="window.stbFileDelete(\'' + pid + '\',\'' + encodeURIComponent(f.key) + '\')" title="Supprimer" style="width:32px;height:32px;display:grid;place-items:center;border-radius:8px;background:none;border:none;color:var(--terre-400);cursor:pointer;flex-shrink:0">' + cpIcon('trash', 15) + '</button>' : '';
-      var isImg = /\.(jpe?g|png|webp|gif|avif|svg)$/i.test(f.name || '');
-      var visual = isImg
-        ? '<a href="' + dl + '" target="_blank" title="Ouvrir" style="width:40px;height:40px;border-radius:9px;overflow:hidden;flex-shrink:0;line-height:0;display:block"><img src="' + dl + '" loading="lazy" alt="" style="width:40px;height:40px;object-fit:cover;display:block"></a>'
-        : '<span style="width:36px;height:36px;border-radius:9px;background:' + icBg + ';color:' + icCol + ';display:grid;place-items:center;flex-shrink:0">' + cpIcon('file', 17) + '</span>';
-      return '<div style="display:flex;align-items:center;gap:12px;padding:12px 15px;border-radius:12px;background:' + bg + '">' +
-        visual +
-        '<div style="flex:1;min-width:0"><div style="font-family:var(--font-display);font-size:16px;color:var(--terre);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2">' + esc(f.name || 'Fichier') + '</div>' +
-        '<div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.04em;text-transform:uppercase;font-weight:600;color:' + metaCol + ';margin-top:2px">' + esc(sub) + '</div></div>' +
-        '<a href="' + dl + '" target="_blank" title="Télécharger" style="width:32px;height:32px;display:grid;place-items:center;border-radius:8px;background:rgba(255,255,255,0.6);color:var(--terre-600);text-decoration:none;flex-shrink:0">' + cpIcon('download', 16) + '</a>' + del +
-      '</div>';
+      var img = /\.(jpe?g|png|webp|gif|avif|svg)$/i.test(f.name || '');
+      var e = ext(f);
+      var haut = img ? '<img src="' + dl + '" alt="" loading="lazy">' : '<span style="background:' + (FOND[e] || '#E4D9C5') + '"></span>';
+      var sous = [f.uploadedAt ? fmtShort(f.uploadedAt) : '', taskOfFile[f.key] ? 'joint à « ' + taskOfFile[f.key] + ' »' : ''].filter(Boolean).join(' · ');
+      var retirer = (toi && !f.locked) ? '<button class="cpl-lien" onclick="window.stbFileDelete(\'' + pid + '\',\'' + encodeURIComponent(f.key) + '\')">Retirer</button>' : '';
+      return '<div class="cpf-carte" data-n="' + esc(String(f.name || '').toLowerCase()) + '">' +
+        '<a class="cpf-carte__haut" href="' + dl + '" target="_blank" title="Ouvrir">' + haut + '<em>' + esc(e) + '</em></a>' +
+        '<div class="cpf-carte__bas"><b title="' + esc(f.name || '') + '">' + esc(f.name || 'Fichier') + '</b>' +
+          '<div class="cpf-carte__meta"><span>' + esc(sous) + '</span><span class="cpf-tag' + (toi ? ' cpf-tag--toi' : '') + '">' + (toi ? 'Toi' : 'Cindy') + '</span></div>' +
+          (retirer ? '<div style="margin-top:6px">' + retirer + '</div>' : '') +
+        '</div></div>';
     }
-    function folderBlock(pd, name, files, isFolder){
-      var pid = pd.project.id;
-      var rows = files.length ? files.map(function(f){ return fRow(pd, f); }).join('') : '<div style="font-family:var(--font-display);font-style:italic;font-size:14px;color:var(--terre-400);padding:2px 4px 6px">Vide pour l\'instant.</div>';
-      var del = isFolder ? '<button onclick="window.stbFolderDel(\'' + pid + '\',\'' + encodeURIComponent(name) + '\')" style="margin-left:auto;font-family:var(--font-micro);font-size:11px;color:var(--terre-400);background:none;border:none;cursor:pointer">Supprimer</button>' : '';
-      return '<div style="margin-bottom:12px">' +
-        '<div style="display:flex;align-items:center;gap:9px;padding:9px 13px;border-radius:10px;background:var(--surface,#F8F6F2);margin-bottom:9px">' +
-          cpIcon('folder', 14, 'color:var(--terre-400)') +
-          '<span style="font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--terre)">' + esc(name) + '</span>' +
-          '<span style="font-family:var(--font-micro);font-size:11px;color:var(--terre-400)">' + files.length + '</span>' + del +
-        '</div><div style="display:flex;flex-direction:column;gap:8px">' + rows + '</div></div>';
-    }
-    function projBlock(pd){
-      var p = pd.project; var pid = p.id;
-      var common = pid === 'branding';
-      var files = (pd.files || []).filter(function(f){ return !taskOfFile[f.key]; });
+    function grille(pd, files) { return files.length ? '<div class="cpf-grille">' + files.map(function (f) { return carte(pd, f); }).join('') + '</div>' : ''; }
+    function projet(pd) {
+      var p = pd.project, pid = p.id;
+      var files = (pd.files || []).filter(garde);
       var folders = (p.folders || []).slice();
-      var body = folderBlock(pd, 'Général', files.filter(function(f){ return !f.folder; }), false);
-      folders.forEach(function(fn){ body += folderBlock(pd, fn, files.filter(function(f){ return f.folder === fn; }), true); });
-      var folderOpts = '<option value="">Général</option>' + folders.map(function(fn){ return '<option value="' + esc(fn) + '">' + esc(fn) + '</option>'; }).join('');
-      var inS = 'border:none;border-radius:9px;padding:10px 13px;font-family:var(--font-micro);font-size:13px;color:var(--terre);background:var(--card,#F8F6F2)';
-      var ctl = '<div style="background:var(--surface,#F8F6F2);border-radius:14px;padding:16px 18px;margin-top:6px">' +
-        '<div style="display:flex;flex-wrap:wrap;gap:9px;align-items:center">' +
-          '<input id="cpf-newfolder-' + pid + '" placeholder="Créer un dossier…" style="' + inS + ';flex:1;min-width:170px">' +
-          '<button onclick="window.stbFolderAdd(\'' + pid + '\')" style="border:none;border-radius:9px;background:var(--terre);color:var(--paille);font-family:var(--font-micro);font-size:12.5px;font-weight:600;padding:10px 16px;cursor:pointer">+ Dossier</button>' +
-        '</div>' +
-        '<label style="display:block;margin-top:11px;border-radius:12px;padding:20px;text-align:center;color:var(--glycine-900,#5A2A11);font-family:var(--font-micro);font-size:13px;background:var(--glycine-50,#C5DEFF);cursor:pointer" ondragover="event.preventDefault()" ondrop="event.preventDefault();window.stbFilesUpload(\'' + pid + '\',event.dataTransfer.files)">' +
-          cpIcon('upload', 18, 'color:var(--glycine-900,#5A2A11);display:block;margin:0 auto 6px') +
-          '<span style="font-weight:600">Déposez un fichier ici</span> ou cliquez' +
-          '<input type="file" multiple style="display:none" onchange="window.stbFilesUpload(\'' + pid + '\',this.files)"></label>' +
-        '<div style="display:flex;align-items:center;gap:8px;margin-top:11px"><span style="font-family:var(--font-micro);font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;color:var(--terre-400)">Déposer dans</span><select id="cpf-folder-' + pid + '" style="' + inS + '">' + folderOpts + '</select></div>' +
-      '</div>';
-      return '<section style="background:F8F6F2;border-radius:18px;padding:22px 24px;margin-bottom:20px">' +
-        '<div style="display:flex;align-items:center;gap:11px;margin-bottom:2px"><span style="font-family:var(--font-display);font-style:italic;font-size:25px;color:var(--terre)">' + esc(p.projectTitle || pid) + '</span>' +
-        (common ? '<span style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;padding:3px 10px;border-radius:999px;background:var(--glycine,#C5DEFF);color:var(--glycine-900,#5A2A11)">Commun</span>' : '') + '</div>' +
-        '<p style="font-family:var(--font-micro);font-size:12.5px;color:var(--terre-400);margin:0 0 16px">' + (common ? 'Partagé pour l\'ensemble de vos projets' : 'Vos fichiers pour ce projet') + '</p>' +
-        body + ctl +
-      '</section>';
+      var corps = grille(pd, files.filter(function (f) { return !f.folder || folders.indexOf(f.folder) === -1; }));
+      folders.forEach(function (fn) {
+        var fs = files.filter(function (f) { return f.folder === fn; });
+        corps += '<div class="cpf-dossier"><span>' + esc(fn) + ' · ' + fs.length + '</span><button class="cpl-lien" onclick="window.stbFolderDel(\'' + pid + '\',\'' + encodeURIComponent(fn) + '\')">Supprimer le dossier</button></div>' +
+          (grille(pd, fs) || '<p class="cpf-vide">Dossier vide.</p>');
+      });
+      if (!corps) corps = '<p class="cpf-vide">' + (cpFichFiltre === 'tous' ? 'Pas encore de fichier pour ce projet. Glisse-les ici.' : 'Rien ici avec ce filtre.') + '</p>';
+      var dest = folders.length ? '<select id="cpf-folder-' + pid + '" class="cpf-select" aria-label="Déposer dans"><option value="">Déposer dans : général</option>' + folders.map(function (fn) { return '<option value="' + esc(fn) + '">Déposer dans : ' + esc(fn) + '</option>'; }).join('') + '</select>' : '';
+      return '<section class="cpf-projet" ondragover="event.preventDefault();this.classList.add(\'glisse\')" ondragleave="this.classList.remove(\'glisse\')" ondrop="event.preventDefault();this.classList.remove(\'glisse\');window.stbFilesUpload(\'' + pid + '\',event.dataTransfer.files)">' +
+        '<div class="cpf-projet__h"><h2>' + esc(p.projectTitle || 'Projet') + '</h2><div class="cpf-projet__a">' + dest +
+          '<label class="cpl-lien" style="cursor:pointer">Déposer un fichier<input type="file" multiple style="display:none" onchange="window.stbFilesUpload(\'' + pid + '\',this.files)"></label>' +
+          '<details class="cpf-nd"><summary class="cpl-lien">Nouveau dossier</summary><div><input id="cpf-newfolder-' + pid + '" placeholder="Nom du dossier"><button class="cpb-btn" style="background:#110704;color:#F8F6F2" onclick="window.stbFolderAdd(\'' + pid + '\')">Créer</button></div></details>' +
+        '</div></div>' + corps + '</section>';
     }
-    // Demandes : pièces jointes des tâches, tous projets confondus.
-    var byTask = {};
-    projects.forEach(function(pd){ (pd.files || []).forEach(function(f){ if (taskOfFile[f.key]) { (byTask[taskOfFile[f.key]] = byTask[taskOfFile[f.key]] || []).push({ pd: pd, f: f }); } }); });
-    var demKeys = Object.keys(byTask).sort();
-    var demSection = demKeys.length ? '<section style="background:#110704;border-radius:18px;padding:22px 24px;margin-bottom:20px"><div style="font-family:var(--font-display);font-style:italic;font-size:25px;color:var(--paille);margin-bottom:2px">Fichiers de vos demandes</div><p style="font-family:var(--font-micro);font-size:12.5px;color:rgba(242,229,194,0.82);margin:0 0 16px">Les pièces jointes à vos demandes partenaire créative</p>' +
-      demKeys.map(function(tt){ return '<div style="margin-bottom:10px"><div style="font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:var(--paille);margin-bottom:8px">' + esc(tt) + '</div><div style="display:flex;flex-direction:column;gap:8px">' + byTask[tt].map(function(x){ return fRow(x.pd, x.f); }).join('') + '</div></div>'; }).join('') +
-      '</section>' : '';
-
-    var hasAny = projects.some(function(pd){ return (pd.files || []).length; });
-    return '<div class="fade-up">' +
-      '<p style="font-size:16px;color:var(--terre-600);line-height:1.6;margin-bottom:24px;max-width:560px">Tout ce que Cindy vous partage et tout ce que vous déposez, au même endroit, par projet et par dossier.</p>' +
-      (hasAny ? projects.map(projBlock).join('') + demSection : '<div class="cp-empty">Aucun fichier pour le moment. Déposez-en un depuis un projet.</div>') +
-    '</div>';
+    function ong(v, lbl) { return '<button class="cpl-ong' + (cpFichFiltre === v ? ' on' : '') + '" onclick="cpFichSetFiltre(\'' + v + '\')">' + lbl + '</button>'; }
+    return '<div class="cp-home cpb"><div class="cpb__in fade-up" style="max-width:1180px">' +
+      '<header><h1 class="cpb-h1">Tes fichiers</h1><p class="cpb-lead">Tout ce que vous vous êtes échangé, au même endroit. Glisse un fichier sur un projet pour le déposer.</p></header>' +
+      '<div class="cpf-barre"><div class="cpl-ongs">' + ong('tous', 'Tous · ' + (nCindy + nToi)) + ong('cindy', 'De Cindy · ' + nCindy) + ong('toi', 'De toi · ' + nToi) + '</div>' +
+        '<input type="search" class="cpm-cherche" style="width:260px" placeholder="Rechercher un fichier" aria-label="Rechercher un fichier" oninput="cpFichCherche(this.value)"></div>' +
+      projects.map(projet).join('') +
+    '</div></div>';
   }
   // ── Dossiers & dépôt (relocalisés depuis l'ancien panneau, rafraîchissent la page) ──
   window.stbFolderAdd = function(pid){
@@ -6166,7 +6146,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
       var fd = new FormData(); fd.append('file', f); fd.append('projectId', pid); if (folder) fd.append('folder', folder);
       fetch('/api/client/' + TOKEN + '/files', { method:'POST', body: fd })
         .then(function(r){ return r.json().then(function(d){ return { ok:r.ok, d:d }; }); })
-        .then(function(res){ if (res.ok && res.d && res.d.key){ if (!pd.files) pd.files = []; pd.files.push(res.d); } done++; if (done === arr.length){ renderShell(); toast('Fichier ajouté ✓'); } })
+        .then(function(res){ if (res.ok && res.d && res.d.key){ if (!pd.files) pd.files = []; pd.files.push(res.d); } done++; if (done === arr.length){ renderShell(); toast('Fichier ajouté'); } })
         .catch(function(){ done++; if (done === arr.length) renderShell(); });
     });
   };
@@ -6282,7 +6262,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     if (currentView === 'messages') return cpMessagesPage();
     if (currentView === 'project') return buildProjectView(getPD(currentId));
     if (currentView === 'hub') return '<div class="cp-portal-main">' + buildHubView() + '</div>';
-    if (currentView === 'fichiers') return '<div class="cp-portal-main">' + buildFichiersView() + '</div>';
+    if (currentView === 'fichiers') return buildFichiersView();
     if (currentView === 'livrables') return buildLivrablesView();
     if (currentView === 'questionnaires') return '<div class="cp-portal-main">' + buildQuestionnairesView() + '</div>';
     if (currentView === 'interventions') {
