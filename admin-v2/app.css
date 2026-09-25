@@ -3034,3 +3034,9 @@ h1.cdhead__n{margin:0;font-weight:400;font-size:36px}
 .pj-tu--client .pj-av i.on,.pj-tu--pause .pj-av i.on{background:#110704}
 .pj-cote-c--moi .pj-cote-c__h{background:#110704}
 .pj-cote-c--moi .pj-cote-c__h h2,.pj-cote-c--moi .pj-cote-c__h>span{color:#F8F6F2}
+
+/* Projets : fond crème pour que les blocs blancs se détachent (plus de blanc sur blanc) */
+.main:has(.pj-page){background:#F0E9D6}
+.pj-of,.pj-clis,.pj-cli,.pj-cote-c{box-shadow:0 1px 3px rgba(17,7,4,.10)}
+.pj-page .tabs button:not([aria-selected="true"]),.pj-page [role="tab"]:not([aria-selected="true"]){background:#fff}
+.pj-tu--pause,.pj-leg--pause,.pj-of--pause .pj-of__h{background:#E4D9C5}
