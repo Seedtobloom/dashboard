@@ -496,7 +496,8 @@
     var det = cpAccDetail(t), fond = det ? det.couleur : '#E4D9C5';
     var img = dern && dern.fileKey && /\.(png|jpe?g|webp|gif)$/i.test(dern.name || '') ? '<div class="cpv-vis" style="background:linear-gradient(135deg,#EFE8D8,' + esc(fond) + ')"><img src="' + API_BASE + '/files/' + encodeURIComponent(dern.fileKey) + '/download" alt="' + esc(dern.name) + '" onerror="this.parentNode.remove()"></div>' : '';
     var btns = '';
-    if (t.status === 'review' && dern && dern.status === 'a_valider') btns = '<div class="cpv-btns"><button class="cpb-btn cpd-btn" onclick="stbValidate(\'' + pid + '\',\'' + dern.id + '\',\'valide\')">Valider</button><button class="cpb-btn cpd-btn--clair" onclick="stbValidate(\'' + pid + '\',\'' + dern.id + '\',\'refuse\')">Demander une modif</button></div>';
+    if (t.status === 'review' && dern && dern.status === 'a_valider') btns = '<div class="cpv-btns"><button class="cpb-btn cpd-btn" onclick="stbValidate(\'' + pid + '\',\'' + dern.id + '\',\'valide\')">Valider</button><button class="cpb-btn cpd-btn--clair" onclick="stbValidate(\'' + pid + '\',\'' + dern.id + '\',\'refuse\')">Demander une modification</button></div>';
+    if (e.l === 'Brief à compléter') btns += cpBesoinsHtml(pid, t);
     else if (t.proposedDueDate) btns = '<div class="cpv-btns"><button class="cpb-btn cpd-btn" onclick="cliRespondProposedDate(\'' + pid + '\',\'' + t.id + '\',true)">Accepter le ' + esc(fmtShort(t.proposedDueDate)) + '</button><button class="cpb-btn cpd-btn--clair" onclick="cliRespondProposedDate(\'' + pid + '\',\'' + t.id + '\',false)">Garder ma date</button></div>';
     var brief = (t.blocks || []).map(function (b) { return b && b.text ? cpTexteBrut(b.text) : ''; }).filter(Boolean).join(' · ');
     if (!brief) brief = String(t.content || '').slice(0, 180);
@@ -517,4 +518,140 @@
     if (cpAccModif[pid]) { var tm = cpAccT(pid, cpAccModif[pid].id); if (tm) return cpAccModifierPage(pd, tm); cpAccModif[pid] = null; }
     if (cliSelTask[pid]) { var t = cpAccT(pid, cliSelTask[pid]); if (t) return cpAccDemandePage(pd, t); delete cliSelTask[pid]; }
     return null;
+  }
+
+  /* ── « Ce dont j'ai besoin » : ce qui manque pour commencer une demande ──
+   * Chaque élément manquant : déposer un fichier ou coller le texte, puis
+   * « Envoyer à Cindy ». Les textes tapés survivent aux rafraîchissements. */
+  var cpBesoinTxt = {}, cpBesoinFait = {};
+  function cpBesoinsListe(t) { try { var l = JSON.parse((t.properties || {}).p_besoins || '[]'); return Array.isArray(l) ? l.filter(function (x) { return x && x.texte; }) : []; } catch (e) { return []; } }
+  function cpBesoinsHtml(pid, t) {
+    var l = cpBesoinsListe(t);
+    if (!l.length) return '<div class="cpv-bloc"><b>Ce dont j’ai besoin</b><p>Il me manque encore des éléments pour commencer.</p><button class="cpb-btn cpd-btn" onclick="cliOpenTaskDrawer(\'' + pid + '\',\'' + t.id + '\')">Compléter la demande</button></div>';
+    var manque = 0;
+    var cases = l.map(function (b, i) {
+      var k = t.id + ':' + i, ok = b.ok || cpBesoinFait[k];
+      if (!ok) manque++;
+      var nom = String(b.texte); nom = nom.charAt(0).toUpperCase() + nom.slice(1);
+      return '<div class="cpbs' + (ok ? ' cpbs--ok' : '') + '"><div class="cpbs__h"><b>' + esc(nom) + '</b><span>' + (ok ? 'reçu' : 'à envoyer') + '</span></div>' +
+        (ok ? '' : '<label class="cpbs__depot">Dépose ton fichier ici, ou <u>choisis-le</u><input type="file" multiple onchange="cpBesoinFichier(\'' + pid + '\',\'' + t.id + '\',' + i + ',this.files)"></label>' +
+          '<textarea class="cpbs__txt" placeholder="ou colle-le ici" aria-label="' + esc(nom) + '" oninput="cpBesoinSaisie(\'' + k + '\',this.value)">' + esc(cpBesoinTxt[k] || '') + '</textarea>') + '</div>';
+    }).join('');
+    return '<div class="cpv-bloc cpbs-l"><b>Ce dont j’ai besoin</b><p>Dès que tu m’envoies ' + (manque > 1 ? 'ces éléments' : 'cet élément') + ', je planifie ta demande.</p>' + cases +
+      '<div class="cpbs__fin"><button class="cpb-btn cpd-btn" onclick="cpBesoinEnvoyer(\'' + pid + '\',\'' + t.id + '\')">Envoyer à Cindy</button></div></div>';
+  }
+  window.cpBesoinSaisie = function (k, v) { cpBesoinTxt[k] = v; };
+  window.cpBesoinFichier = function (pid, id, i, files) {
+    if (!files || !files.length) return;
+    cpBesoinFait[id + ':' + i] = 'fichier';
+    window.cpAccFichierTache(pid, id, files);
+  };
+  window.cpBesoinEnvoyer = function (pid, id) {
+    var t = cpAccT(pid, id); if (!t) return;
+    var l = cpBesoinsListe(t), textes = [];
+    var maj = l.map(function (b, i) {
+      var k = id + ':' + i, txt = String(cpBesoinTxt[k] || '').trim();
+      if (txt) textes.push(String(b.texte).charAt(0).toUpperCase() + String(b.texte).slice(1) + ' : ' + txt);
+      return { texte: b.texte, ok: !!(b.ok || cpBesoinFait[k] || txt) };
+    });
+    var reste = maj.filter(function (b) { return !b.ok; }).length;
+    if (!textes.length && maj.every(function (b, i) { return b.ok === !!l[i].ok; })) { toast('Dépose un fichier ou colle un texte avant d’envoyer', true); return; }
+    var props = Object.assign({}, t.properties || {}, { p_besoins: JSON.stringify(maj) });
+    if (!reste) props.p_clientbrief = 'Brief complet';
+    var envoi = textes.length
+      ? fetch(API_BASE + '/tasks/' + id + '/comments', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ projectId: pid, text: textes.join('\n\n') }) }).then(function (r) { return r.ok ? r.json() : Promise.reject(); })
+      : Promise.resolve(null);
+    envoi.then(function (c) {
+      if (c && c.id) { t.comments = (t.comments || []).concat([c]); }
+      return fetch(API_BASE + '/tasks/' + id, { method: 'PATCH', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ projectId: pid, properties: props }) });
+    }).then(function (r) {
+      if (!r.ok) throw new Error();
+      t.properties = props;
+      l.forEach(function (b, i) { delete cpBesoinTxt[id + ':' + i]; delete cpBesoinFait[id + ':' + i]; });
+      toast(reste ? 'Envoyé. Il me manque encore ' + reste + ' élément' + (reste > 1 ? 's' : '') + '.' : 'Merci, j’ai tout ce qu’il me faut pour commencer.');
+      renderShell();
+    }).catch(function () { toast('L’envoi n’a pas abouti. Réessaie dans un instant.', true); });
+  };
+
+  /* ── Cliente avec une seule offre : l'en-tête de sa page ──
+   * « Bonjour », une phrase d'état, ce qui l'attend (deux cartes au plus) et
+   * son forfait traduit en demandes qu'elle peut encore confier. */
+  window.cpAccVoirMontrer = function (pid, id) {
+    cpAccTab[pid] = 'cal'; cpAccVoir[pid] = id; cpAccRep = null;
+    var t = cpAccT(pid, id);
+    if (t && t.dueDate) { var d = new Date(t.dueDate); if (!isNaN(d)) { var m0 = new Date(d.getFullYear(), d.getMonth(), 1); m0.setHours(0, 0, 0, 0); cliCalMonth[pid] = m0; } }
+    renderShell();
+    setTimeout(function () { var el = document.querySelector('.cpv'); if (el && el.scrollIntoView) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }, 60);
+  };
+  function cpSeulManque(t) {
+    try { return JSON.parse((t.properties || {}).p_besoins || '[]').filter(function (x) { return x && !x.ok; }).map(function (x) { return String(x.texte || ''); }).filter(Boolean); } catch (e) { return []; }
+  }
+  function cpSeulActions(pd) {
+    var pid = pd.project.id, l = [];
+    (pd.project.tasks || []).forEach(function (t) {
+      if (t.archived) return;
+      var e = cpEtat(t); if (e.k !== 'toi') return;
+      var voir = "cpAccVoirMontrer('" + pid + "','" + t.id + "')";
+      if (e.l === 'À valider') l.push({ o: 0, t: t.title, d: 'un livrable à valider', cta: 'Voir et valider', fort: true, go: voir });
+      else if (e.l === 'Date à confirmer') l.push({ o: 1, t: t.title, d: 'une nouvelle date t’est proposée', cta: 'Répondre', fort: true, go: voir });
+      else if (e.l === 'Question pour toi') l.push({ o: 2, t: t.title, d: 'Cindy te pose une question', cta: 'Répondre', fort: false, go: voir });
+      else { var m = cpSeulManque(t); l.push({ o: 3, t: t.title, d: m.length ? 'il manque ' + m.slice(0, 2).join(' et ') + ' pour commencer' : 'il manque des éléments pour commencer', cta: 'Compléter', fort: false, go: voir }); }
+    });
+    (appData.questionnaires || []).forEach(function (q) {
+      if (q.status === 'completed') return;
+      l.push({ o: 4, t: q.name, d: q.status === 'in_progress' ? 'un questionnaire à terminer' : 'un questionnaire à remplir', cta: q.status === 'in_progress' ? 'Continuer' : 'Remplir', fort: false, go: "cpQnrFill('" + q.id + "')" });
+    });
+    return l.sort(function (a, b) { return a.o - b.o; });
+  }
+  var CP_SEUL_NOMS = {
+    'Visuels réseaux sociaux & communication digitale': ['visuel', 'visuels'],
+    'Mise en page de documents': ['mise en page', 'mises en page'],
+    'Mise à jour / optimisation de supports existants': ['mise à jour', 'mises à jour'],
+    'Ajustements & évolutions graphiques': ['ajustement', 'ajustements'],
+    'Déclinaison multi-formats / multi-canaux': ['déclinaison', 'déclinaisons'],
+    'Modèles réutilisables (templates)': ['modèle', 'modèles'],
+    'Conseil graphique & cohérence visuelle': ['conseil', 'conseils']
+  };
+  // « de quoi confier encore environ 4 visuels » : d'après le type qu'elle demande le plus.
+  function cpSeulDeQuoi(pd, reste) {
+    if (!(reste > 0)) return '';
+    var n = {}, top = '', max = 0;
+    (pd.project.tasks || []).forEach(function (t) { var k = t.missionType || (t.properties || {}).p_typemission || ''; if (CP_SEUL_NOMS[k]) { n[k] = (n[k] || 0) + 1; if (n[k] > max) { max = n[k]; top = k; } } });
+    if (!top) return '';
+    var d = cpAccDetail({ missionType: top }); if (!d || !d.tMax) return '';
+    var duree = d.tMin ? (d.tMin + d.tMax) / 2 : d.tMax, q = Math.floor(reste / duree);
+    if (q < 1) return '';
+    return 'de quoi confier encore environ ' + q + ' ' + CP_SEUL_NOMS[top][q > 1 ? 1 : 0];
+  }
+  function cpSeulPhrase(pd, acts) {
+    var nb = ['', 'Une chose t’attend.', 'Deux choses t’attendent.', 'Trois choses t’attendent.'];
+    var a = acts.length ? (nb[acts.length] || acts.length + ' choses t’attendent.') : 'Tout est à jour de ton côté.';
+    var auj = _todayStr();
+    var proch = (pd.project.tasks || []).filter(function (t) { return !t.archived && t.status !== 'done' && t.dueDate && t.dueDate.slice(0, 10) >= auj && cpEtat(t).k === 'cindy'; })
+      .sort(function (x, y) { return x.dueDate < y.dueDate ? -1 : 1; })[0];
+    if (!proch) return a;
+    var jour = new Date(proch.dueDate).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+    return a + ' Ta prochaine demande, « ' + (proch.title || 'Demande') + ' », est prévue pour le ' + jour + '.';
+  }
+  function cpSeulTete(pd) {
+    var p = pd.project, pid = p.id, first = String(appData.clientName || '').split(' ')[0];
+    var acts = cpSeulActions(pd), vis = acts.slice(0, 2);
+    var cartes = vis.map(function (a) {
+      return '<div class="cpo-carte"><div><span>' + esc(a.d) + '</span><b>' + esc(a.t || 'Demande') + '</b></div>' +
+        '<button class="cpb-btn' + (a.fort ? '' : ' cpo-btn--clair') + '" onclick="' + a.go + '">' + esc(a.cta) + '</button></div>';
+    }).join('');
+    var nums = cpForfaitNums(p), forf = '';
+    if (nums) {
+      var used = nums.doneMin + nums.wipMin, rest = nums.availMin - used, tot = Math.max(1, Math.round(nums.availMin / 60));
+      var deQuoi = cpSeulDeQuoi(pd, rest);
+      forf = '<div class="cpo-forf"><span>Ton forfait de ' + esc(new Date().toLocaleDateString('fr-FR', { month: 'long' })) + '</span>' +
+        '<b>' + (rest < 0 ? '−' : '') + esc(cpbMin(Math.abs(rest))) + ' <em>' + (rest < 0 ? 'au-delà du forfait' : 'restantes sur ' + esc(cpbMin(nums.availMin))) + '</em></b>' +
+        cpbSeg(Math.min(tot, Math.round(used / 60)), tot, false) +
+        (deQuoi ? '<p>' + esc(deQuoi) + '</p>' : '') +
+        '<a href="#" onclick="cpOpenStats();return false">Voir le temps passé</a></div>';
+    }
+    var plus = acts.length > 2 ? ' <button class="cpl-lien" onclick="cpAccSetFiltre(\'toi\')">Tout voir</button>' : '';
+    var cols = vis.length + (forf ? 1 : 0);
+    return '<header class="cpo-tete"><h1 class="cpb-h1">Bonjour ' + esc(first) + '</h1><p class="cpb-lead">' + esc(cpSeulPhrase(pd, acts)) + plus + '</p></header>' +
+      (cols ? '<div class="cpo-cartes cpo-cartes--' + cols + '">' + cartes + forf + '</div>' : '');
   }

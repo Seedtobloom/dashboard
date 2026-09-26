@@ -1409,4 +1409,40 @@ button.cpnd-j:hover { box-shadow: inset 0 0 0 1px #110704; }
 .cpt-rep__b { display: block; height: 12px; }
 .cpt-rep__b i { display: block; height: 100%; background: #CD8F6E; border-radius: 0 4px 4px 0; }
 .cpt-rep__l b { text-align: right; }
+
+/* Cliente avec une seule offre : en-tête de sa page (maquette « B en crème ») */
+@media (min-width: 901px) { .cpa-grille { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
+.cpa--seul { gap: 32px; }
+.cpo-tete .cpb-lead .cpl-lien { margin-left: 6px; }
+.cpo-cartes { display: grid; gap: 20px; }
+.cpo-cartes--1 { grid-template-columns: minmax(0, 460px); }
+.cpo-cartes--2 { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); }
+.cpo-cartes--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.cpo-carte { background: #F0E9D6; border-radius: 18px; padding: 24px 26px; display: flex; flex-direction: column; justify-content: space-between; gap: 22px; min-width: 0; }
+.cpo-carte span { display: block; font-size: 14px; color: #5A2A11; }
+.cpo-carte b { display: block; margin-top: 4px; font-family: 'Cormorant Garamond', var(--font-display), serif; font-weight: 400; font-size: 30px; line-height: 1.15; color: #110704; overflow-wrap: anywhere; }
+.cpo-carte .cpb-btn { align-self: flex-start; background: #110704; color: #F8F6F2; padding: 10px 20px; font-size: 14px; }
+.cpo-carte .cpb-btn.cpo-btn--clair { background: transparent; color: #110704; box-shadow: inset 0 0 0 1px #110704; }
+.cpo-forf { background: #fff; border-radius: 18px; box-shadow: 0 0 0 1px rgba(17,7,4,0.07), 0 2px 6px rgba(17,7,4,0.08); padding: 24px 26px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.cpo-forf > span { font-size: 14px; color: #7a5540; }
+.cpo-forf > b { font-family: 'Cormorant Garamond', var(--font-display), serif; font-weight: 400; font-size: 42px; line-height: 1; color: #110704; }
+.cpo-forf > b em { font-style: normal; font-size: 18px; color: #7a5540; }
+.cpo-forf p { margin: 2px 0 0; font-size: 14px; color: #3b2a20; }
+.cpo-forf a { font-size: 14px; color: #110704; }
+@media (max-width: 1100px) { .cpo-cartes--3 { grid-template-columns: 1fr 1fr; } .cpo-cartes--3 .cpo-forf { grid-column: 1 / -1; } }
+@media (max-width: 700px) { .cpo-cartes--2, .cpo-cartes--3 { grid-template-columns: 1fr; } }
+
+/* Panneau : boutons de décision plus visibles, « Ce dont j'ai besoin » */
+.cpv-btns .cpb-btn { padding: 13px 24px; font-size: 15px; }
+.cpbs-l > p { margin: 4px 0 12px; font-size: 14px; color: #3b2a20; }
+.cpbs { background: #fff; border-radius: 14px; box-shadow: 0 0 0 1px rgba(17,7,4,0.08); padding: 14px 16px; margin-bottom: 10px; }
+.cpbs__h { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.cpbs__h b { font-size: 15px; font-weight: 600; }
+.cpbs__h span { font-size: 13px; font-weight: 600; padding: 3px 10px; border-radius: 999px; background: #E6E5B2; color: #110704; white-space: nowrap; }
+.cpbs--ok .cpbs__h span { background: #F0E9D6; color: #5A2A11; }
+.cpbs__depot { display: block; margin-top: 12px; border: 1px dashed rgba(17,7,4,0.3); border-radius: 12px; padding: 16px; text-align: center; font-size: 14px; color: #5A2A11; cursor: pointer; }
+.cpbs__depot input { display: none; }
+.cpbs__depot:hover { background: #F8F6F2; }
+.cpbs__txt { display: block; width: 100%; box-sizing: border-box; margin-top: 8px; min-height: 64px; resize: vertical; border: 0; border-radius: 12px; background: #F8F6F2; padding: 12px 14px; font: 14px/1.5 var(--font-micro); color: #110704; }
+.cpbs__fin { display: flex; justify-content: flex-end; margin-top: 6px; }
 `;

@@ -1452,7 +1452,7 @@ async function handleTaskPatch(request: Request, env: Env, key: string, data: An
       if (t.status !== 'in_progress' && t.status !== 'review' && t.status !== 'done') t.status = 'todo';
       await saveClient(env, key, data);
       if (body.notify !== false) await notifyClient(env, data, `Demande acceptée · ${escHtml(t.title || '')}`,
-        `<p>Votre demande <strong>${escHtml(t.title || '')}</strong> a été acceptée et planifiée. Vous pourrez suivre son avancement dans votre espace.</p>`, key);
+        `<p>Votre demande <strong>${escHtml(t.title || '')}</strong> a été acceptée et planifiée. Vous pourrez suivre son avancement dans votre espace.</p>`, key, t.id, 'Voir ma demande');
       return json(t);
     }
     if (tri === 'hors_forfait') {
@@ -1584,7 +1584,7 @@ async function handleTaskPatch(request: Request, env: Env, key: string, data: An
       `<p>Je vous partage ${quelleVersion} de <strong>${titre}</strong>${avaitRetours ? ', mise à jour avec l’ensemble de vos derniers retours' : ''}.</p>` +
       `<p style="margin:20px 0"><a href="${escHtml(url)}" style="display:inline-block;background:#412F21;color:#F2E5C2;text-decoration:none;padding:12px 22px;border-radius:10px;font-weight:600">👉 Voir la nouvelle version</a></p>` +
       `<p>Vous pouvez la retrouver via le même lien que précédemment, qui reste inchangé.</p>` +
-      `<p>Je vous laisse la découvrir tranquillement ! Si tout vous convient, vous pourrez directement la valider depuis <a href="${escHtml(clientSpaceUrl(env))}" style="color:#412F21">votre espace</a>. Et si quelques ajustements sont encore nécessaires, vous pourrez également m’y transmettre vos retours.</p>` +
+      `<p>Je vous laisse la découvrir tranquillement ! Si tout vous convient, vous pourrez directement la valider depuis <a href="${escHtml(clientDemandeUrl(env, t.id))}" style="color:#412F21">votre espace</a>. Et si quelques ajustements sont encore nécessaires, vous pourrez également m’y transmettre vos retours.</p>` +
       `<p>Bien sûr, je reste disponible si vous avez la moindre question en la parcourant.</p>` +
       `<p>Belle journée à vous,<br>Cindy</p>`);
   }
@@ -1601,13 +1601,13 @@ async function handleTaskPatch(request: Request, env: Env, key: string, data: An
         `<p style="margin:18px 0"><a href="${escHtml(url)}" style="display:inline-block;background:#412F21;color:#F2E5C2;text-decoration:none;padding:12px 22px;border-radius:10px;font-weight:600">Vérifier le travail</a></p>` +
         `<p style="color:#8a6f54;font-size:13px">Retrouvez aussi ce lien et vos boutons de validation dans votre espace, sur la tâche concernée.</p>`;
     }
-    await notifyClient(env, data, `Tâche ${label} · ${escHtml(t.title || '')}`, bodyHtml);
+    await notifyClient(env, data, `Tâche ${label} · ${escHtml(t.title || '')}`, bodyHtml, key, t.id, body.status === 'review' ? 'Voir et valider' : 'Voir ma demande');
   }
   if (proposedNotify) {
     const frd = (t.proposedDueDate || '').split('-').reverse().join('/');
     await notifyClient(env, data, `Report d'échéance proposé · ${escHtml(t.title || '')}`,
       `<p>Cindy propose de reporter l'échéance de votre tâche <strong>${escHtml(t.title || '')}</strong> au <strong>${escHtml(frd)}</strong>.</p>` +
-      `<p>Connectez-vous à votre espace pour accepter cette nouvelle date.</p>`);
+      `<p>Connectez-vous à votre espace pour accepter cette nouvelle date.</p>`, key, t.id, 'Répondre');
   }
   return json(t);
 }
@@ -1623,7 +1623,7 @@ async function handleTaskComment(request: Request, env: Env, key: string, data: 
   // Répondre lève le marqueur « commentaire client non lu ».
   found.task.clientCommentNotif = false;
   await saveClient(env, key, data);
-  await notifyClient(env, data, `Commentaire · ${escHtml(found.task.title || '')}`, `<p>Cindy a commenté la tâche <strong>${escHtml(found.task.title || '')}</strong>.</p>`);
+  await notifyClient(env, data, `Commentaire · ${escHtml(found.task.title || '')}`, `<p>Cindy a commenté la tâche <strong>${escHtml(found.task.title || '')}</strong>.</p>`, key, found.task.id, 'Lire le commentaire');
   return json(comment, 201);
 }
 
@@ -1832,7 +1832,7 @@ async function handleUpload(request: Request, env: Env, key: string, data: AnyOb
       attachDeliverableParent(container, deliverable, taskId || null);
       await saveClient(env, key, data);
       if ((form.get('notify') as string) !== 'false') {
-        await notifyClient(env, data, 'Nouveau livrable à valider', `<p>Un nouveau livrable <strong>${escHtml(fileName)}</strong>${deliverable.taskTitle ? ` pour la tâche <em>${escHtml(deliverable.taskTitle)}</em>` : ''} est disponible dans votre espace. Merci de le valider ou de demander une révision.</p>`, key);
+        await notifyClient(env, data, 'Nouveau livrable à valider', `<p>Un nouveau livrable <strong>${escHtml(fileName)}</strong>${deliverable.taskTitle ? ` pour la tâche <em>${escHtml(deliverable.taskTitle)}</em>` : ''} est disponible dans votre espace. Merci de le valider ou de demander une révision.</p>`, key, deliverable.taskId || undefined, 'Voir et valider');
       }
     }
   }
@@ -1874,7 +1874,7 @@ async function handleDeliverableLink(request: Request, env: Env, key: string, da
   container.livrables.push(deliverable);
   await saveClient(env, key, data);
   if (body.notify !== false) {
-    await notifyClient(env, data, 'Nouveau livrable à valider', `<p>Un nouveau livrable <strong>${escHtml(name)}</strong>${deliverable.taskTitle ? ` pour la tâche <em>${escHtml(deliverable.taskTitle)}</em>` : ''} est disponible (lien) dans votre espace. Merci de le valider ou de demander une révision.</p>`, key);
+    await notifyClient(env, data, 'Nouveau livrable à valider', `<p>Un nouveau livrable <strong>${escHtml(name)}</strong>${deliverable.taskTitle ? ` pour la tâche <em>${escHtml(deliverable.taskTitle)}</em>` : ''} est disponible (lien) dans votre espace. Merci de le valider ou de demander une révision.</p>`, key, deliverable.taskId || undefined, 'Voir et valider');
   }
   return json({ deliverable }, 201);
 }
@@ -3391,13 +3391,17 @@ async function handleBackupRestore(request: Request, env: Env): Promise<Response
 function clientSpaceUrl(env: Env): string {
   return (env.SPACE_URL || 'https://dashboard.seedtobloom.fr').replace(/\/+$/, '') + '/';
 }
-async function notifyClient(env: Env, data: AnyObj, subject: string, bodyHtml: string, withLink?: boolean | string): Promise<void> {
+// Lien vers une demande précise : l'espace l'ouvre directement (après connexion).
+function clientDemandeUrl(env: Env, taskId: string): string {
+  return clientSpaceUrl(env) + '?demande=' + encodeURIComponent(taskId);
+}
+async function notifyClient(env: Env, data: AnyObj, subject: string, bodyHtml: string, withLink?: boolean | string, demande?: string, ctaLabel?: string): Promise<void> {
   const email = getClient(data).email;
   if (!email) return;
   let cta = '';
-  if (withLink) {
-    const link = clientSpaceUrl(env);
-    cta = `<div style="text-align:center;margin:24px 0 6px"><a href="${escHtml(link)}" style="display:inline-block;background:#1C1205;color:#F2E5C2;text-decoration:none;padding:13px 30px;border-radius:10px;font-size:15px;font-weight:600">Accéder à mon espace →</a><div style="color:#8a6f54;font-size:12px;margin-top:8px">Connectez-vous avec votre code d'accès.</div></div>`;
+  if (withLink || demande) {
+    const link = demande ? clientDemandeUrl(env, demande) : clientSpaceUrl(env);
+    cta = `<div style="text-align:center;margin:24px 0 6px"><a href="${escHtml(link)}" style="display:inline-block;background:#1C1205;color:#F2E5C2;text-decoration:none;padding:13px 30px;border-radius:10px;font-size:15px;font-weight:600">${escHtml(ctaLabel || 'Accéder à mon espace')}</a><div style="color:#8a6f54;font-size:12px;margin-top:8px">Connectez-vous avec votre code d'accès.</div></div>`;
   }
   const r = await sendEmail(env, email, subject, emailWrapper(subject, bodyHtml + cta));
   if (!r.ok) console.error('resend notifyClient', r.status, r.error);

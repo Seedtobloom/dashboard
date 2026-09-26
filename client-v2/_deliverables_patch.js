@@ -71,7 +71,7 @@
           }
         }
         renderShell();
-        if (decision === 'valide') { cpCelebrate('Livrable validé !', 'Bravo — Cindy est prévenue.'); }
+        if (decision === 'valide') { var _n = d && (d.taskTitle || d.name); toast((_n ? '« ' + _n + ' » est validé. ' : 'Livrable validé. ') + 'Merci, Cindy est prévenue.'); }
         else { toast('Révision demandée, Cindy est prévenue'); }
       })
       .catch(function(e){
