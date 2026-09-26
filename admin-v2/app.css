@@ -3382,5 +3382,16 @@ h1.cdhead__n{margin:0;font-weight:400;font-size:36px}
 .mdl2-et--q li{display:block}
 .mdl2-lv li{font-size:14px;padding:7px 12px;background:#fff;border-radius:9px;margin-top:6px}
 .mdl2-aide{margin:0 0 8px;font-size:14px;color:rgba(17,7,4,.58);line-height:1.45;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
-.mdl2-plus-q{border-top:1px solid #e9e5dc;padding-top:10px;font-size:14px;color:rgba(17,7,4,.58)}
 @media(max-width:1100px){.mdl2{grid-template-columns:1fr}.mdl2-d{padding:24px 20px}}
+.mdl2-som{display:flex;flex-direction:column;gap:8px;margin-top:26px}
+.mdl2-sp{background:#fff;border-radius:14px}
+.mdl2-sp__t{display:flex;align-items:center;gap:16px;width:100%;border:none;background:none;padding:14px 18px;text-align:left;cursor:pointer;color:#110704;border-radius:14px}
+.mdl2-sp__k{flex:none;width:30px;height:30px;border-radius:999px;background:#F8F6F2;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;font-variant-numeric:tabular-nums}
+.mdl2-sp.on .mdl2-sp__k{background:#110704;color:#F8F6F2}
+.mdl2-sp__n{flex:1;min-width:0;font-family:'Alegreya',Georgia,serif;font-size:19px}
+.mdl2-sp__c{font-size:14px;color:rgba(17,7,4,.58);white-space:nowrap}
+.mdl2-sp__s{width:14px;text-align:center;font-size:18px;color:rgba(17,7,4,.58)}
+.mdl2-sp__b{padding:0 18px 12px 64px}
+.mdl2-sp__a{margin:0 0 8px;font-size:14px;line-height:1.45;color:rgba(17,7,4,.58)}
+.mdl2-sp__q{list-style:none;margin:0;padding:0}
+.mdl2-sp__q li{padding:10px 0;border-top:1px solid #e9e5dc;font-size:15px;line-height:1.4}

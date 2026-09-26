@@ -12821,28 +12821,41 @@
   function mdlQnrDetail(t) {
     var i = esc(t.id), n = qnrCountBlocks(t);
     var used = (typeof t.usedCount === 'number') ? t.usedCount : ((t.assignments || []).length || 0);
-    var cols = (t.steps || []).map(function (st, k) {
-      var q = (st.blocks || []).filter(function (b) { return !qnrIsStatic(b.type); }).map(function (b) { return '<li>' + esc(b.label || 'Question sans intitulé') + '</li>'; }).join('');
-      return '<div class="mdl2-ph"><p class="mdl2-ph__k">Étape ' + (k + 1) + '</p><h3 class="mdl2-ph__n">' + esc(st.title || 'Sans titre') + '</h3>' + (q ? '<ul class="mdl2-et mdl2-et--q">' + q + '</ul>' : '<p class="mdl2-vide">Pas de question.</p>') + '</div>';
-    }).join('');
+    var parts = (t.steps || []).map(function (st) {
+      return { titre: st.title, aide: st.help, questions: (st.blocks || []).filter(function (b) { return !qnrIsStatic(b.type); }).map(function (b) { return b.label || 'Question sans intitulé'; }) };
+    });
+    var cols = mdlSommaire(parts, 'q:' + t.id);
     return mdlTete(t.name, n + ' question' + (n > 1 ? 's' : '') + ', ' + (used ? 'envoyé ' + used + ' fois' : 'jamais envoyé') + (t.archived ? ', archivé' : ''),
       '<button class="btn btn--outline" onclick="ADM.qnrPreview(\'' + i + '\')">Aperçu</button><button class="btn btn--outline" onclick="ADM.qnrOpen(\'' + i + '\')">Modifier</button><button class="btn" onclick="ADM.qnrAssignOpen(\'' + i + '\')">Envoyer à un client</button>',
       ckMenuHtml([['Dupliquer', 'ADM.qnrDup(\'' + i + '\')'], ['Exporter', 'ADM.qnrExportJson(\'' + i + '\')'], [t.archived ? 'Désarchiver' : 'Archiver', 'ADM.qnrArchive(\'' + i + '\')']], 'ADM.qnrDel(\'' + i + '\')')) +
-      (cols ? '<div class="mdl2-phs">' + cols + '</div>' : '<p class="mdl2-vide">Ce questionnaire est vide. Clique sur Modifier pour ajouter des questions.</p>');
+      (cols || '<p class="mdl2-vide">Ce questionnaire est vide. Clique sur Modifier pour ajouter des questions.</p>');
+  }
+  // Trames et questionnaires : le sommaire des parties, une seule ouverte à la fois.
+  var MDL_OUV = {};
+  function mdlSommaire(parts, cle) {
+    if (!parts.length) return '';
+    var ouv = MDL_OUV[cle];
+    if (ouv === undefined) { ouv = 0; for (var k = 0; k < parts.length; k++) if (parts[k].questions.length) { ouv = k; break; } }
+    return '<div class="mdl2-som">' + parts.map(function (x, k) {
+      var on = k === ouv, n = x.questions.length;
+      return '<div class="mdl2-sp' + (on ? ' on' : '') + '"><button class="mdl2-sp__t" aria-expanded="' + on + '" onclick="ADM.mdlPartie(\'' + esc(cle) + '\',' + (on ? -1 : k) + ')">' +
+        '<span class="mdl2-sp__k">' + (k + 1) + '</span><span class="mdl2-sp__n">' + esc(x.titre || 'Sans titre') + '</span>' +
+        '<span class="mdl2-sp__c">' + (n ? n + ' question' + (n > 1 ? 's' : '') : 'repère') + '</span><span class="mdl2-sp__s" aria-hidden="true">' + (on ? '–' : '+') + '</span></button>' +
+        (on ? '<div class="mdl2-sp__b">' + (x.aide ? '<p class="mdl2-sp__a">' + esc(x.aide) + '</p>' : '') + (n ? '<ul class="mdl2-sp__q">' + x.questions.map(function (q) { return '<li>' + esc(q) + '</li>'; }).join('') + '</ul>' : '') + '</div>' : '') + '</div>';
+    }).join('') + '</div>';
+  }
+  function mdlPartie(cle, k) {
+    MDL_OUV[cle] = k;
+    if (VIEW === 'questionnaires') renderQnrBody(); else if (VIEW === 'trames') renderVisiosBody();
   }
   function mdlTrameDetail(t) {
     var i = esc(t.id), secs = trameParse(t.content), nq = 0;
     secs.forEach(function (x) { nq += x.questions.length; });
-    var cols = secs.map(function (x, k) {
-      // Un aperçu, pas la trame entière : trois questions par partie, le reste se lit en l'ouvrant.
-      var q = x.questions.slice(0, 3).map(function (l) { return '<li>' + esc(l) + '</li>'; }).join('');
-      var reste = x.questions.length - 3;
-      return '<div class="mdl2-ph"><p class="mdl2-ph__k">Partie ' + (k + 1) + '</p><h3 class="mdl2-ph__n">' + esc(x.title || 'Sans titre') + '</h3>' + (x.hint ? '<p class="mdl2-aide">' + esc(x.hint) + '</p>' : '') + (q ? '<ul class="mdl2-et mdl2-et--q">' + q + '</ul>' : '') + (reste > 0 ? '<p class="mdl2-plus-q">et ' + reste + ' autre' + (reste > 1 ? 's' : '') + '</p>' : '') + '</div>';
-    }).join('');
+    var cols = mdlSommaire(secs.map(function (x) { return { titre: x.title, aide: x.hint, questions: x.questions }; }), 't:' + t.id);
     return mdlTete(trameTitleClean(t.title), secs.length + ' partie' + (secs.length > 1 ? 's' : '') + ', ' + nq + ' question' + (nq > 1 ? 's' : ''),
       '<button class="btn btn--outline" onclick="ADM.trameEditLib(\'' + i + '\')">Modifier</button><button class="btn" onclick="ADM.trameOpen(\'' + i + '\')">Ouvrir pendant un appel</button>',
       ckMenuHtml([], 'ADM.trameDel(\'' + i + '\')')) +
-      (cols ? '<div class="mdl2-phs">' + cols + '</div>' : '<p class="mdl2-vide">Cette trame est vide. Clique sur Modifier pour l’écrire.</p>');
+      (cols || '<p class="mdl2-vide">Cette trame est vide. Clique sur Modifier pour l’écrire.</p>');
   }
   function renderProjTpl() {
     setMain('<div class="wrap mdl">' + modelesTete('projtpl') + '<div id="prj-body" class="mdl2-d"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div></div></div>');
@@ -13122,7 +13135,7 @@
     tiroirFermer: ptFermer, ptOuvrir: ptOuvrir,
     mailCfgSave: mailCfgSave, kvProbe: kvProbe, kvReset: kvReset,
     qnrAdd: qnrAdd, qnrOpen: qnrOpen, qnrCloseDrawer: qnrCloseDrawer, qnrSet: qnrSet, qnrDup: qnrDup, qnrImportJson: qnrImportJson, qnrExportJson: qnrExportJson, qnrArchive: qnrArchive, qnrDel: qnrDel, qnrToggleArch: qnrToggleArch, qnrPreview: qnrPreview, qnrPreviewNav: qnrPreviewNav, qnrPreviewStart: qnrPreviewStart, qnrPreviewCover: qnrPreviewCover, rankDown: rankDown, qnrSmartImport: qnrSmartImport, qnrAssignOpen: qnrAssignOpen, qnrStepAdd: qnrStepAdd, qnrBulkRequire: qnrBulkRequire, qnrStepSet: qnrStepSet, qnrStepDel: qnrStepDel, qnrStepMove: qnrStepMove, qnrBlockAdd: qnrBlockAdd, qnrBlockSet: qnrBlockSet, qnrBlockChangeType: qnrBlockChangeType, qnrBlockOptions: qnrBlockOptions, qnrBlockDel: qnrBlockDel, qnrBlockMove: qnrBlockMove,
-    mdlChoisir: mdlChoisir, mdlNouveau: mdlNouveau, mdlArch: mdlArch, mdlReponses: mdlReponses,
+    mdlChoisir: mdlChoisir, mdlPartie: mdlPartie, mdlNouveau: mdlNouveau, mdlArch: mdlArch, mdlReponses: mdlReponses,
     prjAdd: prjAdd, prjSeed: prjSeed, prjOpen: prjOpen, prjCloseDrawer: prjCloseDrawer, prjSet: prjSet, prjDup: prjDup, prjArchive: prjArchive, prjDel: prjDel, prjToggleArch: prjToggleArch, prjAssignOpen: prjAssignOpen, prjPhaseAdd: prjPhaseAdd, prjPhaseSet: prjPhaseSet, prjPhaseDel: prjPhaseDel, prjPhaseMove: prjPhaseMove, prjStepAdd: prjStepAdd, prjStepSet: prjStepSet, prjStepDel: prjStepDel, prjDelivAdd: prjDelivAdd, prjDelivSet: prjDelivSet, prjDelivDel: prjDelivDel,
     incSeenAll: incSeenAll, incClear: incClear,
     sendMsg: sendMsg, loadAllDocs: loadAllDocs, docUploadToggle: docUploadToggle, setDocFilter: setDocFilter, filterAllDocs: filterAllDocs, upload: upload, delDoc: delDoc, lockDoc: lockDoc,
