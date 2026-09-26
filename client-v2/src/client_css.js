@@ -1475,4 +1475,15 @@ button.cpnd-j:hover { box-shadow: inset 0 0 0 1px #110704; }
 
 /* Pas d'animation d'entrée quand on reste sur la même page */
 .cp-sans-anim .fade-up { animation: none !important; }
+
+/* Cartes du calendrier, version B */
+.cpa-puce { padding: 9px 10px; border-radius: 10px; }
+.cpa-puce__t { font-size: 13.5px; }
+.cpa-puce__m { display: block; margin-top: 3px; font-size: 12px; line-height: 1.35; opacity: 0.85; }
+.cpa-puce__b { display: flex; justify-content: space-between; gap: 8px; margin-top: 7px; padding-top: 6px; border-top: 1px solid rgba(17,7,4,0.12); font-size: 12px; opacity: 0.85; }
+.cpa-puce--cindy .cpa-puce__b { border-top-color: rgba(248,246,242,0.22); }
+.cpa-puce__v { display: block; height: 54px; margin-bottom: 7px; border-radius: 7px; overflow: hidden; background: #E4D9C5; }
+.cpa-puce__v img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.cpa-puce--fait { color: #5A2A11; }
+.cpa-puce--fait .cpa-puce__t { color: #110704; }
 `;

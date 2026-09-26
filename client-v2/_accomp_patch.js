@@ -724,3 +724,32 @@
     return '<header class="cpo-tete"><h1 class="cpb-h1">Bonjour ' + esc(first) + '</h1><p class="cpb-lead">' + esc(cpSeulPhrase(pd, acts)) + plus + '</p></header>' +
       (cols ? '<div class="cpo-cartes cpo-cartes--' + cols + '">' + cartes + forf + '</div>' : '');
   }
+
+  /* ── Cartes du calendrier, version B : vignette, état et type, validation et temps ── */
+  var CP_TYPES_COURTS = {
+    'Visuels réseaux sociaux & communication digitale': 'Visuels réseaux',
+    'Mise en page de documents': 'Mise en page',
+    'Mise à jour / optimisation de supports existants': 'Mise à jour',
+    'Ajustements & évolutions graphiques': 'Ajustements',
+    'Déclinaison multi-formats / multi-canaux': 'Déclinaisons',
+    'Modèles réutilisables (templates)': 'Modèles',
+    'Conseil graphique & cohérence visuelle': 'Conseil'
+  };
+  function cpTypeCourt(t) {
+    var n = String(t.missionType || (t.properties || {}).p_typemission || '').trim();
+    if (!n) return '';
+    return CP_TYPES_COURTS[n] || n.split(/[\s/&]+/).slice(0, 2).join(' ');
+  }
+  function cpAccCarteDetail(pd, t, e) {
+    var dl = cpAccDlv(pd, t), dern = dl[dl.length - 1];
+    var vis = dern && dern.fileKey && /\.(png|jpe?g|webp|gif)$/i.test(dern.name || '')
+      ? '<span class="cpa-puce__v"><img src="' + API_BASE + '/files/' + encodeURIComponent(dern.fileKey) + '/download" alt="" loading="lazy" onerror="this.parentNode.remove()"></span>' : '';
+    var ty = cpTypeCourt(t);
+    var quand = '';
+    if (t.status === 'done') { var dv = (dern && dern.validatedAt) || t.completedAt; quand = dv ? 'validée le ' + fmtShort(dv) : 'terminée'; }
+    else if (e.l === 'En cours' || e.l === 'En révision') quand = e.l.toLowerCase();
+    var tps = t.timeSpentMinutes ? cpbMin(t.timeSpentMinutes) : '';
+    return vis + '<span class="cpa-puce__t">' + esc(t.title || 'Demande') + '</span>' +
+      '<span class="cpa-puce__m">' + esc(e.l + (ty ? ' · ' + ty : '')) + '</span>' +
+      ((quand || tps) ? '<span class="cpa-puce__b"><span>' + esc(quand) + '</span><span>' + esc(tps) + '</span></span>' : '');
+  }

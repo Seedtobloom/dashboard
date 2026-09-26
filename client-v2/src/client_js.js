@@ -2505,8 +2505,13 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       '<button onclick="cpAccReporter(\'' + pid + '\',\'' + t.id + '\',\'lundi\')">Lundi prochain</button>' +
       '<button onclick="cpAccReporter(\'' + pid + '\',\'' + t.id + '\',\'2sem\')">Dans 2 semaines</button>' +
       '<label>Choisir une date<input type="date" min="' + _todayStr() + '" onchange="cpAccReporter(\'' + pid + '\',\'' + t.id + '\',\'date\',this.value)"></label></div>') : '';
-    return '<span class="cpa-acts' + (dansCal ? ' cpa-acts--cal' : '') + '"><button onclick="event.stopPropagation();cliOpenTaskDrawer(\'' + pid + '\',\'' + t.id + '\')">Ouvrir</button>' +
-      '<button onclick="cpAccDupStart(event,\'' + pid + '\',\'' + t.id + '\')">Dupliquer</button>' +
+    var ida = '\'' + pid + '\',\'' + t.id + '\'';
+    // Dans le calendrier : date et urgence modifiables sur place tant que Cindy n'a pas commencé.
+    if (dansCal) return '<span class="cpa-acts cpa-acts--cal"><button onclick="event.stopPropagation();cliOpenTaskDrawer(' + ida + ')">Ouvrir</button>' +
+      (cpTabModifiable(t) ? '<button onclick="event.stopPropagation();cpTabDate(this,' + ida + ')">Date</button><button onclick="event.stopPropagation();cpTabUrg(this,' + ida + ')">Urgence</button>' : '') +
+      '<button onclick="cpAccDupStart(event,' + ida + ')">Dupliquer</button></span>';
+    return '<span class="cpa-acts"><button onclick="event.stopPropagation();cliOpenTaskDrawer(' + ida + ')">Ouvrir</button>' +
+      '<button onclick="cpAccDupStart(event,' + ida + ')">Dupliquer</button>' +
       '<button onclick="cpAccRepOuvrir(event,\'' + t.id + '\')">Reporter</button></span>' + menu;
   }
   function cpAccCal(pd) {
@@ -2539,7 +2544,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       var puces = jour.map(function (t) {
         var e = cpEtat(t), sel = cpAccVoir[pid] === t.id;
         return '<div class="cpa-puce cpa-puce--' + e.k + (sel ? ' sel' : '') + '" draggable="true" ondragstart="cliDragStart(event,\'' + t.id + '\')" onclick="event.stopPropagation();cpAccVoirOuvrir(\'' + pid + '\',\'' + t.id + '\')" title="' + esc(t.title + ' · ' + e.l) + '">' +
-          '<span class="cpa-puce__t">' + esc(t.title || 'Demande') + '</span>' + (dup ? '' : cpAccActions(pid, t, true, ds)) + '</div>';
+          cpAccCarteDetail(pd, t, e) + (dup ? '' : cpAccActions(pid, t, true, ds)) + '</div>';
       }).join('');
       var choisi = dup && dup.dates.indexOf(ds) >= 0;
       var clic = dup ? ((hol || passe) ? '' : ' onclick="cpAccDupJour(\'' + ds + '\')"') : '';
