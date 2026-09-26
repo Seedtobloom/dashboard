@@ -2415,6 +2415,8 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     if (st === 'done') return { k: 'fait', l: 'Terminée' };
     if (st === 'review') return { k: 'toi', l: 'À valider' };
     if (t.proposedDueDate) return { k: 'toi', l: 'Date à confirmer' };
+    var coms = Array.isArray(t.comments) ? t.comments : [];
+    if (coms.length && coms[coms.length - 1].author === 'studio' && st !== 'done') return { k: 'toi', l: 'Question pour toi' };
     if (t.needsRework) return { k: 'cindy', l: 'En révision' };
     if (st === 'in_progress') return { k: 'cindy', l: 'En cours' };
     if (pr.p_clientbrief === 'Brief en cours') return { k: 'toi', l: 'Brief à compléter' };
@@ -2521,7 +2523,8 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       if (t.archived) return false;
       var e = cpEtat(t);
       if (cpAccFiltre === 'toi') return e.k === 'toi';
-      if (cpAccFiltre === 'cindy') return e.k === 'cindy' || e.k === 'recue';
+      if (cpAccFiltre === 'cindy') return e.k === 'cindy';
+      if (cpAccFiltre === 'recue') return e.k === 'recue';
       return true;
     });
     var dup = cpAccDup && cpAccDup.pid === pid ? cpAccDup : null;
@@ -2535,8 +2538,8 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       var cindyJour = creneaux.some(function (c) { return c.indexOf(JOURS[dow]) === 0; });
       var num = ds === auj ? '<span class="cpa-auj">' + dd + '</span>' : '<span class="cpa-num">' + dd + '</span>';
       var puces = jour.map(function (t) {
-        var e = cpEtat(t), sel = cliSelTask[pid] === t.id;
-        return '<div class="cpa-puce cpa-puce--' + e.k + (sel ? ' sel' : '') + '" draggable="true" ondragstart="cliDragStart(event,\'' + t.id + '\')" onclick="event.stopPropagation();cliOpenTaskDrawer(\'' + pid + '\',\'' + t.id + '\')" title="' + esc(t.title + ' · ' + e.l) + '">' +
+        var e = cpEtat(t), sel = cpAccVoir[pid] === t.id;
+        return '<div class="cpa-puce cpa-puce--' + e.k + (sel ? ' sel' : '') + '" draggable="true" ondragstart="cliDragStart(event,\'' + t.id + '\')" onclick="event.stopPropagation();cpAccVoirOuvrir(\'' + pid + '\',\'' + t.id + '\')" title="' + esc(t.title + ' · ' + e.l) + '">' +
           '<span class="cpa-puce__t">' + esc(t.title || 'Demande') + '</span>' + (dup ? '' : cpAccActions(pid, t, true, ds)) + '</div>';
       }).join('');
       var choisi = dup && dup.dates.indexOf(ds) >= 0;
@@ -2549,63 +2552,17 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     }
     function f(v, l) { return '<button class="cpl-ong' + (cpAccFiltre === v ? ' on' : '') + '" onclick="cpAccSetFiltre(\'' + v + '\')">' + l + '</button>'; }
     var nToi = (p.tasks || []).filter(function (t) { return !t.archived && cpEtat(t).k === 'toi'; }).length;
-    var nCindy = (p.tasks || []).filter(function (t) { return !t.archived && (cpEtat(t).k === 'cindy' || cpEtat(t).k === 'recue'); }).length;
+    var nCindy = (p.tasks || []).filter(function (t) { return !t.archived && cpEtat(t).k === 'cindy'; }).length;
+    var nRecue = (p.tasks || []).filter(function (t) { return !t.archived && cpEtat(t).k === 'recue'; }).length;
     var tete = '<div class="cpa-calh"><div class="cpa-mois"><button onclick="cliCalNav(\'' + pid + '\',-1)" aria-label="Mois précédent">‹</button><span>' + esc(nomMois) + '</span><button onclick="cliCalNav(\'' + pid + '\',1)" aria-label="Mois suivant">›</button>' +
       '<button class="cpa-aujbtn" onclick="cliCalGoToday(\'' + pid + '\')">Aujourd’hui</button></div>' +
-      (dup ? '' : '<div class="cpl-ongs">' + f('tout', 'Toutes') + f('toi', 'À toi · ' + nToi) + f('cindy', 'Chez Cindy · ' + nCindy) + '</div>') + '</div>';
+      (dup ? '' : '<div class="cpl-ongs">' + f('tout', 'Toutes') + f('toi', 'À toi · ' + nToi) + f('cindy', 'Chez Cindy · ' + nCindy) + (nRecue ? f('recue', 'Reçues · ' + nRecue) : '') + '</div>') + '</div>';
     var noms = '<div class="cpa-grille cpa-grille--noms">' + ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi'].map(function (n) { return '<span>' + n + '</span>'; }).join('') + '</div>';
     return '<section class="cpb-carte cpa-cal" onclick="if(window.cpAccRepFermer)cpAccRepFermer()">' + tete + noms + '<div class="cpa-grille">' + cells.join('') + '</div></section>';
   }
   window.cpAccRepFermer = function () { if (cpAccRep) { cpAccRep = null; renderShell(); } };
-  function cpAccTableau(pd) {
-    var p = pd.project, pid = p.id, mk = _todayStr().slice(0, 7);
-    var actives = (p.tasks || []).filter(function (t) { return !t.archived; });
-    function ord(a, b) { var oa = (a.properties || {}).ordre, ob = (b.properties || {}).ordre; if (oa != null && ob != null && oa !== ob) return oa - ob; if (oa != null && ob == null) return -1; if (ob != null && oa == null) return 1; return String(a.dueDate || '9999').localeCompare(String(b.dueDate || '9999')); }
-    var G = [
-      ['toi', 'À toi', 'elles attendent ta réponse', actives.filter(function (t) { return cpEtat(t).k === 'toi'; })],
-      ['cindy', 'Chez Cindy', 'elle s’en occupe', actives.filter(function (t) { var k = cpEtat(t).k; return k === 'cindy' || k === 'recue'; })],
-      ['fait', 'Terminées ce mois', 'validées', actives.filter(function (t) { return cpEtat(t).k === 'fait' && String(t.completedAt || t.dueDate || '').slice(0, 7) === mk; })]
-    ];
-    var poignee = '<span class="cpa-poignee" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></span>';
-    var html = G.map(function (g) {
-      var ts = g[3].slice().sort(ord);
-      if (!ts.length) return '';
-      return '<div class="cpa-groupe"><div class="cpa-groupe__h"><h3>' + g[1] + '</h3><span>' + ts.length + ' demande' + (ts.length > 1 ? 's' : '') + ' · ' + g[2] + '</span></div>' +
-        ts.map(function (t) {
-          var e = cpEtat(t), n = (t.attachments || []).length, typ = t.missionType || (t.properties || {}).p_typemission || '';
-          var tm = t.timeSpentMinutes ? cpbMin(t.timeSpentMinutes) : '';
-          var date = t.dueDate ? ((t.startDate && t.startDate < t.dueDate) ? fmtShort(t.startDate) + ' → ' + fmtShort(t.dueDate) : fmtShort(t.dueDate)) : 'à planifier';
-          return '<div class="cpa-ligne" data-g="' + g[0] + '" data-id="' + t.id + '" draggable="true" ondragstart="cpAccRowStart(event,\'' + t.id + '\')" ondragover="cpAccRowOver(event,this)" ondrop="cpAccRowDrop(event,\'' + pid + '\',\'' + g[0] + '\',\'' + t.id + '\')" onclick="cliOpenTaskDrawer(\'' + pid + '\',\'' + t.id + '\')">' +
-            poignee + '<div class="cpa-ligne__m"><b>' + esc(t.title || 'Demande') + '</b>' + (typ ? '<span>' + esc(typ) + '</span>' : '') + '</div>' + cpAccPil(e) +
-            '<span>' + esc(date) + '</span><span class="num">' + esc(tm) + '</span><span>' + (n ? n + ' pièce' + (n > 1 ? 's' : '') : '') + '</span>' + cpAccActions(pid, t, false) + '</div>';
-        }).join('') + '</div>';
-    }).join('');
-    var br = Array.isArray(p.brouillons) ? p.brouillons : [];
-    if (br.length) html = '<div class="cpa-groupe"><div class="cpa-groupe__h"><h3>Tes brouillons</h3><span>' + br.length + ' · Cindy ne les voit pas encore</span></div>' +
-      br.map(function (b) {
-        return '<div class="cpa-brouillon"><div class="cpa-ligne__m"><b>' + esc(b.title || 'Demande sans nom') + '</b><span>' + esc(b.missionType || 'type à choisir') + '</span></div>' +
-          '<span>modifié le ' + esc(fmtShort(b.updatedAt)) + '</span>' +
-          '<span class="cpa-brouillon__a"><button class="cpl-lien" onclick="cpNDOpen(\'' + pid + '\',null,\'' + b.id + '\')">Reprendre</button><button class="cpl-lien" onclick="cpNDSupprimerBrouillon(\'' + pid + '\',\'' + b.id + '\')">Supprimer</button></span></div>';
-      }).join('') + '</div>' + html;
-    return '<section class="cpb-carte cpa-tab">' + (html || '<p>Aucune demande en cours.</p>') + '<div style="padding-top:12px"><a href="#" class="cpl-lien" onclick="cliNewDemande(\'' + pid + '\');return false">Ajouter une demande</a></div></section>';
-  }
-  function cpAccFinies(pd) {
-    var p = pd.project, pid = p.id;
-    var ts = (p.tasks || []).filter(function (t) { return t.archived || t.status === 'done'; });
-    if (!ts.length) return '<section class="cpb-calme">Pas encore de demande terminée.</section>';
-    var parMois = {};
-    ts.forEach(function (t) { var k = String(t.completedAt || t.dueDate || t.createdAt || '').slice(0, 7) || 'autre'; (parMois[k] = parMois[k] || []).push(t); });
-    return '<section class="cpb-carte" style="padding:12px 24px 16px">' + Object.keys(parMois).sort().reverse().map(function (k) {
-      var l = parMois[k], mins = l.reduce(function (s, t) { return s + (t.timeSpentMinutes || 0); }, 0);
-      var titre = k === 'autre' ? 'Sans date' : new Date(k + '-01T12:00:00').toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
-      return '<div class="cpa-groupe"><div class="cpa-groupe__h"><h3>' + esc(titre.charAt(0).toUpperCase() + titre.slice(1)) + '</h3><span>' + l.length + ' demande' + (l.length > 1 ? 's' : '') + (mins ? ' · ' + cpbMin(mins) : '') + '</span></div>' +
-        l.map(function (t) {
-          return '<div class="cpa-fini"><b>' + esc(t.title || 'Demande') + '</b><span>' + (t.archived && t.status !== 'done' ? 'archivée' : 'terminée' + (t.completedAt ? ' le ' + fmtShort(t.completedAt) : '')) + '</span><span class="num">' + (t.timeSpentMinutes ? esc(cpbMin(t.timeSpentMinutes)) : '') + '</span>' +
-            '<div class="cpa-fini__a"><button class="cpl-lien" onclick="cliOpenTaskDrawer(\'' + pid + '\',\'' + t.id + '\')">Ouvrir</button><button class="cpl-lien" onclick="cliPatchTask(\'' + pid + '\',\'' + t.id + '\',{status:\'todo\',archived:false})">Rouvrir</button><button class="cpl-lien" onclick="cpAccDupStart(event,\'' + pid + '\',\'' + t.id + '\')">Dupliquer</button></div></div>';
-        }).join('') + '</div>';
-    }).join('') + '</section>';
-  }
   function cpAccompPage(pd) {
+    var route = cpAccRoute(pd); if (route) return route;
     var p = pd.project, pid = p.id, tab = cpAccTab[pid] || 'cal';
     var nums = cpForfaitNums(p);
     var forf = '';
@@ -2614,9 +2571,9 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var slots = (Array.isArray(p.workSlots) ? p.workSlots : []);
     var cren = slots.length ? '<div class="cpa-cren"><span>Cindy travaille pour toi</span><b>' + esc(slots.map(function (s) { return String(s.day || '').toLowerCase() + (s.from ? ' de ' + String(s.from).replace(':', ' h ').replace(' h 00', ' h') + (s.to ? ' à ' + String(s.to).replace(':', ' h ').replace(' h 00', ' h') : '') : ''); }).join(', ')) + '</b></div>' : '';
     var bande = (forf || cren) ? '<section class="cpb-carte cpa-bande">' + forf + cren + '<a href="#" onclick="cpOpenStats();return false">Voir le temps passé</a></section>' : '';
-    var nFin = (p.tasks || []).filter(function (t) { return t.archived || t.status === 'done'; }).length;
+    var nFin = (p.tasks || []).filter(function (t) { return t.status === 'done' && !cpAccEstArchivee(t); }).length;
     function o(v, l) { return '<button class="cpl-ong' + (tab === v ? ' on' : '') + '" onclick="cpAccSetTab(\'' + pid + '\',\'' + v + '\')">' + l + '</button>'; }
-    var onglets = '<div class="cpa-ongs"><div class="cpl-ongs">' + o('cal', 'Calendrier') + o('tableau', 'Tableau') + o('fini', 'Terminées' + (nFin ? ' · ' + nFin : '')) + '</div>' +
+    var onglets = '<div class="cpa-ongs"><div class="cpl-ongs">' + o('cal', 'Calendrier') + o('tableau', 'Tableau') + o('fini', 'Terminées' + (nFin ? ' · ' + nFin : '')) + o('notes', 'Notes') + '</div>' +
       ((p.brouillons || []).length && tab !== 'tableau' ? '<button class="cpl-lien" onclick="cpAccSetTab(\'' + pid + '\',\'tableau\')">Tes brouillons · ' + p.brouillons.length + '</button>' : '') +
       '<span class="cpa-leg">en paille : à toi · en noir : chez Cindy · en crème : terminé · contour : reçue</span></div>';
     var dupBande = '';
@@ -2626,13 +2583,14 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
         '<div class="cpb-hero__a"><span>' + (n ? n + ' date' + (n > 1 ? 's' : '') : 'aucune date') + '</span><button class="cpb-btn cpb-btn--ghost" onclick="cpAccDupStop()">Annuler</button>' +
         '<button class="cpb-btn cpb-btn--light"' + (n ? '' : ' disabled') + ' onclick="cpAccDupCreer()">' + (n > 1 ? 'Créer ' + n + ' copies' : 'Créer la copie') + '</button></div></section>';
     }
-    var corps = tab === 'tableau' ? cpAccTableau(pd) : (tab === 'fini' ? cpAccFinies(pd) : cpAccCal(pd));
+    var voir = tab === 'cal' && cpAccVoir[pid] && !(cpAccDup && cpAccDup.pid === pid) ? cpAccApercu(pd, cpAccVoir[pid]) : '';
+    var corps = tab === 'tableau' ? cpAccTableau2(pd) : (tab === 'fini' ? cpAccFinies2(pd) : (tab === 'notes' ? cpAccNotes(pd) : (voir ? '<div class="cpa-calv">' + cpAccCal(pd) + voir + '</div>' : cpAccCal(pd))));
     return '<div class="cp-home cpb"><div class="cpb__in cpa fade-up">' +
       '<header class="cpa-tete"><div><a href="#" class="cpe-retour" onclick="cpGoHome();return false">Accueil</a><h1 class="cpb-h1">' + esc(p.projectTitle || 'Accompagnement créatif') + '</h1>' +
         '<p class="cpb-lead">Tes demandes du mois. Glisse une demande pour changer sa date, clique sur un jour pour en ajouter une.</p></div>' +
         '<button class="cpb-btn" style="background:#110704;color:#F8F6F2" onclick="cliNewDemande(\'' + pid + '\')">Nouvelle demande</button></header>' +
       bande + (dupBande || onglets) + corps +
-    '</div></div>' + (cliSelTask[pid] ? '<div class="cpa-panneau">' + buildPartTaskDrawer(pid, p.tasks || [], pd.files || [], p) + '</div>' : '');
+    '</div></div>';
   }
   function buildProjectView(pd) {
     if (!pd) return '<div class="cp-empty">Projet introuvable.</div>';
@@ -6093,7 +6051,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
           var t = (pd.project.tasks||[]).find(function(x){return x.id===taskId;});
           if (t) { if(!Array.isArray(t.comments)) t.comments=[]; t.comments.push(comment); }
         }
-        toast('Commentaire ajouté ✓');
+        toast('Message envoyé');
         renderShell();
       })
       .catch(function(){ toast('Erreur, réessaie.'); });

@@ -52,6 +52,7 @@ const inboxPatch = read('_inbox_patch.js');
 const feedbackPatch = read('_feedback_patch.js');
 const maintenancePatch = read('_maintenance_patch.js');
 const demandePatch = read('_demande_patch.js');
+const accompPatch = read('_accomp_patch.js');
 
 // var -> const (réutilisables tels quels comme constantes du worker)
 css = css.replace(/^var CLIENT_CSS =/, 'const CLIENT_CSS =');
@@ -261,7 +262,7 @@ js = js.replace(
 // Injecte les greffes (login + chat + livrables) juste avant le boot (loadCpColors();)
 const anchor = js.match(/\n[ \t]*loadCpColors\(\);/);
 must(!!anchor, 'anchor loadCpColors');
-js = js.replace(anchor[0], '\n' + patch + '\n' + chatPatch + '\n' + livPatch + '\n' + taskDlvPatch + '\n' + blocksPatch + '\n' + drawerPatch + '\n' + inboxPatch + '\n' + feedbackPatch + '\n' + maintenancePatch + '\n' + demandePatch + anchor[0]);
+js = js.replace(anchor[0], '\n' + patch + '\n' + chatPatch + '\n' + livPatch + '\n' + taskDlvPatch + '\n' + blocksPatch + '\n' + drawerPatch + '\n' + inboxPatch + '\n' + feedbackPatch + '\n' + maintenancePatch + '\n' + demandePatch + '\n' + accompPatch + anchor[0]);
 
 // ── Verrou « en préparation » : le contenu du projet est remplacé par un message ──
 must(js.indexOf("var project = pd.project, messages = pd.messages, files = pd.files;") !== -1, 'project view maintenance');
