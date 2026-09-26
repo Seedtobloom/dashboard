@@ -12758,7 +12758,7 @@
     var piedQ = '<div class="mdl2-pied"><button class="tps-lien" onclick="ADM.qnrImportJson()">Importer</button>' +
       (nRep ? '<button class="tps-lien' + (VIEW === 'questionnaires' && QNR_TAB === 'reponses' ? ' mdl2-lon' : '') + '" onclick="ADM.mdlReponses()">Les réponses, ' + nRep + '</button>' : '') + '</div>';
     return fam('projtpl', 'Projets', 'les étapes et les livrables d’une offre', prj, np, ['Nouveau modèle de projet', 'ADM.mdlNouveau(\'projtpl\')'], PRJ_LOADED, piedP) +
-      fam('questionnaires', 'Questionnaires', 'envoyés à tes clients', qnr, nq, ['Nouveau questionnaire', 'ADM.mdlNouveau(\'questionnaires\')'], QNR_LOADED, piedQ) +
+      fam('questionnaires', 'Questionnaires', 'envoyés à tes clients', qnr, nq, ['Nouveau questionnaire, avec l’assistant', 'ADM.mdlNouveau(\'questionnaires\')'], QNR_LOADED, piedQ) +
       fam('trames', 'Trames d’appel', 'suivies pendant la visio', trm, nt, ['Nouvelle trame', 'ADM.mdlNouveau(\'trames\')'], TRAMES_LOADED) +
       (nArch ? '<button class="tps-lien mdl2-arch" onclick="ADM.mdlArch()">' + (MDL_ARCH ? 'Masquer' : 'Voir') + ' les archivés [' + nArch + ']</button>' : '');
   }
@@ -12773,7 +12773,7 @@
   function mdlNouveau(vue) {
     // Jamais avant la fin du chargement : on écraserait la liste enregistrée.
     if (!(vue === 'projtpl' ? PRJ_LOADED : vue === 'questionnaires' ? QNR_LOADED : TRAMES_LOADED)) { toast('Un instant, chargement en cours'); return; }
-    if (vue === 'projtpl') prjAdd(); else if (vue === 'questionnaires') qnrAdd(); else { trameNew(); mdlEdOuvrir('trames', VIS_TRAME_OPEN); }
+    if (vue === 'projtpl') prjAdd(); else if (vue === 'questionnaires') asOuvrir(); else { trameNew(); mdlEdOuvrir('trames', VIS_TRAME_OPEN); }
   }
   function mdlArch() { MDL_ARCH = !MDL_ARCH; mdlNavMaj(); }
   function mdlReponses() { QNR_TAB = 'reponses'; if (VIEW !== 'questionnaires') nav('questionnaires'); else { mdlNavMaj(); renderQnrBody(); } }
@@ -12829,6 +12829,7 @@
   }
   function mdlEdFermer() {
     var v = MDL_ED ? MDL_ED.vue : VIEW;
+    if (v === 'assistant') v = 'questionnaires';
     MDL_ED = null; PRJ_SEL = null; QNR_SEL = null;
     VIS_TRAME_OPEN = null; CALL_TRAME_EDIT = false; TRAME_ED.id = null;
     nav(v);
@@ -12844,6 +12845,7 @@
     var y = window.scrollY, h = '';
     if (MDL_ED.vue === 'projtpl') { var t = prjTpl(MDL_ED.id); if (t) h = mdlEdProjet(t); }
     else if (MDL_ED.vue === 'questionnaires') { var q = qnrTpl(MDL_ED.id); if (q) h = mdlEdQnr(q); }
+    else if (MDL_ED.vue === 'assistant') { if (AS) h = mdlEdAssistant(); }
     else { var tr = tramesGet().filter(function (x) { return x.id === MDL_ED.id; })[0]; if (tr) h = mdlEdTrame(tr); }
     if (!h) { mdlEdFermer(); return; }
     setMain('<div class="wrap mdl mdle">' + h + '</div>');
@@ -12868,6 +12870,166 @@
     return '<section class="mdle-c"><div class="mdle-c__h"><div class="mdle-c__g"><p class="mdle-k">' + k + '</p>' + champ + '</div>' + (menu || '') + '</div>' + corps + mdlEdSuite(items) + '</section>';
   }
   function mdlEdN(n, un, plusieurs) { return n + ' ' + (n > 1 ? plusieurs : un); }
+
+  /* ── L'assistant questionnaire (maquette A2) : pas d'IA, une bibliothèque
+   * de questions rangées par sujet, assemblées selon les critères. Chaque
+   * sujet a trois emplacements, chacun avec deux formulations (tu / vous).
+   * « Une autre proposition » change de formulation partout ; « Autre » sur
+   * une seule question. Le résultat devient un questionnaire ordinaire. ── */
+  var AS_PROJETS = [['site', 'Site internet'], ['identite', 'Identité visuelle'], ['print', 'Support print'], ['partenaire', 'Partenaire créative']];
+  var AS_MOMENTS = [['devis', 'Avant le devis'], ['demarrage', 'Au démarrage'], ['brief', 'Brief d’une création'], ['bilan', 'Bilan de fin']];
+  var AS_DUREES = [[1, '5 min'], [2, '10 min'], [3, '20 min']];
+  var AS_SUJETS = [['activite', 'Son activité', 'Ton activité', 'Votre activité'], ['cible', 'Sa cible', 'Tes clients', 'Vos clients'], ['concurrents', 'Ses concurrents', 'Tes concurrents', 'Vos concurrents'],
+    ['style', 'Le style visuel', 'Le style', 'Le style'], ['contenus', 'Les contenus', 'Les contenus', 'Les contenus'], ['budget', 'Le budget', 'Le budget', 'Le budget'],
+    ['planning', 'Le planning', 'Le planning', 'Le planning'], ['valide', 'Qui valide', 'La validation', 'La validation'], ['technique', 'Les contraintes techniques', 'Les contraintes', 'Les contraintes']];
+  var AS_SUJETS_BILAN = [['ressenti', 'Son ressenti', 'Ton ressenti', 'Votre ressenti'], ['plu', 'Ce qui a plu', 'Ce qui t’a plu', 'Ce qui vous a plu'], ['ameliorer', 'Ce qui peut s’améliorer', 'À améliorer', 'À améliorer'], ['temoignage', 'Un témoignage', 'Un mot pour la suite', 'Un mot pour la suite']];
+  var AS_STYLE_MOTS = ['Chaleureux', 'Sobre', 'Élégant', 'Naturel', 'Joyeux', 'Haut de gamme', 'Accessible', 'Engagé'];
+  // [type, tu, vous, options]
+  var AS_BANQUE = {
+    activite: [
+      [['short', 'Présente ton activité en une phrase.', 'Présentez votre activité en une phrase.'], ['long', 'Qu’est-ce que tu fais, pour qui, et comment ?', 'Que faites-vous, pour qui, et comment ?']],
+      [['long', 'Qu’est-ce qui te distingue des autres dans ton domaine ?', 'Qu’est-ce qui vous distingue des autres dans votre domaine ?'], ['long', 'Pourquoi tes clients te choisissent-ils, selon toi ?', 'Pourquoi vos clients vous choisissent-ils, selon vous ?']],
+      [['long', 'Où en est ton activité aujourd’hui, et où veux-tu l’emmener ?', 'Où en est votre activité aujourd’hui, et où voulez-vous l’emmener ?'], ['long', 'Quelles valeurs comptent le plus pour toi dans ton travail ?', 'Quelles valeurs comptent le plus pour vous dans votre travail ?']]
+    ],
+    cible: [
+      [['long', 'À qui t’adresses-tu en priorité ?', 'À qui vous adressez-vous en priorité ?'], ['long', 'Décris ton client idéal en quelques mots.', 'Décrivez votre client idéal en quelques mots.']],
+      [['short', 'Que doit retenir quelqu’un qui découvre ton travail pour la première fois ?', 'Que doit retenir quelqu’un qui découvre votre travail pour la première fois ?'], ['long', 'Qu’est-ce qui décide tes clients à passer à l’action ?', 'Qu’est-ce qui décide vos clients à passer à l’action ?']],
+      [['long', 'Quelles questions tes clients te posent-ils le plus souvent ?', 'Quelles questions vos clients vous posent-ils le plus souvent ?'], ['long', 'Qu’est-ce qui pourrait les faire hésiter ?', 'Qu’est-ce qui pourrait les faire hésiter ?']]
+    ],
+    concurrents: [
+      [['long', 'Cite deux ou trois concurrents, et ce que tu penses de leur image.', 'Citez deux ou trois concurrents, et ce que vous pensez de leur image.'], ['long', 'Qui fait un travail proche du tien ?', 'Qui fait un travail proche du vôtre ?']],
+      [['long', 'Qu’est-ce que tu aimes, ou pas, dans leur communication ?', 'Qu’est-ce que vous aimez, ou pas, dans leur communication ?'], ['long', 'De qui veux-tu absolument te démarquer ?', 'De qui voulez-vous absolument vous démarquer ?']],
+      [['url', 'Un lien vers un concurrent dont l’image te parle ?', 'Un lien vers un concurrent dont l’image vous parle ?'], ['url', 'Un site que tu trouves réussi dans ton secteur ?', 'Un site que vous trouvez réussi dans votre secteur ?']]
+    ],
+    style: [
+      [['multi', 'Quels mots décrivent l’image que tu veux donner ?', 'Quels mots décrivent l’image que vous voulez donner ?', AS_STYLE_MOTS], ['long', 'En trois mots, quelle impression veux-tu laisser ?', 'En trois mots, quelle impression voulez-vous laisser ?']],
+      [['file', 'As-tu des exemples de visuels que tu aimes ?', 'Avez-vous des exemples de visuels que vous aimez ?'], ['long', 'Des couleurs ou des styles à éviter absolument ?', 'Des couleurs ou des styles à éviter absolument ?']],
+      [['long', 'Y a-t-il des éléments de ton image actuelle à garder ?', 'Y a-t-il des éléments de votre image actuelle à garder ?'], ['url', 'Un lien vers une marque dont tu aimes l’univers ?', 'Un lien vers une marque dont vous aimez l’univers ?']]
+    ],
+    contenus: [
+      [['long', 'Quels textes et visuels sont déjà prêts ?', 'Quels textes et visuels sont déjà prêts ?'], ['single', 'Qui s’occupe des textes ?', 'Qui s’occupe des textes ?', ['Moi', 'Toi, Cindy', 'On en parle']]],
+      [['file', 'Tu peux déposer ici ce que tu as déjà : textes, photos, logo.', 'Vous pouvez déposer ici ce que vous avez déjà : textes, photos, logo.'], ['single', 'As-tu des photos utilisables ?', 'Avez-vous des photos utilisables ?', ['Oui, de bonne qualité', 'Quelques-unes', 'Non, il en faudra']]],
+      [['long', 'Quel est le message le plus important à faire passer ?', 'Quel est le message le plus important à faire passer ?'], ['long', 'Des informations obligatoires à faire figurer ?', 'Des informations obligatoires à faire figurer ?']]
+    ],
+    budget: [
+      [['single', 'Quel budget envisages-tu ?', 'Quel budget envisagez-vous ?', ['Moins de 1 000 €', '1 000 à 3 000 €', '3 000 à 6 000 €', 'Plus de 6 000 €', 'Je ne sais pas encore']], ['short', 'As-tu une enveloppe en tête pour ce projet ?', 'Avez-vous une enveloppe en tête pour ce projet ?']],
+      [['single', 'Préfères-tu régler en une fois ou en plusieurs ?', 'Préférez-vous régler en une fois ou en plusieurs ?', ['En une fois', 'En plusieurs fois', 'Peu importe']], ['long', 'Y a-t-il des frais à prévoir en plus (impression, photos, hébergement) ?', 'Y a-t-il des frais à prévoir en plus (impression, photos, hébergement) ?']],
+      [['long', 'Qu’est-ce qui compte le plus pour toi : le délai, le prix ou le niveau de finition ?', 'Qu’est-ce qui compte le plus pour vous : le délai, le prix ou le niveau de finition ?'], ['long', 'As-tu déjà travaillé avec une graphiste ? Comment ça s’est passé ?', 'Avez-vous déjà travaillé avec une graphiste ? Comment ça s’est passé ?']]
+    ],
+    planning: [
+      [['date', 'Pour quelle date as-tu besoin du résultat ?', 'Pour quelle date avez-vous besoin du résultat ?'], ['date', 'Y a-t-il une échéance à ne pas manquer ?', 'Y a-t-il une échéance à ne pas manquer ?']],
+      [['long', 'Y a-t-il des périodes où tu seras moins disponible ?', 'Y a-t-il des périodes où vous serez moins disponible ?'], ['short', 'Quand pourras-tu m’envoyer les contenus ?', 'Quand pourrez-vous m’envoyer les contenus ?']],
+      [['single', 'Combien de temps te faut-il en général pour relire et répondre ?', 'Combien de temps vous faut-il en général pour relire et répondre ?', ['Un jour', 'Deux ou trois jours', 'Une semaine']], ['long', 'Ce projet dépend-il d’un autre calendrier (salon, lancement, saison) ?', 'Ce projet dépend-il d’un autre calendrier (salon, lancement, saison) ?']]
+    ],
+    valide: [
+      [['short', 'Qui valide les créations de ton côté ?', 'Qui valide les créations de votre côté ?'], ['single', 'Tu valides seul·e ou avec d’autres personnes ?', 'Validez-vous seul·e ou avec d’autres personnes ?', ['Seul·e', 'À deux', 'À plusieurs']]],
+      [['long', 'Quelqu’un d’autre doit-il donner son avis avant la validation ?', 'Quelqu’un d’autre doit-il donner son avis avant la validation ?'], ['short', 'Qui sera mon interlocuteur principal ?', 'Qui sera mon interlocuteur principal ?']],
+      [['long', 'Comment préfères-tu faire tes retours : par écrit, en visio, ou les deux ?', 'Comment préférez-vous faire vos retours : par écrit, en visio, ou les deux ?'], ['long', 'Y a-t-il des étapes de validation internes à prévoir ?', 'Y a-t-il des étapes de validation internes à prévoir ?']]
+    ],
+    technique: [
+      [['long', 'Y a-t-il des contraintes techniques à connaître ?', 'Y a-t-il des contraintes techniques à connaître ?'], ['long', 'Des outils ou formats imposés ?', 'Des outils ou formats imposés ?']],
+      [['long', 'Qui s’occupera de la suite une fois le projet livré ?', 'Qui s’occupera de la suite une fois le projet livré ?'], ['file', 'As-tu une charte ou des fichiers sources à me transmettre ?', 'Avez-vous une charte ou des fichiers sources à me transmettre ?']],
+      [['long', 'Des règles à respecter (mentions légales, accessibilité, marque) ?', 'Des règles à respecter (mentions légales, accessibilité, marque) ?'], ['long', 'Autre chose que je dois savoir avant de commencer ?', 'Autre chose que je dois savoir avant de commencer ?']]
+    ],
+    ressenti: [
+      [['rating', 'Sur l’ensemble du projet, quelle note donnerais-tu ?', 'Sur l’ensemble du projet, quelle note donneriez-vous ?'], ['long', 'Comment as-tu vécu notre collaboration ?', 'Comment avez-vous vécu notre collaboration ?']],
+      [['long', 'Le résultat correspond-il à ce que tu imaginais ?', 'Le résultat correspond-il à ce que vous imaginiez ?'], ['single', 'Les délais t’ont-ils convenu ?', 'Les délais vous ont-ils convenu ?', ['Oui', 'Plutôt oui', 'Pas vraiment']]],
+      [['long', 'Qu’est-ce que ce projet a changé pour toi ?', 'Qu’est-ce que ce projet a changé pour vous ?'], ['long', 'Un moment qui t’a marqué pendant le projet ?', 'Un moment qui vous a marqué pendant le projet ?']]
+    ],
+    plu: [
+      [['long', 'Qu’est-ce qui t’a le plus plu ?', 'Qu’est-ce qui vous a le plus plu ?'], ['long', 'De quoi es-tu le plus fier ou la plus fière dans le résultat ?', 'De quoi êtes-vous le plus fier ou la plus fière dans le résultat ?']],
+      [['long', 'Qu’est-ce qui t’a rassuré pendant le projet ?', 'Qu’est-ce qui vous a rassuré pendant le projet ?'], ['long', 'Qu’en disent tes clients ou ton entourage ?', 'Qu’en disent vos clients ou votre entourage ?']],
+      [['long', 'Qu’est-ce que tu garderais tel quel si c’était à refaire ?', 'Qu’est-ce que vous garderiez tel quel si c’était à refaire ?'], ['long', 'Un mot pour décrire le résultat ?', 'Un mot pour décrire le résultat ?']]
+    ],
+    ameliorer: [
+      [['long', 'Qu’est-ce que j’aurais pu faire mieux ?', 'Qu’est-ce que j’aurais pu faire mieux ?'], ['long', 'Y a-t-il eu un moment moins fluide ?', 'Y a-t-il eu un moment moins fluide ?']],
+      [['long', 'L’espace client t’a-t-il été utile ? Qu’est-ce qui manquait ?', 'L’espace client vous a-t-il été utile ? Qu’est-ce qui manquait ?'], ['long', 'Les échanges étaient-ils assez clairs ?', 'Les échanges étaient-ils assez clairs ?']],
+      [['long', 'De quoi aurais-tu besoin pour la suite ?', 'De quoi auriez-vous besoin pour la suite ?'], ['long', 'Un conseil pour mes prochains clients ?', 'Un conseil pour mes prochains clients ?']]
+    ],
+    temoignage: [
+      [['long', 'Accepterais-tu d’écrire quelques lignes sur notre collaboration ?', 'Accepteriez-vous d’écrire quelques lignes sur notre collaboration ?'], ['long', 'Si tu devais me recommander, que dirais-tu ?', 'Si vous deviez me recommander, que diriez-vous ?']],
+      [['single', 'Puis-je publier ton témoignage avec ton prénom ?', 'Puis-je publier votre témoignage avec votre prénom ?', ['Oui', 'Oui, sans mon nom', 'Non']], ['single', 'Puis-je montrer ce projet dans mon portfolio ?', 'Puis-je montrer ce projet dans mon portfolio ?', ['Oui', 'Oui, plus tard', 'Non']]],
+      [['long', 'Connais-tu quelqu’un à qui mon travail pourrait servir ?', 'Connaissez-vous quelqu’un à qui mon travail pourrait servir ?'], ['long', 'Un projet à venir dont tu aimerais parler ?', 'Un projet à venir dont vous aimeriez parler ?']]
+    ]
+  };
+  // Une question propre à chaque type de projet, glissée dans le bon sujet.
+  var AS_PROJET_Q = {
+    site: { contenus: ['long', 'Quelles pages imagines-tu sur ton site ?', 'Quelles pages imaginez-vous sur votre site ?'], technique: ['single', 'As-tu déjà un nom de domaine et un hébergement ?', 'Avez-vous déjà un nom de domaine et un hébergement ?', ['Oui, les deux', 'Seulement le nom de domaine', 'Non, rien encore']] },
+    identite: { style: ['long', 'Y a-t-il un logo, des couleurs ou une typographie à garder ?', 'Y a-t-il un logo, des couleurs ou une typographie à garder ?'], activite: ['short', 'Le nom de ta marque a-t-il une histoire ?', 'Le nom de votre marque a-t-il une histoire ?'] },
+    print: { technique: ['long', 'Connais-tu déjà les formats et l’imprimeur ?', 'Connaissez-vous déjà les formats et l’imprimeur ?'], planning: ['date', 'Pour quelle date l’imprimeur attend-il les fichiers ?', 'Pour quelle date l’imprimeur attend-il les fichiers ?'] },
+    partenaire: { contenus: ['long', 'Quels types de créations reviennent le plus souvent chez toi ?', 'Quels types de créations reviennent le plus souvent chez vous ?'], planning: ['single', 'À quel rythme as-tu besoin de nouvelles créations ?', 'À quel rythme avez-vous besoin de nouvelles créations ?', ['Chaque semaine', 'Chaque mois', 'Au fil des besoins']] }
+  };
+  var AS_TYPES = { short: 'Réponse courte', long: 'Réponse longue', single: 'Choix unique', multi: 'Choix multiple', date: 'Date', file: 'Fichier', url: 'Lien', rating: 'Note' };
+  var AS = null;
+  function asInit() { AS = { projet: 'site', moment: 'demarrage', sujets: ['activite', 'cible', 'style', 'contenus', 'planning', 'valide'], duree: 2, tu: true, detail: '', graine: 0, autres: {}, retires: {} }; }
+  function asListeSujets() { return AS.moment === 'bilan' ? AS_SUJETS_BILAN : AS_SUJETS; }
+  function asOuvrir() { asInit(); MDL_ED = { vue: 'assistant', part: 0 }; mdlEdRendre(); window.scrollTo(0, 0); }
+  function asSet(k, v) {
+    if (k === 'duree') v = parseInt(v, 10) || 2;
+    if (k === 'tu') v = v === 'tu';
+    if (k === 'moment' && (v === 'bilan') !== (AS.moment === 'bilan')) AS.sujets = v === 'bilan' ? ['ressenti', 'plu', 'ameliorer', 'temoignage'] : ['activite', 'cible', 'style', 'contenus', 'planning', 'valide'];
+    AS[k] = v; AS.autres = {}; AS.retires = {}; mdlEdRendre();
+  }
+  function asSujet(k) { var i = AS.sujets.indexOf(k); if (i < 0) AS.sujets.push(k); else AS.sujets.splice(i, 1); AS.retires = {}; mdlEdRendre(); }
+  function asDetail(v) { AS.detail = String(v || '').trim(); mdlEdRendre(); }
+  function asAutreProposition() { AS.graine++; AS.autres = {}; AS.retires = {}; mdlEdRendre(); }
+  function asAutre(cle) { AS.autres[cle] = (AS.autres[cle] || 0) + 1; mdlEdRendre(); }
+  function asRetirer(cle) { AS.retires[cle] = true; mdlEdRendre(); }
+  // Les étapes et les questions retenues, dans l'ordre des sujets.
+  function asComposer() {
+    var tuIdx = AS.tu ? 1 : 2, etapes = [];
+    asListeSujets().forEach(function (s) {
+      if (AS.sujets.indexOf(s[0]) < 0) return;
+      var slots = (AS_BANQUE[s[0]] || []).slice(0, AS.duree), qs = [];
+      slots.forEach(function (vars, k) {
+        var cle = s[0] + ':' + k, v = vars[(AS.graine + k + (AS.autres[cle] || 0)) % vars.length];
+        if (!AS.retires[cle]) qs.push({ cle: cle, type: v[0], label: v[tuIdx], options: v[3] || [] });
+      });
+      var pq = AS.moment !== 'bilan' && AS_PROJET_Q[AS.projet] && AS_PROJET_Q[AS.projet][s[0]];
+      if (pq && AS.duree > 1 && !AS.retires[s[0] + ':p']) qs.push({ cle: s[0] + ':p', type: pq[0], label: pq[tuIdx], options: pq[3] || [], seule: true });
+      if (qs.length) etapes.push({ titre: s[AS.tu ? 2 : 3], questions: qs });
+    });
+    return etapes;
+  }
+  function asNom() {
+    var m = { devis: 'Avant le devis', demarrage: 'Démarrage', brief: 'Brief', bilan: 'Bilan de fin' }[AS.moment];
+    var p = AS_PROJETS.filter(function (x) { return x[0] === AS.projet; })[0][1].toLowerCase();
+    return m + ', ' + (AS.detail || p);
+  }
+  function asCreer() {
+    var etapes = asComposer(); if (!etapes.length) { toast('Choisis au moins un sujet'); return; }
+    if (!QNR_LOADED) { toast('Un instant, chargement en cours'); return; }
+    var cat = { devis: 'projet', demarrage: 'demarrage', brief: 'projet', bilan: 'livraison' }[AS.moment];
+    var t = { id: qnrId('t'), name: asNom(), description: AS.detail ? 'Ce questionnaire concerne : ' + AS.detail + '.' : '', category: cat, color: qnrCatMeta(cat)[2], archived: false,
+      steps: etapes.map(function (e) { return { id: qnrId('s'), title: e.titre, help: '', blocks: e.questions.map(function (q) {
+        return { id: qnrId('b'), type: q.type, label: q.label, help: '', placeholder: '', required: false, options: q.options.slice(), max: q.type === 'rating' ? 5 : 0 };
+      }) }; }) };
+    QNR.unshift(t); qnrSave(); toast('Questionnaire créé, tu peux le retoucher');
+    mdlEdOuvrir('questionnaires', t.id);
+  }
+  function mdlEdAssistant() {
+    var ch = function (liste, cur, fn) { return '<div class="as-chs">' + liste.map(function (o) { var on = Array.isArray(cur) ? cur.indexOf(o[0]) >= 0 : cur === o[0]; return '<button class="as-ch' + (on ? ' on' : '') + '" aria-pressed="' + on + '" onclick="' + fn(o[0]) + '">' + esc(o[1]) + '</button>'; }).join('') + '</div>'; };
+    var gauche = '<aside class="as-side"><p class="as-k">L’assistant questionnaire</p><h2 class="as-titre">Dis-moi ce qu’il te faut</h2>' +
+      '<p class="as-q">Pour quel projet ?</p>' + ch(AS_PROJETS, AS.projet, function (v) { return 'ADM.asSet(\'projet\',\'' + v + '\')'; }) +
+      '<p class="as-q">À quel moment ?</p>' + ch(AS_MOMENTS, AS.moment, function (v) { return 'ADM.asSet(\'moment\',\'' + v + '\')'; }) +
+      '<p class="as-q">Ce qu’il faut couvrir</p>' + ch(asListeSujets().map(function (s) { return [s[0], s[1]]; }), AS.sujets, function (v) { return 'ADM.asSujet(\'' + v + '\')'; }) +
+      '<p class="as-q">Combien de temps pour ton client ?</p>' + ch(AS_DUREES, AS.duree, function (v) { return 'ADM.asSet(\'duree\',\'' + v + '\')'; }) +
+      '<p class="as-q">Ton</p>' + ch([['tu', 'Tutoiement'], ['vous', 'Vouvoiement']], AS.tu ? 'tu' : 'vous', function (v) { return 'ADM.asSet(\'tu\',\'' + v + '\')'; }) +
+      '<p class="as-q">Un détail à glisser</p><input class="as-in" value="' + esc(AS.detail) + '" placeholder="Par exemple : deux kakémonos pour un salon" onchange="ADM.asDetail(this.value)"></aside>';
+    var etapes = asComposer(), nQ = 0; etapes.forEach(function (e) { nQ += e.questions.length; });
+    var min = Math.max(2, Math.round(nQ * 1.1));
+    var feuille = etapes.length ? etapes.map(function (e, i) {
+      return '<div class="as-st"><span class="as-n">' + (i + 1) + '</span><h3 class="as-st__t">' + esc(e.titre) + '</h3>' + e.questions.map(function (q) {
+        return '<div class="as-l"><p>' + esc(q.label) + (q.options.length ? '<span class="as-opts">' + esc(q.options.join(', ')) + '</span>' : '') + '</p><span class="as-ty">' + (AS_TYPES[q.type] || '') + '</span>' +
+          (q.seule ? '' : '<button class="tps-lien as-a" onclick="ADM.asAutre(\'' + q.cle + '\')">Autre</button>') + '<button class="tps-lien as-a as-a--r" onclick="ADM.asRetirer(\'' + q.cle + '\')">Retirer</button></div>';
+      }).join('') + '</div>';
+    }).join('') : '<p class="mdl2-vide" style="margin:30px 0 0">Choisis au moins un sujet à couvrir.</p>';
+    var droite = '<section class="as-pap"><div class="as-pap__h"><div><p class="mdle-k">La proposition</p><h2 class="as-pap__t">' + esc(asNom()) + '</h2></div>' +
+      '<div class="as-pap__m"><b>' + mdlEdN(etapes.length, 'étape', 'étapes') + ' · ' + mdlEdN(nQ, 'question', 'questions') + '</b><span>environ ' + min + ' minutes pour ton client</span></div></div>' + feuille +
+      '<div class="as-pap__f"><button class="tps-lien" onclick="ADM.asAutreProposition()">Une autre proposition</button><div class="as-pap__fa"><span>Tu pourras tout modifier ensuite.</span><button class="btn btn--dark" onclick="ADM.asCreer()"' + (etapes.length ? '' : ' disabled') + '>Créer ce questionnaire</button></div></div></section>';
+    return '<p class="mdle-fil"><button class="tps-lien" onclick="ADM.mdlEdFermer()">Modèles</button><span> · Nouveau questionnaire · </span><button class="tps-lien" onclick="ADM.qnrAdd()">Partir d’une page blanche</button></p>' +
+      '<div class="as-g">' + gauche + droite + '</div>';
+  }
   // Trame d'appel
   function mdlEdTrame(t) {
     trameEdLoad(t);
@@ -13272,7 +13434,7 @@
     tiroirFermer: ptFermer, ptOuvrir: ptOuvrir,
     mailCfgSave: mailCfgSave, kvProbe: kvProbe, kvReset: kvReset,
     qnrAdd: qnrAdd, qnrOpen: qnrOpen, qnrCloseDrawer: qnrCloseDrawer, qnrSet: qnrSet, qnrDup: qnrDup, qnrImportJson: qnrImportJson, qnrExportJson: qnrExportJson, qnrArchive: qnrArchive, qnrDel: qnrDel, qnrToggleArch: qnrToggleArch, qnrPreview: qnrPreview, qnrPreviewNav: qnrPreviewNav, qnrPreviewStart: qnrPreviewStart, qnrPreviewCover: qnrPreviewCover, rankDown: rankDown, qnrSmartImport: qnrSmartImport, qnrAssignOpen: qnrAssignOpen, qnrStepAdd: qnrStepAdd, qnrBulkRequire: qnrBulkRequire, qnrStepSet: qnrStepSet, qnrStepDel: qnrStepDel, qnrStepMove: qnrStepMove, qnrBlockAdd: qnrBlockAdd, qnrBlockSet: qnrBlockSet, qnrBlockChangeType: qnrBlockChangeType, qnrBlockOptions: qnrBlockOptions, qnrBlockDel: qnrBlockDel, qnrBlockMove: qnrBlockMove,
-    mdlChoisir: mdlChoisir, mdlPartie: mdlPartie, mdlEdFermer: mdlEdFermer, mdlEdPartie: mdlEdPartie, mdlEdAgrandir: mdlEdAgrandir, mdlEdMaj: mdlEdRendre, qnrRepFiltre: qnrRepFiltre, mdlNouveau: mdlNouveau, mdlArch: mdlArch, mdlReponses: mdlReponses,
+    mdlChoisir: mdlChoisir, mdlPartie: mdlPartie, asSet: asSet, asSujet: asSujet, asDetail: asDetail, asAutreProposition: asAutreProposition, asAutre: asAutre, asRetirer: asRetirer, asCreer: asCreer, asOuvrir: asOuvrir, mdlEdFermer: mdlEdFermer, mdlEdPartie: mdlEdPartie, mdlEdAgrandir: mdlEdAgrandir, mdlEdMaj: mdlEdRendre, qnrRepFiltre: qnrRepFiltre, mdlNouveau: mdlNouveau, mdlArch: mdlArch, mdlReponses: mdlReponses,
     prjAdd: prjAdd, prjSeed: prjSeed, prjOpen: prjOpen, prjCloseDrawer: prjCloseDrawer, prjSet: prjSet, prjDup: prjDup, prjArchive: prjArchive, prjDel: prjDel, prjToggleArch: prjToggleArch, prjAssignOpen: prjAssignOpen, prjPhaseAdd: prjPhaseAdd, prjPhaseSet: prjPhaseSet, prjPhaseDel: prjPhaseDel, prjPhaseMove: prjPhaseMove, prjStepAdd: prjStepAdd, prjStepSet: prjStepSet, prjStepDel: prjStepDel, prjDelivAdd: prjDelivAdd, prjDelivSet: prjDelivSet, prjDelivDel: prjDelivDel,
     incSeenAll: incSeenAll, incClear: incClear,
     sendMsg: sendMsg, loadAllDocs: loadAllDocs, docUploadToggle: docUploadToggle, setDocFilter: setDocFilter, filterAllDocs: filterAllDocs, upload: upload, delDoc: delDoc, lockDoc: lockDoc,
