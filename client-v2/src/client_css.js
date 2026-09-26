@@ -1486,4 +1486,26 @@ button.cpnd-j:hover { box-shadow: inset 0 0 0 1px #110704; }
 .cpa-puce__v img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .cpa-puce--fait { color: #5A2A11; }
 .cpa-puce--fait .cpa-puce__t { color: #110704; }
+
+/* Guide et fenêtre de première visite */
+#cp-guide-overlay { position: fixed; inset: 0; z-index: 178; }
+.cpg-voile { position: fixed; inset: 0; background: rgba(17,7,4,0.55); }
+.cpg-spot { position: fixed; border-radius: 10px; box-shadow: 0 0 0 9999px rgba(17,7,4,0.55), inset 0 0 0 2px #F8F6F2; pointer-events: none; transition: all 240ms ease; }
+.cpg-fond { position: fixed; inset: 0; z-index: 9900; background: rgba(17,7,4,0.55); display: flex; align-items: center; justify-content: center; padding: 20px; }
+.cpg-carte { position: fixed; z-index: 180; width: 380px; max-width: calc(100vw - 32px); box-sizing: border-box; background: #fff; border-radius: 18px; box-shadow: 0 20px 60px rgba(17,7,4,0.25); padding: 24px 26px; font-family: var(--font-micro); color: #110704; }
+.cpg-carte--bienvenue { position: static; width: 460px; padding: 32px; }
+.cpg-carte h2 { margin: 10px 0; font-family: 'Cormorant Garamond', var(--font-display), serif; font-weight: 400; font-size: 30px; line-height: 1.1; color: #110704; }
+.cpg-carte--bienvenue h2 { margin-top: 0; font-size: 34px; }
+.cpg-carte p { margin: 0 0 20px; font-size: 15px; line-height: 1.55; color: #3b2a20; }
+.cpg-carte ul { margin: 0 0 24px; padding: 0; list-style: none; }
+.cpg-carte li { padding: 12px 0; border-top: 1px solid #F0E9D6; font-size: 15px; line-height: 1.5; color: #110704; }
+.cpg-h { display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: #7a5540; }
+.cpg-h button { border: 0; background: none; padding: 0; font: 14px var(--font-micro); color: #5A2A11; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.cpg-pied { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.cpg-pts { display: flex; gap: 5px; }
+.cpg-pts i { display: block; width: 6px; height: 6px; border-radius: 999px; background: #E4D9C5; transition: width 200ms; }
+.cpg-pts i.on { width: 18px; background: #110704; }
+.cpg-btns { display: flex; gap: 8px; }
+.cpg-btn { border: 0; border-radius: 999px; padding: 9px 18px; font: 600 14px var(--font-micro); background: #110704; color: #F8F6F2; cursor: pointer; white-space: nowrap; }
+.cpg-btn--clair { background: transparent; color: #110704; box-shadow: inset 0 0 0 1px #110704; }
 `;

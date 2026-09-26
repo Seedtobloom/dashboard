@@ -7660,124 +7660,94 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     var pid = appData.projects[0].project.id;
     try { if (localStorage.getItem('bloom_seen_' + pid)) return; } catch(e) {}
     try { localStorage.setItem('bloom_seen_' + pid, '1'); } catch(e) {}
-    var clientType = appData.projects[0].project.type || 'identite';
-    var items = [
-          { icon:'zap', text: 'En haut de ton accueil, en noir : ce qui attend ta réponse en premier.' },
-          { icon:'tasks', text: 'Tes projets : en paille ce qui est à toi, en noir ce que Cindy prépare.' },
-          { icon:'chat', text: 'Une question ? Écris à Cindy dans Messages, elle répond en général dans la journée.' },
-        ];
+    var items = cpSeul() ? [
+        'En haut de ta page : ce qui t’attend, avec un bouton pour chaque chose.',
+        'Dans le calendrier : en paille ce qui est à toi, en noir ce que Cindy prépare.',
+        'Une question ? Écris à Cindy dans Messages, elle répond en général dans la journée.'
+      ] : [
+        'En haut de ton accueil : ce qui attend ta réponse en premier.',
+        'Tes projets : en paille ce qui est à toi, en noir ce que Cindy prépare.',
+        'Une question ? Écris à Cindy dans Messages, elle répond en général dans la journée.'
+      ];
     var ov = document.createElement('div');
-    ov.style.cssText = 'position:fixed;inset:0;background:rgba(28,18,5,0.55);z-index:9900;display:flex;align-items:center;justify-content:center;padding:20px';
-    ov.innerHTML = '<div style="background:#fff;border-radius:24px;padding:36px 32px;max-width:460px;width:100%;box-shadow:none">' +
-      '<div style="font-family:\'Cormorant Garamond\',var(--font-display),serif;font-size:34px;line-height:1.05;color:#110704;margin-bottom:8px">Bienvenue dans ton espace</div>' +
-      '<p style="font-size:15px;color:#3b2a20;line-height:1.6;margin-bottom:22px">Trois repères pour bien démarrer :</p>' +
-      '<div style="display:grid;gap:14px;margin-bottom:26px">' +
-        items.map(function(item){
-          return '<div style="display:flex;align-items:flex-start;gap:14px">' +
-            '<span style="width:34px;height:34px;border-radius:50%;background:var(--brume-50);display:grid;place-items:center;flex-shrink:0">' + cpIcon(item.icon,16,'color:var(--terre)') + '</span>' +
-            '<div style="font-size:14px;color:var(--terre-600);line-height:1.5;padding-top:7px">' + esc(item.text) + '</div>' +
-          '</div>';
-        }).join('') +
-      '</div>' +
-      '<div style="display:flex;gap:10px;align-items:center">' +
-        '<button id="_cpob-ok" class="cpb-btn" style="background:#110704;color:#F8F6F2">C\'est parti</button>' +
-        '<button id="_cpob-guide" style="background:none;border:0;padding:0;cursor:pointer;color:#5A2A11;font:600 15px var(--font-micro);text-decoration:underline;text-underline-offset:3px">Voir le guide</button>' +
-      '</div>' +
+    ov.className = 'cpg-fond';
+    ov.innerHTML = '<div class="cpg-carte cpg-carte--bienvenue" role="dialog" aria-label="Bienvenue">' +
+      '<h2>Bienvenue dans ton espace</h2><p>Trois repères pour bien démarrer :</p>' +
+      '<ul>' + items.map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('') + '</ul>' +
+      '<div class="cpg-pied"><span></span><span class="cpg-btns"><button id="_cpob-guide" class="cpg-btn cpg-btn--clair">Voir le guide</button><button id="_cpob-ok" class="cpg-btn">C’est parti</button></span></div>' +
     '</div>';
     document.body.appendChild(ov);
     ov.querySelector('#_cpob-ok').onclick = function(){ ov.remove(); };
     ov.querySelector('#_cpob-guide').onclick = function(){ ov.remove(); cpOpenGuide(); };
   }
 
+  // Le guide : une étape à la fois, l'endroit du menu dont elle parle mis en lumière.
   window.cpOpenGuide = function() {
     var firstProj = appData.projects.length ? appData.projects[0].project : null;
-    var clientType = firstProj ? (firstProj.type || 'identite') : 'identite';
-    var suiviLabel = clientType === 'maintenance' ? 'Interventions' : clientType === 'site' ? 'Suivi du site' : 'Etapes du projet';
-    var suiviText = clientType === 'maintenance'
-      ? 'Ouvrez un ticket en decrivant votre besoin, suivez son statut et gardez un oeil sur votre quota d\'heures du mois.'
-      : clientType === 'site'
-      ? 'Parcourez les phases de votre site ; cliquez-en une pour voir sa checklist, cocher ce qui est fait et suivre l\'avancement.'
-      : 'Suivez les étapes une à une ; cliquez-en une pour ouvrir sa page détaillée et voir son statut.';
-    var GUIDE_BY_TYPE = {
+    var seul = cpSeul(), type = seul ? (seul.project.type || 'identite') : (cpPortail() ? 'portail' : (firstProj ? (firstProj.type || 'identite') : 'identite'));
+    var etapes = {
+      Messages: { t: 'Messages', x: 'Pour tout ce qui ne concerne pas une demande précise. Ce qui touche une demande s’écrit directement dans la demande, pour que rien ne se perde.', nav: 'messages' },
+      Fichiers: { t: 'Fichiers', x: 'Ton logo, ta charte, tes photos : ce que Cindy utilise pour toi, et ce que tu veux lui confier. Tes livrables finaux sont dans Livrables.', nav: 'fichiers' },
+      Livrables: { t: 'Valider ce qui est livré', x: 'Quand Cindy te livre, un mail t’amène directement dessus. Tu valides, ou tu demandes une modification en expliquant ce qui doit changer.', nav: 'livrables' },
+      Fin: { t: 'C’est parti', x: 'Ce guide reste en bas du menu, « Le guide ». Une question ? « Une question pour Cindy ? », juste au-dessus.' }
+    };
+    var GUIDES = {
       partenaire: [
-        { icon:'flower', title:'Votre espace partenaire', text:'Bienvenue ! Cet espace est votre tableau de bord créatif. Chaque mois, vos demandes y sont planifiées, suivies et livrées. Ce guide vous présente chaque section en détail.' },
-        { icon:'calendar', title:'Le calendrier des demandes', nav:'project', text:'C\'est le cœur de votre espace. Chaque demande apparaît dans le calendrier à la date prévue. Vous voyez en un clin d\'œil ce qui est planifié, en cours ou terminé cette semaine.' },
-        { icon:'check', title:'L\'avancement de vos demandes', nav:'project', text:'Chaque demande avance pas à pas, de « à faire » jusqu\'à « fait ». Vous suivez tout en direct depuis le calendrier, sans rien demander.' },
-        { icon:'clock', title:'Votre forfait du mois', nav:'project', text:'En haut de la page, une barre vous montre les heures déjà utilisées sur votre forfait. Une fois pleine, les nouvelles demandes passent au mois suivant ou font l\'objet d\'un devis.' },
-        { icon:'chat', title:'Échanger avec le studio', nav:'messages', text:'La messagerie vous permet de parler directement avec Cindy. Pas besoin d\'e-mail, tout reste au même endroit, classé par projet.' },
-        { icon:'folder', title:'Vos fichiers et ressources', nav:'fichiers', text:'La section Fichiers réunit vos ressources utiles, votre identité visuelle, des exemples et des photos, rangés par projet. Vous pouvez aussi y déposer vos propres éléments. Vos livrables finaux, eux, se récupèrent directement sur la tâche concernée.' },
-        { icon:'flower', title:'C\'est parti !', text:'Ce guide est toujours accessible via le bouton « Guide » en haut à droite. En cas de question, écrivez-moi dans la Messagerie, je réponds vite.' },
+        { t: 'Bienvenue dans ton espace', x: 'Ici, tu confies tes demandes à Cindy, tu suis où elles en sont et tu valides ce qu’elle te livre. Deux minutes pour en faire le tour.' },
+        { t: 'Ta page Accompagnement', x: 'En haut, ce qui t’attend : valider, répondre ou compléter, avec un bouton pour chaque chose. À côté, ton forfait du mois et ce que tu peux encore confier.', nav: 'project' },
+        { t: 'Confier une demande', x: '« Nouvelle demande » se fait en trois étapes : le type de travail, ce qu’il faut à Cindy pour commencer, puis la date. Les dates proposées tiennent compte du temps nécessaire et de ses congés.', nav: 'project' },
+        { t: 'Le calendrier et le tableau', x: 'Tes demandes à leur date de livraison, du lundi au vendredi. En paille ce qui est à toi, en noir ce que Cindy prépare, en crème ce qui est livré. Tant qu’une demande n’est pas commencée, tu peux changer sa date et son urgence.', nav: 'project' },
+        etapes.Livrables, etapes.Messages, etapes.Fichiers,
+        { t: 'Temps passé', x: 'Le détail du temps de chaque mois, demande par demande, et le graphique des cinq derniers mois.', nav: 'stats' },
+        etapes.Fin
       ],
       maintenance: [
-        { icon:'flower', title:'Votre espace tickets', text:'Bienvenue ! Cet espace vous permet de faire vos demandes en toute simplicité : ouvrez un ticket, indiquez pour quand vous le souhaitez, et suivez son avancement.' },
-        { icon:'tasks', title:'Ouvrir un ticket', nav:'interventions', text:'Cliquez sur « Ouvrir un ticket » pour décrire votre besoin : correction de bug, mise à jour de contenu, ajout, question technique… Vous pouvez joindre une capture d\'écran ou un lien, choisir une priorité et une date souhaitée.' },
-        { icon:'check', title:'Suivre l\'avancement', nav:'interventions', text:'Chaque ticket passe par trois étapes : À faire (reçu), En cours (je m\'en occupe) et Fait (terminé). Vous êtes prévenu à chaque changement.' },
-        { icon:'chat', title:'Messagerie', nav:'messages', text:'Pour toute question qui ne nécessite pas un ticket, la Messagerie est là. Échangez directement avec le studio.' },
-        { icon:'flower', title:'C\'est parti !', text:'Ce guide reste accessible via « Guide » en haut à droite. Pour toute urgence, utilisez la Messagerie, je reviens vers vous vite.' },
+        { t: 'Bienvenue dans ton espace', x: 'Ici, tu confies à Cindy les interventions sur ton site et tu suis leur avancement.' },
+        { t: 'Ouvrir un ticket', x: 'Une correction, une mise à jour, un ajout : décris ton besoin, joins une capture ou un lien, puis choisis une priorité et une date souhaitée.', nav: 'interventions' },
+        { t: 'Suivre un ticket', x: 'Chaque ticket passe de « reçu » à « en cours », puis « fait ». Tu reçois un mail aux étapes importantes.', nav: 'interventions' },
+        { t: 'Temps passé', x: 'Les heures utilisées sur ton forfait du mois, intervention par intervention.', nav: 'stats' },
+        etapes.Messages, etapes.Fin
       ],
-      identite: [
-        { icon:'flower', title:'Votre espace identité', text:'Bienvenue ! Cet espace réunit tout votre projet d\'identité visuelle avec le studio. Découvrez les étapes, partagez vos réponses et suivez l\'avancement en temps réel.' },
-        { icon:'tasks', title:'Les étapes du projet', nav:'project', text:'Votre projet se découpe en phases (Découverte, Création, Validation, Livraison…). Chaque étape a un statut et une échéance. Cliquez dessus pour voir le détail et les actions attendues de votre part.' },
-        { icon:'check', title:'Votre rôle dans le projet', nav:'project', text:'Certaines étapes nécessitent une action de votre part (retour, validation, contenu à fournir). Elles sont signalées clairement. Votre réactivité influence directement le calendrier du projet.' },
-        { icon:'home', title:'Le questionnaire', nav:'home', text:'Si un questionnaire est disponible, remplissez-le dès que possible : il permet au studio de cerner votre univers, vos goûts et vos attentes avant de commencer la création.' },
-        { icon:'chat', title:'Messagerie', nav:'messages', text:'Posez vos questions, partagez vos inspirations ou faites vos retours directement ici. Tout reste au même endroit, sans passer par e-mail.' },
-        { icon:'folder', title:'Vos fichiers et ressources', nav:'fichiers', text:'La section Fichiers réunit vos ressources, votre identité visuelle, des exemples et vos photos, rangés par projet. Vous pouvez aussi y déposer vos éléments. Les livrables finaux se récupèrent, eux, sur l\'étape ou la tâche concernée.' },
-        { icon:'flower', title:'C\'est parti !', text:'Ce guide est toujours accessible via « Guide » en haut. Écrivez-moi dans la Messagerie, je suis là pour que le projet se passe au mieux.' },
+      projet: [
+        { t: 'Bienvenue dans ton espace', x: 'Ici, tu suis ton projet étape par étape, tu réponds à Cindy et tu retrouves tout ce qu’elle te livre.' },
+        { t: 'Les étapes du projet', x: 'Ton projet avance par étapes. Clique sur une étape pour voir ce qui s’y passe et ce qui est attendu.', nav: 'project' },
+        { t: 'Ce qui t’attend', x: 'Quand une étape a besoin de toi, un retour, une validation ou un contenu, elle passe en paille avec un bouton. Plus tu réponds vite, plus le projet avance.', nav: 'project' },
+        { t: 'Questionnaires', x: 'Si Cindy t’envoie un questionnaire, remplis-le quand tu peux : tu peux t’arrêter et reprendre plus tard.', nav: 'questionnaires' },
+        etapes.Livrables, etapes.Messages, etapes.Fichiers, etapes.Fin
       ],
-      site: [
-        { icon:'flower', title:'Votre espace site web', text:'Bienvenue ! Cet espace vous permet de suivre la construction de votre site phase par phase, de valider chaque étape et d\'échanger avec le studio.' },
-        { icon:'tasks', title:'Les phases du projet', nav:'project', text:'Votre site est construit en plusieurs phases (Cadrage, Design, Développement, Tests, Mise en ligne…). Vous pouvez les voir en vue Galerie (cartes avec aperçu) ou en Liste (vue compacte).' },
-        { icon:'check', title:'Valider une phase', nav:'project', text:'Quand une phase passe au statut « En attente de votre retour », c\'est à vous de valider ou de demander des ajustements. Vos retours sont précieux pour avancer rapidement.' },
-        { icon:'clock', title:'Les échéances', nav:'project', text:'Chaque phase a une date cible. Si une phase est en retard, elle apparaît en rouge. Votre participation rapide (retours, contenus à fournir) permet de tenir le calendrier.' },
-        { icon:'chat', title:'Messagerie', nav:'messages', text:'Partagez vos retours, posez vos questions ou envoyez des inspirations directement ici. C\'est plus rapide et tout reste tracé.' },
-        { icon:'folder', title:'Vos fichiers et ressources', nav:'fichiers', text:'La section Fichiers réunit vos ressources et tout ce que le studio partage pour votre site (identité visuelle, exemples, images), rangé par projet. Vous pouvez aussi y déposer vos éléments. Les livrables finaux se récupèrent sur l\'étape concernée.' },
-        { icon:'flower', title:'C\'est parti !', text:'Ce guide reste accessible via « Guide » en haut. Bonne construction !' },
-      ],
+      portail: [
+        { t: 'Bienvenue dans ton espace', x: 'Tous tes projets avec Cindy au même endroit. Deux minutes pour en faire le tour.' },
+        { t: 'Ton accueil', x: 'En premier, ce qui attend ta réponse. Puis tes projets : en paille ce qui est à toi, en noir ce que Cindy prépare.', nav: 'home' },
+        etapes.Livrables, etapes.Messages, etapes.Fichiers, etapes.Fin
+      ]
     };
-    var steps = GUIDE_BY_TYPE[clientType] || GUIDE_BY_TYPE.identite;
+    var steps = GUIDES[type] || GUIDES.projet;
+    // Une étape dont l'entrée n'existe pas dans le menu (pas de questionnaire, par exemple) est retirée.
+    steps = steps.filter(function (s) { return !s.nav || s.nav === 'project' || s.nav === 'home' || document.querySelector('[data-nav="' + s.nav + '"]'); });
     var existing = document.getElementById('cp-guide-overlay');
     if (existing) existing.remove();
     var idx = 0;
     function render() {
-      var s = steps[idx]; var last = idx === steps.length - 1;
-      var el = document.getElementById('cp-guide-overlay');
-      var targetEl = s.nav ? document.querySelector('[data-nav="' + s.nav + '"]') : null;
-      var rect = targetEl ? targetEl.getBoundingClientRect() : null;
-      var spotlightHtml = rect
-        ? '<div style="position:fixed;left:'+(rect.left-5)+'px;top:'+(rect.top-5)+'px;width:'+(rect.width+10)+'px;height:'+(rect.height+10)+'px;border-radius:10px;box-shadow:0 0 0 9999px rgba(28,18,5,0.50);border:2px solid rgba(255,255,255,0.6);pointer-events:none;z-index:179;transition:all 240ms cubic-bezier(0.16,1,0.3,1)"></div>'
-        : '<div style="position:fixed;inset:0;background:rgba(28,18,5,0.45);z-index:179" onclick="document.getElementById(\'cp-guide-overlay\').remove()"></div>';
-      var cardLeft, cardTop, cardTransform;
-      if (rect) {
-        var ww = window.innerWidth; var wh = window.innerHeight;
-        var cardW = 360;
-        var spaceRight = ww - rect.right - 16;
-        var spaceLeft = rect.left - 16;
-        if (spaceRight >= cardW + 20) { cardLeft = (rect.right + 16) + 'px'; cardTop = Math.max(14, Math.min(rect.top, wh - 300)) + 'px'; cardTransform = 'none'; }
-        else if (spaceLeft >= cardW + 20) { cardLeft = (rect.left - cardW - 16) + 'px'; cardTop = Math.max(14, Math.min(rect.top, wh - 300)) + 'px'; cardTransform = 'none'; }
-        else { cardLeft = '50%'; cardTop = '50%'; cardTransform = 'translate(-50%,-50%)'; }
-      } else { cardLeft = '50%'; cardTop = '50%'; cardTransform = 'translate(-50%,-50%)'; }
-      el.innerHTML = spotlightHtml +
-        '<div style="position:fixed;left:'+cardLeft+';top:'+cardTop+';transform:'+cardTransform+';z-index:180;width:360px;max-width:calc(100vw - 32px);background:#F8F6F2;border:1px solid #F8F6F2;border-radius:14px;overflow:hidden;box-shadow:none">' +
-          '<div style="display:flex;align-items:center;gap:12px;padding:18px 20px 16px;border-bottom:1px solid #F8F6F2">' +
-            '<span style="width:40px;height:40px;border-radius:50%;flex-shrink:0;display:grid;place-items:center;background:#110704;color:#C5DEFF">' + cpIcon(s.icon,18) + '</span>' +
-            '<div style="flex:1;min-width:0">' +
-              '<div style="font-family:\'Inter Tight\',sans-serif;font-size:9px;color:#5A2A11;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:2px">Étape '+(idx+1)+' / '+steps.length+'</div>' +
-              '<div style="font-family:\'Cormorant Garamond\',Georgia,serif;font-size:21px;font-style:italic;color:#110704;line-height:1.2">' + esc(s.title) + '</div>' +
-            '</div>' +
-            '<button onclick="document.getElementById(\'cp-guide-overlay\').remove()" style="width:30px;height:30px;display:grid;place-items:center;border:1px solid #F8F6F2;background:ffffff;border-radius:8px;cursor:pointer;color:#5A2A11;flex-shrink:0">' + cpIcon('x',14) + '</button>' +
-          '</div>' +
-          '<div style="padding:18px 20px 20px">' +
-            '<p style="font-family:Georgia,serif;font-size:15px;color:#110704;line-height:1.7;margin-bottom:18px">' + esc(s.text) + '</p>' +
-            '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px">' +
-              '<div style="display:flex;gap:5px;align-items:center">' +
-                steps.map(function(_,j){ return '<span style="display:inline-block;width:'+(j===idx?18:6)+'px;height:6px;border-radius:999px;background:'+(j===idx?'#110704':'#F8F6F2')+';transition:width 200ms"></span>'; }).join('') +
-              '</div>' +
-              '<div style="display:flex;gap:8px">' +
-                (idx > 0 ? '<button onclick="window._cpGuideNav(-1)" style="display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:8px;border:1px solid #F8F6F2;background:ffffff;font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:#110704;cursor:pointer">Precedent</button>' : '') +
-                '<button onclick="window._cpGuideNav(1)" style="display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:8px;border:none;background:#C5DEFF;font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:#110704;cursor:pointer">' + (last ? 'Terminer' : 'Suivant ' + cpIcon('arrow',13)) + '</button>' +
-              '</div>' +
-            '</div>' +
-          '</div>' +
+      var s = steps[idx], last = idx === steps.length - 1, el = document.getElementById('cp-guide-overlay');
+      var cible = s.nav ? document.querySelector('[data-nav="' + s.nav + '"]') : null;
+      var r = cible ? cible.getBoundingClientRect() : null;
+      if (r && !r.width) r = null;
+      var spot = r
+        ? '<div class="cpg-spot" style="left:' + (r.left - 4) + 'px;top:' + (r.top - 4) + 'px;width:' + (r.width + 8) + 'px;height:' + (r.height + 8) + 'px"></div>'
+        : '<div class="cpg-voile" onclick="document.getElementById(\'cp-guide-overlay\').remove()"></div>';
+      var pos = 'left:50%;top:50%;transform:translate(-50%,-50%)';
+      if (r) {
+        var w = 380, top = Math.max(16, Math.min(r.top - 20, window.innerHeight - 320));
+        if (window.innerWidth - r.right > w + 40) pos = 'left:' + (r.right + 24) + 'px;top:' + top + 'px';
+      }
+      var pts = steps.map(function (_, j) { return '<i class="' + (j === idx ? 'on' : '') + '"></i>'; }).join('');
+      el.innerHTML = spot +
+        '<div class="cpg-carte" role="dialog" aria-label="' + esc(s.t) + '" style="' + pos + '">' +
+          '<div class="cpg-h"><span>' + (idx + 1) + ' sur ' + steps.length + '</span><button onclick="document.getElementById(\'cp-guide-overlay\').remove()">Fermer</button></div>' +
+          '<h2>' + esc(s.t) + '</h2><p>' + esc(s.x) + '</p>' +
+          '<div class="cpg-pied"><span class="cpg-pts">' + pts + '</span><span class="cpg-btns">' +
+            (idx > 0 ? '<button class="cpg-btn cpg-btn--clair" onclick="window._cpGuideNav(-1)">Précédent</button>' : '') +
+            '<button class="cpg-btn" onclick="window._cpGuideNav(1)">' + (last ? 'Terminer' : 'Suivant') + '</button></span></div>' +
         '</div>';
     }
     window._cpGuideNav = function(dir) {
@@ -7789,7 +7759,6 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     };
     var overlay = document.createElement('div');
     overlay.id = 'cp-guide-overlay';
-    overlay.style.cssText = 'position:fixed;inset:0;z-index:178;pointer-events:auto';
     document.body.appendChild(overlay);
     render();
   };
