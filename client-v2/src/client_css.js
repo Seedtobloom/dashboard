@@ -1390,4 +1390,23 @@ button.cpnd-j:hover { box-shadow: inset 0 0 0 1px #110704; }
 .cpnd-j--passe { color: #7a5540; font-weight: 400; }
 .cpnd-j--tot { color: #5A2A11; }
 .cpnd-j--complet { color: #5A2A11; }
+
+.cpb-h2 .cpt-aide { font-size: 14px; color: #7a5540; }
+.cpt-plot { position: relative; display: flex; gap: 10px; align-items: flex-end; border-bottom: 1px solid #E4D9C5; margin-top: 18px; }
+.cpt-forfait { position: absolute; left: 0; right: 0; border-top: 1px dashed #7a5540; pointer-events: none; }
+.cpt-forfait span { position: absolute; right: 0; bottom: 4px; font-size: 13px; color: #7a5540; }
+.cpt-mois { flex: 1; height: 100%; display: flex; align-items: flex-end; justify-content: center; background: none; border: 0; padding: 0; cursor: pointer; font-family: inherit; }
+.cpt-mois span { display: flex; justify-content: center; box-sizing: border-box; width: 64px; padding-top: 8px; border-radius: 6px 6px 0 0; font-size: 14px; font-weight: 600; background: #E4D9C5; color: #110704; white-space: nowrap; }
+.cpt-mois:hover span { background: #D6C8AE; }
+.cpt-mois.on span { background: #110704; color: #F8F6F2; }
+.cpt-mois:focus-visible { outline: 2px solid #110704; outline-offset: 2px; border-radius: 6px; }
+.cpt-noms { display: flex; gap: 10px; padding-top: 8px; }
+.cpt-mois-nom { flex: 1; text-align: center; font-size: 15px; color: #7a5540; }
+.cpt-mois-nom.on { color: #110704; font-weight: 700; }
+.cpt-rep { margin-top: 20px; }
+.cpt-rep__t { font-size: 15px; font-weight: 600; color: #110704; margin-bottom: 6px; }
+.cpt-rep__l { display: grid; grid-template-columns: minmax(0, 170px) minmax(0, 1fr) 70px; gap: 12px; align-items: center; padding: 6px 0; font-size: 15px; color: #110704; }
+.cpt-rep__b { display: block; height: 12px; }
+.cpt-rep__b i { display: block; height: 100%; background: #CD8F6E; border-radius: 0 4px 4px 0; }
+.cpt-rep__l b { text-align: right; }
 `;

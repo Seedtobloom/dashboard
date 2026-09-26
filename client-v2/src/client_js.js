@@ -6584,6 +6584,10 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
   }
   // Page « Temps passé » (refonte 2026, accompagnement créatif) : le forfait du
   // mois en grand, les 5 derniers mois par type de travail, le détail du mois.
+  window.cpTempsVoir = function (i) {
+    ['.cpt-mois', '.cpt-mois-nom'].forEach(function (q) { document.querySelectorAll(q).forEach(function (e) { e.classList.toggle('on', e.getAttribute('data-i') === String(i)); }); });
+    document.querySelectorAll('.cpt-rep').forEach(function (e) { e.hidden = e.getAttribute('data-i') !== String(i); });
+  };
   function cpTempsPage(pd) {
     var p = pd.project, pid = p.id;
     var nums = cpForfaitNums(p);
@@ -6605,24 +6609,31 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
         (rest > 30 ? '<div class="cpt-reste"><b>Il te reste du temps</b><span>Un sujet en tête ? Confie-le à Cindy avant la fin du mois.</span><button class="cpb-btn" style="background:#110704;color:#F8F6F2" onclick="cliNewDemande(\'' + esc(pid) + '\')">Proposer un sujet</button></div>' : '') +
       '</section>';
     }
-    // 5 derniers mois, par type de travail (4 types + « Autres »).
-    var tot = {}; billable.forEach(function (t) { var bm = cpTaskMinByMonth(t), m = 0; for (var k in bm) m += bm[k]; tot[catOf(t)] = (tot[catOf(t)] || 0) + m; });
-    var cats = Object.keys(tot).filter(function (c) { return tot[c] > 0; }).sort(function (a, b) { return tot[b] - tot[a]; });
-    var COUL = ['#110704', '#CD8F6E', '#C5DEFF', '#E6E5B2'];
-    var aff = cats.slice(0, 4); if (cats.length > 4) aff.push('Autres');
-    function coulOf(c) { var i = aff.indexOf(c); return i >= 0 && i < 4 ? COUL[i] : '#F0E9D6'; }
-    function cat5(c) { return aff.indexOf(c) >= 0 && aff.indexOf(c) < 4 ? c : 'Autres'; }
+    // 5 derniers mois : le total de chaque mois (une couleur, la ligne du forfait),
+    // puis le détail par type du mois choisi, en barres nommées.
     var mois = [];
-    for (var i = 4; i >= 0; i--) { var d = new Date(now.getFullYear(), now.getMonth() - i, 1); mois.push({ k: d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'), l: d.toLocaleDateString('fr-FR', { month: 'short' }), par: {}, tot: 0 }); }
-    billable.forEach(function (t) { var bm = cpTaskMinByMonth(t), c = cat5(catOf(t)); mois.forEach(function (m) { var v = bm[m.k] || 0; if (v) { m.par[c] = (m.par[c] || 0) + v; m.tot += v; } }); });
-    var maxi = Math.max.apply(null, mois.map(function (m) { return m.tot; }).concat([nums ? nums.availMin : 60, 60]));
-    var cols = mois.map(function (m, i) {
-      var segs = aff.slice().reverse().map(function (c) { var v = m.par[c] || 0; return v ? '<span style="height:' + Math.max(2, Math.round(v / maxi * 190)) + 'px;background:' + coulOf(c) + '" title="' + esc(c + ' : ' + cpbMin(v)) + '"></span>' : ''; }).join('');
-      return '<div class="cpt-col' + (i === 4 ? ' on' : '') + '"><b>' + (m.tot ? esc(cpbMin(m.tot)) : '') + '</b><div class="cpt-col__barre">' + segs + '</div><span>' + esc(m.l) + '</span></div>';
+    for (var i = 4; i >= 0; i--) { var d = new Date(now.getFullYear(), now.getMonth() - i, 1); mois.push({ k: d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'), l: d.toLocaleDateString('fr-FR', { month: 'short' }), nom: d.toLocaleDateString('fr-FR', { month: 'long' }), par: {}, tot: 0 }); }
+    billable.forEach(function (t) { var bm = cpTaskMinByMonth(t), c = catOf(t); mois.forEach(function (m) { var v = bm[m.k] || 0; if (v) { m.par[c] = (m.par[c] || 0) + v; m.tot += v; } }); });
+    var forfaitMin = nums ? nums.availMin : 0, HG = 210;
+    var maxi = Math.max.apply(null, mois.map(function (m) { return m.tot; }).concat([forfaitMin * 1.05, 60]));
+    var barres = mois.map(function (m, i) {
+      var bh = m.tot ? Math.max(30, Math.round(m.tot / maxi * HG)) : 0;
+      return '<button type="button" class="cpt-mois' + (i === 4 ? ' on' : '') + '" data-i="' + i + '" onclick="cpTempsVoir(' + i + ')" aria-label="' + esc(m.nom + ' : ' + (m.tot ? cpbMin(m.tot) : 'rien')) + '">' +
+        (bh ? '<span class="num" style="height:' + bh + 'px">' + esc(cpbMin(m.tot)) + '</span>' : '') + '</button>';
     }).join('');
-    var legende = aff.map(function (c) { return '<span><i style="background:' + coulOf(c) + '"></i>' + esc(c) + '</span>'; }).join('');
-    var graphe = '<section class="cpb-carte"><div class="cpb-h2 cpb-h2--sm"><h2>Les 5 derniers mois</h2></div>' +
-      (aff.length ? '<div class="cpt-graphe"><div class="cpt-cols">' + cols + '</div><div class="cpt-legende">' + legende + '</div></div>' : '<p>Pas encore de temps passé à afficher.</p>') + '</section>';
+    var ligne = forfaitMin ? '<div class="cpt-forfait" style="top:' + (HG - Math.round(forfaitMin / maxi * HG)) + 'px"><span>forfait ' + esc(cpbMin(forfaitMin)) + '</span></div>' : '';
+    var noms = mois.map(function (m, i) { return '<span class="cpt-mois-nom' + (i === 4 ? ' on' : '') + '" data-i="' + i + '">' + esc(m.l) + '</span>'; }).join('');
+    var details = mois.map(function (m, i) {
+      var cs = Object.keys(m.par).sort(function (a, b) { return m.par[b] - m.par[a]; });
+      var mx = cs.length ? m.par[cs[0]] : 1;
+      return '<div class="cpt-rep" data-i="' + i + '"' + (i === 4 ? '' : ' hidden') + '><div class="cpt-rep__t">En ' + esc(m.nom) + ', par type de travail</div>' +
+        (cs.length ? cs.map(function (c) {
+          return '<div class="cpt-rep__l"><span>' + esc(c) + '</span><span class="cpt-rep__b"><i style="width:' + Math.max(2, Math.round(m.par[c] / mx * 100)) + '%"></i></span><b class="num">' + esc(cpbMin(m.par[c])) + '</b></div>';
+        }).join('') : '<p>Rien ce mois-là.</p>') + '</div>';
+    }).join('');
+    var aDuTemps = mois.some(function (m) { return m.tot > 0; });
+    var graphe = '<section class="cpb-carte"><div class="cpb-h2 cpb-h2--sm"><h2>Les 5 derniers mois</h2>' + (aDuTemps ? '<span class="cpt-aide">Clique sur un mois pour le détail</span>' : '') + '</div>' +
+      (aDuTemps ? '<div class="cpt-plot" style="height:' + HG + 'px">' + ligne + barres + '</div><div class="cpt-noms">' + noms + '</div>' + details : '<p>Pas encore de temps passé à afficher.</p>') + '</section>';
     // Le détail du mois.
     var lignes = billable.map(function (t) { return { t: t, m: cpTaskMinByMonth(t)[mk] || 0 }; }).filter(function (x) { return x.m > 0; }).sort(function (a, b) { return b.m - a.m; });
     var totMois = lignes.reduce(function (s, x) { return s + x.m; }, 0);
