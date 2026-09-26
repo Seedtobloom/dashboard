@@ -1202,6 +1202,7 @@ async function handleBrouillon(request: Request, env: Env, method: string, maste
     missionType: String(b.missionType || '').slice(0, 200),
     precisions: Array.isArray(b.precisions) ? b.precisions.slice(0, 20).map(String) : [],
     besoins: Array.isArray(b.besoins) ? b.besoins.slice(0, 40).map(String) : [],
+    plusTard: Array.isArray(b.plusTard) ? b.plusTard.slice(0, 40).map(String) : [],
     blocks: Array.isArray(b.blocks) ? b.blocks.slice(0, 400) : [],
     attachments: Array.isArray(b.attachments) ? b.attachments.slice(0, 20) : [],
     dueDate: b.dueDate ? String(b.dueDate).slice(0, 10) : null,

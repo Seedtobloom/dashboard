@@ -94,7 +94,7 @@
     return !!(t.title.trim() || texte || (t.attachments || []).length);
   }
   function cpNDBrouillonObj() {
-    return { id: cpND.t.id, title: cpND.t.title, missionType: cpND.type || '', precisions: cpND.precisions, besoins: cpND.besoins,
+    return { id: cpND.t.id, title: cpND.t.title, missionType: cpND.type || '', precisions: cpND.precisions, besoins: cpND.besoins, plusTard: cpND.plusTard || [],
       blocks: cpND.t.blocks || [], attachments: cpND.t.attachments || [], dueDate: cpND.date || null, etape: cpND.etape };
   }
   window.cpNDSaveDraft = function (tout) {
@@ -138,7 +138,7 @@
     var b = brouillonId ? (pd.project.brouillons || []).filter(function (x) { return x.id === brouillonId; })[0] : null;
     cpND = {
       pid: pid, etape: b ? (b.etape || 2) : 1, type: b ? (b.missionType || '') : null,
-      precisions: b ? (b.precisions || []).slice() : [], besoins: b ? (b.besoins || []).slice() : [],
+      precisions: b ? (b.precisions || []).slice() : [], besoins: b ? (b.besoins || []).slice() : [], plusTard: b ? (b.plusTard || []).slice() : [],
       date: b ? b.dueDate : (ds || null), dateVoulue: !!ds, exception: false, savedAt: b ? new Date(b.updatedAt) : null,
       t: { id: b ? b.id : 'brouillon-' + Math.random().toString(36).slice(2, 10), title: b ? (b.title || '') : '', blocks: b ? JSON.parse(JSON.stringify(b.blocks || [])) : [], attachments: b ? (b.attachments || []).slice() : [], _blkInit: true }
     };
@@ -164,7 +164,7 @@
   window.cpNDChoisirType = function (i, suite) {
     if (!cpND) return;
     var I = cpNDInfo(), nom = i < 0 ? '' : I.types[i];
-    if (cpND.type !== nom) { cpND.precisions = []; cpND.besoins = []; }
+    if (cpND.type !== nom) { cpND.precisions = []; cpND.besoins = []; cpND.plusTard = []; }
     cpND.type = nom;
     if (suite) { cpND.etape = 2; window.cpNDSaveDraft(); }
     cpNDRender();
@@ -175,9 +175,13 @@
     window.cpNDSaveDraft(); cpNDRenderBesoins();
     document.querySelectorAll('.cpnd-chip[data-p]').forEach(function (b) { b.classList.toggle('on', cpND.precisions.indexOf(b.getAttribute('data-p')) >= 0); });
   };
-  window.cpNDBesoin = function (txt) {
-    var i = cpND.besoins.indexOf(txt);
-    if (i >= 0) cpND.besoins.splice(i, 1); else cpND.besoins.push(txt);
+  window.cpNDBesoin = function (txt, rep) {
+    cpND.plusTard = cpND.plusTard || [];
+    var i = cpND.besoins.indexOf(txt), j = cpND.plusTard.indexOf(txt);
+    var deja = rep === 'tard' ? j >= 0 : i >= 0;
+    if (i >= 0) cpND.besoins.splice(i, 1);
+    if (j >= 0) cpND.plusTard.splice(j, 1);
+    if (!deja) (rep === 'tard' ? cpND.plusTard : cpND.besoins).push(txt);
     window.cpNDSaveDraft(); cpNDRenderBesoins();
   };
   window.cpNDTitre = function (v) { if (!cpND) return; cpND.t.title = v; var el = document.getElementById('cpnd-titre'); if (el) el.classList.remove('cpnd-manque'); window.cpNDSaveDraft(); };
@@ -229,7 +233,7 @@
     if (cpND.precisions.length) props.p_precisions = cpND.precisions.join(', ');
     var est = cpNDEstime(det); if (est) props.p_estime = String(est);
     var liste = cpNDBesoinsListe();
-    props.p_besoins = JSON.stringify(liste.map(function (b) { return { texte: b, ok: cpND.besoins.indexOf(b) >= 0 }; }));
+    props.p_besoins = JSON.stringify(liste.map(function (b) { var ok = cpND.besoins.indexOf(b) >= 0; return ok ? { texte: b, ok: true } : { texte: b, ok: false, plusTard: (cpND.plusTard || []).indexOf(b) >= 0 }; }));
     if (exception) props.p_exception = cpND.date;
     var corps = { projectId: cpND.pid, title: cpND.t.title.trim(), content: exception ? 'Date exceptionnelle demandée : ' + cpNDJolie(new Date(cpND.date + 'T12:00:00')) + ' (au plus tôt habituel : ' + cpNDJolie(new Date(plusTot + 'T12:00:00')) + ').' : '',
       urgency: exception ? 'urgent' : 'normal', dueDate: cpND.date, missionType: props.p_typemission, properties: props,
@@ -290,14 +294,22 @@
         '<span class="cpnd-pied__d"><span>' + choix + (reste != null && reste > 0 ? ' · il te reste ' + esc(cpNDMin(reste)) : '') + '</span>' +
         '<button class="cpnd-btn"' + (cpND.type == null ? ' disabled' : '') + ' onclick="cpNDEtape(2)">Continuer</button></span></footer>';
   }
+  // Pour chaque élément : « C'est dans ma demande » ou « Je l'enverrai plus tard ».
+  // Sans réponse, il reste à recevoir, comme « plus tard » ; rien n'est obligatoire.
   function cpNDBesoinsHtml() {
-    var liste = cpNDBesoinsListe(), n = liste.filter(function (b) { return cpND.besoins.indexOf(b) >= 0; }).length;
-    var pour = cpND.precisions.length ? ' · pour ' + cpND.precisions.map(function (p) { return p.toLowerCase(); }).join(', ') : '';
-    return '<div class="cpnd-besoins__h"><b>Ce dont Cindy a besoin</b><span>' + esc(pour) + ' · ' + n + ' sur ' + liste.length + '</span><button class="cpnd-lien" onclick="stbBlockAddImage(\'' + cpND.pid + '\',\'' + cpND.t.id + '\')">Ajouter une inspiration</button></div>' +
-      '<div class="cpnd-besoins__l">' + liste.map(function (b) {
-        var ok = cpND.besoins.indexOf(b) >= 0;
-        return '<button class="cpnd-besoin' + (ok ? ' ok' : '') + '" aria-pressed="' + ok + '" onclick="cpNDBesoin(this.getAttribute(\'data-b\'))" data-b="' + esc(b) + '"><span class="cpnd-rond"></span>' + esc(b.charAt(0).toUpperCase() + b.slice(1)) + '</button>';
-      }).join('') + '</div><p class="cpnd-note">Coche ce que tu as mis dans ta demande. La liste change selon ce que tu choisis à gauche.</p>';
+    var liste = cpNDBesoinsListe(), tard = cpND.plusTard || [];
+    var lignes = liste.map(function (b) {
+      var dans = cpND.besoins.indexOf(b) >= 0, plus = !dans && tard.indexOf(b) >= 0;
+      var nom = esc(b.charAt(0).toUpperCase() + b.slice(1));
+      return '<div class="cpnd-bs" role="group" aria-label="' + nom + '"><span class="cpnd-bs__n">' + nom + '</span><span class="cpnd-bs__r">' +
+        '<button class="cpnd-bs__o' + (dans ? ' on' : '') + '" aria-pressed="' + dans + '" data-b="' + esc(b) + '" onclick="cpNDBesoin(this.getAttribute(\'data-b\'),\'dans\')">C’est dans ma demande</button>' +
+        '<button class="cpnd-bs__o cpnd-bs__o--tard' + (plus ? ' on' : '') + '" aria-pressed="' + plus + '" data-b="' + esc(b) + '" onclick="cpNDBesoin(this.getAttribute(\'data-b\'),\'tard\')">Je l’enverrai plus tard</button></span></div>';
+    }).join('');
+    var unTard = liste.some(function (b) { return cpND.besoins.indexOf(b) < 0 && tard.indexOf(b) >= 0; });
+    return '<div class="cpnd-besoins__h"><b>Pour commencer, Cindy aura besoin de</b><button class="cpnd-lien" onclick="stbBlockAddImage(\'' + cpND.pid + '\',\'' + cpND.t.id + '\')">Ajouter une inspiration</button></div>' +
+      '<p class="cpnd-bs__s">As-tu mis tout ça dans ta demande ? Rien n’est obligatoire.</p>' +
+      '<div class="cpnd-bs__l">' + lignes + '</div>' +
+      (unTard ? '<p class="cpnd-note">Ce que tu enverras plus tard t’attendra dans ta demande, sous « Ce dont Cindy a besoin ».</p>' : '');
   }
   function cpNDRenderBesoins() { var el = document.getElementById('cpnd-besoins'); if (el) el.innerHTML = cpNDBesoinsHtml(); }
   function cpNDFichiersHtml() {
