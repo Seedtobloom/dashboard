@@ -415,8 +415,9 @@
     if (cpND.etape === 2) setTimeout(function () { if (window.stbSizeAll) window.stbSizeAll(); var t = document.getElementById('cpnd-titre'); if (t && !t.value) t.focus(); }, 0);
   }
 
-  // Dans l'espace client, toute « Nouvelle demande » d'accompagnement passe par l'assistant.
+  // Toute « Nouvelle demande » d'accompagnement passe par l'assistant, que l'espace soit ouvert
+  // par la cliente ou par Cindy depuis l'admin (mode édition).
   var _cpNDAncien = window.cliNewDemande, _cpNDAncienAdd = window.cliOpenAddTask;
-  function cpNDPourMoi(pid) { var pd = getPD(pid); return appData.type === 'client' && !_isAdminEdit && pd && pd.project.type === 'partenaire'; }
+  function cpNDPourMoi(pid) { var pd = getPD(pid); return !!pd && pd.project.type === 'partenaire'; }
   window.cliNewDemande = function (pid) { if (cpNDPourMoi(pid)) return window.cpNDOpen(pid); return _cpNDAncien(pid); };
   window.cliOpenAddTask = function (pid, ds, src) { if (!src && cpNDPourMoi(pid)) return window.cpNDOpen(pid, ds || null); return _cpNDAncienAdd(pid, ds, src); };

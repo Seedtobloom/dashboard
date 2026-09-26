@@ -949,6 +949,8 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 .cpa-panneau [style*="uppercase"] { text-transform: none !important; letter-spacing: 0 !important; font-size: 14px !important; }
 .cpa-panneau h1, .cpa-panneau h2 { font-family: 'Cormorant Garamond', serif; font-style: italic; font-weight: 500; }
 /* Nouvelle demande en 3 étapes */
+/* Ouverte depuis l'admin : les boutons d'édition ne cachent pas le pied de la fenêtre */
+body:has(#cpnd) #_cp-edit-toggle, body:has(#cpnd) [style*="z-index:9900"] { display: none !important; }
 .cpa-brouillon { display: grid; grid-template-columns: minmax(0, 1fr) 160px auto; gap: 14px; align-items: center; padding: 11px 8px; border-bottom: 1px solid rgba(17,7,4,.06); font-size: 14px; color: #7a5540; background: #FBFAF6; }
 .cpa-brouillon__a { display: flex; gap: 16px; }
 .cpa-brouillon__a .cpl-lien { font-size: 14px; }
