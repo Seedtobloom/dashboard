@@ -12128,12 +12128,7 @@
     var active = QNR.filter(function (t) { return !t.archived; });
     var archived = QNR.filter(function (t) { return t.archived; });
     var nRep = qnrRepAll().length;
-    if (QNR_TAB === 'reponses') {
-      body.innerHTML = mdlBarre('Toutes les réponses reçues. Chaque nouvelle réponse arrive aussi dans l’Inbox et dans la fiche du client.',
-        '<button class="tps-lien" onclick="ADM.qnrSetTab(\'modeles\')">Revenir aux modèles</button>') + qnrRepView();
-      mdlNavMaj();
-      return;
-    }
+    if (QNR_TAB === 'reponses') { mdlNavMaj(); body.innerHTML = qnrRepView(); return; }
     mdlNavMaj();
     var liste = QNR.filter(function (t) { return MDL_ARCH || !t.archived; });
     var id = mdlSel('questionnaires', liste), t = id ? qnrTpl(id) : null;
@@ -12165,49 +12160,39 @@
   var QNR_REP = {};       // key -> fiche cliente chargée
   var QNR_REP_OPEN = {};  // id d'envoi -> déplié
   function qnrRepAll() { return (QNR_D && Array.isArray(QNR_D.qnrAll)) ? QNR_D.qnrAll : []; }
+  /* Les réponses (maquette 2) : un tableau de tous les envois, ceux qui
+   * attendent en haut, un filtre en un clic. Voir les réponses les déplie
+   * sous la ligne ; Relancer envoie le mail de rappel habituel. */
+  var QNR_REP_F = 'tous';
+  function qnrRepFiltre(f) { QNR_REP_F = f; renderQnrBody(); }
+  function qnrRepFait(q) { return q.status === 'completed'; }
+  function qnrRepEtat(q) {
+    if (qnrRepFait(q)) return '<span class="mdl2-ch">rempli' + (q.completedAt ? ' le ' + esc(fmtDate(q.completedAt)) : '') + '</span>';
+    var retard = q.dueDate && atDdiff(q.dueDate) < 0;
+    var txt = q.status === 'to_review' ? 'à revoir' : q.status === 'in_progress' ? 'en cours' : 'en attente';
+    return '<span class="mdl2-ch ' + (retard ? 'mdl2-ch--r' : 'mdl2-ch--a') + '">' + (retard ? 'en retard' : txt) + (q.dueDate ? ', pour le ' + esc(fmtDate(q.dueDate)) : '') + '</span>';
+  }
   function qnrRepView() {
     var all = qnrRepAll();
-    if (!all.length) return '<div class="empty">Aucun questionnaire envoyé pour l\'instant. Assigne un modèle à une cliente depuis l\'onglet « Mes modèles ».</div>';
-    // Regroupé par questionnaire. On se repère au nom : deux envois du même
-    // modèle renommé depuis restent lisibles côte à côte.
-    var groups = {}, order = [];
-    all.forEach(function (q) {
-      var k = q.templateId || ('n:' + (q.name || ''));
-      if (!groups[k]) { groups[k] = { name: q.name || 'Questionnaire', items: [] }; order.push(k); }
-      groups[k].items.push(q);
-    });
-    var attente = all.filter(function (q) { return q.status !== 'completed'; }).length;
-    var recu = all.length - attente;
-    var head = '<div class="card infocard" style="background:var(--card);max-width:860px;padding:14px 18px;margin-bottom:16px">' +
-      '<span class="micro" style="text-transform:none;letter-spacing:0;color:var(--terre-600);font-weight:600">' +
-      (recu ? '✓ ' + recu + ' questionnaire' + (recu > 1 ? 's' : '') + ' rempli' + (recu > 1 ? 's' : '') : 'Aucun questionnaire rempli pour l\'instant') +
-      (attente ? ' · ⏳ ' + attente + ' en attente' : '') + '</span></div>';
-    return head + order.map(function (k) {
-      var g = groups[k];
-      var rows = g.items.map(qnrRepRow).join('');
-      return '<div class="card infocard" style="background:var(--card);max-width:860px">' +
-        '<div class="between" style="align-items:center;gap:10px"><h3 style="margin:0">' + esc(g.name) + '</h3>' +
-        '<span class="micro" style="color:var(--muted)">' + g.items.length + ' envoi' + (g.items.length > 1 ? 's' : '') + '</span></div>' +
-        '<div style="margin-top:10px">' + rows + '</div></div>';
+    var tete = function (meta, seg) { return mdlTete('Les réponses', meta, seg || ''); };
+    if (!all.length) return tete('Chaque réponse arrive aussi dans l’Inbox et dans la fiche du client.') + '<p class="mdl2-vide" style="margin:26px 0 0">Aucun questionnaire envoyé pour l’instant. Choisis un questionnaire à gauche, puis Envoyer à un client.</p>';
+    var attente = all.filter(function (q) { return !qnrRepFait(q); }), faits = all.length - attente.length;
+    var liste = QNR_REP_F === 'attente' ? attente : QNR_REP_F === 'remplis' ? all.filter(qnrRepFait) : attente.concat(all.filter(qnrRepFait));
+    var seg = '<div class="mdl2-seg" role="tablist" aria-label="Filtrer les envois">' + [['tous', 'Tous', 0], ['attente', 'En attente', attente.length], ['remplis', 'Remplis', faits]].map(function (o) {
+      var on = QNR_REP_F === o[0];
+      return '<button role="tab" aria-selected="' + on + '" class="' + (on ? 'on' : '') + '" onclick="ADM.qnrRepFiltre(\'' + o[0] + '\')">' + o[1] + (o[2] ? '<b>' + o[2] + '</b>' : '') + '</button>';
+    }).join('') + '</div>';
+    var meta = all.length + ' envoi' + (all.length > 1 ? 's' : '') + ' : ' + faits + ' rempli' + (faits > 1 ? 's' : '') + ', ' + attente.length + ' en attente. Chaque réponse arrive aussi dans l’Inbox et dans la fiche du client.';
+    var rows = liste.map(function (q) {
+      var open = !!QNR_REP_OPEN[q.id], lisible = qnrHasAnswers(q);
+      var act = lisible ? '<button class="tps-lien" onclick="ADM.qnrRepToggle(\'' + q.key + '\',\'' + q.id + '\')">' + (open ? 'Masquer' : 'Voir les réponses') + '</button>'
+        : '<button class="tps-lien" onclick="ADM.remind(\'' + esc(q.key) + '\',\'action\',\'' + jsq(q.name || 'Questionnaire') + '\',\'\')">Relancer</button>';
+      return '<div class="mdl2-rl"><span class="mdl2-rl__c">' + esc(q.client || '') + '</span><span class="mdl2-rl__q">' + esc(q.name || 'Questionnaire') + '</span>' +
+        '<span class="mdl2-rl__e">' + (q.assignedAt ? 'envoyé le ' + esc(fmtDate(q.assignedAt)) : '') + '</span><span>' + qnrRepEtat(q) + '</span><span class="mdl2-rl__a">' + act + '</span></div>' +
+        (open ? '<div class="mdl2-rl__r">' + qnrRepBody(q) + '</div>' : '');
     }).join('');
-  }
-  function qnrRepRow(q) {
-    var when = q.completedAt ? ' · le ' + fmtDate(q.completedAt) : '';
-    var open = !!QNR_REP_OPEN[q.id];
-    var lisible = qnrHasAnswers(q);
-    var retard = (!lisible && q.dueDate && atDdiff(q.dueDate) < 0)
-      ? '<span class="at-due at-due--late">en retard</span>' : '';
-    var btn = lisible
-      ? '<button class="btn btn--outline btn--sm" onclick="ADM.qnrRepToggle(\'' + q.key + '\',\'' + q.id + '\')">' + (open ? 'Masquer' : 'Voir les réponses') + '</button>'
-      : '<span class="micro" style="color:var(--muted);text-transform:none;letter-spacing:0">pas encore rempli</span>';
-    return '<div style="border-top:1px solid var(--bone-d);padding:11px 0">' +
-      '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">' +
-        '<span style="flex:1;min-width:140px;font-size:15px;color:var(--terre);font-weight:600">' + esc(q.client || '') + '</span>' +
-        retard + qnrStPill(q, when) + btn +
-      '</div>' +
-      '<div id="qnr-rep-' + q.id + '" style="display:' + (open ? 'block' : 'none') + ';padding-top:10px">' +
-        (open ? qnrRepBody(q) : '') + '</div>' +
-    '</div>';
+    return tete(meta, seg) + '<div class="mdl2-tab"><div class="mdl2-rl mdl2-rl--h"><span>Client</span><span>Questionnaire</span><span>Envoi</span><span>État</span><span></span></div>' +
+      (rows || '<p class="mdl2-vide" style="padding:14px 4px">Rien dans ce filtre.</p>') + '</div>';
   }
   function qnrRepBody(q) {
     var data = QNR_REP[q.key];
@@ -12754,7 +12739,7 @@
     var trm = TRAMES_LOADED ? tramesGet() : [];
     var nArch = PRJ.filter(function (t) { return t.archived; }).length + QNR.filter(function (t) { return t.archived; }).length;
     var fam = function (vue, titre, sous, liste, meta, nouveau, charge, pied) {
-      var sel = VIEW === vue ? mdlSel(vue, liste) : null;
+      var sel = VIEW === vue && !(vue === 'questionnaires' && QNR_TAB === 'reponses') ? mdlSel(vue, liste) : null;
       var items = !charge ? '<p class="mdl2-vide">Chargement…</p>' : liste.length ? liste.map(function (x) {
         var on = x.id === sel;
         return '<button class="mdl2-i' + (on ? ' on' : '') + (x.archived ? ' mdl2-i--arch' : '') + '"' + (on ? ' aria-current="true"' : '') + ' onclick="ADM.mdlChoisir(\'' + vue + '\',\'' + esc(x.id) + '\')">' +
@@ -12769,7 +12754,7 @@
     var piedP = PRJ_LOADED && !PRJ.length ? '<div class="mdl2-pied"><button class="tps-lien" onclick="ADM.prjSeed()">Ajouter les modèles de départ</button></div>' : '';
     var nRep = QNR_LOADED ? qnrRepAll().length : 0;
     var piedQ = '<div class="mdl2-pied"><button class="tps-lien" onclick="ADM.qnrImportJson()">Importer</button>' +
-      (nRep ? '<button class="tps-lien" onclick="ADM.mdlReponses()">Les réponses [' + nRep + ']</button>' : '') + '</div>';
+      (nRep ? '<button class="tps-lien' + (VIEW === 'questionnaires' && QNR_TAB === 'reponses' ? ' mdl2-lon' : '') + '" onclick="ADM.mdlReponses()">Les réponses, ' + nRep + '</button>' : '') + '</div>';
     return fam('projtpl', 'Projets', 'les étapes et les livrables d’une offre', prj, np, ['Nouveau modèle de projet', 'ADM.mdlNouveau(\'projtpl\')'], PRJ_LOADED, piedP) +
       fam('questionnaires', 'Questionnaires', 'envoyés à tes clients', qnr, nq, ['Nouveau questionnaire', 'ADM.mdlNouveau(\'questionnaires\')'], QNR_LOADED, piedQ) +
       fam('trames', 'Trames d’appel', 'suivies pendant la visio', trm, nt, ['Nouvelle trame', 'ADM.mdlNouveau(\'trames\')'], TRAMES_LOADED) +
@@ -13135,7 +13120,7 @@
     tiroirFermer: ptFermer, ptOuvrir: ptOuvrir,
     mailCfgSave: mailCfgSave, kvProbe: kvProbe, kvReset: kvReset,
     qnrAdd: qnrAdd, qnrOpen: qnrOpen, qnrCloseDrawer: qnrCloseDrawer, qnrSet: qnrSet, qnrDup: qnrDup, qnrImportJson: qnrImportJson, qnrExportJson: qnrExportJson, qnrArchive: qnrArchive, qnrDel: qnrDel, qnrToggleArch: qnrToggleArch, qnrPreview: qnrPreview, qnrPreviewNav: qnrPreviewNav, qnrPreviewStart: qnrPreviewStart, qnrPreviewCover: qnrPreviewCover, rankDown: rankDown, qnrSmartImport: qnrSmartImport, qnrAssignOpen: qnrAssignOpen, qnrStepAdd: qnrStepAdd, qnrBulkRequire: qnrBulkRequire, qnrStepSet: qnrStepSet, qnrStepDel: qnrStepDel, qnrStepMove: qnrStepMove, qnrBlockAdd: qnrBlockAdd, qnrBlockSet: qnrBlockSet, qnrBlockChangeType: qnrBlockChangeType, qnrBlockOptions: qnrBlockOptions, qnrBlockDel: qnrBlockDel, qnrBlockMove: qnrBlockMove,
-    mdlChoisir: mdlChoisir, mdlPartie: mdlPartie, mdlNouveau: mdlNouveau, mdlArch: mdlArch, mdlReponses: mdlReponses,
+    mdlChoisir: mdlChoisir, mdlPartie: mdlPartie, qnrRepFiltre: qnrRepFiltre, mdlNouveau: mdlNouveau, mdlArch: mdlArch, mdlReponses: mdlReponses,
     prjAdd: prjAdd, prjSeed: prjSeed, prjOpen: prjOpen, prjCloseDrawer: prjCloseDrawer, prjSet: prjSet, prjDup: prjDup, prjArchive: prjArchive, prjDel: prjDel, prjToggleArch: prjToggleArch, prjAssignOpen: prjAssignOpen, prjPhaseAdd: prjPhaseAdd, prjPhaseSet: prjPhaseSet, prjPhaseDel: prjPhaseDel, prjPhaseMove: prjPhaseMove, prjStepAdd: prjStepAdd, prjStepSet: prjStepSet, prjStepDel: prjStepDel, prjDelivAdd: prjDelivAdd, prjDelivSet: prjDelivSet, prjDelivDel: prjDelivDel,
     incSeenAll: incSeenAll, incClear: incClear,
     sendMsg: sendMsg, loadAllDocs: loadAllDocs, docUploadToggle: docUploadToggle, setDocFilter: setDocFilter, filterAllDocs: filterAllDocs, upload: upload, delDoc: delDoc, lockDoc: lockDoc,
