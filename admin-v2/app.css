@@ -3333,3 +3333,54 @@ h1.cdhead__n{margin:0;font-weight:400;font-size:36px}
 .mt-row .mt-moy{font-size:14px;color:#5A2A11;padding:0}
 .mt-fournir-t{font-size:14px;color:#3b2a20}
 @media (max-width:1400px){.mt-row{grid-template-columns:16px minmax(0,1fr) 140px 150px 96px 64px}.mt-row>*:nth-child(4),.mt-row>*:nth-child(7){display:none}}
+
+/* ── Modèles, B menu 1 : une carte par famille à gauche, le modèle ouvert à droite ── */
+.mdl2-t{margin-bottom:26px}
+.mdl2-sous{margin:8px 0 0;font-family:'Alegreya',Georgia,serif;font-size:17px;color:rgba(17,7,4,.62)}
+.mdl2{display:grid;grid-template-columns:340px minmax(0,1fr);gap:24px;align-items:start}
+.mdl2-nav{display:flex;flex-direction:column;gap:14px}
+.mdl2-f{background:#F8F6F2;border-radius:20px;padding:16px 10px 10px}
+.mdl2-f__t{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:0 14px 10px;margin-bottom:6px;border-bottom:1px solid #e9e5dc}
+.mdl2-f__n{margin:0;font-family:'Alegreya',Georgia,serif;font-size:21px;font-weight:500;color:#110704}
+.mdl2-f__c{font-family:'Inter Tight',sans-serif;font-size:14px;font-weight:500;color:rgba(17,7,4,.58);margin-left:3px;font-variant-numeric:tabular-nums}
+.mdl2-f__s{margin:1px 0 0;font-size:13.5px;color:rgba(17,7,4,.58)}
+.mdl2-plus{flex:none;width:36px;height:36px;border-radius:999px;border:none;background:#fff;color:#110704;font-size:20px;line-height:1;cursor:pointer}
+.mdl2-plus:hover{background:#EAF2FF}
+.mdl2-i{display:block;width:100%;text-align:left;border:none;background:none;padding:11px 14px;border-radius:11px;cursor:pointer;font-family:'Inter Tight',sans-serif;color:#110704}
+.mdl2-i:hover{background:#fff}
+.mdl2-i.on{background:#110704;color:#F8F6F2}
+.mdl2-i--arch{opacity:.6}
+.mdl2-i__n{display:block;font-size:15.5px;font-weight:500}
+.mdl2-i.on .mdl2-i__n{font-weight:600}
+.mdl2-i__m{display:block;font-size:13.5px;margin-top:2px;color:rgba(17,7,4,.58)}
+.mdl2-i.on .mdl2-i__m{color:rgba(248,246,242,.7)}
+.mdl2-pied{display:flex;gap:18px;flex-wrap:wrap;padding:8px 14px 4px}
+.mdl2-arch{align-self:flex-start;margin-left:14px}
+.mdl2-vide{margin:6px 14px 8px;font-size:14.5px;color:rgba(17,7,4,.58)}
+.mdl2-d{background:#F8F6F2;border-radius:20px;padding:32px 36px;min-width:0}
+.mdl2-d>.mdl-vide{padding:0;background:none}
+.mdl2-dt{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;flex-wrap:wrap}
+.mdl2-dt__n{margin:0;font-family:'Cormorant Garamond',Georgia,serif;font-style:italic;font-weight:500;font-size:40px;line-height:1.05;color:#110704}
+.mdl2-dt__m{margin:10px 0 0;font-size:15px;color:rgba(17,7,4,.58)}
+.mdl2-dt__a{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.mdl2-frise{display:flex;gap:4px;margin:28px 0 10px}
+.mdl2-frise span{height:10px;border-radius:4px;background:#110704;min-width:0}
+.mdl2-frise span:nth-child(even){background:#5A2A11}
+.mdl2-leg{display:flex;gap:18px;margin:0 0 26px;font-size:14px;color:rgba(17,7,4,.58)}
+.mdl2-leg span{display:inline-flex;align-items:center;gap:7px}
+.mdl2-pt{flex:none;display:inline-block;width:10px;height:10px;border-radius:3px}
+.mdl2-pt--s{background:#110704}.mdl2-pt--c{background:#E6E5B2;box-shadow:inset 0 0 0 1px #cfcd96}.mdl2-pt--v{background:#C5DEFF}
+.mdl2-phs{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:30px 34px;margin-top:28px}
+.mdl2-leg+.mdl2-phs{margin-top:0}
+.mdl2-ph{min-width:0}
+.mdl2-ph__k{margin:0;font-size:13px;color:rgba(17,7,4,.58)}
+.mdl2-ph__lk{margin-top:16px}
+.mdl2-ph__n{margin:4px 0 10px;font-family:'Alegreya',Georgia,serif;font-size:21px;font-weight:400;color:#110704}
+.mdl2-et,.mdl2-lv{list-style:none;margin:0;padding:0}
+.mdl2-et li{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-top:1px solid #e9e5dc;font-size:15px;line-height:1.35}
+.mdl2-et li .mdl2-pt{margin-top:4px}
+.mdl2-et--q li{display:block}
+.mdl2-lv li{font-size:14px;padding:7px 12px;background:#fff;border-radius:9px;margin-top:6px}
+.mdl2-aide{margin:0 0 8px;font-size:14px;color:rgba(17,7,4,.58);line-height:1.45;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.mdl2-plus-q{border-top:1px solid #e9e5dc;padding-top:10px;font-size:14px;color:rgba(17,7,4,.58)}
+@media(max-width:1100px){.mdl2{grid-template-columns:1fr}.mdl2-d{padding:24px 20px}}

@@ -3602,7 +3602,7 @@
   function visSetTypeFilter(v) { VIS_TYPEFILTER = v; renderVisiosBody(); }
   function renderVisios() {
     // « Trames d'appel » vit dans Modèles mais partage le chargement des Visios.
-    if (VIEW === 'trames') setMain('<div class="wrap mdl">' + modelesTete('trames') + '<div id="vis-body"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div></div>');
+    if (VIEW === 'trames') setMain('<div class="wrap mdl">' + modelesTete('trames') + '<div id="vis-body" class="mdl2-d"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div></div></div>');
     else setMain('<div class="wrap tps pj-page vis-page" id="vis-body"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
     if (!NAV_CLIENTS.length) { clientsGet().then(function (d) { NAV_CLIENTS = d.clients || []; if (VIEW === 'visios' || VIEW === 'trames') renderVisiosBody(); }).catch(function () {}); }
     visLoadCalendar();
@@ -3665,7 +3665,7 @@
   function visTpl(id) { return VISIOS.templates.filter(function (t) { return t.id === id; })[0]; }
   function renderVisiosBody() {
     var body = el('vis-body'); if (!body) return;
-    if (VIEW === 'trames') { body.innerHTML = visTramesHtml(); return; }
+    if (VIEW === 'trames') { mdlNavMaj(); if (VIS_TRAME_OPEN) { body.innerHTML = visTramesHtml(); return; } var tl = tramesGet(), tid = mdlSel('trames', tl), tt = tl.filter(function (x) { return x.id === tid; })[0]; body.innerHTML = tt ? mdlTrameDetail(tt) : '<div class="mdl-vide">Aucune trame pour l’instant. Crée-en une avec le bouton +.</div>'; return; }
     if (VIS_TAB === 'trames') VIS_TAB = 'cards';
     var nouvelle = '<div class="ckm vis-nv"><button class="btn ckm-b" aria-haspopup="menu" aria-expanded="false" onclick="event.stopPropagation();ADM.ckMenu(this)">Nouvelle visio</button>' +
       '<div class="ckm-l" role="menu" hidden><button role="menuitem" class="ckm-i" onclick="ADM.visAdd(\'suivi\')">Avec un client suivi</button>' +
@@ -3965,7 +3965,7 @@
     if (!a.length) { a = [kakemonoTrame(), defaultTrame()]; tramesSaveAll(a); }
     return a;
   }
-  function trameNew() { var a = tramesGet(); var t = { id: 't' + Date.now(), title: 'Nouvelle trame', content: '' }; a.unshift(t); tramesSaveAll(a); CALL_TRAME_SEL = t.id; CALL_TRAME_EDIT = true; VIS_TRAME_OPEN = t.id; TRAME_ED.id = null; renderVisiosBody(); }
+  function trameNew() { var a = tramesGet(); var t = { id: 't' + Date.now(), title: 'Nouvelle trame', content: '' }; a.unshift(t); tramesSaveAll(a); MDL_SEL.trames = t.id; CALL_TRAME_SEL = t.id; CALL_TRAME_EDIT = true; VIS_TRAME_OPEN = t.id; TRAME_ED.id = null; renderVisiosBody(); }
   function trameSel(id) { CALL_TRAME_SEL = id; CALL_TRAME_EDIT = false; TRAME_ED.id = null; renderVisiosBody(); }
   function trameDel(id) { admConfirm({ title: 'Supprimer cette trame ?', danger: true, yes: 'Supprimer', no: 'Annuler' }, function () { var a = tramesGet().filter(function (t) { return t.id !== id; }); tramesSaveAll(a); if (CALL_TRAME_SEL === id) CALL_TRAME_SEL = null; if (VIS_TRAME_OPEN === id) VIS_TRAME_OPEN = null; CALL_TRAME_EDIT = false; renderVisiosBody(); }); }
   function trameSet(id, field, val) { var a = tramesGet(); var t = a.filter(function (x) { return x.id === id; })[0]; if (!t) return; t[field] = val; tramesSaveAll(a); }
@@ -12114,7 +12114,7 @@
 
   var QNR_D = null, QNR_TAB = 'modeles';
   function renderQuestionnaires() {
-    setMain('<div class="wrap mdl">' + modelesTete('questionnaires') + '<div id="qnr-body"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div></div>');
+    setMain('<div class="wrap mdl">' + modelesTete('questionnaires') + '<div id="qnr-body" class="mdl2-d"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div></div></div>');
     if (!NAV_CLIENTS.length) { clientsGet().then(function (d) { NAV_CLIENTS = d.clients || []; }).catch(function () {}); }
     // Le registre des envois vient du tableau de bord (lecture mutualisée).
     dashGet().then(function (d) { QNR_D = d; if (VIEW === 'questionnaires') renderQnrBody(); }).catch(function () {});
@@ -12131,19 +12131,14 @@
     if (QNR_TAB === 'reponses') {
       body.innerHTML = mdlBarre('Toutes les réponses reçues. Chaque nouvelle réponse arrive aussi dans l’Inbox et dans la fiche du client.',
         '<button class="tps-lien" onclick="ADM.qnrSetTab(\'modeles\')">Revenir aux modèles</button>') + qnrRepView();
+      mdlNavMaj();
       return;
     }
-    var barre = mdlBarre('Les questionnaires que tu envoies à tes clients. Leurs réponses arrivent dans l’Inbox et dans leur fiche.',
-      '<button class="btn btn--dark" onclick="ADM.qnrAdd()">Nouveau modèle</button>');
-    var list = active.length ? mdlGrille(active.map(qnrTplCardHtml).join(''))
-      : '<div class="mdl-vide">Aucun questionnaire pour l’instant. Crée ton premier modèle (par exemple « Questions de démarrage »), puis envoie-le à un ou plusieurs clients.</div>';
-    var pied = mdlPied([
-      '<button class="tps-lien" onclick="ADM.qnrImportJson()">Importer un modèle</button>',
-      nRep ? '<button class="tps-lien" onclick="ADM.qnrSetTab(\'reponses\')">Toutes les réponses [' + nRep + ']</button>' : '',
-      archived.length ? '<button class="tps-lien" onclick="ADM.qnrToggleArch()">' + (QNR_SHOW_ARCH ? 'Masquer' : 'Voir') + ' les archivés [' + archived.length + ']</button>' : ''
-    ]);
-    var archGrid = (QNR_SHOW_ARCH && archived.length) ? '<div class="mdl-arch">' + mdlGrille(archived.map(qnrTplCardHtml).join('')) + '</div>' : '';
-    body.innerHTML = barre + list + pied + archGrid;
+    mdlNavMaj();
+    var liste = QNR.filter(function (t) { return MDL_ARCH || !t.archived; });
+    var id = mdlSel('questionnaires', liste), t = id ? qnrTpl(id) : null;
+    body.innerHTML = t ? mdlQnrDetail(t)
+      : '<div class="mdl-vide">Aucun questionnaire pour l’instant. Crée ton premier modèle (par exemple « Questions de démarrage ») avec le bouton +, puis envoie-le à un ou plusieurs clients.</div>';
   }
   function qnrTplCardHtml(t) {
     var nQ = qnrCountBlocks(t);
@@ -12332,14 +12327,14 @@
   }
   function qnrAdd() {
     var t = { id: qnrId('t'), name: '', description: '', category: 'demarrage', color: qnrCatMeta('demarrage')[2], archived: false, steps: [{ id: qnrId('s'), title: '', help: '', blocks: [] }] };
-    QNR.unshift(t); qnrSave(); renderQnrBody(); qnrOpen(t.id);
+    QNR.unshift(t); MDL_SEL.questionnaires = t.id; qnrSave(); renderQnrBody(); qnrOpen(t.id);
   }
   function qnrDup(id) {
     var t = qnrTpl(id); if (!t) return;
     var copy = JSON.parse(JSON.stringify(t));
     copy.id = qnrId('t'); copy.name = (t.name || 'Sans titre') + ' (copie)'; copy.archived = false;
     (copy.steps || []).forEach(function (s) { s.id = qnrId('s'); (s.blocks || []).forEach(function (b) { b.id = qnrId('b'); }); });
-    QNR.unshift(copy); qnrSave(); renderQnrBody(); toast('Questionnaire dupliqué');
+    QNR.unshift(copy); MDL_SEL.questionnaires = copy.id; qnrSave(); renderQnrBody(); toast('Questionnaire dupliqué');
   }
   function qnrArchive(id) { var t = qnrTpl(id); if (!t) return; t.archived = !t.archived; qnrSave(); renderQnrBody(); }
   function qnrDel(id) {
@@ -12724,11 +12719,9 @@
    * d'appel). Même tête et mêmes cartes partout : le nom, une ligne de
    * repères, « Modifier » et le menu ⋯ pour le reste. ── */
   function modelesTete(cur) {
-    return pageTete('Modèles', [
-      ['projtpl', 'ADM.nav(\'projtpl\')', 'Projets'],
-      ['questionnaires', 'ADM.nav(\'questionnaires\')', 'Questionnaires'],
-      ['trames', 'ADM.nav(\'trames\')', 'Trames d’appel']
-    ], cur);
+    mdlCharger();
+    return '<div class="mdl2-t"><h1 class="pg-h1">Modèles</h1><p class="mdl2-sous">Ce que tu prépares une fois et réutilises pour chaque client.</p></div>' +
+      '<div class="mdl2"><aside class="mdl2-nav" id="mdl-nav">' + mdlNavHtml() + '</aside>';
   }
   function mdlBarre(phrase, bouton) { return '<div class="mdl-barre"><p>' + phrase + '</p>' + (bouton || '') + '</div>'; }
   function mdlCarte(nom, meta, modifier, items, supprimer) {
@@ -12738,8 +12731,121 @@
   }
   function mdlGrille(cartes) { return '<div class="mdl-g">' + cartes + '</div>'; }
   function mdlPied(liens) { return '<div class="mdl-pied">' + liens.filter(Boolean).join('') + '</div>'; }
+
+  /* ── Modèles, version B menu 1 : à gauche une carte par famille (Projets,
+   * Questionnaires, Trames d'appel), à droite le modèle choisi, déjà ouvert.
+   * Chaque famille garde son chargement et son éditeur ; seule la page change. ── */
+  var MDL_SEL = { projtpl: null, questionnaires: null, trames: null }, MDL_ARCH = false;
+  function mdlCharger() {
+    var maj = function () { var n = el('mdl-nav'); if (n) n.innerHTML = mdlNavHtml(); };
+    if (!PRJ_LOADED) api('/api/project-templates').then(function (r) { return r.json(); }).then(function (d) { if (PRJ_LOADED) return; PRJ = (d && d.templates) || []; PRJ_LOADED = true; maj(); if (VIEW === 'projtpl') renderPrjBody(); }).catch(function () {});
+    if (!QNR_LOADED) api('/api/questionnaires').then(function (r) { return r.json(); }).then(function (d) { if (QNR_LOADED) return; QNR = (d && d.questionnaires) || []; QNR_LOADED = true; maj(); if (VIEW === 'questionnaires') renderQnrBody(); }).catch(function () {});
+    if (!TRAMES_LOADED && VIEW !== 'trames') api('/api/call-trames').then(function (r) { return r.json(); }).then(function (d) { if (TRAMES_LOADED) return; var a = (d && Array.isArray(d.trames)) ? d.trames : []; if (a.length) { TRAMES_SRV = a; TRAMES_LOADED = true; } maj(); }).catch(function () {});
+  }
+  function mdlNavMaj() { var n = el('mdl-nav'); if (n) n.innerHTML = mdlNavHtml(); }
+  function mdlSel(vue, liste) {
+    var id = MDL_SEL[vue];
+    if (id && liste.some(function (x) { return x.id === id; })) return id;
+    return liste.length ? liste[0].id : null;
+  }
+  function mdlNavHtml() {
+    var prj = PRJ.filter(function (t) { return MDL_ARCH || !t.archived; });
+    var qnr = QNR.filter(function (t) { return MDL_ARCH || !t.archived; });
+    var trm = TRAMES_LOADED ? tramesGet() : [];
+    var nArch = PRJ.filter(function (t) { return t.archived; }).length + QNR.filter(function (t) { return t.archived; }).length;
+    var fam = function (vue, titre, sous, liste, meta, nouveau, charge, pied) {
+      var sel = VIEW === vue ? mdlSel(vue, liste) : null;
+      var items = !charge ? '<p class="mdl2-vide">Chargement…</p>' : liste.length ? liste.map(function (x) {
+        var on = x.id === sel;
+        return '<button class="mdl2-i' + (on ? ' on' : '') + (x.archived ? ' mdl2-i--arch' : '') + '"' + (on ? ' aria-current="true"' : '') + ' onclick="ADM.mdlChoisir(\'' + vue + '\',\'' + esc(x.id) + '\')">' +
+          '<span class="mdl2-i__n">' + esc(x.name || x.title || 'Sans titre') + '</span><span class="mdl2-i__m">' + meta(x) + (x.archived ? ', archivé' : '') + '</span></button>';
+      }).join('') : '<p class="mdl2-vide">Aucun pour l’instant.</p>';
+      return '<section class="mdl2-f"><div class="mdl2-f__t"><div><h2 class="mdl2-f__n">' + titre + ' <span class="mdl2-f__c">' + (charge ? liste.length : '') + '</span></h2><p class="mdl2-f__s">' + sous + '</p></div>' +
+        '<button class="mdl2-plus" aria-label="' + esc(nouveau[0]) + '" title="' + esc(nouveau[0]) + '" onclick="' + nouveau[1] + '">+</button></div>' + items + (pied || '') + '</section>';
+    };
+    var nq = function (t) { var n = qnrCountBlocks(t); return n + ' question' + (n > 1 ? 's' : ''); };
+    var np = function (t) { var a = (t.phases || []).length, b = prjCountDeliv(t); return a + ' phase' + (a > 1 ? 's' : '') + ', ' + b + ' livrable' + (b > 1 ? 's' : ''); };
+    var nt = function (t) { var n = trameParse(t.content).length; return n + ' partie' + (n > 1 ? 's' : ''); };
+    var piedP = PRJ_LOADED && !PRJ.length ? '<div class="mdl2-pied"><button class="tps-lien" onclick="ADM.prjSeed()">Ajouter les modèles de départ</button></div>' : '';
+    var nRep = QNR_LOADED ? qnrRepAll().length : 0;
+    var piedQ = '<div class="mdl2-pied"><button class="tps-lien" onclick="ADM.qnrImportJson()">Importer</button>' +
+      (nRep ? '<button class="tps-lien" onclick="ADM.mdlReponses()">Les réponses [' + nRep + ']</button>' : '') + '</div>';
+    return fam('projtpl', 'Projets', 'les étapes et les livrables d’une offre', prj, np, ['Nouveau modèle de projet', 'ADM.mdlNouveau(\'projtpl\')'], PRJ_LOADED, piedP) +
+      fam('questionnaires', 'Questionnaires', 'envoyés à tes clients', qnr, nq, ['Nouveau questionnaire', 'ADM.mdlNouveau(\'questionnaires\')'], QNR_LOADED, piedQ) +
+      fam('trames', 'Trames d’appel', 'suivies pendant la visio', trm, nt, ['Nouvelle trame', 'ADM.mdlNouveau(\'trames\')'], TRAMES_LOADED) +
+      (nArch ? '<button class="tps-lien mdl2-arch" onclick="ADM.mdlArch()">' + (MDL_ARCH ? 'Masquer' : 'Voir') + ' les archivés [' + nArch + ']</button>' : '');
+  }
+  function mdlChoisir(vue, id) {
+    if (id) MDL_SEL[vue] = id;
+    if (vue === 'trames') { VIS_TRAME_OPEN = null; CALL_TRAME_EDIT = false; }
+    if (vue === 'questionnaires') QNR_TAB = 'modeles';
+    if (VIEW !== vue) { nav(vue); return; }
+    mdlNavMaj();
+    if (vue === 'projtpl') renderPrjBody(); else if (vue === 'questionnaires') renderQnrBody(); else renderVisiosBody();
+  }
+  function mdlNouveau(vue) {
+    // Jamais avant la fin du chargement : on écraserait la liste enregistrée.
+    if (!(vue === 'projtpl' ? PRJ_LOADED : vue === 'questionnaires' ? QNR_LOADED : TRAMES_LOADED)) { toast('Un instant, chargement en cours'); return; }
+    if (VIEW !== vue) { nav(vue); }
+    if (vue === 'projtpl') prjAdd(); else if (vue === 'questionnaires') qnrAdd(); else trameNew();
+    mdlNavMaj();
+  }
+  function mdlArch() { MDL_ARCH = !MDL_ARCH; mdlNavMaj(); }
+  function mdlReponses() { QNR_TAB = 'reponses'; if (VIEW !== 'questionnaires') nav('questionnaires'); else { mdlNavMaj(); renderQnrBody(); } }
+  function mdlTete(nom, meta, boutons, menu) {
+    return '<div class="mdl2-dt"><div class="mdl2-dt__g"><h2 class="mdl2-dt__n">' + esc(nom || 'Sans titre') + '</h2><p class="mdl2-dt__m">' + meta + '</p></div>' +
+      '<div class="mdl2-dt__a">' + boutons + (menu || '') + '</div></div>';
+  }
+  var MDL_TYPES = { studio: ['ton côté', 'mdl2-pt--s'], client: ['côté client', 'mdl2-pt--c'], validation: ['validation', 'mdl2-pt--v'] };
+  function mdlPrjDetail(t) {
+    var i = esc(t.id), phases = t.phases || [];
+    var mins = phases.map(function (p) { var m = 0; (p.steps || []).forEach(function (x) { m += x.estMinutes || 0; }); return m; });
+    var tot = mins.reduce(function (a, b) { return a + b; }, 0);
+    var frise = phases.length ? '<div class="mdl2-frise" aria-hidden="true">' + phases.map(function (p, k) {
+      var part = tot ? Math.max(mins[k] / tot, 0.06) : 1;
+      return '<span style="flex:' + part.toFixed(3) + '"></span>';
+    }).join('') + '</div>' : '';
+    var leg = '<p class="mdl2-leg">' + ['studio', 'client', 'validation'].map(function (k) { return '<span><i class="mdl2-pt ' + MDL_TYPES[k][1] + '"></i>' + MDL_TYPES[k][0] + '</span>'; }).join('') + '</p>';
+    var cols = phases.map(function (p, k) {
+      var et = (p.steps || []).map(function (x) { var m = MDL_TYPES[x.type] || MDL_TYPES.studio; return '<li><i class="mdl2-pt ' + m[1] + '" title="' + m[0] + '"></i>' + esc(x.title || 'Étape sans titre') + '</li>'; }).join('');
+      var lv = (p.deliverables || []).map(function (d) { return '<li>' + esc(d.name || 'Livrable') + '</li>'; }).join('');
+      return '<div class="mdl2-ph"><p class="mdl2-ph__k">Phase ' + (k + 1) + (p.help ? ', ' + esc(p.help) : '') + '</p><h3 class="mdl2-ph__n">' + esc(p.title || 'Sans titre') + '</h3>' +
+        (et ? '<ul class="mdl2-et">' + et + '</ul>' : '<p class="mdl2-vide">Aucune étape.</p>') + (lv ? '<p class="mdl2-ph__k mdl2-ph__lk">Livré</p><ul class="mdl2-lv">' + lv + '</ul>' : '') + '</div>';
+    }).join('');
+    var meta = esc(prjOfferLabel(t.offer)) + (t.totalWeeks ? ', ' + esc(t.totalWeeks) + ' semaines' : '') + (t.archived ? ', archivé' : '');
+    return mdlTete(t.name, meta,
+      '<button class="btn btn--outline" onclick="ADM.prjDup(\'' + i + '\')">Dupliquer</button><button class="btn btn--outline" onclick="ADM.prjOpen(\'' + i + '\')">Modifier</button><button class="btn" onclick="ADM.prjAssignOpen(\'' + i + '\')">Utiliser pour un client</button>',
+      ckMenuHtml([[t.archived ? 'Désarchiver' : 'Archiver', 'ADM.prjArchive(\'' + i + '\')']], 'ADM.prjDel(\'' + i + '\')')) +
+      (phases.length ? frise + leg + '<div class="mdl2-phs">' + cols + '</div>' : '<p class="mdl2-vide">Ce modèle n’a pas encore de phase. Clique sur Modifier pour en ajouter.</p>');
+  }
+  function mdlQnrDetail(t) {
+    var i = esc(t.id), n = qnrCountBlocks(t);
+    var used = (typeof t.usedCount === 'number') ? t.usedCount : ((t.assignments || []).length || 0);
+    var cols = (t.steps || []).map(function (st, k) {
+      var q = (st.blocks || []).filter(function (b) { return !qnrIsStatic(b.type); }).map(function (b) { return '<li>' + esc(b.label || 'Question sans intitulé') + '</li>'; }).join('');
+      return '<div class="mdl2-ph"><p class="mdl2-ph__k">Étape ' + (k + 1) + '</p><h3 class="mdl2-ph__n">' + esc(st.title || 'Sans titre') + '</h3>' + (q ? '<ul class="mdl2-et mdl2-et--q">' + q + '</ul>' : '<p class="mdl2-vide">Pas de question.</p>') + '</div>';
+    }).join('');
+    return mdlTete(t.name, n + ' question' + (n > 1 ? 's' : '') + ', ' + (used ? 'envoyé ' + used + ' fois' : 'jamais envoyé') + (t.archived ? ', archivé' : ''),
+      '<button class="btn btn--outline" onclick="ADM.qnrPreview(\'' + i + '\')">Aperçu</button><button class="btn btn--outline" onclick="ADM.qnrOpen(\'' + i + '\')">Modifier</button><button class="btn" onclick="ADM.qnrAssignOpen(\'' + i + '\')">Envoyer à un client</button>',
+      ckMenuHtml([['Dupliquer', 'ADM.qnrDup(\'' + i + '\')'], ['Exporter', 'ADM.qnrExportJson(\'' + i + '\')'], [t.archived ? 'Désarchiver' : 'Archiver', 'ADM.qnrArchive(\'' + i + '\')']], 'ADM.qnrDel(\'' + i + '\')')) +
+      (cols ? '<div class="mdl2-phs">' + cols + '</div>' : '<p class="mdl2-vide">Ce questionnaire est vide. Clique sur Modifier pour ajouter des questions.</p>');
+  }
+  function mdlTrameDetail(t) {
+    var i = esc(t.id), secs = trameParse(t.content), nq = 0;
+    secs.forEach(function (x) { nq += x.questions.length; });
+    var cols = secs.map(function (x, k) {
+      // Un aperçu, pas la trame entière : trois questions par partie, le reste se lit en l'ouvrant.
+      var q = x.questions.slice(0, 3).map(function (l) { return '<li>' + esc(l) + '</li>'; }).join('');
+      var reste = x.questions.length - 3;
+      return '<div class="mdl2-ph"><p class="mdl2-ph__k">Partie ' + (k + 1) + '</p><h3 class="mdl2-ph__n">' + esc(x.title || 'Sans titre') + '</h3>' + (x.hint ? '<p class="mdl2-aide">' + esc(x.hint) + '</p>' : '') + (q ? '<ul class="mdl2-et mdl2-et--q">' + q + '</ul>' : '') + (reste > 0 ? '<p class="mdl2-plus-q">et ' + reste + ' autre' + (reste > 1 ? 's' : '') + '</p>' : '') + '</div>';
+    }).join('');
+    return mdlTete(trameTitleClean(t.title), secs.length + ' partie' + (secs.length > 1 ? 's' : '') + ', ' + nq + ' question' + (nq > 1 ? 's' : ''),
+      '<button class="btn btn--outline" onclick="ADM.trameEditLib(\'' + i + '\')">Modifier</button><button class="btn" onclick="ADM.trameOpen(\'' + i + '\')">Ouvrir pendant un appel</button>',
+      ckMenuHtml([], 'ADM.trameDel(\'' + i + '\')')) +
+      (cols ? '<div class="mdl2-phs">' + cols + '</div>' : '<p class="mdl2-vide">Cette trame est vide. Clique sur Modifier pour l’écrire.</p>');
+  }
   function renderProjTpl() {
-    setMain('<div class="wrap mdl">' + modelesTete('projtpl') + '<div id="prj-body"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div></div>');
+    setMain('<div class="wrap mdl">' + modelesTete('projtpl') + '<div id="prj-body" class="mdl2-d"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div></div></div>');
     if (!NAV_CLIENTS.length) { clientsGet().then(function (d) { NAV_CLIENTS = d.clients || []; }).catch(function () {}); }
     if (PRJ_LOADED) { renderPrjBody(); return; }
     api('/api/project-templates').then(function (r) { return r.json(); }).then(function (d) { PRJ = (d && d.templates) || []; PRJ_LOADED = true; renderPrjBody(); }).catch(showError);
@@ -12748,18 +12854,11 @@
 
   function renderPrjBody() {
     var body = el('prj-body'); if (!body) return;
-    var active = PRJ.filter(function (t) { return !t.archived; });
-    var archived = PRJ.filter(function (t) { return t.archived; });
-    var barre = mdlBarre('Tes scénarios de projet : des phases, des étapes et des livrables. Crée-le une fois, utilise-le pour chaque client.',
-      '<button class="btn btn--dark" onclick="ADM.prjAdd()">Nouveau modèle</button>');
-    var grid = active.length ? mdlGrille(active.map(prjCardHtml).join(''))
-      : '<div class="mdl-vide">Aucun modèle de projet. Pars des 3 scénarios prêts à l’emploi (Site, Identité, Support), ou crée le tien.</div>';
-    var pied = mdlPied([
-      '<button class="tps-lien" onclick="ADM.prjSeed()">Ajouter les modèles de départ</button>',
-      archived.length ? '<button class="tps-lien" onclick="ADM.prjToggleArch()">' + (PRJ_SHOW_ARCH ? 'Masquer' : 'Voir') + ' les archivés [' + archived.length + ']</button>' : ''
-    ]);
-    var archGrid = (PRJ_SHOW_ARCH && archived.length) ? '<div class="mdl-arch">' + mdlGrille(archived.map(prjCardHtml).join('')) + '</div>' : '';
-    body.innerHTML = barre + grid + pied + archGrid;
+    mdlNavMaj();
+    var liste = PRJ.filter(function (t) { return MDL_ARCH || !t.archived; });
+    var id = mdlSel('projtpl', liste), t = id ? prjTpl(id) : null;
+    body.innerHTML = t ? mdlPrjDetail(t)
+      : '<div class="mdl-vide">Aucun modèle de projet. Pars des 3 scénarios prêts à l’emploi (Site, Identité, Support), ou crée le tien avec le bouton +.<div class="mdl-pied"><button class="tps-lien" onclick="ADM.prjSeed()">Ajouter les modèles de départ</button></div></div>';
   }
   function prjCardHtml(t) {
     var nP = (t.phases || []).length, nS = prjCountSteps(t), nD = prjCountDeliv(t);
@@ -12774,14 +12873,14 @@
   function prjToggleArch() { PRJ_SHOW_ARCH = !PRJ_SHOW_ARCH; renderPrjBody(); }
   function prjAdd() {
     var t = { id: prjId('t'), name: '', offer: 'website', icon: '', color: '#2c4a72', totalWeeks: 0, archived: false, phases: [{ id: prjId('ph'), title: '', help: '', steps: [], deliverables: [] }] };
-    PRJ.unshift(t); prjSave(); renderPrjBody(); prjOpen(t.id);
+    PRJ.unshift(t); MDL_SEL.projtpl = t.id; prjSave(); renderPrjBody(); prjOpen(t.id);
   }
   function prjDup(id) {
     var t = prjTpl(id); if (!t) return;
     var copy = JSON.parse(JSON.stringify(t));
     copy.id = prjId('t'); copy.name = (t.name || 'Sans titre') + ' (copie)'; copy.archived = false;
     (copy.phases || []).forEach(function (p) { p.id = prjId('ph'); (p.steps || []).forEach(function (s) { s.id = prjId('st'); }); (p.deliverables || []).forEach(function (d) { d.id = prjId('dl'); }); });
-    PRJ.unshift(copy); prjSave(); renderPrjBody(); toast('Modèle dupliqué');
+    PRJ.unshift(copy); MDL_SEL.projtpl = copy.id; prjSave(); renderPrjBody(); toast('Modèle dupliqué');
   }
   function prjArchive(id) { var t = prjTpl(id); if (!t) return; t.archived = !t.archived; prjSave(); renderPrjBody(); }
   function prjDel(id) {
@@ -13023,6 +13122,7 @@
     tiroirFermer: ptFermer, ptOuvrir: ptOuvrir,
     mailCfgSave: mailCfgSave, kvProbe: kvProbe, kvReset: kvReset,
     qnrAdd: qnrAdd, qnrOpen: qnrOpen, qnrCloseDrawer: qnrCloseDrawer, qnrSet: qnrSet, qnrDup: qnrDup, qnrImportJson: qnrImportJson, qnrExportJson: qnrExportJson, qnrArchive: qnrArchive, qnrDel: qnrDel, qnrToggleArch: qnrToggleArch, qnrPreview: qnrPreview, qnrPreviewNav: qnrPreviewNav, qnrPreviewStart: qnrPreviewStart, qnrPreviewCover: qnrPreviewCover, rankDown: rankDown, qnrSmartImport: qnrSmartImport, qnrAssignOpen: qnrAssignOpen, qnrStepAdd: qnrStepAdd, qnrBulkRequire: qnrBulkRequire, qnrStepSet: qnrStepSet, qnrStepDel: qnrStepDel, qnrStepMove: qnrStepMove, qnrBlockAdd: qnrBlockAdd, qnrBlockSet: qnrBlockSet, qnrBlockChangeType: qnrBlockChangeType, qnrBlockOptions: qnrBlockOptions, qnrBlockDel: qnrBlockDel, qnrBlockMove: qnrBlockMove,
+    mdlChoisir: mdlChoisir, mdlNouveau: mdlNouveau, mdlArch: mdlArch, mdlReponses: mdlReponses,
     prjAdd: prjAdd, prjSeed: prjSeed, prjOpen: prjOpen, prjCloseDrawer: prjCloseDrawer, prjSet: prjSet, prjDup: prjDup, prjArchive: prjArchive, prjDel: prjDel, prjToggleArch: prjToggleArch, prjAssignOpen: prjAssignOpen, prjPhaseAdd: prjPhaseAdd, prjPhaseSet: prjPhaseSet, prjPhaseDel: prjPhaseDel, prjPhaseMove: prjPhaseMove, prjStepAdd: prjStepAdd, prjStepSet: prjStepSet, prjStepDel: prjStepDel, prjDelivAdd: prjDelivAdd, prjDelivSet: prjDelivSet, prjDelivDel: prjDelivDel,
     incSeenAll: incSeenAll, incClear: incClear,
     sendMsg: sendMsg, loadAllDocs: loadAllDocs, docUploadToggle: docUploadToggle, setDocFilter: setDocFilter, filterAllDocs: filterAllDocs, upload: upload, delDoc: delDoc, lockDoc: lockDoc,
