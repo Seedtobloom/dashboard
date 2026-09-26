@@ -2529,10 +2529,10 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     });
     var dup = cpAccDup && cpAccDup.pid === pid ? cpAccDup : null;
     var cells = [], dim = new Date(an, mo + 1, 0).getDate(), premier = (new Date(an, mo, 1).getDay() + 6) % 7;
-    if (premier < 5) for (var k = 0; k < premier; k++) cells.push('<div></div>');
+    for (var k = 0; k < premier; k++) cells.push('<div></div>');
     for (var dd = 1; dd <= dim; dd++) {
       var dt = new Date(an, mo, dd), dow = dt.getDay();
-      if (dow === 0 || dow === 6) continue;
+      if (dow === 0 || dow === 6) { cells.push('<div class="cpa-jour cpa-jour--we"><span class="cpa-num">' + dd + '</span></div>'); continue; }
       var ds = cpAccIso(dt), hol = !!(window.cpHolidayFor && cpHolidayFor(ds)), passe = ds < auj;
       var jour = taches.filter(function (t) { var du = (t.dueDate || '').slice(0, 10), st = (t.startDate || '').slice(0, 10); if (!du) return false; return (st && st < du) ? (ds >= st && ds <= du) : du === ds; });
       var cindyJour = creneaux.some(function (c) { return c.indexOf(JOURS[dow]) === 0; });
@@ -2557,7 +2557,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var tete = '<div class="cpa-calh"><div class="cpa-mois"><button onclick="cliCalNav(\'' + pid + '\',-1)" aria-label="Mois précédent">‹</button><span>' + esc(nomMois) + '</span><button onclick="cliCalNav(\'' + pid + '\',1)" aria-label="Mois suivant">›</button>' +
       '<button class="cpa-aujbtn" onclick="cliCalGoToday(\'' + pid + '\')">Aujourd’hui</button></div>' +
       (dup ? '' : '<div class="cpl-ongs">' + f('tout', 'Toutes') + f('toi', 'À toi · ' + nToi) + f('cindy', 'Chez Cindy · ' + nCindy) + (nRecue ? f('recue', 'Reçues · ' + nRecue) : '') + '</div>') + '</div>';
-    var noms = '<div class="cpa-grille cpa-grille--noms">' + ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi'].map(function (n) { return '<span>' + n + '</span>'; }).join('') + '</div>';
+    var noms = '<div class="cpa-grille cpa-grille--noms">' + ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Sam.', 'Dim.'].map(function (n) { return '<span>' + n + '</span>'; }).join('') + '</div>';
     return '<section class="cpb-carte cpa-cal" onclick="if(window.cpAccRepFermer)cpAccRepFermer()">' + tete + noms + '<div class="cpa-grille">' + cells.join('') + '</div></section>';
   }
   window.cpAccRepFermer = function () { if (cpAccRep) { cpAccRep = null; renderShell(); } };
@@ -2573,9 +2573,15 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var bande = (forf || cren) ? '<section class="cpb-carte cpa-bande">' + forf + cren + '<a href="#" onclick="cpOpenStats();return false">Voir le temps passé</a></section>' : '';
     var nFin = (p.tasks || []).filter(function (t) { return t.status === 'done' && !cpAccEstArchivee(t); }).length;
     function o(v, l) { return '<button class="cpl-ong' + (tab === v ? ' on' : '') + '" onclick="cpAccSetTab(\'' + pid + '\',\'' + v + '\')">' + l + '</button>'; }
-    var onglets = '<div class="cpa-ongs"><div class="cpl-ongs">' + o('cal', 'Calendrier') + o('tableau', 'Tableau') + o('fini', 'Terminées' + (nFin ? ' · ' + nFin : '')) + o('notes', 'Notes') + '</div>' +
-      ((p.brouillons || []).length && tab !== 'tableau' ? '<button class="cpl-lien" onclick="cpAccSetTab(\'' + pid + '\',\'tableau\')">Tes brouillons · ' + p.brouillons.length + '</button>' : '') +
-      '<span class="cpa-leg">en paille : à toi · en noir : chez Cindy · en crème : terminé · contour : reçue</span></div>';
+    // Le corps d'abord : Tableau et Terminées posent leurs outils (recherche, filtres) à droite des onglets.
+    cpAccOutils = '';
+    var voir = tab === 'cal' && cpAccVoir[pid] && !(cpAccDup && cpAccDup.pid === pid) ? cpAccApercu(pd, cpAccVoir[pid]) : '';
+    var corps = tab === 'tableau' ? cpAccTableau2(pd) : (tab === 'fini' ? cpAccFinies2(pd) : (tab === 'notes' ? cpAccNotes(pd) : (voir ? '<div class="cpa-calv">' + cpAccCal(pd) + voir + '</div>' : cpAccCal(pd))));
+    var droite = tab === 'cal'
+      ? ((p.brouillons || []).length ? '<button class="cpl-lien" onclick="cpAccSetTab(\'' + pid + '\',\'tableau\')">Tes brouillons · ' + p.brouillons.length + '</button>' : '') +
+        '<span class="cpa-leg">en paille : à toi · en noir : chez Cindy · en crème : livré · en bleu : les jours où Cindy travaille pour toi</span>'
+      : cpAccOutils;
+    var onglets = '<div class="cpa-ongs"><div class="cpl-ongs">' + o('cal', 'Calendrier') + o('tableau', 'Tableau') + o('fini', 'Terminées' + (nFin ? ' · ' + nFin : '')) + o('notes', 'Notes') + '</div>' + droite + '</div>';
     var dupBande = '';
     if (cpAccDup && cpAccDup.pid === pid) {
       var src = (p.tasks || []).filter(function (x) { return x.id === cpAccDup.id; })[0], n = cpAccDup.dates.length;
@@ -2583,13 +2589,11 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
         '<div class="cpb-hero__a"><span>' + (n ? n + ' date' + (n > 1 ? 's' : '') : 'aucune date') + '</span><button class="cpb-btn cpb-btn--ghost" onclick="cpAccDupStop()">Annuler</button>' +
         '<button class="cpb-btn cpb-btn--light"' + (n ? '' : ' disabled') + ' onclick="cpAccDupCreer()">' + (n > 1 ? 'Créer ' + n + ' copies' : 'Créer la copie') + '</button></div></section>';
     }
-    var voir = tab === 'cal' && cpAccVoir[pid] && !(cpAccDup && cpAccDup.pid === pid) ? cpAccApercu(pd, cpAccVoir[pid]) : '';
-    var corps = tab === 'tableau' ? cpAccTableau2(pd) : (tab === 'fini' ? cpAccFinies2(pd) : (tab === 'notes' ? cpAccNotes(pd) : (voir ? '<div class="cpa-calv">' + cpAccCal(pd) + voir + '</div>' : cpAccCal(pd))));
     return '<div class="cp-home cpb"><div class="cpb__in cpa fade-up">' +
       '<header class="cpa-tete"><div><a href="#" class="cpe-retour" onclick="cpGoHome();return false">Accueil</a><h1 class="cpb-h1">' + esc(p.projectTitle || 'Accompagnement créatif') + '</h1>' +
         '<p class="cpb-lead">Tes demandes du mois. Glisse une demande pour changer sa date, clique sur un jour pour en ajouter une.</p></div>' +
         '<button class="cpb-btn" style="background:#110704;color:#F8F6F2" onclick="cliNewDemande(\'' + pid + '\')">Nouvelle demande</button></header>' +
-      bande + (dupBande || onglets) + corps +
+      (tab === 'cal' ? bande : '') + (dupBande || onglets) + corps +
     '</div></div>';
   }
   function buildProjectView(pd) {

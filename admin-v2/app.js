@@ -945,7 +945,7 @@
   }
   function kvReset() { KV_SEEN = { r: 0, w: 0, d: 0, l: 0, n: 0, since: Date.now() }; renderKvBody(null); }
   function renderReglages() {
-    setMain('<div class="wrap tps pj-page rg-page"><h1 class="pg-h1">Réglages</h1><div class="rg-2">' + reglTabs() + '<div id="regl-body" class="rg-c"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div></div></div>');
+    setMain('<div class="wrap tps pj-page rg-page' + (REGL_TAB === 'types' ? ' rg-page--large' : '') + '"><h1 class="pg-h1">Réglages</h1><div class="rg-2">' + reglTabs() + '<div id="regl-body" class="rg-c"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div></div></div>');
     if (REGL_TAB === 'emails') {
       Promise.all([
         api('/api/email-templates').then(function (r) { return r.json(); }),
@@ -1172,16 +1172,18 @@
   }
   function mtMin(m) { var h = Math.floor(m / 60), r = Math.round(m % 60); return h ? h + ' h' + (r ? ' ' + (r < 10 ? '0' : '') + r : '') : r + ' min'; }
   function missionBody() {
-    var head = '<div class="mt-row mt-row--head"><span></span><span>Type de mission</span><span>Temps de travail</span><span>Délai minimum</span><span>Retours inclus</span><span></span></div>';
+    var head = '<div class="mt-row mt-row--head"><span></span><span>Type de mission</span><span>Temps de travail</span><span>Chez toi en moyenne</span><span>Délai minimum</span><span>Retours inclus</span><span>Ce que le client doit fournir</span><span></span></div>';
     var rows = MT.map(function (t, i) {
       var moy = MT_MOY[t.nom];
       var ligne = '<div class="mt-row" draggable="true" ondragstart="ADM.mtDragStart(' + i + ')" ondragover="event.preventDefault();this.classList.add(\'mt-over\')" ondragleave="this.classList.remove(\'mt-over\')" ondrop="ADM.mtDrop(' + i + ')">' +
         '<span class="mt-grip" title="Glisser pour changer l’ordre"><i></i><i></i><i></i><i></i><i></i><i></i></span>' +
         '<span class="mt-nomw"><b class="mt-nom" onclick="ADM.mtOpen(' + i + ')">' + esc(t.nom) + '</b>' +
-          '<span class="mt-moy">' + (moy ? 'chez toi en moyenne ' + esc(mtMin(moy.min)) + ' · ' + moy.n + ' demande' + (moy.n > 1 ? 's' : '') : (t.fournir ? 'le client fournit ' + esc(t.fournir) : '')) + '</span></span>' +
+          '</span>' +
         '<input class="mt-inp" value="' + esc(t.tMax ? stbMissionTemps(t).replace(/^environ /, '') : '') + '" placeholder="Cindy estime" aria-label="Temps de travail" onchange="ADM.mtSet(' + i + ',\'temps\',this.value)">' +
+        '<span class="mt-moy">' + (moy ? esc(mtMin(moy.min)) + ' · ' + moy.n + ' demande' + (moy.n > 1 ? 's' : '') : '') + '</span>' +
         '<label class="mt-inp mt-delai"><input type="number" min="0" max="30" value="' + t.delai + '" aria-label="Délai minimum en jours ouvrés" onchange="ADM.mtSet(' + i + ',\'delai\',this.value)"><span>' + (t.delai ? (t.delai > 1 ? 'jours ouvrés' : 'jour ouvré') : 'à réception') + '</span></label>' +
         '<input class="mt-inp" value="' + esc(t.retours) + '" aria-label="Retours inclus" onchange="ADM.mtSet(' + i + ',\'retours\',this.value)">' +
+        '<span class="mt-fournir-t">' + esc(t.fournir || '') + '</span>' +
         '<span class="mt-actions"><button class="mt-lien" onclick="ADM.mtOpen(' + i + ')">' + (MT_OPEN === i ? 'Fermer' : 'Modifier') + '</button></span></div>';
       if (MT_OPEN !== i) return ligne;
       var coul = STB_MISSION_COULEURS.map(function (c) { return '<button class="mt-coul' + (c === t.couleur ? ' on' : '') + '" style="background:' + c + '" title="Couleur de la carte" onclick="ADM.mtSet(' + i + ',\'couleur\',\'' + c + '\')"></button>'; }).join('');

@@ -3326,3 +3326,10 @@ h1.cdhead__n{margin:0;font-weight:400;font-size:36px}
 .inb-besoin{font-size:13px;padding:4px 10px;border-radius:999px;background:#fff;color:#7a5540;box-shadow:inset 0 0 0 1px rgba(17,7,4,.14)}
 .inb-besoin.ok{background:#F4EFE3;color:#110704;box-shadow:none}
 .inb-type{font-size:14px;color:#7a5540;margin:0 0 10px}.inb-type b{color:#110704}
+
+/* Types de mission : la largeur et les colonnes de la maquette validée */
+.pj-page.rg-page--large{max-width:1680px}
+.mt-row{grid-template-columns:16px minmax(0,1.5fr) 150px 140px 150px 96px minmax(0,1.2fr) 64px}
+.mt-row .mt-moy{font-size:14px;color:#5A2A11;padding:0}
+.mt-fournir-t{font-size:14px;color:#3b2a20}
+@media (max-width:1400px){.mt-row{grid-template-columns:16px minmax(0,1fr) 140px 150px 96px 64px}.mt-row>*:nth-child(4),.mt-row>*:nth-child(7){display:none}}

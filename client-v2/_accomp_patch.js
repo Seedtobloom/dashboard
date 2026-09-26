@@ -11,7 +11,7 @@
  */
   var cpAccModif = {}, cpAccDupPage = {}, cpAccVoir = {}, cpAccRepOuvert = {};
   var cpAccTabFiltre = 'tout', cpAccTabCherche = '', cpAccTabGroupe = 'etat';
-  var cpAccFinVue = 'fini', cpAccFinCherche = '';
+  var cpAccFinVue = 'fini', cpAccFinCherche = '', cpAccOutils = '';
 
   function cpAccT(pid, id) { var pd = getPD(pid); return pd ? (pd.project.tasks || []).filter(function (x) { return x.id === id; })[0] : null; }
   function cpAccDlv(pd, t) {
@@ -116,7 +116,7 @@
     var meta = [t.dueDate ? 'pour le ' + fmtDate(t.dueDate) : 'date à choisir', 'urgence ' + cpAccUrg(t)];
     if (t.timeSpentMinutes) meta.push(cpbMin(t.timeSpentMinutes) + ' passées');
     if (t.createdAt) meta.push('créée par toi le ' + fmtShort(t.createdAt));
-    var peutModifier = t.status !== 'review' && t.status !== 'done';
+    var peutModifier = t.status !== 'done';
     var acts = (peutModifier ? '<button onclick="cpAccModifOuvrir(\'' + pid + '\',\'' + t.id + '\')">Modifier</button>' : '') +
       (t.status !== 'done' ? '<button onclick="cpAccRepBascule(\'' + pid + '\')"' + (cpAccRepOuvert[pid] ? ' class="on"' : '') + '>Reporter</button>' : '') +
       '<button onclick="cpAccQuestion(\'' + t.id + '\')">Poser une question</button>' +
@@ -180,7 +180,7 @@
     var pid = pd.project.id, com = t.comments || [];
     return '<section class="cpb-carte cpd-cote"><b class="cpd-cote__t">Questions et échanges</b><div class="cpd-bulles">' +
       (com.length ? com.map(function (c) { var s = c.author === 'studio'; return '<div class="cpd-bulle' + (s ? '' : ' cpd-bulle--toi') + '"><p>' + esc(c.text || '') + '</p><span>' + (s ? 'Cindy' : 'Toi') + ' · ' + esc(fmtShort(c.createdAt)) + '</span></div>'; }).join('') : '<p class="cpnd-note">Une question sur cette demande ? Cindy te répond ici.</p>') +
-      '</div><div class="cpd-ecrire"><input id="cli-tc-' + t.id + '" placeholder="Poser une question sur cette demande" aria-label="Message à Cindy" onkeydown="cpAccEnvoyerMsg(event,\'' + pid + '\',\'' + t.id + '\')"><button class="cpb-btn cpd-btn" onclick="cpAccEnvoyerMsg(null,\'' + pid + '\',\'' + t.id + '\')">Envoyer</button></div></section>';
+      '</div><div class="cpd-ecrire"><input id="cli-tc-' + t.id + '" placeholder="Poser une question sur cette demande" aria-label="Message à Cindy" onkeydown="cpAccEnvoyerMsg(event,\'' + pid + '\',\'' + t.id + '\')"></div></section>';
   }
   function cpAccReporterCarte(pd, t) {
     var pid = pd.project.id;
@@ -271,7 +271,7 @@
       '<div class="cpd-fil"><a href="#" class="cpe-retour" onclick="cpAccModifFermer(\'' + pid + '\');return false">Accompagnement créatif · ' + esc(t.title || '') + '</a></div>' +
       '<h1 class="cpb-h1">Modifier une demande</h1>' +
       '<div class="cpd-grille"><div class="cpd-g"><section class="cpb-carte cpx-form">' +
-        '<div class="cpx-form__h">' + cpAccPil(e) + '<b>' + (enCours ? 'Proposer une modification' : 'Modifier la demande') + '</b></div>' +
+        '<div class="cpx-form__h">' + cpAccPil(e) + '<b>' + (enCours ? 'Proposer une modification' : 'Modifier la demande') + '</b><span class="cpx-etat">le brief s’enregistre au fur et à mesure</span></div>' +
         '<div class="cpx-champs"><label><span>Nom' + m('cpx-nom') + '</span><input id="cpx-nom" value="' + esc(t.title || '') + '" oninput="cpAccModifMaj(\'' + pid + '\')"></label>' +
           '<label><span>Type' + m('cpx-type') + '</span><select id="cpx-type" onchange="cpAccModifMaj(\'' + pid + '\')">' + opts + '</select></label>' +
           '<label><span>Pour quand ?' + m('cpx-date') + '</span><input id="cpx-date" type="date" min="' + min + '" value="' + esc(t.dueDate || '') + '" onchange="cpAccModifMaj(\'' + pid + '\')"></label></div>' +
@@ -288,16 +288,17 @@
   }
   function cpNDBarreSimple(pid, id) {
     return '<div class="cpnd-barre cpd-barre" role="toolbar" aria-label="Mise en forme">' +
-      ['<b>G</b>|bold', '<i>I</i>|italic', '<u>S</u>|underline', '<s>abc</s>|strike'].map(function (x) { var p = x.split('|'); return '<button type="button" onmousedown="event.preventDefault()" onclick="stbFmt(\'' + p[1] + '\')">' + p[0] + '</button>'; }).join('') +
-      '<span class="cpnd-sep"></span><span class="cpnd-lbl">Surligner</span>' + ['#E6E5B2', '#C5DEFF'].map(function (c) { return '<button type="button" class="cpnd-sw" style="background:' + c + '" onmousedown="event.preventDefault()" onclick="stbFmt(\'bg\',\'' + c + '\')" title="Surligner"></button>'; }).join('') +
-      '<span class="cpnd-sep"></span>' + [['Liste', 'list'], ['Cases à cocher', 'todo'], ['Tableau', 'table']].map(function (x) { return '<button type="button" onclick="stbBlockAdd(\'' + pid + '\',\'' + id + '\',\'' + x[1] + '\')">' + x[0] + '</button>'; }).join('') + '</div>';
+      ['<b>G</b>|bold|Gras', '<i>I</i>|italic|Italique', '<u>S</u>|underline|Souligné', '<s>abc</s>|strike|Barré', 'Plus grand|big|Agrandir', 'Plus petit|small|Réduire'].map(function (x) { var p = x.split('|'); return '<button type="button" title="' + p[2] + '" onmousedown="event.preventDefault()" onclick="stbFmt(\'' + p[1] + '\')">' + p[0] + '</button>'; }).join('') +
+      '<span class="cpnd-sep"></span><span class="cpnd-lbl">Couleur</span>' + ['#110704', '#5A2A11', '#CD8F6E', '#35608f'].map(function (c) { return '<button type="button" class="cpnd-sw" style="background:' + c + '" onmousedown="event.preventDefault()" onclick="stbFmt(\'color\',\'' + c + '\')" title="Couleur"></button>'; }).join('') +
+      '<span class="cpnd-lbl">Surligner</span>' + ['#E6E5B2', '#C5DEFF', '#F0E2D6'].map(function (c) { return '<button type="button" class="cpnd-sw" style="background:' + c + '" onmousedown="event.preventDefault()" onclick="stbFmt(\'bg\',\'' + c + '\')" title="Surligner"></button>'; }).join('') +
+      '<span class="cpnd-sep"></span>' + [['Liste', 'list'], ['Cases à cocher', 'todo'], ['Lien', 'link'], ['Tableau', 'table']].map(function (x) { return '<button type="button" onclick="stbBlockAdd(\'' + pid + '\',\'' + id + '\',\'' + x[1] + '\')">' + x[0] + '</button>'; }).join('') + '</div>';
   }
 
   /* ── Tableau complet ── */
   window.cpAccTabSet = function (k, v) { if (k === 'f') cpAccTabFiltre = v; else if (k === 'g') cpAccTabGroupe = v; renderShell(); };
   window.cpAccTabChercher = function (v) {
     cpAccTabCherche = v; var q = v.trim().toLowerCase();
-    document.querySelectorAll('.cpa-ligne,.cpa-brouillon').forEach(function (el) { el.hidden = !!q && (el.getAttribute('data-q') || '').indexOf(q) < 0; });
+    document.querySelectorAll('.cpa-ligne:not(.cpa-ligne--tete)').forEach(function (el) { el.hidden = !!q && (el.getAttribute('data-q') || '').indexOf(q) < 0; });
   };
   function cpAccTableau2(pd) {
     var p = pd.project, pid = p.id, mk = _todayStr().slice(0, 7);
@@ -333,15 +334,17 @@
     }
     var brHtml = (br.length && (cpAccTabFiltre === 'tout' || cpAccTabFiltre === 'Brouillon')) ? '<div class="cpa-groupe"><div class="cpa-groupe__h"><h3>Tes brouillons</h3><span>' + br.length + ' · pas encore envoyé' + (br.length > 1 ? 's' : '') + ', Cindy ne les voit pas</span></div>' +
       br.map(function (b) {
-        return '<div class="cpa-brouillon" data-q="' + esc(String(b.title || '').toLowerCase()) + '"><div class="cpa-ligne__m"><b>' + esc(b.title || 'Demande sans nom') + '</b><span>commencée le ' + esc(fmtShort(b.updatedAt)) + (b.missionType ? ' · ' + esc(b.missionType) : '') + '</span></div>' +
-          '<span class="cpa-pil cpa-pil--hors">Brouillon</span><span>' + (b.dueDate ? esc(fmtShort(b.dueDate)) : 'à choisir') + '</span>' +
+        var nf = (b.attachments || []).length;
+        return '<div class="cpa-ligne cpa-ligne--br" data-q="' + esc(String(b.title || '').toLowerCase()) + '"><span class="cpa-poignee" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></span><div class="cpa-ligne__m"><b>' + esc(b.title || 'Demande sans nom') + '</b><span>commencée le ' + esc(fmtShort(b.updatedAt)) + (b.missionType ? ' · ' + esc(b.missionType) : '') + '</span></div>' +
+          '<span class="cpa-pil cpa-pil--hors">Brouillon</span><span>' + (b.dueDate ? esc(fmtShort(b.dueDate)) : 'à choisir') + '</span><span></span><span></span><span>' + (nf ? nf + ' fichier' + (nf > 1 ? 's' : '') : '') + '</span>' +
           '<span class="cpa-brouillon__a"><button class="cpb-btn cpd-btn--clair" onclick="cpNDOpen(\'' + pid + '\',null,\'' + b.id + '\')">Reprendre</button><button class="cpl-lien" onclick="cpNDSupprimerBrouillon(\'' + pid + '\',\'' + b.id + '\')">Supprimer</button></span></div>';
       }).join('') + '</div>' : '';
     var outils = '<div class="cpa-outils"><input class="cpa-cherche" placeholder="Rechercher une demande" value="' + esc(cpAccTabCherche) + '" oninput="cpAccTabChercher(this.value)" aria-label="Rechercher une demande">' +
       '<button class="cpl-ong' + (cpAccTabGroupe === 'etat' ? ' on' : '') + '" onclick="cpAccTabSet(\'g\',\'etat\')">Regrouper par état</button><button class="cpl-ong' + (cpAccTabGroupe === 'date' ? ' on' : '') + '" onclick="cpAccTabSet(\'g\',\'date\')">par date</button></div>';
-    var tete = '<div class="cpa-ligne cpa-ligne--tete"><span></span><span>Demande</span><span>État</span><span>Pour le</span><span>Urgence</span><span>Temps</span><span>Pièces</span></div>';
+    var tete = '<div class="cpa-ligne cpa-ligne--tete"><span></span><span>Demande</span><span>État</span><span>Pour le</span><span>Urgence</span><span>Temps</span><span>Pièces</span><span></span></div>';
     if (cpAccTabCherche) setTimeout(function () { cpAccTabChercher(cpAccTabCherche); }, 0);
-    return outils + '<div class="cpa-fpuces">' + puces + '</div><section class="cpb-carte cpa-tab">' + tete + brHtml + (groupes || (brHtml ? '' : '<p class="cpnd-note">Aucune demande ici.</p>')) +
+    cpAccOutils = outils;
+    return '<div class="cpa-fpuces">' + puces + '</div><section class="cpb-carte cpa-tab">' + tete + brHtml + (groupes || (brHtml ? '' : '<p class="cpnd-note">Aucune demande ici.</p>')) +
       '<div style="padding-top:12px"><a href="#" class="cpl-lien" onclick="cliNewDemande(\'' + pid + '\');return false">Ajouter une demande ici</a></div></section>';
   }
 
@@ -361,11 +364,12 @@
     var l = cpAccFinVue === 'arch' ? arc : fin;
     var outils = '<div class="cpa-outils"><button class="cpl-ong' + (cpAccFinVue === 'fini' ? ' on' : '') + '" onclick="cpAccFinSet(\'fini\')">Terminées</button><button class="cpl-ong' + (cpAccFinVue === 'arch' ? ' on' : '') + '" onclick="cpAccFinSet(\'arch\')">Archivées · ' + arc.length + '</button>' +
       '<input class="cpa-cherche" placeholder="Rechercher" value="' + esc(cpAccFinCherche) + '" oninput="cpAccFinChercher(this.value)" aria-label="Rechercher dans les demandes terminées"></div>';
-    if (!l.length) return outils + '<section class="cpb-calme">' + (cpAccFinVue === 'arch' ? 'Aucune demande archivée.' : 'Pas encore de demande terminée ces 3 derniers mois.') + '</section>';
+    cpAccOutils = outils;
+    if (!l.length) return '<section class="cpb-calme">' + (cpAccFinVue === 'arch' ? 'Aucune demande archivée.' : 'Pas encore de demande terminée ces 3 derniers mois.') + '</section>';
     var parMois = {};
     l.forEach(function (t) { var k = String(t.completedAt || t.dueDate || t.createdAt || '').slice(0, 7) || 'autre'; (parMois[k] = parMois[k] || []).push(t); });
     if (cpAccFinCherche) setTimeout(function () { cpAccFinChercher(cpAccFinCherche); }, 0);
-    return outils + '<section class="cpb-carte cpa-fin">' + Object.keys(parMois).sort().reverse().map(function (k) {
+    return '<section class="cpb-carte cpa-fin">' + Object.keys(parMois).sort().reverse().map(function (k) {
       var ts = parMois[k], mins = ts.reduce(function (s, t) { return s + (t.timeSpentMinutes || 0); }, 0);
       var titre = k === 'autre' ? 'Sans date' : new Date(k + '-01T12:00:00').toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
       return '<div class="cpa-groupe"><div class="cpa-groupe__h cpa-groupe__h--e"><h3>' + esc(titre.charAt(0).toUpperCase() + titre.slice(1)) + '</h3><span>' + ts.length + ' demande' + (ts.length > 1 ? 's' : '') + (mins ? ' · ' + cpbMin(mins) : '') + '</span></div>' +
@@ -489,11 +493,12 @@
   function cpAccApercu(pd, id) {
     var pid = pd.project.id, t = cpAccT(pid, id); if (!t) return '';
     var e = cpEtat(t), dl = cpAccDlv(pd, t), dern = dl[dl.length - 1], com = (t.comments || []).slice(-2);
-    var img = dern && dern.fileKey && /\.(png|jpe?g|webp|gif)$/i.test(dern.name || '') ? '<img class="cpv-img" src="' + API_BASE + '/files/' + encodeURIComponent(dern.fileKey) + '/download" alt="' + esc(dern.name) + '">' : '';
+    var det = cpAccDetail(t), fond = det ? det.couleur : '#E4D9C5';
+    var img = '<div class="cpv-vis" style="background:linear-gradient(135deg,#EFE8D8,' + esc(fond) + ')">' + (dern && dern.fileKey && /\.(png|jpe?g|webp|gif)$/i.test(dern.name || '') ? '<img src="' + API_BASE + '/files/' + encodeURIComponent(dern.fileKey) + '/download" alt="' + esc(dern.name) + '" onerror="this.remove()">' : '') + '</div>';
     var btns = '';
     if (t.status === 'review' && dern && dern.status === 'a_valider') btns = '<div class="cpv-btns"><button class="cpb-btn cpd-btn" onclick="stbValidate(\'' + pid + '\',\'' + dern.id + '\',\'valide\')">Valider</button><button class="cpb-btn cpd-btn--clair" onclick="stbValidate(\'' + pid + '\',\'' + dern.id + '\',\'refuse\')">Demander une modif</button></div>';
     else if (t.proposedDueDate) btns = '<div class="cpv-btns"><button class="cpb-btn cpd-btn" onclick="cliRespondProposedDate(\'' + pid + '\',\'' + t.id + '\',true)">Accepter le ' + esc(fmtShort(t.proposedDueDate)) + '</button><button class="cpb-btn cpd-btn--clair" onclick="cliRespondProposedDate(\'' + pid + '\',\'' + t.id + '\',false)">Garder ma date</button></div>';
-    var brief = stbPlain(stbBlocksPreview(t.blocks || []));
+    var brief = (t.blocks || []).map(function (b) { return b && b.text ? stbPlain(b.text).trim() : ''; }).filter(Boolean).join(' · ');
     if (!brief) brief = String(t.content || '').slice(0, 180);
     return '<aside class="cpb-carte cpv"><div class="cpd-carte__h">' + cpAccPil(e) + '<button class="cpl-lien" onclick="cpAccVoirOuvrir(\'' + pid + '\',\'' + id + '\')">Fermer</button></div>' +
       '<h3 class="cpv-t">' + esc(t.title || 'Demande') + '</h3><p class="cpd-meta">' + esc([t.dueDate ? 'pour le ' + fmtDate(t.dueDate) : '', 'urgence ' + cpAccUrg(t), t.timeSpentMinutes ? cpbMin(t.timeSpentMinutes) + ' passées' : ''].filter(Boolean).join(' · ')) + '</p>' +

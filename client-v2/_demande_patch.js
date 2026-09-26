@@ -278,7 +278,7 @@
       cartes += '<button class="cpnd-type' + (cpND.type === n ? ' on' : '') + '" onclick="cpNDChoisirType(' + i + ')" ondblclick="cpNDChoisirType(' + i + ',true)">' +
         '<span class="cpnd-type__b" style="background:' + esc(d.couleur) + '"></span>' +
         '<span class="cpnd-type__c"><b>' + esc(n) + '</b>' + (d.exemples ? '<span>' + esc(d.exemples) + '</span>' : '') + '</span>' +
-        '<span class="cpnd-type__p">' + esc(stbMissionTemps(d)) + '<br>au plus tôt le <b>' + esc(cpNDJolie(tot, true)) + '</b></span></button>';
+        '<span class="cpnd-type__p">' + esc(/^(environ|Cindy)/.test(stbMissionTemps(d)) ? stbMissionTemps(d) : 'environ ' + stbMissionTemps(d)) + '<br>au plus tôt le <b>' + esc(cpNDJolie(tot, true)) + '</b></span></button>';
     });
     cartes += '<div class="cpnd-type cpnd-type--autre' + (cpND.type === '' ? ' on' : '') + '"><b>Autre, ou je ne sais pas encore</b><span>Décris ton besoin, Cindy choisit le bon type et te propose une date.</span>' +
       '<button class="cpnd-lien" onclick="cpNDChoisirType(' + autre + ',true)">Continuer sans choisir</button></div>';
@@ -333,7 +333,7 @@
     var det = cpNDDetail();
     var chips = det && det.precisions.length ? '<div class="cpnd-prec"><b>Ce que tu veux exactement</b><div class="cpnd-chips">' + det.precisions.map(function (p) {
       return '<button class="cpnd-chip' + (cpND.precisions.indexOf(p.nom) >= 0 ? ' on' : '') + '" data-p="' + esc(p.nom) + '" onclick="cpNDPrecision(this.getAttribute(\'data-p\'))">' + esc(p.nom) + '</button>';
-    }).join('') + '</div><span class="cpnd-note">plusieurs choix possibles</span></div>' : '';
+    }).join('') + '<button class="cpnd-chip' + (cpND.precisions.indexOf('Autre') >= 0 ? ' on' : '') + '" data-p="Autre" onclick="cpNDPrecision(\'Autre\')">Autre</button></div><span class="cpnd-note">plusieurs choix possibles</span></div>' : '';
     function b(html, act, titre) { return '<button type="button" title="' + titre + '" onmousedown="event.preventDefault()" onclick="' + act + '">' + html + '</button>'; }
     function sw(c, kind, titre) { return '<button type="button" class="cpnd-sw" title="' + titre + '" style="background:' + c + '" onmousedown="event.preventDefault()" onclick="stbFmt(\'' + kind + '\',\'' + c + '\')"></button>'; }
     var barre = '<div class="cpnd-barre" role="toolbar" aria-label="Mise en forme">' +
@@ -357,13 +357,18 @@
     var det = cpNDDetail(), tot = cpNDAuPlusTot(det, pd), totIso = cpNDIso(tot), auj = _todayStr();
     var sansDelai = !det || !det.delai;
     if (!cpND.date || (cpND.date < totIso && !cpND.exception && !sansDelai) || cpNDIso(new Date(cpND.date + 'T12:00:00')) < auj) cpND.date = totIso;
-    if (!cpND.mois) { var dd = new Date(cpND.date + 'T12:00:00'); cpND.mois = new Date(dd.getFullYear(), dd.getMonth(), 1); }
+    // Le mois de la date choisie ; si elle tombe dans la dernière semaine, le mois suivant
+    // (comme la maquette : ses jours de fin de mois apparaissent sur la première ligne).
+    if (!cpND.mois) { var dd = new Date(cpND.date + 'T12:00:00'), fin = new Date(dd.getFullYear(), dd.getMonth() + 1, 0);
+      var memeSemaine = (fin.getDay() + 6) % 7 >= (dd.getDay() + 6) % 7 && (fin - dd) / 864e5 < 7;
+      cpND.mois = memeSemaine && fin.getDay() !== 0 ? new Date(dd.getFullYear(), dd.getMonth() + 1, 1) : new Date(dd.getFullYear(), dd.getMonth(), 1); }
     var m = cpND.mois, an = m.getFullYear(), mo = m.getMonth();
     var nomMois = m.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+    // Semaines complètes : les jours du mois d'avant et d'après complètent la première et la dernière ligne.
     var premier = (new Date(an, mo, 1).getDay() + 6) % 7, dim = new Date(an, mo + 1, 0).getDate(), cells = '';
-    for (var k = 0; k < premier; k++) cells += '<span></span>';
-    for (var j = 1; j <= dim; j++) {
-      var d = new Date(an, mo, j, 12), ds = cpNDIso(d), w = d.getDay();
+    var total = Math.ceil((premier + dim) / 7) * 7;
+    for (var q = 0; q < total; q++) {
+      var d = new Date(an, mo, 1 - premier + q, 12), ds = cpNDIso(d), w = d.getDay(), j = d.getDate();
       if (w === 0 || w === 6) { cells += '<span class="cpnd-j cpnd-j--we">' + j + '</span>'; continue; }
       var hol = cpHolidayFor(ds), passe = ds <= auj, tropTot = !passe && ds < totIso && !sansDelai, complet = !hol && !passe && cpNDComplet(pd, d);
       var cls = 'cpnd-j', note = '', ok = !hol && !passe && !complet && (!tropTot || cpND.exception);
