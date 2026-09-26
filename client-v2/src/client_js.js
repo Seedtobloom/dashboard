@@ -7119,6 +7119,11 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     // Mémorise la vue courante pour la restaurer au rafraîchissement (voir renderApp).
     try { localStorage.setItem('cp-lastview-' + ((typeof TOKEN !== 'undefined' && TOKEN) ? TOKEN : ''), JSON.stringify({ v: currentView, id: currentId })); } catch(e) {}
     var scrollY = (opts && opts.resetScroll) ? 0 : window.scrollY;
+    // L'animation d'entrée ne se joue qu'en changeant de page : rejouée à chaque
+    // clic (ouvrir une demande, changer un filtre), elle faisait « vibrer » la page.
+    var _cle = currentView + '|' + currentId;
+    try { document.body.classList.toggle('cp-sans-anim', _cle === window.__cpDerniereVue); } catch(e) {}
+    window.__cpDerniereVue = _cle;
     // Optimisation : ne reconstruire que cp-main si la sidebar est déjà là
     var mainEl = !opts || !opts.full ? document.getElementById('cp-main') : null;
     if (mainEl) {

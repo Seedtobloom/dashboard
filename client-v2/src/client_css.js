@@ -1472,4 +1472,7 @@ button.cpnd-j:hover { box-shadow: inset 0 0 0 1px #110704; }
 .cpa-pop__g button.on { background: #110704; color: #F8F6F2; font-weight: 600; }
 .cpa-pop__g span.off { color: #7a5540; opacity: 0.55; }
 .cpa-pop p { margin: 12px 0 0; font-size: 13px; line-height: 1.45; color: #5A2A11; }
+
+/* Pas d'animation d'entrée quand on reste sur la même page */
+.cp-sans-anim .fade-up { animation: none !important; }
 `;
