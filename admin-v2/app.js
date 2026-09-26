@@ -468,7 +468,7 @@
       // « Mes tâches » a fusionné dans « Tâches » : les anciens liens y mènent,
       // sur la section qui correspond, plutôt que sur un écran disparu.
       if (v === 'mytasks') { v = 'alltasks'; AT_SEC = 'entreprise'; }
-      VIEW = v; if (v !== 'client') CURKEY = null; renderShell(); window.scrollTo(0, 0);
+      MDL_ED = null; VIEW = v; if (v !== 'client') CURKEY = null; renderShell(); window.scrollTo(0, 0);
       pollWake();
     });
   }
@@ -3664,6 +3664,7 @@
   function visCard(id) { return VISIOS.cards.filter(function (c) { return c.id === id; })[0]; }
   function visTpl(id) { return VISIOS.templates.filter(function (t) { return t.id === id; })[0]; }
   function renderVisiosBody() {
+    if (MDL_ED && MDL_ED.vue === 'trames') { mdlEdRendre(); return; }
     var body = el('vis-body'); if (!body) return;
     if (VIEW === 'trames') { mdlNavMaj(); if (VIS_TRAME_OPEN) { body.innerHTML = visTramesHtml(); return; } var tl = tramesGet(), tid = mdlSel('trames', tl), tt = tl.filter(function (x) { return x.id === tid; })[0]; body.innerHTML = tt ? mdlTrameDetail(tt) : '<div class="mdl-vide">Aucune trame pour l’instant. Crée-en une avec le bouton +.</div>'; return; }
     if (VIS_TAB === 'trames') VIS_TAB = 'cards';
@@ -4005,7 +4006,7 @@
     return secs.filter(function (s) { return s.questions.length || s.hint; });
   }
   function trameOpen(id) { VIS_TRAME_OPEN = id; CALL_TRAME_EDIT = false; renderVisiosBody(); window.scrollTo({ top: 0 }); }
-  function trameEditLib(id) { VIS_TRAME_OPEN = id; CALL_TRAME_SEL = id; CALL_TRAME_EDIT = true; TRAME_ED.id = null; renderVisiosBody(); window.scrollTo({ top: 0 }); }
+  function trameEditLib(id) { mdlEdOuvrir('trames', id); }
   function trameBackLib() { VIS_TRAME_OPEN = null; CALL_TRAME_EDIT = false; TRAME_ED.id = null; renderVisiosBody(); }
   function trameQToggle(k) { if (!VIS_TRAME_ANS[k]) VIS_TRAME_ANS[k] = {}; VIS_TRAME_ANS[k].c = !VIS_TRAME_ANS[k].c; renderVisiosBody(); }
   function trameQNote(k, v) { if (!VIS_TRAME_ANS[k]) VIS_TRAME_ANS[k] = {}; VIS_TRAME_ANS[k].n = v; }
@@ -12330,9 +12331,10 @@
   function qnrSet(id, field, val) { var t = qnrTpl(id); if (!t) return; t[field] = val; if (field === 'category') t.color = qnrCatMeta(val)[2]; qnrSave(); renderQnrBody(); if (field === 'category' || field === 'color') renderQnrDrawer(); }
 
   // ── Éditeur (drawer droite) ──
-  function qnrOpen(id) { QNR_SEL = id; renderQnrDrawer(); }
-  function qnrCloseDrawer() { QNR_SEL = null; var d = el('qnr-drawer'); if (d) d.remove(); var b = el('qnr-drawer-bk'); if (b) b.remove(); }
+  function qnrOpen(id) { QNR_SEL = id; mdlEdOuvrir('questionnaires', id); }
+  function qnrCloseDrawer() { if (MDL_ED && MDL_ED.vue === 'questionnaires') { mdlEdFermer(); return; } QNR_SEL = null; var d = el('qnr-drawer'); if (d) d.remove(); var b = el('qnr-drawer-bk'); if (b) b.remove(); }
   function renderQnrDrawer() {
+    if (MDL_ED && MDL_ED.vue === 'questionnaires') { mdlEdRendre(); return; }
     var ex = el('qnr-drawer');
     // On garde la position de défilement pour ne pas remonter en haut à chaque
     // édition (changement de type, ajout de bloc…).
@@ -12771,9 +12773,7 @@
   function mdlNouveau(vue) {
     // Jamais avant la fin du chargement : on écraserait la liste enregistrée.
     if (!(vue === 'projtpl' ? PRJ_LOADED : vue === 'questionnaires' ? QNR_LOADED : TRAMES_LOADED)) { toast('Un instant, chargement en cours'); return; }
-    if (VIEW !== vue) { nav(vue); }
-    if (vue === 'projtpl') prjAdd(); else if (vue === 'questionnaires') qnrAdd(); else trameNew();
-    mdlNavMaj();
+    if (vue === 'projtpl') prjAdd(); else if (vue === 'questionnaires') qnrAdd(); else { trameNew(); mdlEdOuvrir('trames', VIS_TRAME_OPEN); }
   }
   function mdlArch() { MDL_ARCH = !MDL_ARCH; mdlNavMaj(); }
   function mdlReponses() { QNR_TAB = 'reponses'; if (VIEW !== 'questionnaires') nav('questionnaires'); else { mdlNavMaj(); renderQnrBody(); } }
@@ -12814,6 +12814,157 @@
       '<button class="btn btn--outline" onclick="ADM.qnrPreview(\'' + i + '\')">Aperçu</button><button class="btn btn--outline" onclick="ADM.qnrOpen(\'' + i + '\')">Modifier</button><button class="btn" onclick="ADM.qnrAssignOpen(\'' + i + '\')">Envoyer à un client</button>',
       ckMenuHtml([['Dupliquer', 'ADM.qnrDup(\'' + i + '\')'], ['Exporter', 'ADM.qnrExportJson(\'' + i + '\')'], [t.archived ? 'Désarchiver' : 'Archiver', 'ADM.qnrArchive(\'' + i + '\')']], 'ADM.qnrDel(\'' + i + '\')')) +
       (cols || '<p class="mdl2-vide">Ce questionnaire est vide. Clique sur Modifier pour ajouter des questions.</p>');
+  }
+
+  /* ── Modifier un modèle (maquette A2) : une vraie page, le plan des parties
+   * à gauche, une seule partie à la fois à droite. Les trois éditeurs gardent
+   * leurs fonctions d'enregistrement ; seule la présentation change. ── */
+  var MDL_ED = null; // { vue: 'projtpl' | 'questionnaires' | 'trames', id, part }
+  function mdlEdOuvrir(vue, id) {
+    MDL_ED = { vue: vue, id: id, part: 0 };
+    if (vue === 'questionnaires') { var q = qnrTpl(id); MDL_ED.part = q && (q.steps || []).length ? 1 : 0; }
+    if (vue === 'trames') { VIS_TRAME_OPEN = id; CALL_TRAME_SEL = id; CALL_TRAME_EDIT = true; TRAME_ED.id = null; }
+    MDL_SEL[vue] = id;
+    mdlEdRendre(); window.scrollTo(0, 0);
+  }
+  function mdlEdFermer() {
+    var v = MDL_ED ? MDL_ED.vue : VIEW;
+    MDL_ED = null; PRJ_SEL = null; QNR_SEL = null;
+    VIS_TRAME_OPEN = null; CALL_TRAME_EDIT = false; TRAME_ED.id = null;
+    nav(v);
+  }
+  function mdlEdPartie(i) { if (!MDL_ED) return; MDL_ED.part = i; mdlEdRendre(); window.scrollTo(0, 0); }
+  function mdlEdAgrandir(ta) { ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 'px'; }
+  function mdlEdTa(val, onch, ph, cls) {
+    var v = String(val || ''), rows = Math.max(1, Math.ceil(v.length / 95)) + (v.split('\n').length - 1);
+    return '<textarea class="mdle-in' + (cls ? ' ' + cls : '') + '" rows="' + rows + '" placeholder="' + esc(ph || '') + '" oninput="ADM.mdlEdAgrandir(this)" onchange="' + onch + '">' + esc(v) + '</textarea>';
+  }
+  function mdlEdRendre() {
+    if (!MDL_ED) return;
+    var y = window.scrollY, h = '';
+    if (MDL_ED.vue === 'projtpl') { var t = prjTpl(MDL_ED.id); if (t) h = mdlEdProjet(t); }
+    else if (MDL_ED.vue === 'questionnaires') { var q = qnrTpl(MDL_ED.id); if (q) h = mdlEdQnr(q); }
+    else { var tr = tramesGet().filter(function (x) { return x.id === MDL_ED.id; })[0]; if (tr) h = mdlEdTrame(tr); }
+    if (!h) { mdlEdFermer(); return; }
+    setMain('<div class="wrap mdl mdle">' + h + '</div>');
+    window.scrollTo(0, y);
+  }
+  function mdlEdTete(genre, champTitre, boutons, menu) {
+    return '<div class="mdle-top"><div class="mdle-top__g"><p class="mdle-fil"><button class="tps-lien" onclick="ADM.mdlEdFermer()">Modèles</button><span> · ' + genre + '</span></p>' + champTitre + '</div>' +
+      '<div class="mdle-top__a"><span class="mdle-sv">Enregistré au fil de l’eau</span>' + boutons + (menu || '') + '<button class="btn btn--dark" onclick="ADM.mdlEdFermer()">Terminé</button></div></div>';
+  }
+  function mdlEdPlan(items, plus) {
+    var on = MDL_ED.part;
+    return '<nav class="mdle-plan" aria-label="Les parties">' + items.map(function (x, i) {
+      return '<button class="mdle-pl' + (i === on ? ' on' : '') + '"' + (i === on ? ' aria-current="true"' : '') + ' onclick="ADM.mdlEdPartie(' + i + ')"><span class="mdle-pl__k">' + (x[2] === undefined ? i + 1 : x[2]) + '</span><span class="mdle-pl__n">' + esc(x[0] || 'Sans titre') + '</span><span class="mdle-pl__m">' + x[1] + '</span></button>';
+    }).join('') + '<button class="tps-lien mdle-plus" onclick="' + plus[1] + '">' + plus[0] + '</button></nav>';
+  }
+  function mdlEdSuite(items) {
+    var i = MDL_ED.part, a = items[i - 1], b = items[i + 1];
+    return '<div class="mdle-suite">' + (a ? '<button class="tps-lien" onclick="ADM.mdlEdPartie(' + (i - 1) + ')">' + esc(a[0] || 'Sans titre') + '</button>' : '<span></span>') +
+      (b ? '<button class="tps-lien" onclick="ADM.mdlEdPartie(' + (i + 1) + ')">' + esc(b[0] || 'Sans titre') + '</button>' : '') + '</div>';
+  }
+  function mdlEdCarte(k, champ, menu, corps, items) {
+    return '<section class="mdle-c"><div class="mdle-c__h"><div class="mdle-c__g"><p class="mdle-k">' + k + '</p>' + champ + '</div>' + (menu || '') + '</div>' + corps + mdlEdSuite(items) + '</section>';
+  }
+  function mdlEdN(n, un, plusieurs) { return n + ' ' + (n > 1 ? plusieurs : un); }
+  // Trame d'appel
+  function mdlEdTrame(t) {
+    trameEdLoad(t);
+    var secs = TRAME_ED.secs, i = Math.min(MDL_ED.part, secs.length - 1); MDL_ED.part = i;
+    var items = secs.map(function (x) { var n = x.questions.filter(function (q) { return String(q).trim(); }).length; return [x.title, n ? mdlEdN(n, 'question', 'questions') : 'repère']; });
+    var sec = secs[i];
+    var qs = sec.questions.map(function (q, qi) {
+      return '<div class="mdle-q">' + mdlEdTa(q, 'ADM.trameEdQ(' + i + ',' + qi + ',this.value)', 'Ce que tu dis ou demandes au client', 'mdle-in--nu') +
+        '<button class="tps-lien mdle-x" onclick="ADM.trameEdQDel(' + i + ',' + qi + ')">Retirer</button></div>';
+    }).join('');
+    var menu = ckMenuHtml([['Monter', 'ADM.trameEdSecMove(' + i + ',-1);ADM.mdlEdPartie(' + Math.max(0, i - 1) + ')'], ['Descendre', 'ADM.trameEdSecMove(' + i + ',1);ADM.mdlEdPartie(' + Math.min(secs.length - 1, i + 1) + ')']], 'ADM.trameEdSecDel(' + i + ')', '', 'Supprimer la partie');
+    var corps = '<p class="mdle-lab">Ta note, pour toi seule</p>' + mdlEdTa(sec.hint, 'ADM.trameEdField(' + i + ',\'hint\',this.value)', 'Repères pour t’aider, tu ne les lis pas au client') +
+      '<p class="mdle-lab">Les questions à poser</p>' + qs + '<button class="tps-lien mdle-add" onclick="ADM.trameEdQAdd(' + i + ')">Ajouter une question</button>';
+    var champ = '<input class="mdle-cn" value="' + esc(sec.title) + '" placeholder="Titre de la partie" onchange="ADM.trameEdField(' + i + ',\'title\',this.value);ADM.mdlEdMaj()">';
+    return mdlEdTete('Trame d’appel', '<input class="mdle-t" value="' + esc(trameTitleClean(t.title)) + '" placeholder="Nom de la trame" onchange="ADM.trameSet(\'' + esc(t.id) + '\',\'title\',this.value)">',
+      '<button class="btn btn--outline" onclick="ADM.mdlEdFermer();ADM.trameOpen(\'' + esc(t.id) + '\')">Ouvrir pendant un appel</button>', ckMenuHtml([], 'ADM.trameDel(\'' + esc(t.id) + '\')', '', 'Supprimer la trame')) +
+      '<div class="mdle-g">' + mdlEdPlan(items, ['Ajouter une partie', 'ADM.trameEdSecAdd();ADM.mdlEdPartie(' + secs.length + ')']) +
+      mdlEdCarte('Partie ' + (i + 1) + ' sur ' + secs.length, champ, menu, corps, items) + '</div>';
+  }
+  // Questionnaire
+  var MDL_QTYPES = QNR_BLOCKS.map(function (b) { return [b[0], b[1]]; });
+  function mdlEdQnr(t) {
+    var steps = t.steps || [], i = Math.min(MDL_ED.part, steps.length); MDL_ED.part = i;
+    var id = esc(t.id);
+    var items = [['Avant les questions', 'mot d’accueil, catégorie', '']].concat(steps.map(function (s) { var n = (s.blocks || []).filter(function (b) { return !qnrIsStatic(b.type); }).length; return [s.title, mdlEdN(n, 'question', 'questions')]; }));
+    items.forEach(function (x, k) { if (k) x[2] = k; });
+    var carte;
+    if (i === 0) {
+      var cats = '<select class="mdle-sel" onchange="ADM.qnrSet(\'' + id + '\',\'category\',this.value)">' + QNR_CATS.map(function (c) { return '<option value="' + c[0] + '"' + (t.category === c[0] ? ' selected' : '') + '>' + esc(c[1]) + '</option>'; }).join('') + '</select>';
+      carte = mdlEdCarte('Avant les questions', '<h2 class="mdle-cn mdle-cn--fixe">Ce que ton client voit en ouvrant</h2>', '',
+        '<p class="mdle-lab">Le mot d’accueil</p>' + mdlEdTa(t.description, 'ADM.qnrSet(\'' + id + '\',\'description\',this.value)', 'Facultatif, visible en haut du questionnaire') +
+        '<p class="mdle-lab">Catégorie</p>' + cats, items);
+    } else {
+      var s = steps[i - 1], sid = esc(s.id);
+      var bl = (s.blocks || []).map(function (b, k, all) {
+        var bid = esc(b.id), stat = qnrIsStatic(b.type), ref = '\'' + id + '\',\'' + sid + '\',\'' + bid + '\'';
+        var typ = '<select class="mdle-sel mdle-sel--p" aria-label="Type de question" onchange="ADM.qnrBlockChangeType(' + ref + ',this.value)">' + MDL_QTYPES.map(function (o) { return '<option value="' + o[0] + '"' + (b.type === o[0] ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') + '</select>';
+        var oblig = stat ? '' : '<button class="mdle-chip' + (b.required ? ' on' : '') + '" aria-pressed="' + !!b.required + '" onclick="ADM.qnrBlockSet(' + ref + ',\'required\',' + !b.required + ');ADM.mdlEdMaj()">' + (b.required ? 'obligatoire' : 'facultative') + '</button>';
+        var menu = ckMenuHtml([['Monter', 'ADM.qnrBlockMove(' + ref + ',-1)'], ['Descendre', 'ADM.qnrBlockMove(' + ref + ',1)']], 'ADM.qnrBlockDel(' + ref + ')', '', 'Supprimer la question');
+        var plus = '';
+        if (!stat) {
+          plus += mdlEdTa(b.help, 'ADM.qnrBlockSet(' + ref + ',\'help\',this.value)', 'Une précision pour ton client (facultatif)', 'mdle-in--petit');
+          if (qnrHasOptions(b.type)) {
+            plus += '<p class="mdle-lab mdle-lab--p">Les choix, un par ligne</p>' + '<textarea class="mdle-in mdle-in--petit" rows="' + Math.max(2, (b.options || []).length) + '" oninput="ADM.mdlEdAgrandir(this)" onchange="ADM.qnrBlockOptions(' + ref + ',this.value)">' + esc((b.options || []).join('\n')) + '</textarea>';
+            if (b.type !== 'ranking') plus += '<label class="mdle-coche"><input type="checkbox"' + (b.allowOther ? ' checked' : '') + ' onchange="ADM.qnrBlockSet(' + ref + ',\'allowOther\',this.checked)"> Proposer aussi « Autre »</label>';
+          }
+          if (b.type === 'rating' || b.type === 'slider') plus += '<label class="mdle-coche">Jusqu’à <input class="mdle-in mdle-in--num" type="number" min="2" max="' + (b.type === 'slider' ? 100 : 10) + '" value="' + (b.max || (b.type === 'slider' ? 10 : 5)) + '" onchange="ADM.qnrBlockSet(' + ref + ',\'max\',parseInt(this.value,10)||5)"></label>';
+        }
+        return '<div class="mdle-bq"><div class="mdle-bq__h">' + mdlEdTa(b.label, 'ADM.qnrBlockSet(' + ref + ',\'label\',this.value)', stat ? 'Ton texte' : 'L’intitulé de la question', 'mdle-in--nu mdle-in--fort') + typ + oblig + menu + '</div>' + plus + '</div>';
+      }).join('');
+      var smenu = ckMenuHtml([['Monter', 'ADM.qnrStepMove(\'' + id + '\',\'' + sid + '\',-1);ADM.mdlEdPartie(' + Math.max(1, i - 1) + ')'], ['Descendre', 'ADM.qnrStepMove(\'' + id + '\',\'' + sid + '\',1);ADM.mdlEdPartie(' + Math.min(steps.length, i + 1) + ')']], 'ADM.qnrStepDel(\'' + id + '\',\'' + sid + '\')', '', 'Supprimer l’étape');
+      carte = mdlEdCarte('Étape ' + i + ' sur ' + steps.length, '<input class="mdle-cn" value="' + esc(s.title || '') + '" placeholder="Titre de l’étape" onchange="ADM.qnrStepSet(\'' + id + '\',\'' + sid + '\',\'title\',this.value);ADM.mdlEdMaj()">', smenu,
+        '<p class="mdle-lab">Ce que ton client lit en haut de l’étape</p>' + mdlEdTa(s.help, 'ADM.qnrStepSet(\'' + id + '\',\'' + sid + '\',\'help\',this.value)', 'Facultatif') +
+        '<p class="mdle-lab">Les questions</p>' + (bl || '<p class="mdl2-vide" style="margin:0 0 6px">Aucune question dans cette étape.</p>') +
+        '<button class="tps-lien mdle-add" onclick="ADM.qnrBlockAdd(\'' + id + '\',\'' + sid + '\',\'short\');ADM.mdlEdMaj()">Ajouter une question</button>', items);
+    }
+    return mdlEdTete('Questionnaire', '<input class="mdle-t" value="' + esc(t.name || '') + '" placeholder="Nom du questionnaire" onchange="ADM.qnrSet(\'' + id + '\',\'name\',this.value)">',
+      '<button class="btn btn--outline" onclick="ADM.qnrPreview(\'' + id + '\')">Aperçu</button><button class="btn btn--outline" onclick="ADM.qnrAssignOpen(\'' + id + '\')">Envoyer à un client</button>',
+      ckMenuHtml([['Mettre en forme un texte collé', 'ADM.qnrSmartImport(\'' + id + '\')'], ['Tout rendre obligatoire', 'ADM.qnrBulkRequire(\'' + id + '\');ADM.mdlEdMaj()']], 'ADM.qnrDel(\'' + id + '\')', '', 'Supprimer le questionnaire')) +
+      '<div class="mdle-g">' + mdlEdPlan(items, ['Ajouter une étape', 'ADM.qnrStepAdd(\'' + id + '\');ADM.mdlEdPartie(' + (steps.length + 1) + ')']) + carte + '</div>';
+  }
+  // Projet
+  function mdlEdProjet(t) {
+    var ph = t.phases || [], i = Math.min(MDL_ED.part, Math.max(0, ph.length - 1)); MDL_ED.part = i;
+    var id = esc(t.id);
+    var items = ph.map(function (p) { return [p.title, mdlEdN((p.steps || []).length, 'étape', 'étapes') + ', ' + mdlEdN((p.deliverables || []).length, 'livrable', 'livrables')]; });
+    var min = 0, nS = 0; ph.forEach(function (p) { (p.steps || []).forEach(function (x) { nS++; if (x.type !== 'client') min += x.estMinutes || 0; }); });
+    var offres = '<select class="mdle-sel" onchange="ADM.prjSet(\'' + id + '\',\'offer\',this.value)">' + PRJ_OFFERS.map(function (o) { return '<option value="' + o[0] + '"' + (t.offer === o[0] ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') + '</select>';
+    var champs = '<div class="mdle-f"><label class="mdle-fi"><span>Offre</span>' + offres + '</label>' +
+      '<label class="mdle-fi"><span>Durée en semaines</span><input class="mdle-in mdle-in--num" type="number" min="0" value="' + (t.totalWeeks || '') + '" placeholder="libre" onchange="ADM.prjSet(\'' + id + '\',\'totalWeeks\',this.value)"></label>' +
+      '<p class="mdle-fi mdle-fi--tot"><span>En tout</span>' + mdlEdN(ph.length, 'phase', 'phases') + ', ' + mdlEdN(nS, 'étape', 'étapes') + (min ? ', environ ' + fmtMin(min) + ' de ton côté' : '') + '</p></div>';
+    var carte = '<section class="mdle-c"><p class="mdl2-vide" style="margin:0">Ce modèle n’a pas encore de phase.</p><button class="tps-lien mdle-add" onclick="ADM.prjPhaseAdd(\'' + id + '\')">Ajouter une phase</button></section>';
+    if (ph.length) {
+      var p = ph[i], pid = esc(p.id);
+      var et = (p.steps || []).map(function (x) {
+        var ref = '\'' + id + '\',\'' + pid + '\',\'' + esc(x.id) + '\'';
+        var ty = '<select class="mdle-sel mdle-sel--t mdle-sel--' + (x.type || 'studio') + '" aria-label="De quel côté" onchange="ADM.prjStepSet(' + ref + ',\'type\',this.value);ADM.mdlEdMaj()">' + [['studio', 'ton côté'], ['client', 'côté client'], ['validation', 'validation']].map(function (o) { return '<option value="' + o[0] + '"' + ((x.type || 'studio') === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select>';
+        var mn = x.type === 'client' ? '<span class="mdle-min"></span>' : '<label class="mdle-min"><input class="mdle-in mdle-in--num" type="number" min="0" value="' + (x.estMinutes || '') + '" placeholder="0" onchange="ADM.prjStepSet(' + ref + ',\'estMinutes\',this.value);ADM.mdlEdMaj()"> min</label>';
+        return '<div class="mdle-et">' + ty + '<input class="mdle-in mdle-in--nu" value="' + esc(x.title || '') + '" placeholder="L’étape" onchange="ADM.prjStepSet(' + ref + ',\'title\',this.value)">' + mn + '<button class="tps-lien mdle-x" onclick="ADM.prjStepDel(' + ref + ')">Retirer</button></div>';
+      }).join('');
+      var lv = (p.deliverables || []).map(function (d) {
+        var ref = '\'' + id + '\',\'' + pid + '\',\'' + esc(d.id) + '\'';
+        return '<div class="mdle-et"><input class="mdle-in mdle-in--nu" value="' + esc(d.name || '') + '" placeholder="Le livrable" onchange="ADM.prjDelivSet(' + ref + ',\'name\',this.value)">' +
+          '<label class="mdle-min"><input class="mdle-in mdle-in--num" type="number" min="0" value="' + (d.revisionsIncluded || 0) + '" onchange="ADM.prjDelivSet(' + ref + ',\'revisionsIncluded\',this.value)"> séries de retours</label><button class="tps-lien mdle-x" onclick="ADM.prjDelivDel(' + ref + ')">Retirer</button></div>';
+      }).join('');
+      var add = function (ty, l) { return '<button class="tps-lien" onclick="ADM.prjStepAdd(\'' + id + '\',\'' + pid + '\',\'' + ty + '\')">' + l + '</button>'; };
+      var menu = ckMenuHtml([['Monter', 'ADM.prjPhaseMove(\'' + id + '\',\'' + pid + '\',-1);ADM.mdlEdPartie(' + Math.max(0, i - 1) + ')'], ['Descendre', 'ADM.prjPhaseMove(\'' + id + '\',\'' + pid + '\',1);ADM.mdlEdPartie(' + Math.min(ph.length - 1, i + 1) + ')']], 'ADM.prjPhaseDel(\'' + id + '\',\'' + pid + '\')', '', 'Supprimer la phase');
+      carte = mdlEdCarte('Phase ' + (i + 1) + ' sur ' + ph.length, '<input class="mdle-cn" value="' + esc(p.title || '') + '" placeholder="Titre de la phase" onchange="ADM.prjPhaseSet(\'' + id + '\',\'' + pid + '\',\'title\',this.value);ADM.mdlEdMaj()">', menu,
+        '<p class="mdle-lab">Quand, dans le planning</p><input class="mdle-in" value="' + esc(p.help || '') + '" placeholder="Par exemple : semaines 1 et 2" onchange="ADM.prjPhaseSet(\'' + id + '\',\'' + pid + '\',\'help\',this.value)">' +
+        '<p class="mdle-lab">Les étapes</p>' + (et || '<p class="mdl2-vide" style="margin:0 0 6px">Aucune étape.</p>') +
+        '<div class="mdle-adds">' + add('studio', 'Ajouter une étape de ton côté') + add('client', 'côté client') + add('validation', 'une validation') + '</div>' +
+        '<p class="mdle-lab mdle-lab--sec">Ce qui est livré</p>' + (lv || '<p class="mdl2-vide" style="margin:0 0 6px">Rien de livré à cette phase.</p>') +
+        '<button class="tps-lien mdle-add" onclick="ADM.prjDelivAdd(\'' + id + '\',\'' + pid + '\')">Ajouter un livrable</button>', items);
+    }
+    return mdlEdTete('Projet', '<input class="mdle-t" value="' + esc(t.name || '') + '" placeholder="Nom du modèle" onchange="ADM.prjSet(\'' + id + '\',\'name\',this.value)">',
+      '<button class="btn btn--outline" onclick="ADM.prjAssignOpen(\'' + id + '\')">Utiliser pour un client</button>', ckMenuHtml([['Dupliquer', 'ADM.prjDup(\'' + id + '\')']], 'ADM.prjDel(\'' + id + '\')', '', 'Supprimer le modèle')) +
+      champs + '<div class="mdle-g">' + mdlEdPlan(items, ['Ajouter une phase', 'ADM.prjPhaseAdd(\'' + id + '\');ADM.mdlEdPartie(' + ph.length + ')']) + carte + '</div>';
   }
   // Trames et questionnaires : le sommaire des parties, une seule ouverte à la fois.
   var MDL_OUV = {};
@@ -12889,9 +13040,10 @@
   function prjSet(id, field, val) { var t = prjTpl(id); if (!t) return; if (field === 'totalWeeks') val = parseInt(val, 10) || 0; t[field] = val; prjSave(); renderPrjBody(); if (field === 'offer' || field === 'color') renderPrjDrawer(); }
 
   // ── Éditeur (drawer droite) ──
-  function prjOpen(id) { PRJ_SEL = id; renderPrjDrawer(); }
-  function prjCloseDrawer() { PRJ_SEL = null; var d = el('prj-drawer'); if (d) d.remove(); var b = el('prj-drawer-bk'); if (b) b.remove(); }
+  function prjOpen(id) { PRJ_SEL = id; mdlEdOuvrir('projtpl', id); }
+  function prjCloseDrawer() { if (MDL_ED && MDL_ED.vue === 'projtpl') { mdlEdFermer(); return; } PRJ_SEL = null; var d = el('prj-drawer'); if (d) d.remove(); var b = el('prj-drawer-bk'); if (b) b.remove(); }
   function renderPrjDrawer() {
+    if (MDL_ED && MDL_ED.vue === 'projtpl') { mdlEdRendre(); return; }
     var ex = el('prj-drawer'); var keepScroll = ex ? ex.scrollTop : 0;
     if (ex) ex.remove(); var exb = el('prj-drawer-bk'); if (exb) exb.remove();
     var t = prjTpl(PRJ_SEL); if (!t) return;
@@ -13120,7 +13272,7 @@
     tiroirFermer: ptFermer, ptOuvrir: ptOuvrir,
     mailCfgSave: mailCfgSave, kvProbe: kvProbe, kvReset: kvReset,
     qnrAdd: qnrAdd, qnrOpen: qnrOpen, qnrCloseDrawer: qnrCloseDrawer, qnrSet: qnrSet, qnrDup: qnrDup, qnrImportJson: qnrImportJson, qnrExportJson: qnrExportJson, qnrArchive: qnrArchive, qnrDel: qnrDel, qnrToggleArch: qnrToggleArch, qnrPreview: qnrPreview, qnrPreviewNav: qnrPreviewNav, qnrPreviewStart: qnrPreviewStart, qnrPreviewCover: qnrPreviewCover, rankDown: rankDown, qnrSmartImport: qnrSmartImport, qnrAssignOpen: qnrAssignOpen, qnrStepAdd: qnrStepAdd, qnrBulkRequire: qnrBulkRequire, qnrStepSet: qnrStepSet, qnrStepDel: qnrStepDel, qnrStepMove: qnrStepMove, qnrBlockAdd: qnrBlockAdd, qnrBlockSet: qnrBlockSet, qnrBlockChangeType: qnrBlockChangeType, qnrBlockOptions: qnrBlockOptions, qnrBlockDel: qnrBlockDel, qnrBlockMove: qnrBlockMove,
-    mdlChoisir: mdlChoisir, mdlPartie: mdlPartie, qnrRepFiltre: qnrRepFiltre, mdlNouveau: mdlNouveau, mdlArch: mdlArch, mdlReponses: mdlReponses,
+    mdlChoisir: mdlChoisir, mdlPartie: mdlPartie, mdlEdFermer: mdlEdFermer, mdlEdPartie: mdlEdPartie, mdlEdAgrandir: mdlEdAgrandir, mdlEdMaj: mdlEdRendre, qnrRepFiltre: qnrRepFiltre, mdlNouveau: mdlNouveau, mdlArch: mdlArch, mdlReponses: mdlReponses,
     prjAdd: prjAdd, prjSeed: prjSeed, prjOpen: prjOpen, prjCloseDrawer: prjCloseDrawer, prjSet: prjSet, prjDup: prjDup, prjArchive: prjArchive, prjDel: prjDel, prjToggleArch: prjToggleArch, prjAssignOpen: prjAssignOpen, prjPhaseAdd: prjPhaseAdd, prjPhaseSet: prjPhaseSet, prjPhaseDel: prjPhaseDel, prjPhaseMove: prjPhaseMove, prjStepAdd: prjStepAdd, prjStepSet: prjStepSet, prjStepDel: prjStepDel, prjDelivAdd: prjDelivAdd, prjDelivSet: prjDelivSet, prjDelivDel: prjDelivDel,
     incSeenAll: incSeenAll, incClear: incClear,
     sendMsg: sendMsg, loadAllDocs: loadAllDocs, docUploadToggle: docUploadToggle, setDocFilter: setDocFilter, filterAllDocs: filterAllDocs, upload: upload, delDoc: delDoc, lockDoc: lockDoc,
