@@ -313,9 +313,16 @@
     function ord(a, b) { var oa = (a.properties || {}).ordre, ob = (b.properties || {}).ordre; if (cpAccTabGroupe === 'etat' && oa != null && ob != null && oa !== ob) return oa - ob; return String(a.dueDate || '9999').localeCompare(String(b.dueDate || '9999')); }
     function ligne(t, g) {
       var e = cpEtat(t), date = t.dueDate ? ((t.startDate && t.startDate < t.dueDate) ? fmtShort(t.startDate) + ' → ' + fmtShort(t.dueDate) : fmtShort(t.dueDate)) : 'à planifier';
-      return '<div class="cpa-ligne" data-g="' + g + '" data-id="' + t.id + '" data-q="' + esc((t.title + ' ' + (t.missionType || '')).toLowerCase()) + '" draggable="' + (cpAccTabGroupe === 'etat') + '" ondragstart="cpAccRowStart(event,\'' + t.id + '\')" ondragover="cpAccRowOver(event,this)" ondrop="cpAccRowDrop(event,\'' + pid + '\',\'' + g + '\',\'' + t.id + '\')" onclick="cliOpenTaskDrawer(\'' + pid + '\',\'' + t.id + '\')">' +
-        '<span class="cpa-poignee" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></span><div class="cpa-ligne__m"><b>' + esc(t.title || 'Demande') + '</b><span>' + esc(cpAccPourquoi(pd, t)) + '</span></div>' + cpAccPil(e) +
-        '<span>' + esc(date) + '</span><span>' + esc(cpAccUrg(t)) + '</span><span class="num">' + (t.timeSpentMinutes ? esc(cpbMin(t.timeSpentMinutes)) : '') + '</span><span>' + esc(cpAccPieces(t)) + '</span>' +
+      // Ce que la cliente peut changer sur place : la date, l'urgence et les pièces,
+      // tant que Cindy n'a pas commencé. Plus de glisser-déposer ici.
+      var modif = cpTabModifiable(t), ida = '\'' + pid + '\',\'' + t.id + '\'';
+      var cDate = modif ? '<span><button class="cpa-champ" onclick="event.stopPropagation();cpTabDate(this,' + ida + ')">' + esc(date) + '</button></span>' : '<span>' + esc(date) + '</span>';
+      var cUrg = modif ? '<span><button class="cpa-champ" onclick="event.stopPropagation();cpTabUrg(this,' + ida + ')">' + esc(cpAccUrg(t)) + '</button></span>' : '<span>' + esc(cpAccUrg(t)) + '</span>';
+      var pieces = cpAccPieces(t);
+      var cPie = modif ? '<span><label class="cpl-lien cpa-joindre" onclick="event.stopPropagation()">' + esc(pieces || 'Ajouter') + '<input type="file" multiple onchange="cpAccFichierTache(' + ida + ',this.files)"></label></span>' : '<span>' + esc(pieces) + '</span>';
+      return '<div class="cpa-ligne" data-g="' + g + '" data-id="' + t.id + '" data-q="' + esc((t.title + ' ' + (t.missionType || '')).toLowerCase()) + '" onclick="cliOpenTaskDrawer(\'' + pid + '\',\'' + t.id + '\')">' +
+        '<span></span><div class="cpa-ligne__m"><b>' + esc(t.title || 'Demande') + '</b><span>' + esc(cpAccPourquoi(pd, t)) + '</span></div>' + cpAccPil(e) +
+        cDate + cUrg + '<span class="num">' + (t.timeSpentMinutes ? esc(cpbMin(t.timeSpentMinutes)) : '') + '</span>' + cPie +
         '<span class="cpa-l-acts" onclick="event.stopPropagation()">' + (t.status !== 'done' ? '<button class="cpl-lien" onclick="cpAccRepOuvrir(event,\'' + t.id + '\')">Reporter</button>' : '') +
           '<button class="cpl-lien" onclick="cliOpenTaskDrawer(\'' + pid + '\',\'' + t.id + '\');setTimeout(function(){cpAccQuestion(\'' + t.id + '\')},60)">Question</button>' +
           '<button class="cpl-lien" onclick="cpAccDupStart(event,\'' + pid + '\',\'' + t.id + '\')">Dupliquer</button></span>' +
@@ -335,7 +342,7 @@
     var brHtml = (br.length && (cpAccTabFiltre === 'tout' || cpAccTabFiltre === 'Brouillon')) ? '<div class="cpa-groupe"><div class="cpa-groupe__h"><h3>Tes brouillons</h3><span>' + br.length + ' · pas encore envoyé' + (br.length > 1 ? 's' : '') + ', Cindy ne les voit pas</span></div>' +
       br.map(function (b) {
         var nf = (b.attachments || []).length;
-        return '<div class="cpa-ligne cpa-ligne--br" data-q="' + esc(String(b.title || '').toLowerCase()) + '"><span class="cpa-poignee" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></span><div class="cpa-ligne__m"><b>' + esc(b.title || 'Demande sans nom') + '</b><span>commencée le ' + esc(fmtShort(b.updatedAt)) + (b.missionType ? ' · ' + esc(b.missionType) : '') + '</span></div>' +
+        return '<div class="cpa-ligne cpa-ligne--br" data-q="' + esc(String(b.title || '').toLowerCase()) + '"><span></span><div class="cpa-ligne__m"><b>' + esc(b.title || 'Demande sans nom') + '</b><span>commencée le ' + esc(fmtShort(b.updatedAt)) + (b.missionType ? ' · ' + esc(b.missionType) : '') + '</span></div>' +
           '<span class="cpa-pil cpa-pil--hors">Brouillon</span><span>' + (b.dueDate ? esc(fmtShort(b.dueDate)) : 'à choisir') + '</span><span></span><span></span><span>' + (nf ? nf + ' fichier' + (nf > 1 ? 's' : '') : '') + '</span>' +
           '<span class="cpa-brouillon__a"><button class="cpb-btn cpd-btn--clair" onclick="cpNDOpen(\'' + pid + '\',null,\'' + b.id + '\')">Reprendre</button><button class="cpl-lien" onclick="cpNDSupprimerBrouillon(\'' + pid + '\',\'' + b.id + '\')">Supprimer</button></span></div>';
       }).join('') + '</div>' : '';
@@ -345,7 +352,7 @@
     if (cpAccTabCherche) setTimeout(function () { cpAccTabChercher(cpAccTabCherche); }, 0);
     cpAccOutils = outils;
     return '<div class="cpa-fpuces">' + puces + '</div><section class="cpb-carte cpa-tab">' + tete + brHtml + (groupes || (brHtml ? '' : '<p class="cpnd-note">Aucune demande ici.</p>')) +
-      '<div style="padding-top:12px"><a href="#" class="cpl-lien" onclick="cliNewDemande(\'' + pid + '\');return false">Ajouter une demande ici</a></div></section>';
+      '<div class="cpa-tab__pied"><a href="#" class="cpl-lien" onclick="cliNewDemande(\'' + pid + '\');return false">Ajouter une demande ici</a><span>Une fois qu’une demande est en cours, sa date et son urgence se changent avec Cindy, depuis la demande.</span></div></section>';
   }
 
   /* ── Terminées / Archivées ── */
@@ -519,6 +526,68 @@
     if (cliSelTask[pid]) { var t = cpAccT(pid, cliSelTask[pid]); if (t) return cpAccDemandePage(pd, t); delete cliSelTask[pid]; }
     return null;
   }
+
+  /* ── Tableau : changer la date et l'urgence sur place ── */
+  function cpTabModifiable(t) {
+    return !t.archived && (!t.status || t.status === 'todo') && !t.proposedDueDate && !t.needsRework && t.stage !== 'refused' && t.stage !== 'out_of_scope';
+  }
+  var cpTabPop = null;
+  function cpTabFermer() { if (cpTabPop && cpTabPop.parentNode) cpTabPop.parentNode.removeChild(cpTabPop); cpTabPop = null; document.removeEventListener('mousedown', cpTabDehors, true); document.removeEventListener('keydown', cpTabEchap, true); }
+  function cpTabDehors(e) { if (cpTabPop && !cpTabPop.contains(e.target)) cpTabFermer(); }
+  function cpTabEchap(e) { if (e.key === 'Escape') cpTabFermer(); }
+  function cpTabOuvrir(bouton, html) {
+    cpTabFermer();
+    var r = bouton.getBoundingClientRect(), d = document.createElement('div');
+    d.className = 'cpa-pop'; d.innerHTML = html;
+    d.style.top = (r.bottom + window.scrollY + 8) + 'px'; d.style.left = Math.min(r.left + window.scrollX, window.scrollX + document.documentElement.clientWidth - 320) + 'px';
+    document.body.appendChild(d); cpTabPop = d;
+    setTimeout(function () { document.addEventListener('mousedown', cpTabDehors, true); document.addEventListener('keydown', cpTabEchap, true); }, 0);
+    return d;
+  }
+  var CP_URGENCES = [['tranquille', 'tranquille', 'quand tu as le temps'], ['normal', 'normale', 'dans les délais habituels'], ['urgent', 'urgente', 'à traiter en priorité'], ['critique', 'très urgente', 'ça bloque quelque chose']];
+  window.cpTabUrg = function (bouton, pid, id) {
+    var t = cpAccT(pid, id); if (!t) return;
+    var cur = t.urgency || 'normal';
+    cpTabOuvrir(bouton, CP_URGENCES.map(function (u) {
+      return '<button class="cpa-pop__u' + (u[0] === cur ? ' on' : '') + '" onclick="cpTabUrgChoisir(\'' + pid + '\',\'' + id + '\',\'' + u[0] + '\')"><b>' + u[1] + '</b><span>' + u[2] + '</span></button>';
+    }).join(''));
+  };
+  window.cpTabUrgChoisir = function (pid, id, v) { cpTabFermer(); window.cliPatchTask(pid, id, { urgency: v }); };
+  var cpTabMois = null;
+  function cpTabMin(t) {
+    var d = cpAccDetail(t), auj = new Date(); auj.setHours(12, 0, 0, 0);
+    return d && d.delai ? cpAccProchain(auj, d.delai) : cpAccIso(auj);
+  }
+  function cpTabCal(pid, id) {
+    var t = cpAccT(pid, id), min = cpTabMin(t), m = cpTabMois, an = m.getFullYear(), mo = m.getMonth();
+    var nom = m.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }); nom = nom.charAt(0).toUpperCase() + nom.slice(1);
+    var cells = [], premier = (new Date(an, mo, 1).getDay() + 6) % 7; if (premier > 4) premier = 0;
+    for (var k = 0; k < premier; k++) cells.push('<span></span>');
+    var dim = new Date(an, mo + 1, 0).getDate();
+    for (var dd = 1; dd <= dim; dd++) {
+      var dt = new Date(an, mo, dd), w = dt.getDay(); if (w === 0 || w === 6) continue;
+      var ds = cpAccIso(dt), non = ds < min || !!(window.cpHolidayFor && cpHolidayFor(ds)), on = (t.dueDate || '').slice(0, 10) === ds;
+      cells.push(non ? '<span class="off">' + dd + '</span>' : '<button class="' + (on ? 'on' : '') + '" onclick="cpTabDateChoisir(\'' + pid + '\',\'' + id + '\',\'' + ds + '\')">' + dd + '</button>');
+    }
+    var d = cpAccDetail(t), pourquoi = d && d.delai ? 'Au plus tôt le ' + new Date(min + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }) + ' pour ' + String(d.nom).toLowerCase() + '.' : '';
+    return '<div class="cpa-pop__h"><b>' + esc(nom) + '</b><span><button onclick="cpTabMoisNav(\'' + pid + '\',\'' + id + '\',-1)" aria-label="Mois précédent">‹</button><button onclick="cpTabMoisNav(\'' + pid + '\',\'' + id + '\',1)" aria-label="Mois suivant">›</button></span></div>' +
+      '<div class="cpa-pop__j"><span>lun</span><span>mar</span><span>mer</span><span>jeu</span><span>ven</span></div><div class="cpa-pop__g">' + cells.join('') + '</div>' +
+      (pourquoi ? '<p>' + esc(pourquoi) + '</p>' : '');
+  }
+  window.cpTabDate = function (bouton, pid, id) {
+    var t = cpAccT(pid, id); if (!t) return;
+    var base = new Date(((t.dueDate || '').slice(0, 10) || cpTabMin(t)) + 'T12:00:00'); if (isNaN(base)) base = new Date();
+    cpTabMois = new Date(base.getFullYear(), base.getMonth(), 1);
+    cpTabOuvrir(bouton, cpTabCal(pid, id)).classList.add('cpa-pop--cal');
+  };
+  window.cpTabMoisNav = function (pid, id, n) { cpTabMois = new Date(cpTabMois.getFullYear(), cpTabMois.getMonth() + n, 1); if (cpTabPop) cpTabPop.innerHTML = cpTabCal(pid, id); };
+  window.cpTabDateChoisir = function (pid, id, ds) {
+    cpTabFermer();
+    var t = cpAccT(pid, id); if (!t) return;
+    var patch = { dueDate: ds };
+    if (t.startDate && t.dueDate) { var dur = new Date(t.dueDate.slice(0, 10) + 'T12:00:00') - new Date(t.startDate.slice(0, 10) + 'T12:00:00'); patch.startDate = new Date(new Date(ds + 'T12:00:00') - dur).toISOString().slice(0, 10); }
+    window.cliPatchTask(pid, id, patch);
+  };
 
   /* ── « Ce dont j'ai besoin » : ce qui manque pour commencer une demande ──
    * Chaque élément manquant : déposer un fichier ou coller le texte, puis
