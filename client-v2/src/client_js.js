@@ -6402,7 +6402,12 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     }
     function ong(v, lbl) { return '<button class="cpl-ong' + (cpFichFiltre === v ? ' on' : '') + '" onclick="cpFichSetFiltre(\'' + v + '\')">' + lbl + '</button>'; }
     return '<div class="cp-home cpb"><div class="cpb__in fade-up" style="max-width:1180px">' +
-      '<header><h1 class="cpb-h1">Tes fichiers</h1><p class="cpb-lead">Tout ce que vous vous êtes échangé, au même endroit. Glisse un fichier sur un projet pour le déposer.</p></header>' +
+      // Le bouton de la maquette : un seul projet, dépôt direct ; plusieurs, on choisit le projet.
+      '<header class="cpf-tete"><div><h1 class="cpb-h1">Tes fichiers</h1><p class="cpb-lead">Tout ce que vous vous êtes échangé, au même endroit. Glisse un fichier sur un projet pour le déposer.</p></div>' +
+        (projects.length === 1
+          ? '<label class="cpb-btn cpf-deposer">Déposer un fichier<input type="file" multiple hidden onchange="window.stbFilesUpload(\'' + projects[0].project.id + '\',this.files)"></label>'
+          : '<details class="cpf-deposer-m"><summary class="cpb-btn cpf-deposer">Déposer un fichier</summary><div>' + projects.map(function (pd2) { return '<label>' + esc(pd2.project.projectTitle || 'Projet') + '<input type="file" multiple hidden onchange="window.stbFilesUpload(\'' + pd2.project.id + '\',this.files)"></label>'; }).join('') + '</div></details>') +
+      '</header>' +
       '<div class="cpf-barre"><div class="cpl-ongs">' + ong('tous', 'Tous · ' + (nCindy + nToi)) + ong('cindy', 'De Cindy · ' + nCindy) + ong('toi', 'De toi · ' + nToi) + '</div>' +
         '<input type="search" class="cpm-cherche" style="width:260px" placeholder="Rechercher un fichier" aria-label="Rechercher un fichier" oninput="cpFichCherche(this.value)"></div>' +
       projects.map(projet).join('') +

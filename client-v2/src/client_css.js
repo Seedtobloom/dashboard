@@ -1348,4 +1348,19 @@ button.cpnd-j:hover { box-shadow: inset 0 0 0 1px #110704; }
 @media (max-width: 1280px) { .cpnd-types { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 @media (max-width: 900px) { .cpnd-types { grid-template-columns: 1fr 1fr; } .cpnd-j { min-height: 52px; } .cpnd-grille { grid-template-columns: repeat(5, minmax(0, 1fr)) 28px 28px; gap: 4px; } .cpnd-corps--date { grid-template-columns: 1fr; } }
 @media (max-width: 560px) { .cpnd-types { grid-template-columns: 1fr; } }
+
+/* Fichiers : le bouton « Déposer un fichier » de la maquette */
+.cpf-tete { display: flex; justify-content: space-between; align-items: flex-end; gap: 20px; }
+.cpf-deposer { background: #110704; color: #F8F6F2; cursor: pointer; list-style: none; display: inline-flex; }
+.cpf-deposer::-webkit-details-marker { display: none; }
+.cpf-deposer-m { position: relative; }
+.cpf-deposer-m > div { position: absolute; right: 0; top: calc(100% + 6px); z-index: 20; background: #fff; border-radius: 12px; padding: 6px; min-width: 240px; box-shadow: 0 0 0 1px rgba(17,7,4,.08), 0 8px 20px rgba(17,7,4,.14); display: flex; flex-direction: column; }
+.cpf-deposer-m label { padding: 9px 12px; border-radius: 8px; cursor: pointer; font: 500 15px var(--font-micro); color: #110704; }
+.cpf-deposer-m label:hover { background: #F8F6F2; }
+/* Messages : la maquette est pensée en 1920 ; en dessous de 1560, le bloc « Sur ce projet » passe sous la conversation */
+@media (max-width: 1560px) { .cpm-grid { grid-template-columns: 280px minmax(0, 1fr); } .cpm-side { grid-column: 1 / -1; flex-direction: row; } .cpm-side > * { flex: 1; } }
+@media (max-width: 900px) { .cpm-grid { grid-template-columns: minmax(0, 1fr) !important; } .cpm-side { flex-direction: column; } .cpf-tete { flex-direction: column; align-items: flex-start; } }
+
+@media (max-width: 1560px) { .cpm-grid { height: auto; grid-template-rows: calc(100vh - 210px) auto; } .cpm-side { align-items: flex-start; } .cpm-side > * { align-self: flex-start; } }
+@media (max-width: 900px) { .cpm-grid { grid-template-rows: none; } }
 `;
