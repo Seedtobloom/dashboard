@@ -1020,7 +1020,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     '</div></div>';
   }
   function buildHome() {
-    if (appData.type === 'client' && !_isAdminEdit) return cpHomeB();
+    if (cpPortail() && !_isAdminEdit) return cpHomeB();
     var active = appData.projects.filter(function(pd) { return pd.project.status !== 'archived'; });
     var archived = appData.projects.filter(function(pd) { return pd.project.status === 'archived'; });
 
@@ -1532,7 +1532,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
   }
 
   function buildSidebar() {
-    var portal = appData.type === 'client';
+    var portal = cpPortail();
     var unread = totalUnread();
     var firstProj = appData.projects.length ? appData.projects[0].project : null;
     var clientType = firstProj ? (firstProj.type || '') : '';
@@ -1550,9 +1550,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       '<div class="cp-nav__label">Ton espace</div>' +
       (portal ? navBtn('home','home','Accueil','cpGoHome()','') : '') +
       (appData.projects.length === 1 && clientType === 'maintenance' ? navBtn('interventions','settings','Tickets','cpOpenInterventions()','') : '') +
-      (appData.projects.length === 1 && clientType === 'partenaire' ? navBtn('project','tasks','Mon espace','cpSel(\''+esc(firstProj.id)+'\')', '') : '') +
-      (appData.projects.length === 1 && clientType !== 'maintenance' && clientType !== 'partenaire' ? navBtn('project','tasks','Suivi','cpSel(\''+esc(firstProj.id)+'\')', '') : '') +
-    '';
+                '';
 
     var hasPartner = (appData.projects || []).some(function(pd){ return pd.project && pd.project.type === 'partenaire'; });
     var hasMaintenance = (appData.projects || []).some(function(pd){ return pd.project && pd.project.type === 'maintenance'; });
@@ -1618,7 +1616,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
   function buildTopbar() {
     // Mobile topbar (shown only below 768px via CSS) — navigation complète :
     // projets + Messages, Livrables, Temps passé, Fichiers, Ressources.
-    var portalTb = appData.type === 'client';
+    var portalTb = cpPortail();
     var hasPartnerTb = (appData.projects || []).some(function(pd){ return pd.project && pd.project.type === 'partenaire'; });
     var hasMaintenanceTb = (appData.projects || []).some(function(pd){ return pd.project && pd.project.type === 'maintenance'; });
     var unreadAll = totalUnread();
@@ -2597,9 +2595,9 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
   }
   function buildProjectView(pd) {
     if (!pd) return '<div class="cp-empty">Projet introuvable.</div>';
-    if (appData.type === 'client' && !_isAdminEdit && pd.project.type === 'support') return cpSupportPage(pd);
+    if (cpPortail() && !_isAdminEdit && pd.project.type === 'support') return cpSupportPage(pd);
     if (!_isAdminEdit && pd.project.type === 'partenaire') return cpAccompPage(pd);
-    if (appData.type === 'client' && !_isAdminEdit && ['partenaire', 'maintenance', 'support'].indexOf(pd.project.type) === -1) return cpProjetEtapesPage(pd);
+    if (cpPortail() && !_isAdminEdit && ['partenaire', 'maintenance', 'support'].indexOf(pd.project.type) === -1) return cpProjetEtapesPage(pd);
     var project = pd.project, messages = pd.messages, files = pd.files;
     var col = STATUS_COLORS[project.status] || '#aaa';
     var steps = (project.steps||[]).slice().sort(function(a,b){ return (a.order||0)-(b.order||0); });
@@ -2612,7 +2610,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       reference:   files.filter(function(f){ return f.category==='reference'; }),
     };
 
-    var portal = appData.type === 'client';
+    var portal = cpPortail();
     var extended = project.deadlineExtended
       ? ' <span style="font-size:11px;background:#F8F6F2;color:#110704;padding:2px 8px;border-radius:999px;font-weight:600;font-style:normal">Prolongee</span>'
       : '';
@@ -7232,6 +7230,9 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
   // lien de réservation, bilan… présent OU ajouté plus tard) ne peut être perdu —
   // c'est ce qui faisait disparaître la nav « Questionnaires ». Renvoie null si la
   // charge est inexploitable.
+  // Espace client refondu : lien client (plusieurs espaces) ou lien d'un espace
+  // unique, les deux ont l'accueil, le menu et les pages de 2026.
+  function cpPortail() { return !!appData && (appData.type === 'client' || appData.type === 'project'); }
   function normalizeAppData(data) {
     if (!data) return null;
     if (data.type) return data;
@@ -7277,7 +7278,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     applyClientTheme(appData.projects);
     var _p0type = (appData.projects[0] && appData.projects[0].project && appData.projects[0].project.type) || 'partenaire';
     applyTypeTheme(_p0type);
-    var portal = appData.type === 'client';
+    var portal = cpPortail();
     currentId = appData.projects[0].project.id;
     convoId = currentId;
     clientInitial = (appData.clientName||'C').charAt(0).toUpperCase();
