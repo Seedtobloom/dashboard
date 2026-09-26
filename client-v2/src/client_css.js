@@ -1363,4 +1363,31 @@ button.cpnd-j:hover { box-shadow: inset 0 0 0 1px #110704; }
 
 @media (max-width: 1560px) { .cpm-grid { height: auto; grid-template-rows: calc(100vh - 210px) auto; } .cpm-side { align-items: flex-start; } .cpm-side > * { align-self: flex-start; } }
 @media (max-width: 900px) { .cpm-grid { grid-template-rows: none; } }
+
+/* Retours sur l'espace en ligne */
+@media (min-width: 769px) { .cp-sidebar { position: sticky; top: 0; height: 100vh; overflow-y: auto; align-self: start; } }
+.cp-sidebar__rdv { display: block; margin: 0 0 8px; }
+.cpa-jour--passe { opacity: 1; }
+.cpa-jour--passe .cpa-num { opacity: .45; }
+.cpa-jour__h { position: relative; }
+.cpa-jour__h .cpa-plus { position: absolute; right: -4px; top: 50%; transform: translateY(-50%); margin: 0; background: #F8F6F2; }
+.cpa-jour__h .cpa-cindy { margin-left: auto; }
+.cpa-jour:hover .cpa-cindy { visibility: hidden; }
+.cpa-jour--we:hover .cpa-cindy, .cpa-jour--conges:hover .cpa-cindy, .cpa-jour--passe:hover .cpa-cindy { visibility: visible; }
+.cpa-puce__t { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.cpl-vign, .cpl-apercu { display: flex; align-items: flex-end; padding: 6px; box-sizing: border-box; }
+.cpl-type { background: #fff; border-radius: 5px; padding: 2px 6px; font: 700 11px var(--font-micro); color: #110704; }
+.cpt-ligne > div span { white-space: nowrap; }
+
+/* Contraste : une pastille garde toujours ses propres couleurs, même dans un en-tête de carte */
+.cpd-carte__h > .cpa-pil--cindy, .cpa-pil--cindy { color: #F8F6F2 !important; }
+.cpd-carte__h > .cpa-pil--toi, .cpd-carte__h > .cpa-pil--recue { color: #110704 !important; }
+.cpd-carte__h > .cpa-pil--fait, .cpd-carte__h > .cpa-pil--hors { color: #5A2A11 !important; }
+
+/* Contraste des dates (4,5:1 au moins) */
+.cpa-jour--passe .cpa-num { opacity: 1; color: #7a5540; font-weight: 500; }
+.cpnd-j--we { color: #7a5540; }
+.cpnd-j--passe { color: #7a5540; font-weight: 400; }
+.cpnd-j--tot { color: #5A2A11; }
+.cpnd-j--complet { color: #5A2A11; }
 `;

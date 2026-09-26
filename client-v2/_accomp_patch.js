@@ -494,11 +494,11 @@
     var pid = pd.project.id, t = cpAccT(pid, id); if (!t) return '';
     var e = cpEtat(t), dl = cpAccDlv(pd, t), dern = dl[dl.length - 1], com = (t.comments || []).slice(-2);
     var det = cpAccDetail(t), fond = det ? det.couleur : '#E4D9C5';
-    var img = '<div class="cpv-vis" style="background:linear-gradient(135deg,#EFE8D8,' + esc(fond) + ')">' + (dern && dern.fileKey && /\.(png|jpe?g|webp|gif)$/i.test(dern.name || '') ? '<img src="' + API_BASE + '/files/' + encodeURIComponent(dern.fileKey) + '/download" alt="' + esc(dern.name) + '" onerror="this.remove()">' : '') + '</div>';
+    var img = dern && dern.fileKey && /\.(png|jpe?g|webp|gif)$/i.test(dern.name || '') ? '<div class="cpv-vis" style="background:linear-gradient(135deg,#EFE8D8,' + esc(fond) + ')"><img src="' + API_BASE + '/files/' + encodeURIComponent(dern.fileKey) + '/download" alt="' + esc(dern.name) + '" onerror="this.parentNode.remove()"></div>' : '';
     var btns = '';
     if (t.status === 'review' && dern && dern.status === 'a_valider') btns = '<div class="cpv-btns"><button class="cpb-btn cpd-btn" onclick="stbValidate(\'' + pid + '\',\'' + dern.id + '\',\'valide\')">Valider</button><button class="cpb-btn cpd-btn--clair" onclick="stbValidate(\'' + pid + '\',\'' + dern.id + '\',\'refuse\')">Demander une modif</button></div>';
     else if (t.proposedDueDate) btns = '<div class="cpv-btns"><button class="cpb-btn cpd-btn" onclick="cliRespondProposedDate(\'' + pid + '\',\'' + t.id + '\',true)">Accepter le ' + esc(fmtShort(t.proposedDueDate)) + '</button><button class="cpb-btn cpd-btn--clair" onclick="cliRespondProposedDate(\'' + pid + '\',\'' + t.id + '\',false)">Garder ma date</button></div>';
-    var brief = (t.blocks || []).map(function (b) { return b && b.text ? stbPlain(b.text).trim() : ''; }).filter(Boolean).join(' · ');
+    var brief = (t.blocks || []).map(function (b) { return b && b.text ? cpTexteBrut(b.text) : ''; }).filter(Boolean).join(' · ');
     if (!brief) brief = String(t.content || '').slice(0, 180);
     return '<aside class="cpb-carte cpv"><div class="cpd-carte__h">' + cpAccPil(e) + '<button class="cpl-lien" onclick="cpAccVoirOuvrir(\'' + pid + '\',\'' + id + '\')">Fermer</button></div>' +
       '<h3 class="cpv-t">' + esc(t.title || 'Demande') + '</h3><p class="cpd-meta">' + esc([t.dueDate ? 'pour le ' + fmtDate(t.dueDate) : '', 'urgence ' + cpAccUrg(t), t.timeSpentMinutes ? cpbMin(t.timeSpentMinutes) + ' passées' : ''].filter(Boolean).join(' · ')) + '</p>' +

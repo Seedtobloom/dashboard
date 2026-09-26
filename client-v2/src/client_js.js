@@ -941,7 +941,18 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     if (diff < 7) return d.toLocaleDateString('fr-FR', { weekday: 'short' });
     return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
   }
-  function cpbTexte(html) { var t = String(html || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim(); return t.length > 90 ? t.slice(0, 88) + '…' : t; }
+  // HTML enrichi -> texte brut, entités décodées (&#39; devient ').
+  // DOMParser ne lance ni script ni chargement d'image : sûr pour du contenu saisi.
+  function cpTexteBrut(html) {
+    var src = String(html || '');
+    if (src.indexOf('<') === -1 && src.indexOf('&') === -1) return src.replace(/\s+/g, ' ').trim();
+    try {
+      var doc = new DOMParser().parseFromString('<body>' + src.replace(/<(br|\/p|\/div|\/li)[^>]*>/gi, ' $&') + '</body>', 'text/html');
+      return (doc.body.textContent || '').replace(/\s+/g, ' ').trim();
+    } catch (e) { return src.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim(); }
+  }
+  window.cpTexteBrut = cpTexteBrut;
+  function cpbTexte(html) { var t = cpTexteBrut(html); return t.length > 90 ? t.slice(0, 88) + '…' : t; }
   function cpbMin(m) { m = Math.max(0, Math.round(m || 0)); var h = Math.floor(m / 60), r = m % 60; return h ? (h + ' h' + (r ? ' ' + String(r).padStart(2, '0') : '')) : (r + ' min'); }
   function cpHomeB() {
     var first = (appData.clientName || '').split(' ')[0];
@@ -1580,23 +1591,11 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     '</div>' : '';
 
     var visioLink = firstProj && firstProj.meetingLink ? firstProj.meetingLink.trim() : '';
-    var visioHtml = visioLink ? '<a href="' + esc(visioLink.startsWith('http') ? visioLink : 'https://'+visioLink) + '" target="_blank" rel="noreferrer" style="display:flex;align-items:center;gap:9px;margin-bottom:13px;padding:10px 13px;border-radius:var(--radius-2);text-decoration:none;background:var(--brume);color:var(--nuit)">' +
-      cpIcon('video',15) +
-      '<div style="line-height:1.15;flex:1;min-width:0">' +
-        '<div style="font-family:var(--font-micro);font-size:11px;font-weight:500;letter-spacing:0.06em;text-transform:uppercase">Rejoindre la visio</div>' +
-        '<div style="font-family:var(--font-micro);font-size:8px;opacity:0.7;text-transform:none;letter-spacing:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(visioLink.replace(/^https?:\/\//,'')) + '</div>' +
-      '</div>' +
-    '</a>' : '';
+    var visioHtml = visioLink ? '<a class="cp-sidebar__question cp-sidebar__rdv" href="' + esc(visioLink.startsWith('http') ? visioLink : 'https://'+visioLink) + '" target="_blank" rel="noreferrer">Rejoindre la visio</a>' : '';
     // Réservation de créneau (Cal.com) : lien global réglé côté admin, proposé
     // uniquement aux offres qui incluent des points réguliers (cpBookingUrl).
     var bookingLink = cpBookingUrl();
-    var bookingHtml = bookingLink ? '<a href="' + esc(bookingLink) + '" target="_blank" rel="noreferrer" style="display:flex;align-items:center;gap:9px;margin-bottom:13px;padding:10px 13px;border-radius:var(--radius-2);text-decoration:none;background:rgba(242,229,194,0.14);color:var(--paille);border:1px solid rgba(242,229,194,0.25)">' +
-      cpIcon('calendar',15,'color:var(--paille)') +
-      '<div style="line-height:1.15;flex:1;min-width:0">' +
-        '<div style="font-family:var(--font-micro);font-size:11px;font-weight:500;letter-spacing:0.06em;text-transform:uppercase">Réserver un créneau</div>' +
-        '<div style="font-family:var(--font-micro);font-size:8px;opacity:0.7;text-transform:none;letter-spacing:0">Choisissez un moment avec Cindy</div>' +
-      '</div>' +
-    '</a>' : '';
+    var bookingHtml = bookingLink ? '<a class="cp-sidebar__question cp-sidebar__rdv" href="' + esc(bookingLink) + '" target="_blank" rel="noreferrer">Réserver un créneau</a>' : '';
     visioHtml = visioHtml + bookingHtml;
 
     return '<aside class="cp-sidebar">' +
@@ -6519,8 +6518,11 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     }
     function vignette(it, grand) {
       if (it.dlUrl && estImage(it)) return '<img class="' + (grand ? 'cpl-apercu' : 'cpl-vign') + '" src="' + esc(it.dlUrl) + '" alt="" loading="lazy">';
-      return '<span class="' + (grand ? 'cpl-apercu' : 'cpl-vign') + '"></span>';
+      var ext = it.dlUrl ? ((String(it.name || '').match(/\.([a-z0-9]{2,4})$/i) || [])[1] || 'Fichier') : 'Lien';
+      return '<span class="' + (grand ? 'cpl-apercu' : 'cpl-vign') + '"><span class="cpl-type">' + esc(ext.length <= 4 ? ext.toUpperCase() : ext) + '</span></span>';
     }
+    // Un livrable nommé « Lien du livrable » (ou sans nom) prend le nom de sa demande.
+    items.forEach(function (it) { if (it.taskTitle && (!it.name || /^(lien du livrable|livrable)$/i.test(String(it.name).trim()))) { it.name = it.taskTitle; it.taskTitle = ''; } });
     function etat(it) {
       if (it.status === 'a_valider' && it.id) return '<span class="cpl-pil cpl-pil--toi">À valider</span>';
       if (it.status === 'valide' || it.status === 'validated') return '<span class="cpl-pil cpl-pil--ok">Validé</span>';
@@ -6626,7 +6628,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     var totMois = lignes.reduce(function (s, x) { return s + x.m; }, 0);
     var detail = '<section class="cpb-carte"><div class="cpb-h2 cpb-h2--sm"><h2>Ce mois-ci</h2></div>' +
       (lignes.length ? lignes.map(function (x) {
-        var t = x.t, quand = t.status === 'done' ? (t.completedAt ? 'le ' + fmtDate(t.completedAt) : 'terminée') : 'en cours';
+        var t = x.t, quand = t.status === 'done' ? (t.completedAt ? 'le ' + fmtShort(t.completedAt) : 'terminée') : 'en cours';
         return '<div class="cpt-ligne"><div><b>' + esc(t.title || 'Demande') + '</b><span>' + esc(quand) + '</span></div><span>' + esc(catOf(t)) + '</span><b class="num">' + esc(cpbMin(x.m)) + '</b></div>';
       }).join('') + '<div class="cpt-ligne cpt-ligne--tot"><b>Total</b><span></span><b class="num">' + esc(cpbMin(totMois)) + '</b></div>' : '<p>Rien encore ce mois-ci.</p>') + '</section>';
     return '<div class="cp-home cpb"><div class="cpb__in fade-up">' +
