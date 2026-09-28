@@ -3511,3 +3511,39 @@ h1.cdhead__n{margin:0;font-weight:400;font-size:36px}
 .ck-passe .ck-reste .inp{width:90px}
 .ck-passe__n{font-size:13px;color:#7a5540}
 .ckt .ck-passe .ck-reste .ck-bfin,.ckgv .ck-passe .ck-reste .ck-bfin,.ck-passe .ck-bfin{background:#110704;color:#F8F6F2;border:none;border-radius:999px;padding:8px 14px;font-size:13px;font-weight:600;text-decoration:none}
+/* Planning d'une création : une étape par ligne, tout se modifie sur place. */
+.pl-titre{margin:0 0 4px;font-family:'Cormorant Garamond',Georgia,serif;font-weight:400;font-size:30px;line-height:1.1;color:#110704}
+.pl{display:flex;flex-direction:column}
+.pl-h{display:flex;justify-content:space-between;align-items:center;gap:20px}
+.pl-res{font-size:14.5px;color:#7a5540}
+.pl-t0{display:flex;align-items:center;gap:10px;font-size:15px;color:#110704}
+.pl-bar{display:flex;gap:3px;margin:16px 0 6px}
+.pl-bar span{flex:1;height:8px;border-radius:4px;background:rgba(17,7,4,.12)}
+.pl-bar span.on{background:#110704}
+.pl-l{display:grid;grid-template-columns:130px minmax(0,1.6fr) 250px 150px 120px 56px;gap:16px;align-items:center;padding:12px 0;border-top:1px solid rgba(17,7,4,.08)}
+.pl-l--tete{border-top:none;padding:12px 0 4px;font-size:13px;color:#7a5540}
+.pl-l--neuf{padding:14px 0 6px}
+.pl-q{display:flex;align-items:center;gap:10px;min-width:0}
+.pl-dot{width:9px;height:9px;border-radius:9px;flex:none}
+.pl-date{border:none;background:none;padding:0;font:inherit;font-size:14.5px;color:#110704;cursor:pointer;text-decoration:underline;text-decoration-color:rgba(17,7,4,.25);text-underline-offset:4px;text-align:left}
+.pl-date:hover{text-decoration-color:#110704}
+.pl-in{font:inherit;font-size:15px;color:#110704;padding:8px 10px;border-radius:10px;border:none;background:#fff;box-shadow:inset 0 0 0 1px #e3ded3}
+.pl-in--date{width:100%;padding:6px 8px;font-size:14px}
+.pl-in--t{font-size:16px;margin-left:-10px;box-shadow:none;background:transparent;min-width:0}
+.pl-in--t:hover{box-shadow:inset 0 0 0 1px #e3ded3}
+.pl-in--t:focus{box-shadow:inset 0 0 0 1px #cfc7b8;background:#fff;outline:none}
+.pl-in--neuf{box-shadow:inset 0 0 0 1px #cfc7b8;min-width:0}
+.pl-apres{font-size:14.5px;color:#7a5540}
+.pl-seg{display:inline-flex;gap:2px;padding:3px;border-radius:999px;background:#F1EEE9;justify-self:start}
+.pl-seg button{border:none;background:none;padding:5px 11px;border-radius:999px;font:inherit;font-size:13.5px;color:#6B5A50;cursor:pointer}
+.pl-seg button[aria-pressed="true"]{background:#110704;color:#F8F6F2;font-weight:600}
+.pl-dur{display:inline-flex;align-items:center;gap:6px;font-size:14.5px}
+.pl-dur button{width:26px;height:26px;border-radius:999px;border:none;background:#fff;box-shadow:inset 0 0 0 1px #e3ded3;font:inherit;font-size:15px;line-height:1;color:#110704;cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
+.pl-dur button:hover{box-shadow:inset 0 0 0 1px #110704}
+.pl-dur .num{min-width:52px;text-align:center}
+.pl-st{appearance:none;-webkit-appearance:none;border:none;padding:5px 12px;border-radius:999px;font:inherit;font-size:13.5px;font-weight:600;cursor:pointer;justify-self:start}
+.pl-plus .ckm-b{width:auto;height:auto;border-radius:0;background:none;padding:0;font:inherit;font-size:14px;color:#5A2A11;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.pl-ajout{border:none;border-radius:999px;background:#110704;color:#F8F6F2;padding:9px 16px;font:inherit;font-size:14.5px;font-weight:600;cursor:pointer}
+.pl-note{margin:14px 0 0;font-size:14px;color:#7a5540}
+.pl-plus .ckm-b:hover,.pl-plus .ckm-b[aria-expanded="true"]{background:none;color:#110704}
+.pl-plus .ckm-l{top:28px}

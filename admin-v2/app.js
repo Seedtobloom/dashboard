@@ -9502,7 +9502,7 @@
           '</div>' +
           '</section>' +
           '<section class="cg-bloc">' +
-            '<div class="cg-lbl">' + cgIcon('cal', 15) + ' Planning prévisionnel</div>' +
+            '<h3 class="pl-titre">Le planning de cette création</h3>' +
             '<div id="planwrap-' + fullPid + '-' + c.id + '" class="cg-plan">' + planningEditor(fullPid, c.planning, c.planningStart, c.id) + '</div>' +
           '</section>' +
         '</div>' +
@@ -9612,82 +9612,106 @@
   }
   // Éditeur de planning réutilisable. cid vide = planning du projet ; cid = planning d'une création.
   // Toutes les actions passent cid en dernier argument (undefined pour le projet).
+  /* Une étape tient en UNE ligne, et tout s'y modifie sur place : la date
+   * (clic → date précise), le titre, qui la porte, la durée (− / +) et où
+   * elle en est. Les gestes rares (déplacer, prévenir, supprimer) sont sous
+   * « Plus ». La ligne d'ajout est toujours là, en bas. */
+  var PJ_DATE = {}, PJ_NEW = {};
   function planningEditor(pid, planning, t0, cid) {
     planning = Array.isArray(planning) ? planning : [];
     t0 = t0 || '';
     var cq = cid ? ',\'' + cid + '\'' : '';
     var rows = planCompute(planning, t0);
-    // Qui porte le jalon, et où il en est : dans les nuances de la charte,
-    // pas dans des couleurs inventées.
-    var OWN = { studio: ['Toi', '#EAF2FF', '#2A4266'], cliente: ['Ta cliente', '#F5E3D9', '#8A4522'], les_deux: ['Vous deux', '#EDEAE7', '#3A2A22'] };
-    var STx = { fait: ['Fait', '#EDE4DE', '#5A2A11'], en_cours: ['En cours', '#F5E3D9', '#8A4522'], a_venir: ['À venir', '#F1EEE9', '#6B5A50'] };
-    function jalonRow(r) {
-      var j = r.j;
-      var ow = OWN[j.owner] || OWN.studio;
-      var stt = STx[j.status] || STx.a_venir;
-      var dotc = j.status === 'fait' ? '#5A2A11' : (j.status === 'en_cours' ? '#CD8F6E' : '#D8D2CB');
-      var timing = j.dateMode === 'fixed'
-        ? '<label class="cg-fld"><span>Date fixe</span><input class="cg-in" type="date" value="' + esc(j.date || '') + '" onchange="ADM.pjSet(\'' + pid + '\',\'' + j.id + '\',\'date\',this.value' + cq + ')"></label>'
-        : (j.dateMode === 'range'
-          ? '<label class="cg-fld"><span>Plage</span><span class="cg-dates"><input class="cg-in" type="date" value="' + esc(j.dateStart || '') + '" onchange="ADM.pjSet(\'' + pid + '\',\'' + j.id + '\',\'dateStart\',this.value' + cq + ')" title="Début"><span class="cg-sep">→</span><input class="cg-in" type="date" value="' + esc(j.dateEnd || '') + '" onchange="ADM.pjSet(\'' + pid + '\',\'' + j.id + '\',\'dateEnd\',this.value' + cq + ')" title="Fin"></span></label>'
-          : '<label class="cg-fld"><span>Durée</span><span class="cg-dur"><input class="cg-in" type="number" min="0" max="52" value="' + (j.durationValue || '') + '" onchange="ADM.pjSet(\'' + pid + '\',\'' + j.id + '\',\'durationValue\',this.value' + cq + ')" style="width:60px"><select class="cg-in" onchange="ADM.pjSet(\'' + pid + '\',\'' + j.id + '\',\'durationUnit\',this.value' + cq + ')"><option value="semaines"' + (j.durationUnit === 'semaines' ? ' selected' : '') + '>semaines</option><option value="jours"' + (j.durationUnit === 'jours' ? ' selected' : '') + '>jours</option></select></span></label>');
-      /* Un jalon tient en une ligne : sa date, ce qu'il est, qui le porte, et
-       * son avancement, modifiable sans rien ouvrir. Le reste (titre, jalon,
-       * mode d'échéance, dates) n'apparaît que si on clique sur le crayon :
-       * huit champs par jalon rendaient le planning illisible. */
-      var edite = !!PJ_ED[j.id];
-      var ligne = '<div class="cgj-l" tabindex="0" data-kb onclick="ADM.pjEdit(\'' + j.id + '\')" title="' +
-        (edite ? 'Replier' : 'Modifier ce jalon') + '">' +
-        '<span class="cgj-d">' + esc(r.label || 'Sans date') + '</span>' +
-        '<span class="cgj-t">' + esc(j.title || 'Sans titre') + '</span>' +
-        '<span class="cgj-c" style="background:' + ow[1] + ';color:' + ow[2] + '">' + esc(ow[0]) + '</span>' +
-        '<select class="cgj-s" style="background:' + stt[1] + ';color:' + stt[2] + '" onclick="event.stopPropagation()" onchange="event.stopPropagation();ADM.pjSet(\'' + pid + '\',\'' + j.id + '\',\'status\',this.value' + cq + ')" title="Avancement">' +
+    var eid = 'plan-new-' + pid + (cid ? '-' + cid : '');
+    var neuf = PJ_NEW[eid] || (PJ_NEW[eid] = { owner: 'studio', dur: 1 });
+    var ST = { fait: ['Fait', '#EDE4DE', '#5A2A11'], en_cours: ['En cours', '#F5E3D9', '#8A4522'], a_venir: ['À venir', '#F1EEE9', '#6B5A50'] };
+    function a(fn, rest) { return 'ADM.' + fn + '(\'' + pid + '\'' + (rest || '') + cq + ')'; }
+    function seg(val, clic) {
+      return '<span class="pl-seg" role="group" aria-label="Qui">' + [['studio', 'Toi'], ['cliente', 'Cliente'], ['les_deux', 'Vous deux']].map(function (o) {
+        return '<button type="button" aria-pressed="' + (val === o[0]) + '" onclick="' + clic(o[0]) + '">' + o[1] + '</button>';
+      }).join('') + '</span>';
+    }
+    function duree(j) {
+      if (j.dateMode === 'fixed') return 'date fixe';
+      if (j.dateMode === 'range') return 'plage';
+      var n = j.durationValue || 0;
+      return j.durationUnit === 'jours' ? n + ' j' : n + ' sem.';
+    }
+    function ligne(r) {
+      var j = r.j, jq = ',\'' + j.id + '\'';
+      var st = ST[j.status] || ST.a_venir;
+      var dot = j.status === 'fait' ? '#5A2A11' : (j.status === 'en_cours' ? '#CD8F6E' : '#D8D2CB');
+      var quand = PJ_DATE[j.id]
+        ? '<input class="pl-in pl-in--date" type="date" id="pl-d-' + j.id + '" value="' + esc(j.date || (r.end ? msIso(r.end) : '')) + '" aria-label="Date précise" onchange="' + a('pjDate', jq + ',this.value') + '" onblur="' + a('pjDateFermer', jq) + '">'
+        : '<button type="button" class="pl-date num" title="Choisir une date précise" onclick="' + a('pjDateOuvrir', jq) + '">' + esc(r.label || 'Sans date') + '</button>';
+      var plus = [['Monter', a('pjMove', jq + ',\'up\'')], ['Descendre', a('pjMove', jq + ',\'down\'')]];
+      if (j.dateMode === 'fixed' || j.dateMode === 'range') plus.push(['Revenir à une durée', a('pjPatch', jq + ',{dateMode:\'duration\'}')]);
+      if (j.owner === 'cliente' || j.owner === 'les_deux') plus.push(['Prévenir la cliente par e-mail', a('pjNotify', jq)]);
+      return '<div class="pl-l">' +
+        '<span class="pl-q"><span class="pl-dot" style="background:' + dot + '"></span>' + quand + '</span>' +
+        '<input class="pl-in pl-in--t" value="' + esc(j.title || '') + '" aria-label="Étape" onchange="' + a('pjSet', jq + ',\'title\',this.value') + '">' +
+        seg(j.owner || 'studio', function (o) { return a('pjSet', jq + ',\'owner\',\'' + o + '\''); }) +
+        '<span class="pl-dur"><button type="button" aria-label="Plus court" onclick="' + a('pjDuree', jq + ',-1') + '">−</button><span class="num">' + esc(duree(j)) + '</span><button type="button" aria-label="Plus long" onclick="' + a('pjDuree', jq + ',1') + '">+</button></span>' +
+        '<select class="pl-st" style="background:' + st[1] + ';color:' + st[2] + '" aria-label="Où ça en est" onchange="' + a('pjSet', jq + ',\'status\',this.value') + '">' +
           '<option value="a_venir"' + (j.status !== 'en_cours' && j.status !== 'fait' ? ' selected' : '') + '>À venir</option>' +
           '<option value="en_cours"' + (j.status === 'en_cours' ? ' selected' : '') + '>En cours</option>' +
           '<option value="fait"' + (j.status === 'fait' ? ' selected' : '') + '>Fait</option>' +
         '</select>' +
-        '<span class="cgj-x">' + (edite ? IC_HAUT : IC_CRAYON) + '</span>' +
-      '</div>';
-      if (!edite) {
-        return '<div class="cg-jal">' +
-          '<div class="cg-jal__spine"><span class="cg-jal__dot" style="background:' + dotc + '"></span><span class="cg-jal__line"></span></div>' +
-          '<div class="cg-jal__body">' + ligne + '</div></div>';
-      }
-      return '<div class="cg-jal">' +
-        '<div class="cg-jal__spine"><span class="cg-jal__dot" style="background:' + dotc + '"></span><span class="cg-jal__line"></span></div>' +
-        '<div class="cg-jal__body">' + ligne +
-          '<input class="cg-in cg-in--title" value="' + esc(j.title) + '" onchange="ADM.pjSet(\'' + pid + '\',\'' + j.id + '\',\'title\',this.value' + cq + ')" placeholder="Ce que tu fais">' +
-          '<div class="cg-jal__meta">' +
-            '<label class="cg-fld"><span>Jalon</span><input class="cg-in" value="' + esc(j.jalon || '') + '" onchange="ADM.pjSet(\'' + pid + '\',\'' + j.id + '\',\'jalon\',this.value' + cq + ')" placeholder="Envoi V1, Retours…" style="min-width:130px"></label>' +
-            '<label class="cg-fld"><span>Responsable</span><select class="cg-in" onchange="ADM.pjSet(\'' + pid + '\',\'' + j.id + '\',\'owner\',this.value' + cq + ')"><option value="studio"' + (j.owner === 'studio' ? ' selected' : '') + '>🎨 Toi</option><option value="cliente"' + (j.owner === 'cliente' ? ' selected' : '') + '>👤 Cliente</option><option value="les_deux"' + (j.owner === 'les_deux' ? ' selected' : '') + '>🤝 Vous deux</option></select></label>' +
-            '<label class="cg-fld"><span>Échéance</span><select class="cg-in" onchange="ADM.pjSet(\'' + pid + '\',\'' + j.id + '\',\'dateMode\',this.value' + cq + ')"><option value="duration"' + (j.dateMode !== 'fixed' && j.dateMode !== 'range' ? ' selected' : '') + '>Durée</option><option value="range"' + (j.dateMode === 'range' ? ' selected' : '') + '>Plage de dates</option><option value="fixed"' + (j.dateMode === 'fixed' ? ' selected' : '') + '>Date fixe</option></select></label>' +
-            timing +
-            '<div class="cg-jal__actions">' +
-              '<button class="cg-ib" onclick="ADM.pjMove(\'' + pid + '\',\'' + j.id + '\',\'up\'' + cq + ')" title="Monter">' + cgIcon('up', 15) + '</button>' +
-              '<button class="cg-ib" onclick="ADM.pjMove(\'' + pid + '\',\'' + j.id + '\',\'down\'' + cq + ')" title="Descendre">' + cgIcon('down', 15) + '</button>' +
-              (j.owner === 'cliente' ? '<button class="cg-ib" onclick="ADM.pjNotify(\'' + pid + '\',\'' + j.id + '\'' + cq + ')" title="Prévenir la cliente par e-mail">✉</button>' : '') +
-              '<button class="cg-ib cg-ib--del" onclick="ADM.pjDel(\'' + pid + '\',\'' + j.id + '\'' + cq + ')" title="Supprimer">' + cgIcon('trash', 15) + '</button>' +
-            '</div>' +
-          '</div>' +
-          (j.note ? '<div class="cg-empty" style="padding:6px 0 0">' + esc(j.note) + '</div>' : '') +
-        '</div>' +
+        '<div class="ckm pl-plus"><button class="ckm-b" aria-haspopup="menu" aria-expanded="false" onclick="event.stopPropagation();ADM.ckMenu(this)">Plus</button>' +
+          '<div class="ckm-l" role="menu" hidden>' + plus.map(function (x) { return '<button role="menuitem" class="ckm-i" onclick="' + x[1] + '">' + esc(x[0]) + '</button>'; }).join('') +
+          '<hr><button role="menuitem" class="ckm-i ckm-i--del" onclick="' + a('pjDel', jq) + '">Supprimer…</button></div></div>' +
       '</div>';
     }
-    var eid = 'plan-new-' + pid + (cid ? '-' + cid : '');
-    // Ce que le planning raconte, avant d'entrer dans le détail.
     var si = rows.length ? planSituation({ jalons: planning, planningStart: t0 }) : null;
-    var resume = si ? '<div class="cg-pres">' +
-      '<div class="cg-presj"><span style="width:' + si.pct + '%"></span></div>' +
-      '<div class="cg-presl"><b>' + si.done + ' jalon' + (si.done > 1 ? 's' : '') + ' sur ' + si.total + '</b>' +
-      (si.ended ? '<span>tout est fait</span>'
-        : (si.current ? '<span>prochain : ' + esc(si.current.j.title || 'sans titre') +
-            (si.current.label ? ' · ' + esc(si.current.label) : '') + '</span>' : '')) +
-      (!si.ended && si.late.length ? '<span class="ck-ap">' + si.late.length + ' en retard</span>' : '') +
-      '</div></div>' : '';
-    return resume +
-      '<div class="cg-t0"><span>Départ</span><input class="cg-in" type="date" value="' + esc(t0) + '" onchange="ADM.pjStart(\'' + pid + '\',this.value' + cq + ')" style="width:160px"></div>' +
-      (rows.length ? '<div class="cg-jals">' + rows.map(jalonRow).join('') + '</div>' : '<div class="cg-empty">Aucun jalon. Ajoute la première étape ci-dessous.</div>') +
-      '<div class="cg-addj"><input class="cg-in" id="' + eid + '" placeholder="Titre de l\'étape (ex. Intégration des templates)" style="flex:1" onkeydown="if(event.key===\'Enter\'){event.preventDefault();ADM.pjAdd(\'' + pid + '\'' + cq + ');}"><button class="cg-btn cg-btn--dark" onclick="ADM.pjAdd(\'' + pid + '\'' + cq + ')">' + cgIcon('plus', 14) + ' Ajouter un jalon</button></div>';
+    var resume = si
+      ? si.done + ' étape' + (si.done > 1 ? 's' : '') + ' sur ' + si.total + ' faite' + (si.done > 1 ? 's' : '') +
+        (si.ended ? ', tout est fait' : (si.current ? ' · prochaine : ' + (si.current.j.title || 'sans titre') + (si.current.label ? ', ' + si.current.label : '') : '')) +
+        (!si.ended && si.late.length ? ' · ' + si.late.length + ' en retard' : '')
+      : 'Aucune étape pour l’instant.';
+    return '<div class="pl">' +
+      '<div class="pl-h"><div class="pl-res num">' + esc(resume) + '</div>' +
+        '<label class="pl-t0"><span>Départ le</span><input class="pl-in" type="date" value="' + esc(t0) + '" onchange="' + a('pjStart', ',this.value') + '"></label></div>' +
+      (rows.length ? '<div class="pl-bar">' + rows.map(function (r) { return '<span' + (r.j.status === 'fait' ? ' class="on"' : '') + '></span>'; }).join('') + '</div>' : '') +
+      '<div class="pl-l pl-l--tete"><span>Quand</span><span>Étape</span><span>Qui</span><span>Durée</span><span>Où ça en est</span><span></span></div>' +
+      rows.map(ligne).join('') +
+      '<div class="pl-l pl-l--neuf">' +
+        '<span class="pl-apres">' + (rows.length ? 'après la dernière' : 'au départ') + '</span>' +
+        '<input class="pl-in pl-in--neuf" id="' + eid + '" placeholder="Nouvelle étape, par exemple Livraison des fichiers" aria-label="Nouvelle étape" onkeydown="if(event.key===\'Enter\'){event.preventDefault();' + a('pjAdd') + ';}">' +
+        seg(neuf.owner, function (o) { return 'ADM.pjNeuf(\'' + eid + '\',\'owner\',\'' + o + '\',\'' + pid + '\'' + cq + ')'; }) +
+        '<span class="pl-dur"><button type="button" aria-label="Plus court" onclick="ADM.pjNeuf(\'' + eid + '\',\'dur\',-1,\'' + pid + '\'' + cq + ')">−</button><span class="num">' + neuf.dur + ' sem.</span><button type="button" aria-label="Plus long" onclick="ADM.pjNeuf(\'' + eid + '\',\'dur\',1,\'' + pid + '\'' + cq + ')">+</button></span>' +
+        '<button type="button" class="pl-ajout" onclick="' + a('pjAdd') + '">Ajouter</button><span></span>' +
+      '</div>' +
+      '<p class="pl-note">Les dates se calculent toutes seules à partir du départ et des durées. Pour une date précise, clique sur la date. « Plus » sert à déplacer, prévenir la cliente ou supprimer.</p>' +
+    '</div>';
+  }
+  function pjNeuf(eid, champ, v, pid, cid) {
+    var n = PJ_NEW[eid] || (PJ_NEW[eid] = { owner: 'studio', dur: 1 });
+    var saisi = el(eid) ? el(eid).value : '';
+    if (champ === 'owner') n.owner = v; else n.dur = Math.max(1, Math.min(52, n.dur + v));
+    pjRerender(pid, cid);
+    var ch = el(eid); if (ch) ch.value = saisi;
+  }
+  function pjPatch(pid, jid, champs, cid) {
+    var r = pjResolve(pid, cid);
+    if (r) { var j = pjJalon(r, jid); if (j) { Object.keys(champs).forEach(function (k) { j[k] = champs[k]; }); pjRerender(pid, cid); } }
+    var body = Object.assign({ projectId: pid }, champs); if (cid) body.creationId = cid;
+    jpost('/api/clients/' + CURKEY + '/planning/' + jid, body, 'PATCH').then(function (r2) { if (!r2.ok) { toast('Erreur'); refreshClient(); } }).catch(function () { toast('Erreur'); refreshClient(); });
+  }
+  function pjDuree(pid, jid, pas, cid) {
+    var r = pjResolve(pid, cid), j = r && pjJalon(r, jid); if (!j) return;
+    // Une date fixe ou une plage repasse en durée dès qu'on touche au − / +.
+    if (j.dateMode === 'fixed' || j.dateMode === 'range') { pjPatch(pid, jid, { dateMode: 'duration', durationValue: Math.max(1, j.durationValue || 1), durationUnit: j.durationUnit || 'semaines' }, cid); return; }
+    pjPatch(pid, jid, { durationValue: Math.max(1, Math.min(52, (j.durationValue || 0) + pas)) }, cid);
+  }
+  function pjDateOuvrir(pid, jid, cid) {
+    PJ_DATE[jid] = 1; pjRerender(pid, cid);
+    var i = el('pl-d-' + jid); if (i) { i.focus(); try { i.showPicker(); } catch (e) { /* navigateur sans showPicker */ } }
+  }
+  function pjDateFermer(pid, jid, cid) { setTimeout(function () { if (PJ_DATE[jid]) { delete PJ_DATE[jid]; pjRerender(pid, cid); } }, 250); }
+  function pjDate(pid, jid, v, cid) {
+    delete PJ_DATE[jid];
+    if (!v) { pjRerender(pid, cid); return; }
+    pjPatch(pid, jid, { dateMode: 'fixed', date: v }, cid);
   }
   // Blocs « planning prévisionnel » ouverts : on mémorise l'état déplié pour
   // qu'un rafraîchissement (ajout de jalon, édition de date…) ne referme pas le bloc.
@@ -9730,7 +9754,8 @@
   function pjAdd(pid, cid) {
     var eid = 'plan-new-' + pid + (cid ? '-' + cid : '');
     var v = (el(eid) ? el(eid).value : '').trim();
-    var b = { projectId: pid, title: v, durationValue: 1, durationUnit: 'semaines' }; if (cid) b.creationId = cid;
+    var neuf = PJ_NEW[eid] || { owner: 'studio', dur: 1 };
+    var b = { projectId: pid, title: v, owner: neuf.owner, durationValue: neuf.dur, durationUnit: 'semaines' }; if (cid) b.creationId = cid;
     PJ_OPEN['crplan-' + pid + (cid ? '-' + cid : '')] = 1;
     // Le serveur génère l'id du jalon : on re-fetch en silence puis on re-render
     // seulement le bloc planning (jamais renderClient).
@@ -13436,7 +13461,7 @@
   window.ADM = {
     nav: nav, login: login, logout: logout, scan: scan, createClient: createClient, copy: copy, editToken: editToken, navClientTab: navClientTab,
     msWeek: msWeek, msFilter: msFilter, msToggleCap: msToggleCap, msMode: msMode, msDaySel: msDaySel, msPlace: msPlace, msDone: msDone, msDelete: msDelete, msNoteOpen: msNoteOpen, msPlanOver: msPlanOver, msPlanLeave: msPlanLeave, msPlanDrop: msPlanDrop, msPlanUnplace: msPlanUnplace, msAutoPlan: msAutoPlan, msOrganizeWeek: msOrganizeWeek, msOrganizeDay: msOrganizeDay, msUnplace: msUnplace, msDragStart: msDragStart, msDragEnd: msDragEnd, msDayOver: msDayOver, msDayLeave: msDayLeave, msDrop: msDrop, msSlotOver: msSlotOver, msDropSlot: msDropSlot, msNewBlock: msNewBlock, msSaveBlock: msSaveBlock, msDeleteBlock: msDeleteBlock, msEst: msEst, msEstH: msEstH, msAddTop: msAddTop, msAddDay: msAddDay,
-    openClient: openClient, tab: tab, subtab: subtab, ffShow: ffShow, saveInfos: saveInfos, saveForfait: saveForfait, forfaitOverrideAdd: forfaitOverrideAdd, forfaitOverrideDel: forfaitOverrideDel, testEmail: testEmail, toggleOffer: toggleOffer, addOffer: addOffer, setBanner: setBanner, setMaintenance: setMaintenance, renameSupport: renameSupport, cloturerProjet: cloturerProjet, rouvrirProjet: rouvrirProjet, addSupportQuick: addSupportQuick, delSupport: delSupport, crAdd: crAdd, crSet: crSet, crCloturer: crCloturer, crRouvrir: crRouvrir, cgToggle: cgToggle, cgNeuve: cgNeuve, pjEdit: pjEdit, crReply: crReply, crDel: crDel, crAddVersion: crAddVersion, crAddVersionLink: crAddVersionLink, crDelVersion: crDelVersion, pjAdd: pjAdd, pjSet: pjSet, pjMove: pjMove, pjDel: pjDel, pjStart: pjStart, pjNotify: pjNotify, pjToggle: pjToggle, deleteClient: deleteClient,
+    openClient: openClient, tab: tab, subtab: subtab, ffShow: ffShow, saveInfos: saveInfos, saveForfait: saveForfait, forfaitOverrideAdd: forfaitOverrideAdd, forfaitOverrideDel: forfaitOverrideDel, testEmail: testEmail, toggleOffer: toggleOffer, addOffer: addOffer, setBanner: setBanner, setMaintenance: setMaintenance, renameSupport: renameSupport, cloturerProjet: cloturerProjet, rouvrirProjet: rouvrirProjet, addSupportQuick: addSupportQuick, delSupport: delSupport, crAdd: crAdd, crSet: crSet, crCloturer: crCloturer, crRouvrir: crRouvrir, cgToggle: cgToggle, cgNeuve: cgNeuve, pjEdit: pjEdit, crReply: crReply, crDel: crDel, crAddVersion: crAddVersion, crAddVersionLink: crAddVersionLink, crDelVersion: crDelVersion, pjAdd: pjAdd, pjSet: pjSet, pjMove: pjMove, pjDel: pjDel, pjStart: pjStart, pjNotify: pjNotify, pjNeuf: pjNeuf, pjPatch: pjPatch, pjDuree: pjDuree, pjDateOuvrir: pjDateOuvrir, pjDateFermer: pjDateFermer, pjDate: pjDate, pjToggle: pjToggle, deleteClient: deleteClient,
     toggleTicketsSpace: toggleTicketsSpace, ticketStatus: ticketStatus, ticketDue: ticketDue, ticketTime: ticketTime, ticketDelete: ticketDelete, ticketForfait: ticketForfait, ticketProposeDate: ticketProposeDate,
     ckpReste: ckpReste, ckpEstim: ckpEstim, ckpAjoutPasse: ckpAjoutPasse, ckpFinir: ckpFinir, ckpPasMaintenant: ckpPasMaintenant, ckpOrdreSysteme: ckpOrdreSysteme,
     ckTSetTri: ckTSetTri, ckTSetFiltre: ckTSetFiltre, ckTOuvrir: ckTOuvrir, ckTGrand: ckTGrand, ckMenu: ckMenu,
