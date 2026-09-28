@@ -6327,12 +6327,17 @@
    * pour ne plus avoir à ouvrir la fiche cliente pour travailler. */
   function ckJDomaine(p) {
     if (!p || !CUR || CUR.key !== p.key) return null;
+    // Les gestes (planning, messages, versions…) passent par CURKEY : quitter
+    // puis rouvrir un projet le remettait à null, et l'ajout d'un jalon partait
+    // vers « clients/null ».
+    CURKEY = p.key;
     return findDomain(p.projectId);
   }
   function ckJCharger(key) {
     // chargeFait retient la tentative, pas seulement l'appel en cours : sans
     // ça, une charge qui ne porte pas ce projet relancerait un rendu, qui
     // relancerait une charge, sans fin.
+    if (key && CUR && CUR.key === key) CURKEY = key;
     if (!key || CKJ.charge === key || CKJ.chargeFait === key) return;
     CKJ.charge = key;
     CURKEY = key;                      // toutes les routes des gestes en dépendent
