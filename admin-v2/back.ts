@@ -1417,6 +1417,16 @@ function applyTimeEntry(t: AnyObj, b: AnyObj): boolean {
     const mins = Math.max(0, Math.min(100000, Math.round(Number(b.timeEntry.minutes) || 0)));
     if (/^\d{4}-\d{2}$/.test(mth) && mins > 0) {
       if (!Array.isArray(t.sessions)) t.sessions = [];
+      // Le temps déjà connu mais absent des sessions (ancien total, mois forcé)
+      // devient des saisies datées AVANT l'ajout : sinon le total, recalculé
+      // sur les seules sessions, perdrait ce qui avait été noté avant.
+      const avant = stbTaskMinByMonth(t) as Record<string, number>;
+      const parMois: Record<string, number> = {};
+      t.sessions.forEach((x: AnyObj) => { const ym = String((x && x.start) || '').slice(0, 7); if (ym) parMois[ym] = (parMois[ym] || 0) + stbSessionMin(x); });
+      Object.keys(avant).forEach((ym) => {
+        const manque = Math.round((avant[ym] || 0) - (parMois[ym] || 0));
+        if (manque > 0) t.sessions.push({ id: genId(), start: ym + '-15T12:00:00.000Z', minutes: manque, manual: true, at: nowIso() });
+      });
       // Milieu de mois : la date ne sert qu'à ranger dans le bon mois, sans
       // risque de bascule liée au fuseau horaire.
       t.sessions.push({ id: genId(), start: mth + '-15T12:00:00.000Z', minutes: mins, manual: true, at: nowIso() });

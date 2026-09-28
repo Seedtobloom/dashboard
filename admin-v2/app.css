@@ -3503,3 +3503,11 @@ h1.cdhead__n{margin:0;font-weight:400;font-size:36px}
 .as-pap__fa{display:flex;align-items:center;gap:14px}
 .as-pap__fa span{font-size:14px;color:rgba(17,7,4,.58)}
 @media(max-width:1100px){.as-g{grid-template-columns:1fr}.as-side{position:static}.as-pap{padding:28px 22px}}
+/* Tâche ouverte : quatre repères sur deux lignes, le temps passé s'ajoute sur place. */
+.ckp-f.ckp-f--2{grid-template-columns:1fr 1fr}
+.ckp-f--2>div:nth-child(3){padding-left:30px;border-left:none;border-top:1px solid rgba(17,7,4,.1)}
+.ckp-f--2>div:nth-child(4){border-top:1px solid rgba(17,7,4,.1)}
+.ck-passe{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+.ck-passe .ck-reste .inp{width:90px}
+.ck-passe__n{font-size:13px;color:#7a5540}
+.ckt .ck-passe .ck-reste .ck-bfin,.ckgv .ck-passe .ck-reste .ck-bfin,.ck-passe .ck-bfin{background:#110704;color:#F8F6F2;border:none;border-radius:999px;padding:8px 14px;font-size:13px;font-weight:600;text-decoration:none}

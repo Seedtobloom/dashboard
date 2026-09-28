@@ -4603,6 +4603,8 @@
       estim: Math.max(0, Math.round(Number(t.estMinutes) || 0)),
       reel: Math.round((Number(t.timeSpentSeconds) || 0) / 60) || Math.round(Number(t.timeSpentMinutes) || 0),
       restant: (typeof t.restMinutes === 'number') ? t.restMinutes : null,
+      // La part du temps passé tombée ce mois-ci (bilan du mois, forfait).
+      ceMois: admTaskMinByMonth(t)[ckpMoisCourant()] || 0,
       debloque: t.unblocks || '',
       slots: Array.isArray(t.slots) ? t.slots : [],
       // Ce que la tâche PORTE : le brief de la cliente, ses échanges, ses
@@ -5120,6 +5122,32 @@
     }
     return null;
   }
+  function ckpMoisCourant() { var d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); }
+  // Noter du temps passé EN COURS de route, sans terminer la tâche. Même saisie
+  // datée du mois que « J'ai terminé » : le temps s'ajoute, rien n'est écrasé.
+  function ckpChampPasse(t, zone) {
+    var a = '\'' + esc(t.id) + '\',\'' + zone + '\'';
+    return '<div class="ck-passe"><div class="ck-reste">' +
+      '<input class="inp" id="ck-p-' + zone + '-' + esc(t.id) + '" placeholder="45 min" aria-label="Temps passé à ajouter" ' +
+      'onclick="event.stopPropagation()" ' +
+      'onkeydown="event.stopPropagation();if(event.key===\'Enter\'){event.preventDefault();ADM.ckpAjoutPasse(' + a + ');}">' +
+      '<button class="btn btn--sm ck-bfin" onclick="event.stopPropagation();ADM.ckpAjoutPasse(' + a + ')">Ajouter</button></div>' +
+      '<span class="ck-passe__n">Ajouté au temps de ce mois. La tâche reste ouverte.</span></div>';
+  }
+  function ckpAjoutPasse(id, zone) {
+    var t = ckpToutes().filter(function (x) { return x.id === id; })[0];
+    if (!t) return;
+    var champ = el('ck-p-' + (zone || 'pan') + '-' + id);
+    var min = ckpParseDuree(champ ? champ.value : '');
+    if (!(min > 0)) { toast('Écris par exemple 45 min, 1h30 ou 1,5'); if (champ) champ.focus(); return; }
+    var body = { timeEntry: { month: ckpMoisCourant(), minutes: min } };
+    if (t.src === 'client') body.projectId = t.projet || 'partner';
+    if (t.src === 'ticket') body.projectId = 'maintenance';
+    jpost(ckpUrl(t), body, 'PATCH').then(function (r) {
+      if (r && !r.error) { toast('Ajouté : ' + ckpDuree(min)); CKP.pret = false; renderMain(); }
+      else toast('Erreur');
+    }).catch(function () { toast('Erreur'); });
+  }
   function ckpUrl(t) {
     if (t.src === 'perso') return '/api/admin/tasks/' + t.id;
     if (t.src === 'ticket') return '/api/clients/' + t.key + '/tickets/' + t.id;
@@ -5403,7 +5431,7 @@
     return {
       ech: ech,
       reste: r === null ? { v: 'À estimer', s: '' } : { v: r ? ckpDuree(r) : 'Rien', s: t.estim ? 'sur ' + ckpDuree(t.estim) + ' prévues' : '' },
-      passe: { v: t.reel ? ckpDuree(t.reel) : 'Rien encore' },
+      passe: { v: t.reel ? ckpDuree(t.reel) : 'Rien encore', s: t.ceMois ? 'dont ' + ckpDuree(t.ceMois) + ' en ' + CKP_MOIS[new Date().getMonth()] : '' },
       creneau: futur ? { v: ckpMaj(ckpQuand(futur.date)) + ', ' + ckpHM(futur.start || 0), s: ckpDuree(futur.minutes || 0) } : { v: 'Aucun', s: '' },
       futur: futur, auj: auj
     };
@@ -5480,10 +5508,11 @@
       '<div class="ckp-h"><div class="ckp-qui">' + ckTQui(t) +
         '<button class="ckp-ag" onclick="ADM.ckTGrand(1)">' + ICON_AGRANDIR + ' Agrandir</button></div>' +
         '<h2 class="ckp-t">' + esc(t.titre) + '</h2></div>' +
-      '<dl class="ckp-f num">' +
+      '<dl class="ckp-f ckp-f--2 num">' +
         '<div><dt>Échéance</dt><dd class="' + (f.ech.ret ? 'ckp-ret' : '') + '"><b>' + esc(f.ech.v) + '</b>' + (f.ech.s ? '<span>' + esc(f.ech.s) + '</span>' : '') + '</dd></div>' +
-        '<div><dt>Encore à faire</dt><dd><b>' + esc(f.reste.v) + '</b>' + (f.reste.s ? '<span>' + esc(f.reste.s) + '</span>' : '') + ckTCorriger(t) + '</dd></div>' +
         '<div><dt>Créneau</dt><dd><b>' + esc(f.creneau.v) + '</b>' + ckTPetitLien(f.futur ? 'Déplacer' : 'Poser un créneau', 'ADM.ckLDepuis(\'' + esc(t.id) + '\')') + '</dd></div>' +
+        '<div><dt>Encore à faire</dt><dd><b>' + esc(f.reste.v) + '</b>' + (f.reste.s ? '<span>' + esc(f.reste.s) + '</span>' : '') + ckTCorriger(t) + '</dd></div>' +
+        '<div class="ckp-f__passe"><dt>Déjà passé</dt><dd><b>' + esc(f.passe.v) + '</b>' + (f.passe.s ? '<span>' + esc(f.passe.s) + '</span>' : '') + ckpChampPasse(t, 'pan') + '</dd></div>' +
       '</dl>' +
       (brief || lignes ? '<div class="ckp-b"><h3>Son brief</h3>' + (brief ? '<div class="ckp-bt">' + brief + '</div>' : '') +
         (lignes ? '<p class="ckp-tab">Avec un tableau de ' + lignes + ' ligne' + (lignes > 1 ? 's' : '') + '. ' +
@@ -5546,7 +5575,7 @@
         '<section class="ckgv-s"><h2>Le temps</h2>' +
           prop('Échéance', f.ech.v, petit(f.ech.s), f.ech.ret ? 'ckp-ret' : '') +
           prop('Encore à faire', f.reste.v, petit(f.reste.s) + ckTCorriger(t)) +
-          prop('Déjà passé', f.passe.v, chrono) +
+          prop('Déjà passé', f.passe.v, petit(f.passe.s) + chrono + ckpChampPasse(t, 'gv')) +
           prop('Créneau', f.creneau.v, ckTPetitLien(f.futur ? 'Déplacer' : 'Poser un créneau', 'ADM.ckLDepuis(\'' + esc(t.id) + '\')')) +
         '</section>' +
         (t.src !== 'perso' ? '<section class="ckgv-s"><h2>Fichiers</h2>' + (fs.length ? fs.map(fichier).join('') : '<p class="ckg-doux">Aucun fichier.</p>') +
@@ -13409,7 +13438,7 @@
     msWeek: msWeek, msFilter: msFilter, msToggleCap: msToggleCap, msMode: msMode, msDaySel: msDaySel, msPlace: msPlace, msDone: msDone, msDelete: msDelete, msNoteOpen: msNoteOpen, msPlanOver: msPlanOver, msPlanLeave: msPlanLeave, msPlanDrop: msPlanDrop, msPlanUnplace: msPlanUnplace, msAutoPlan: msAutoPlan, msOrganizeWeek: msOrganizeWeek, msOrganizeDay: msOrganizeDay, msUnplace: msUnplace, msDragStart: msDragStart, msDragEnd: msDragEnd, msDayOver: msDayOver, msDayLeave: msDayLeave, msDrop: msDrop, msSlotOver: msSlotOver, msDropSlot: msDropSlot, msNewBlock: msNewBlock, msSaveBlock: msSaveBlock, msDeleteBlock: msDeleteBlock, msEst: msEst, msEstH: msEstH, msAddTop: msAddTop, msAddDay: msAddDay,
     openClient: openClient, tab: tab, subtab: subtab, ffShow: ffShow, saveInfos: saveInfos, saveForfait: saveForfait, forfaitOverrideAdd: forfaitOverrideAdd, forfaitOverrideDel: forfaitOverrideDel, testEmail: testEmail, toggleOffer: toggleOffer, addOffer: addOffer, setBanner: setBanner, setMaintenance: setMaintenance, renameSupport: renameSupport, cloturerProjet: cloturerProjet, rouvrirProjet: rouvrirProjet, addSupportQuick: addSupportQuick, delSupport: delSupport, crAdd: crAdd, crSet: crSet, crCloturer: crCloturer, crRouvrir: crRouvrir, cgToggle: cgToggle, cgNeuve: cgNeuve, pjEdit: pjEdit, crReply: crReply, crDel: crDel, crAddVersion: crAddVersion, crAddVersionLink: crAddVersionLink, crDelVersion: crDelVersion, pjAdd: pjAdd, pjSet: pjSet, pjMove: pjMove, pjDel: pjDel, pjStart: pjStart, pjNotify: pjNotify, pjToggle: pjToggle, deleteClient: deleteClient,
     toggleTicketsSpace: toggleTicketsSpace, ticketStatus: ticketStatus, ticketDue: ticketDue, ticketTime: ticketTime, ticketDelete: ticketDelete, ticketForfait: ticketForfait, ticketProposeDate: ticketProposeDate,
-    ckpReste: ckpReste, ckpEstim: ckpEstim, ckpFinir: ckpFinir, ckpPasMaintenant: ckpPasMaintenant, ckpOrdreSysteme: ckpOrdreSysteme,
+    ckpReste: ckpReste, ckpEstim: ckpEstim, ckpAjoutPasse: ckpAjoutPasse, ckpFinir: ckpFinir, ckpPasMaintenant: ckpPasMaintenant, ckpOrdreSysteme: ckpOrdreSysteme,
     ckTSetTri: ckTSetTri, ckTSetFiltre: ckTSetFiltre, ckTOuvrir: ckTOuvrir, ckTGrand: ckTGrand, ckMenu: ckMenu,
     ckTRepondre: ckTRepondre, ckTCloturer: ckTCloturer, ckTSupprimer: ckTSupprimer, ckTCreerStb: ckTCreerStb, inbSetOnglet: inbSetOnglet, inbChoisir: inbChoisir, inbRefuser: inbRefuser, inbToutVu: inbToutVu, ckTSetCote: ckTSetCote, ckTVoir: ckTVoir, ckTEtape: ckTEtape,
     ckTAEstimer: ckTAEstimer,
