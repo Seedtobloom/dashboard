@@ -1525,10 +1525,13 @@ button.cpnd-j:hover { box-shadow: inset 0 0 0 1px #110704; }
 
 /* ── Maintenance « Mon site » ───────────────────────────────────────── */
 .mn{display:flex;flex-direction:column;gap:40px;max-width:1100px;padding-bottom:40px}
+/* Fond beige et cartes blanches, comme le dashboard */
+.cp-main:has(.mn){background:#F8F6F2;min-height:100vh}
+.cp-main:has(.mn) .mn-area,.cp-main:has(.mn) .mn-inp{background:#fff}
 .mn-sec{display:flex;flex-direction:column;gap:16px}
 .mn-h2{margin:0;font-family:'Cormorant Garamond',serif;font-weight:400;font-size:34px;line-height:1.1;color:#110704}
 .mn-h3{margin:0;font-size:21px;font-weight:600;color:#110704}
-.mn-carte{background:#fff;border-radius:18px;box-shadow:inset 0 0 0 1px rgba(17,7,4,0.12);padding:28px 32px;display:flex;flex-direction:column;gap:12px}
+.mn-carte{background:#fff;border-radius:18px;box-shadow:0 1px 2px rgba(17,7,4,0.06);padding:28px 32px;display:flex;flex-direction:column;gap:12px}
 .mn-form{padding:36px 40px;gap:24px}
 .mn-besoin{background:#E6E5B2;border-radius:18px;padding:36px 40px;display:flex;flex-direction:column;gap:20px;box-shadow:inset 0 0 0 2px #110704}
 .mn-ligne{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}

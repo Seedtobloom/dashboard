@@ -3945,7 +3945,9 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       var avant = Object.keys(parMois).filter(function (k) { return k < mk && parMois[k] > 0; }).sort().reverse().slice(0, 3);
       corps = '<div class="mn-carte mn-fcarte"><h3 class="mn-h3">Ce mois-ci</h3>' +
           '<div class="mn-gros"><b class="num">' + (reste < 0 ? '0 min' : mntMin(reste)) + '</b> encore disponibles</div>' +
-          '<p class="mn-txt"><b class="num">' + mntMin(utilise) + '</b> utilisées sur <b class="num">' + mntMin(dispo) + '</b>. Le compteur repart à ' + mntMin(quotaMin) + ' le 1er ' + nd.toLocaleDateString('fr-FR', { month: 'long' }) + '.</p></div>' +
+          '<p class="mn-txt"><b class="num">' + mntMin(utilise) + '</b> utilisées sur <b class="num">' + mntMin(dispo) + '</b>' +
+            (dispo > quotaMin ? ' (ton forfait de ' + mntMin(quotaMin) + ', plus ' + mntMin(dispo - quotaMin) + ' pas utilisées le mois dernier)' : (dispo < quotaMin ? ' (ton forfait de ' + mntMin(quotaMin) + ', moins ' + mntMin(quotaMin - dispo) + ' de dépassement le mois dernier)' : '')) +
+            '. Le compteur repart à ' + mntMin(quotaMin) + ' le 1er ' + nd.toLocaleDateString('fr-FR', { month: 'long' }) + '.</p></div>' +
         '<div class="mn-carte mn-fcarte"><h3 class="mn-h3">Où est passé ton temps</h3>' +
           (ou.length ? ou.map(function (x) { return '<div class="mn-ligne mn-row"><span>' + esc(x.t.title || 'Sans titre') + '</span><b class="num">' + mntMin(x.m) + '</b></div>'; }).join('') : '<p class="mn-txt mn-doux">Pas encore de temps passé ce mois-ci.</p>') + '</div>' +
         (avant.length ? '<div class="mn-carte mn-fcarte"><h3 class="mn-h3">Les mois précédents</h3>' + avant.map(function (k) {
