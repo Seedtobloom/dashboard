@@ -3825,6 +3825,94 @@
     try { localStorage.setItem('stb_cerdd_seeded2', '1'); } catch (e) {}
     return true;
   }
+  function cerddPropoTrame() {
+    var L = [
+      "L’ESSENTIEL",
+      "Investissement : 3 750 € HT (TVA non applicable, art. 293 B du CGI), soit 187,50 € HT la page pour 20 pages.",
+      "Durée estimée : 3 mois d’exécution, de septembre 2026 à janvier 2027.",
+      "Proposition valable jusqu’au 31 octobre 2026. Calendrier établi pour un démarrage autour du 28 septembre, sous réserve de validation de la proposition.",
+      "",
+      "LE PROJET",
+      "Une publication pour changer le regard sur les sobriétés.",
+      "L’enjeu n’est pas seulement de transmettre des connaissances, mais de donner envie à des élu·es encore peu sensibilisé·es de s’intéresser aux sobriétés.",
+      "La publication devra donc renverser l’argumentaire habituel en partant des bénéfices concrets pour les territoires avant d’aborder les enjeux environnementaux.",
+      "Les trois intentions : rendre lisible, donner envie de se projeter, donner envie d’agir.",
+      "",
+      "CE QUE J’AI NOTÉ DE LEUR BRIEF",
+      "Rendre un sujet complexe immédiatement compréhensible.",
+      "Parler aux élu·es, y compris aux moins convaincu·es, et outiller les technicien·nes qui doivent les convaincre.",
+      "Partir des bénéfices concrets pour les territoires plutôt que de la contrainte, par quatre portes d’entrée : bien-vivre, économie, santé, souveraineté.",
+      "Un titre porté par « la commune idéale », le plaidoyer pour la sobriété structurelle n’arrivant qu’en sous-titre.",
+      "Une attention particulière portée à la conception éco-responsable.",
+      "",
+      "LA MÉTHODE EN QUATRE ÉTAPES",
+      "Cadrer : réunion de lancement, prise en main des contenus et de la charte, identification des messages clés à mettre en avant graphiquement, définition des principes de hiérarchie et de lecture.",
+      "Explorer : définition d’un système graphique éditorial pour harmoniser les doubles pages, maquettage de 2 doubles pages test, conception de deux propositions de couverture, échange et validation de la direction graphique.",
+      "Construire : déploiement de la maquette sur les 20 pages, mise en forme des textes, chiffres et exemples, intégration et mise en forme des éléments visuels fournis par le Cerdd.",
+      "Finaliser : 3 vagues de retours consolidés, préparation des versions print et web, PDF HD pour impression, PDF interactif avec liens, fichiers sources.",
+      "Les allers-retours : trois vagues de retours consolidés, portant sur la mise en page et les éléments graphiques, dans le périmètre défini au devis. Les retours sont regroupés et transmis en une fois par vague, afin de préserver la cohérence globale de la publication.",
+      "",
+      "LES LIVRABLES",
+      "La publication : mise en page complète des 20 pages, système graphique éditorial, hiérarchisation des contenus, deux propositions de couverture, intégration et mise en forme des éléments visuels fournis.",
+      "L’accompagnement éditorial : relecture graphique et conseil sur la cohérence globale, recommandations sur la hiérarchie et la lisibilité des contenus, 2 doubles pages de maquettage en amont, accompagnement dans les choix de mise en page.",
+      "Les fichiers : PDF HD pour impression, PDF interactif pour diffusion web, fichiers sources modifiables pour leurs mises à jour, exports des illustrations éventuelles.",
+      "",
+      "ÉCO-CONCEPTION",
+      "Format, encrage, durée de vie des contenus et diffusion pensés ensemble, dans la continuité du travail déjà mené avec le Cerdd sur le leporello des 25 ans. Une recommandation d’impression responsable leur sera remise pour faciliter la consultation des fournisseurs.",
+      "Un format A5 fermé et A4 ouvert qui se cale sur les formats papier courants, afin de limiter les chutes de papier à l’impression.",
+      "Des aplats tramés plutôt que denses, des fonds de page allégés et un encrage maîtrisé, sans rien perdre de la force visuelle.",
+      "Des contenus pensés pour durer : l’information périssable renvoyée vers le site du Cerdd par lien ou QR code, les dates écrites en année plutôt qu’en âge.",
+      "Un PDF interactif optimisé pour la diffusion et des fichiers sources structurés pour qu’ils actualisent la publication sans casser la maquette.",
+      "",
+      "LES OPTIONS",
+      "Option 01, Infographie · Un territoire sobre : 600 € HT. Représenter visuellement une commune mettant en œuvre une politique de sobriété structurelle, avec plusieurs niveaux de lecture et une déclinaison print et web. À placer dans la séquence P16-19, juste avant les ressources pour aller plus loin. Deux allers-retours inclus.",
+      "Option 02, Infographie · Comprendre les sobriétés : 450 € HT. Les quatre dimensions des sobriétés et leurs interactions, avec un vocabulaire simplifié et une déclinaison print et web. C’est l’option recommandée en priorité : elle porte le cœur définitionnel du plaidoyer, séquence P12-15. Deux allers-retours inclus.",
+      "Option 03, Pages supplémentaires : 120 € HT la page. La publication étant piquée à cheval, la pagination reste un multiple de quatre : extension par tranche de 4 pages, soit 480 € HT (deux doubles pages). Tarif inférieur au prix unitaire du forfait car le système graphique et le cadrage sont déjà amortis.",
+      "Le principe : on commence par le périmètre du cahier des charges. Les options peuvent être activées séparément, leur levée se faisant par mail avec accusé de réception.",
+      "",
+      "LE CALENDRIER",
+      "Tu voulais recevoir la version préparatoire des contenus dès la réunion de cadrage, pour travailler la hiérarchie et les deux doubles pages test sur la matière réelle.",
+      "Autour du 28 septembre : lancement, réunion de cadrage et réception des premiers contenus.",
+      "Octobre : direction graphique, système graphique, 2 doubles pages test et 2 propositions de couverture.",
+      "Octobre : première validation, présentation des essais de maquettage et des couvertures.",
+      "Novembre : contenus finaux, réception et intégration des textes définitifs.",
+      "Novembre : version 1, livraison de la première version complète.",
+      "Novembre, jusqu’au 20 : relecture Cerdd et premier échange de retours.",
+      "Décembre : version 2, intégration des retours consolidés.",
+      "Décembre : derniers retours, dernière vague de modifications.",
+      "Fin décembre à janvier : livraison finale, PDF print, PDF interactif et fichiers sources.",
+      "",
+      "CE QUI EST COMPRIS",
+      "Réunion de cadrage et prise en main des contenus.",
+      "Système graphique éditorial et deux doubles pages test.",
+      "Deux propositions de première de couverture.",
+      "Mise en page et intégration des 20 pages, trois vagues de retours comprises.",
+      "Relecture graphique et conseil sur la cohérence globale.",
+      "Préparation des fichiers finaux print, web interactif et sources.",
+      "",
+      "CE QUI N’EST PAS COMPRIS",
+      "Impression et frais de fabrication.",
+      "Achat de photographies ou d’illustrations.",
+      "Pages supplémentaires au-delà des 20 pages.",
+      "Modifications structurelles ou ajout important de contenus après validation de la maquette.",
+      "Rédaction et relecture des contenus.",
+      "Création d’infographies au-delà des 4 schémas simples prévus.",
+      "Les deux infographies des options 01 et 02, chiffrées séparément.",
+      "Au-delà des trois vagues de retours : 60 € HT de l’heure, sur devis complémentaire validé avant intervention.",
+      "",
+      "LE PAIEMENT",
+      "Acompte de 30 % facturé à réception du devis signé.",
+      "Solde à réception de la version définitive.",
+      "Facture déposée sur Chorus Pro, règlement par mandat administratif sous 30 jours.",
+      "",
+      "LES PROCHAINES ÉTAPES",
+      "Validation : ils confirment leur souhait d’avancer.",
+      "Devis : le devis détaillé est joint à la proposition, à retourner signé.",
+      "Acompte : 30 % facturé à réception du devis signé.",
+      "Lancement : réunion de cadrage autour du 28 septembre, avec réception des premiers contenus."
+    ];
+    return { id: 't_cerdd_propo', title: 'Ma proposition · CERDD (rappel)', content: L.join('\n') };
+  }
   function cerddTrame() {
     var L = [
       "① DÉMARRER LA RÉUNION",
@@ -4092,6 +4180,7 @@
     if (!a.length) { a = [kakemonoTrame(), defaultTrame()]; tramesSaveAll(a); }
     // Trame CERDD (appel du 30 septembre) : toujours proposée tant qu'elle
     // n'est pas dans la bibliothèque, même si un autre onglet l'a écrasée.
+    if (!a.some(function (t) { return t.id === 't_cerdd_propo'; })) a.splice(1, 0, cerddPropoTrame());
     if (!a.some(function (t) { return t.id === 't_cerdd_cadrage'; })) a.unshift(cerddTrame());
     return a;
   }
@@ -4229,8 +4318,9 @@
       var tete = /^([①②③④⑤⑥⑦⑧⑨⑩]|🌱|📝)/.test(t) || (t.length > 5 && t === t.toLocaleUpperCase('fr') && /[A-ZÀ-Ÿ]/.test(t) && t.indexOf('«') === -1);
       if (tete) { ouvrir(trameTitleClean(t.replace(/^([①②③④⑤⑥⑦⑧⑨⑩]|🌱|📝)\s*/, ''))); return; }
       if (!ouvert) ouvrir('');
+      // Une seule flèche = « ce qu'il dit → ta réponse » ; plusieurs = une suite.
       var gi = l.indexOf('→');
-      if (gi !== -1) {
+      if (gi !== -1 && l.indexOf('→', gi + 1) === -1) {
         var cond = l.slice(0, gi).trim(), resp = l.slice(gi + 1).trim();
         out += (cond ? '<p class="trm-rep">' + esc(cond) + '</p>' : '') +
           (/«[^»]*»/.test(resp) ? '<div class="trm-dit">' + esc(resp) + '</div>' : '<p class="trm-rep">→ ' + esc(resp) + '</p>');
