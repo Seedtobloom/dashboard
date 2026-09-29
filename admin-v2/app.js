@@ -3821,11 +3821,11 @@
   function tramesSemer(srv) {
     // Trame CERDD réécrite pour l'oral : la version déjà enregistrée est
     // remplacée une fois (les notes d'appel vivent ailleurs).
-    var oral = false; try { oral = localStorage.getItem('stb_cerdd_oral3') === '1'; } catch (e) {}
+    var oral = false; try { oral = localStorage.getItem('stb_cerdd_oral4') === '1'; } catch (e) {}
     var remplace = false;
     if (!oral) {
       for (var z = 0; z < srv.length; z++) if (srv[z] && srv[z].id === 't_cerdd_cadrage') { srv[z] = cerddTrame(); remplace = true; }
-      try { localStorage.setItem('stb_cerdd_oral3', '1'); } catch (e) {}
+      try { localStorage.setItem('stb_cerdd_oral4', '1'); } catch (e) {}
     }
     return tramesSemerCerdd(srv) || remplace;
   }
@@ -3928,7 +3928,7 @@
             var L = [
       "① DÉMARRER LA RÉUNION",
       "Laisse-les présenter leur ordre du jour et l’état du projet. Quand tu dois prendre la parole, tu peux rappeler ta compréhension en 30 secondes :",
-      "« Ce que je retiens surtout, c’est l’enjeu : rendre les sobriétés accessibles à des élus qui ne sont pas forcément sensibilisés. Donc on commence par ce que ça leur apporte concrètement, sur leur territoire : le bien-vivre, l’économie, la santé, la souveraineté. Et ensuite seulement, on les amène vers la sobriété structurelle et les ressources pour agir. Mon travail, c’est de rendre ce parcours clair et engageant, graphiquement. »",
+      "« Ce que je retiens surtout, c’est l’enjeu : rendre les sobriétés accessibles à des élus qui ne sont pas forcément sensibilisés. Donc on commence par ce que ça leur apporte concrètement, sur leur territoire : le bien-vivre, l’économie, la santé, la souveraineté. Et ensuite seulement, on les amène vers la sobriété structurelle et les ressources pour agir. Et moi, je vais faire en sorte que ce parcours soit clair et engageant visuellement. »",
       "C’est fidèle à leur brief : ils veulent précisément sortir d’un argumentaire centré d’emblée sur l’environnement et toucher des décideur·euses locaux·ales hésitant·es ou peu sensibles à ces enjeux.",
       "",
       "② OBJECTIFS & CIBLE",
