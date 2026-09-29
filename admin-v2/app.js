@@ -262,6 +262,7 @@
     try { sub = JSON.parse(JSON.stringify(SUBTAB || {})); } catch (e) { sub = {}; }
     return { stb: 1, v: VIEW, key: CURKEY, tab: TAB, sub: sub, at: AT_SEC,
       ckj: { ouvert: CKJ.ouvert, onglet: CKJ.onglet, filtre: CKJ.filtre },
+      tache: CKT.ouverte, crea: CG_OPEN.id,
       y: window.scrollY || document.documentElement.scrollTop || 0 };
   }
   function navRestaurer(e) {
@@ -273,6 +274,8 @@
     CKJ.onglet = (e.ckj && e.ckj.onglet) || 'ensemble';
     CKJ.filtre = (e.ckj && e.ckj.filtre) || 'actifs';
     CKJ.chargeFait = null;           // la charge du projet se refera si besoin
+    if (e.tache !== undefined) CKT.ouverte = e.tache;
+    if (e.crea !== undefined) CG_OPEN.id = e.crea;
     NAV_PROF++;                      // restaurer n'est pas naviguer
     try { renderShell(); } finally { NAV_PROF--; }
     // Certains écrans se remplissent après un aller-retour au serveur : on
@@ -314,9 +317,16 @@
       return r.json();
     }).then(function (d) {
       if (!d) return;
-      VIEW = 'cockpit'; renderShell(); startPoll();
+      // Recharger la page ramène là où on était (le navigateur garde
+      // l'instantané de l'historique) ; sinon on part de l'Accueil.
+      var ici = null; try { ici = history.state; } catch (e) {}
+      if (ici && ici.stb && ici.v) navRestaurer(ici); else { VIEW = 'cockpit'; renderShell(); }
+      startPoll();
       // Le point de départ de l'historique, et l'écoute du retour.
       try { history.replaceState(navEtat(), ''); } catch (e) {}
+      // Juste avant de quitter ou recharger : on date l'endroit exact
+      // (tâche ouverte, position dans la page).
+      window.addEventListener('pagehide', function () { try { history.replaceState(navEtat(), ''); } catch (e) {} });
       window.addEventListener('popstate', function (ev) { navRestaurer(ev.state); });
     }).catch(showError);
   }
@@ -5122,6 +5132,22 @@
     }
     return null;
   }
+  /* Après un geste sur une tâche (temps, estimation, terminer) : on applique
+   * le changement tout de suite sur place, sans écran de chargement ni retour
+   * en haut de page, puis on relit les données en silence. */
+  function ckpRedessiner() {
+    var m = el('main'), y = window.scrollY, ym = m ? m.scrollTop : 0;
+    var bt = document.querySelector('.ckp-bt'), yb = bt ? bt.scrollTop : 0;
+    renderMain();
+    window.scrollTo(0, y); if (m) m.scrollTop = ym;
+    var bt2 = document.querySelector('.ckp-bt'); if (bt2) bt2.scrollTop = yb;
+  }
+  function ckpApres(id, maj) {
+    var brut = ((CKP.dash && CKP.dash.tasksAll) || []).concat(CKP.perso || []).filter(function (x) { return x.id === id; })[0];
+    if (brut && maj) maj(brut);
+    ckpRedessiner();
+    ckpCharger(ckpRedessiner);
+  }
   function ckpMoisCourant() { var d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); }
   // Noter du temps passé EN COURS de route, sans terminer la tâche. Même saisie
   // datée du mois que « J'ai terminé » : le temps s'ajoute, rien n'est écrasé.
@@ -5144,7 +5170,15 @@
     if (t.src === 'client') body.projectId = t.projet || 'partner';
     if (t.src === 'ticket') body.projectId = 'maintenance';
     jpost(ckpUrl(t), body, 'PATCH').then(function (r) {
-      if (r && !r.error) { toast('Ajouté : ' + ckpDuree(min)); CKP.pret = false; renderMain(); }
+      if (r && !r.error) {
+        toast('Ajouté : ' + ckpDuree(min));
+        ckpApres(id, function (b) {
+          var tot = Math.round((b.timeSpentMinutes || (b.timeSpentSeconds || 0) / 60 || 0) + min);
+          b.timeSpentMinutes = tot; b.timeSpentSeconds = tot * 60;
+          if (!Array.isArray(b.sessions)) b.sessions = [];
+          b.sessions.push({ start: body.timeEntry.month + '-15T12:00:00.000Z', minutes: min, manual: true });
+        });
+      }
       else toast('Erreur');
     }).catch(function () { toast('Erreur'); });
   }
@@ -5190,7 +5224,7 @@
     if (t.src === 'client') body.projectId = t.projet || 'partner';
     if (t.src === 'ticket') body.projectId = 'maintenance';
     jpost(ckpUrl(t), body, 'PATCH').then(function (r) {
-      if (r && !r.error) { toast('Estimé : ' + ckpDuree(min)); CKP.pret = false; renderMain(); }
+      if (r && !r.error) { toast('Estimé : ' + ckpDuree(min)); ckpApres(id, function (b) { b.estMinutes = min; }); }
       else toast('Erreur');
     }).catch(function () { toast('Erreur'); });
   }
@@ -5204,7 +5238,7 @@
     if (t.src === 'client') body.projectId = t.projet || 'partner';
     if (t.src === 'ticket') body.projectId = 'maintenance';
     jpost(ckpUrl(t), body, 'PATCH').then(function (r) {
-      if (r && !r.error) { toast('Noté : ' + ckpDuree(min) + ' à faire'); CKP.pret = false; renderMain(); }
+      if (r && !r.error) { toast('Noté : ' + ckpDuree(min) + ' à faire'); ckpApres(id, function (b) { b.restMinutes = min; }); }
       else toast('Erreur');
     }).catch(function () { toast('Erreur'); });
   }
@@ -5242,8 +5276,8 @@
       body.notify = !!notify;
       jpost(ckpUrl(t), body, 'PATCH').then(function (r) {
         if (r && !r.error) {
-          toast('Terminée ✓' + (min > 0 ? ' · ' + ckpDuree(min) + ' notées' : '') + (notify ? ' · cliente prévenue' : ''));
-          CKP.pret = false; renderMain();
+          toast('Terminée' + (min > 0 ? ' · ' + ckpDuree(min) + ' notées' : '') + (notify ? ' · cliente prévenue' : ''));
+          ckpApres(id, function (b) { b.status = 'done'; b.restMinutes = 0; });
         } else toast('Erreur');
       }).catch(function () { toast('Erreur'); });
     };
@@ -5279,6 +5313,7 @@
   function ckTOuvrir(id, ecran) {
     if (ecran === 'projets') { CKT.ouverte = CKT.ouverte === id ? null : id; renderCockpitProjetsBody(); return; }
     CKT.ouverte = id; renderCockpitTaches();
+    try { history.replaceState(navEtat(), ''); } catch (e) {}
   }
   // Ouvrir une tâche précise depuis un autre écran (l'Accueil, par exemple).
   function ckTVoir(id) {
