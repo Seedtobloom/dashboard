@@ -1338,7 +1338,7 @@ function findTask(esp: AnyObj, projectId: string, taskId: string): { task: AnyOb
 }
 // `studioNote` : la note que le studio prend pour lui. Elle est retirée du
 // paquet envoyé à l'espace client (voir stripStudio, côté client).
-const ADMIN_TASK_FIELDS = ['status', 'briefStatus', 'content', 'title', 'urgency', 'dueDate', 'startDate', 'doDate', 'pole', 'livrableUrl', 'deliverableFileKey', 'archived', 'pinned', 'reviewLink', 'v1Date', 'v2Date', 'clientNotif', 'needsRework', 'clientCommentNotif', 'notes', 'studioNote', 'slot'];
+const ADMIN_TASK_FIELDS = ['status', 'briefStatus', 'content', 'title', 'urgency', 'dueDate', 'startDate', 'doDate', 'pole', 'livrableUrl', 'deliverableFileKey', 'archived', 'pinned', 'reviewLink', 'v1Date', 'v2Date', 'clientNotif', 'needsRework', 'clientCommentNotif', 'notes', 'studioNote', 'slot', 'retoursTraitesAvant'];
 
 /* ── Le travail d'une tâche : les trois temps, et ses créneaux ─────────────
  * Une seule implémentation pour les tâches clientes, les tickets et les tâches
@@ -2222,11 +2222,16 @@ async function handleDashboard(env: Env): Promise<Response> {
               version: Number(l.version) || 0, name: String(l.name || '').slice(0, 160), status: String(l.status || ''),
               comment: String(l.clientComment || '').slice(0, 1500), at: String(l.validatedAt || l.createdAt || ''),
               link: String(l.clientLink || '').slice(0, 2000),
+              // Ce que Cindy avait envoyé : pour rouvrir la version dont parle le retour.
+              sentAt: String(l.createdAt || ''), sentLink: String(l.reviewLink || '').slice(0, 2000), sentFile: String(l.fileKey || ''),
               attachments: (Array.isArray(l.clientAttachments) ? l.clientAttachments : [])
                 .map((x: AnyObj) => ({ name: String(x.name || 'fichier').slice(0, 120), key: String(x.key || x.fileKey || '').slice(0, 300) }))
                 .filter((x: AnyObj) => x.key),
             })),
             commentNotif: !!t.clientCommentNotif,
+            retoursTraitesAvant: String(t.retoursTraitesAvant || ''),
+            // Toutes les versions envoyées (date, lien) : dire si un retour a eu sa suite.
+            envois: livs.slice(-20).map((l: AnyObj) => ({ version: Number(l.version) || 0, at: String(l.createdAt || ''), link: String(l.reviewLink || '').slice(0, 2000), file: String(l.fileKey || '') })),
           });
         }
         // Tâche Partenaire créative active → agrégée dans « Ma semaine ».

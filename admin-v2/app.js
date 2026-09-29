@@ -4626,6 +4626,8 @@
       lien: t.clientLink || '',
       echanges: Array.isArray(t.comments) ? t.comments : [],
       retours: Array.isArray(t.retours) ? t.retours : [],
+      envois: Array.isArray(t.envois) ? t.envois : [],
+      traitesAvant: t.retoursTraitesAvant || '',
       nouveau: !!(t.needsRework || t.commentNotif),
       sentCount: t.sentCount || 0,
       envoyeLe: t.reviewSentAt || t.lastSentAt || '',
@@ -5452,7 +5454,7 @@
     var r = ckpRestant(t), on = CKT.ouverte === t.id;
     return '<div class="ckg-r' + (on ? ' on' : '') + '" tabindex="0" data-kb role="button" aria-pressed="' + on + '" onclick="ADM.ckTOuvrir(\'' + esc(t.id) + '\')">' +
       '<div><div class="ckg-tt">' + esc(t.titre) + '</div>' + (t.ctx ? '<div class="ckg-ctx">' + esc(t.ctx) + '</div>' : '') +
-        (t.nouveau ? '<span class="ck-tag ckr-nv">Nouveau retour</span>' : '') + '</div>' +
+        (ckTATraiter(t) ? '<span class="ck-tag ckr-nv">Retour à traiter</span>' : '') + '</div>' +
       '<div class="num">' + ckTEcheanceCourte(t) + '</div>' +
       '<div class="ckg-re num">' + (r === null ? '<span class="ck-tag ck-tag--paille">À estimer</span>' : (r ? '<b>' + esc(ckpDuree(r)) + '</b>' : '<span class="ckg-doux">Rien</span>')) + '</div>' +
       '</div>';
@@ -5549,39 +5551,80 @@
   function ckTFichier(t, a) {
     return '<a class="ckr-f" href="/api/clients/' + esc(t.key) + '/files/' + encodeURIComponent(a.key) + '/download" target="_blank" rel="noopener">' + esc(a.name || 'fichier') + '</a>';
   }
+  function ckTLienEnvoi(t, lien, fichier) {
+    if (lien) return /^https?:\/\//i.test(lien) ? lien : 'https://' + lien;
+    if (fichier) return '/api/clients/' + t.key + '/files/' + encodeURIComponent(fichier) + '/download';
+    return '';
+  }
+  // Un retour est traité quand une version est partie après lui, quand Cindy
+  // a répondu après lui, ou quand elle l'a marqué à la main.
+  function ckTSuite(t, at) {
+    var ap = function (x) { return x && String(x) > String(at || ''); };
+    var env = (t.envois || []).filter(function (e) { return ap(e.at); }).sort(function (a, b) { return String(a.at).localeCompare(String(b.at)); })[0];
+    if (env) return 'Tu as envoyé ' + (env.version ? 'la V' + env.version : 'une nouvelle version') + ' le ' + ckpDateLongue(String(env.at).slice(0, 10)) + '.';
+    var rep = (t.echanges || []).filter(function (m) { return m.author !== 'client' && ap(m.at); })[0];
+    if (rep) return 'Tu lui as répondu le ' + ckpDateLongue(String(rep.at).slice(0, 10)) + '.';
+    if (t.traitesAvant && String(at || '') <= String(t.traitesAvant)) return 'Marqué comme traité.';
+    return '';
+  }
   function ckTRetoursListe(t) {
-    var out = [], vmax = 0;
-    (t.retours || []).forEach(function (r) { if (r.version > vmax) vmax = r.version; });
+    var out = [];
     (t.retours || []).forEach(function (r) {
-      var pil = (r.status === 'refuse' || r.status === 'revision') ? (r.version && r.version < (t.sentCount || vmax) ? '' : 'À revoir') : (r.status === 'valide' ? 'Validé' : '');
-      out.push({ titre: r.version ? 'Sur la V' + r.version : (r.name ? 'Sur ' + r.name : 'Sur la version envoyée'), pil: pil,
-        corrige: !!(r.version && r.version < (t.sentCount || vmax)), texte: r.comment, at: r.at, atts: r.attachments || [], lien: r.link });
+      var suite = ckTSuite(t, r.at), valide = r.status === 'valide';
+      out.push({ titre: r.version ? 'Sur la V' + r.version : (r.name ? 'Sur ' + r.name : 'Sur la version envoyée'),
+        etat: valide ? 'valide' : (suite ? 'traite' : 'atraiter'), suite: suite, texte: r.comment, at: r.at, atts: r.attachments || [], lien: r.link,
+        envoi: { v: r.version, at: r.sentAt, url: ckTLienEnvoi(t, r.sentLink, r.sentFile) } });
     });
     (t.echanges || []).forEach(function (m) {
       if (m.author !== 'client') return;
-      out.push({ titre: 'Son message', pil: '', texte: m.text, at: m.at, atts: m.attachments || [], lien: '' });
+      var suite = ckTSuite(t, m.at);
+      out.push({ titre: 'Son message', etat: suite ? 'traite' : 'atraiter', suite: suite, texte: m.text, at: m.at, atts: m.attachments || [], lien: '', envoi: null });
     });
     return out.sort(function (a, b) { return String(b.at).localeCompare(String(a.at)); });
   }
+  function ckTATraiter(t) { return t.src === 'perso' ? 0 : ckTRetoursListe(t).filter(function (x) { return x.etat === 'atraiter'; }).length; }
   function ckTRetours(t) {
     if (t.src === 'perso') return '';
     var l = ckTRetoursListe(t);
     if (!l.length) return '';
     var qui = ckTPrenom(t), a0 = l[0], autres = l.slice(1, 4);
+    var nA = l.filter(function (x) { return x.etat === 'atraiter'; }).length, nT = l.filter(function (x) { return x.etat === 'traite'; }).length;
+    var compte = [nA ? nA + ' à traiter' : '', nT ? nT + ' traité' + (nT > 1 ? 's' : '') : ''].filter(Boolean).join(', ') || (l.length + ' retour' + (l.length > 1 ? 's' : ''));
+    var pil = function (x) { return x.etat === 'atraiter' ? '<span class="ckr-pil">À traiter</span>' : (x.etat === 'traite' ? '<span class="ckr-pil ckr-pil--ok">Traité</span>' : '<span class="ckr-pil ckr-pil--ok">Validé</span>'); };
     var lien = function (u) { return '<a class="ckr-f" href="' + esc(/^https?:\/\//i.test(u) ? u : 'https://' + u) + '" target="_blank" rel="noopener">Son lien</a>'; };
+    var nomV = function (e) { return e && e.v ? 'la V' + e.v : 'la version'; };
     var grand = '<div class="ckr-der">' +
-      '<div class="ckr-h"><b>' + esc(a0.titre) + '</b>' + (a0.pil ? '<span class="ckr-pil' + (a0.pil === 'Validé' ? ' ckr-pil--ok' : '') + '">' + esc(a0.pil) + '</span>' : '') + '</div>' +
+      '<div class="ckr-h"><b>' + esc(a0.titre) + '</b>' + pil(a0) + '</div>' +
       (a0.texte ? '<p class="ckr-t">' + esc(a0.texte) + '</p>' : '') +
       '<div class="ckr-m"><span>' + esc(qui) + (a0.at ? ', le ' + esc(ckTQuandIso(a0.at)) : '') + '</span>' +
-        a0.atts.map(function (x) { return ckTFichier(t, x); }).join('') + (a0.lien ? lien(a0.lien) : '') + '</div></div>';
+        a0.atts.map(function (x) { return ckTFichier(t, x); }).join('') + (a0.lien ? lien(a0.lien) : '') + '</div>' +
+      (a0.suite ? '<div class="ckr-su">' + esc(a0.suite) + '</div>' : '') +
+      (a0.envoi && a0.envoi.url ? '<div class="ckr-env"><span>Ce que tu lui as envoyé : ' + esc(nomV(a0.envoi)) + (a0.envoi.at ? ', le ' + esc(ckpDateLongue(String(a0.envoi.at).slice(0, 10))) : '') + '</span>' +
+        '<a class="ckr-b ckr-b--s" href="' + esc(a0.envoi.url) + '" target="_blank" rel="noopener">Ouvrir ' + esc(nomV(a0.envoi)) + '</a></div>' : '') +
+      '</div>';
     var petits = autres.map(function (x) {
-      return '<div class="ckr-anc"><div class="ckr-h"><b>' + esc(x.titre) + '</b><span class="ckr-d">' +
-        (x.corrige ? 'corrigé' + (x.at ? ', le ' + esc(ckpDateLongue(String(x.at).slice(0, 10))) : '') : (x.at ? 'le ' + esc(ckpDateLongue(String(x.at).slice(0, 10))) : '')) + '</span></div>' +
-        (x.texte ? '<p class="ckr-t">' + esc(x.texte) + '</p>' : '') + '</div>';
+      return '<div class="ckr-anc"><div class="ckr-h"><b>' + esc(x.titre) + '</b>' + pil(x) + '</div>' +
+        (x.texte ? '<p class="ckr-t">' + esc(x.texte) + '</p>' : '') +
+        ((x.suite || (x.envoi && x.envoi.url)) ? '<div class="ckr-su">' + esc(x.suite || '') +
+          (x.envoi && x.envoi.url ? '<a class="ckr-f" href="' + esc(x.envoi.url) + '" target="_blank" rel="noopener">Ouvrir ' + esc(nomV(x.envoi)) + '</a>' : '') + '</div>' : '') + '</div>';
     }).join('');
-    return '<div class="ckr"><div class="ckr-tete"><h3>Ses retours</h3><span>' + l.length + ' retour' + (l.length > 1 ? 's' : '') + '</span></div>' +
+    return '<div class="ckr"><div class="ckr-tete"><h3>Ses retours</h3><span>' + esc(compte) + '</span></div>' +
       grand + petits +
-      '<div class="ckr-l">' + (t.src === 'client' ? ckTPetitLien('Répondre à ' + qui, 'ADM.ckTGrand(1)') : '') + ckTPetitLien('Tous les échanges', 'ADM.ckTGrand(1)') + '</div></div>';
+      '<p class="ckr-aide">Un retour passe en « Traité » tout seul quand tu envoies la version suivante ou que tu lui réponds. Tu peux aussi le cocher à la main.</p>' +
+      '<div class="ckr-l">' + (nA ? '<button class="ckr-b ckr-b--c" onclick="ADM.ckTTraiter(\'' + esc(t.id) + '\')">Marquer comme traité</button>' : '') +
+        (t.src === 'client' ? ckTPetitLien('Répondre à ' + qui, 'ADM.ckTGrand(1)') : '') + ckTPetitLien('Tous les échanges', 'ADM.ckTGrand(1)') + '</div></div>';
+  }
+  function ckTTraiter(id) {
+    var t = ckpToutes().filter(function (x) { return x.id === id; })[0];
+    if (!t) return;
+    var maint = new Date().toISOString();
+    var body = { retoursTraitesAvant: maint, needsRework: false, clientCommentNotif: false };
+    if (t.src === 'client') body.projectId = t.projet || 'partner';
+    if (t.src === 'ticket') body.projectId = 'maintenance';
+    jpost(ckpUrl(t), body, 'PATCH').then(function (r) {
+      if (r && !r.error) { toast('Retours traités'); ckpApres(id, function (b) { b.retoursTraitesAvant = maint; b.needsRework = false; b.commentNotif = false; }); }
+      else toast('Erreur');
+    }).catch(function () { toast('Erreur'); });
   }
   function ckTRelance(t) {
     if (t.statut !== 'review' || t.src === 'perso') return '';
@@ -13570,7 +13613,7 @@
     msWeek: msWeek, msFilter: msFilter, msToggleCap: msToggleCap, msMode: msMode, msDaySel: msDaySel, msPlace: msPlace, msDone: msDone, msDelete: msDelete, msNoteOpen: msNoteOpen, msPlanOver: msPlanOver, msPlanLeave: msPlanLeave, msPlanDrop: msPlanDrop, msPlanUnplace: msPlanUnplace, msAutoPlan: msAutoPlan, msOrganizeWeek: msOrganizeWeek, msOrganizeDay: msOrganizeDay, msUnplace: msUnplace, msDragStart: msDragStart, msDragEnd: msDragEnd, msDayOver: msDayOver, msDayLeave: msDayLeave, msDrop: msDrop, msSlotOver: msSlotOver, msDropSlot: msDropSlot, msNewBlock: msNewBlock, msSaveBlock: msSaveBlock, msDeleteBlock: msDeleteBlock, msEst: msEst, msEstH: msEstH, msAddTop: msAddTop, msAddDay: msAddDay,
     openClient: openClient, tab: tab, subtab: subtab, ffShow: ffShow, saveInfos: saveInfos, saveForfait: saveForfait, forfaitOverrideAdd: forfaitOverrideAdd, forfaitOverrideDel: forfaitOverrideDel, testEmail: testEmail, toggleOffer: toggleOffer, addOffer: addOffer, setBanner: setBanner, setMaintenance: setMaintenance, renameSupport: renameSupport, cloturerProjet: cloturerProjet, rouvrirProjet: rouvrirProjet, addSupportQuick: addSupportQuick, delSupport: delSupport, crAdd: crAdd, crSet: crSet, crCloturer: crCloturer, crRouvrir: crRouvrir, cgToggle: cgToggle, cgNeuve: cgNeuve, pjEdit: pjEdit, crReply: crReply, crDel: crDel, crAddVersion: crAddVersion, crAddVersionLink: crAddVersionLink, crDelVersion: crDelVersion, pjAdd: pjAdd, pjSet: pjSet, pjMove: pjMove, pjDel: pjDel, pjStart: pjStart, pjNotify: pjNotify, pjNeuf: pjNeuf, pjPatch: pjPatch, pjDuree: pjDuree, pjDateOuvrir: pjDateOuvrir, pjDateFermer: pjDateFermer, pjDate: pjDate, pjToggle: pjToggle, deleteClient: deleteClient,
     toggleTicketsSpace: toggleTicketsSpace, ticketStatus: ticketStatus, ticketDue: ticketDue, ticketTime: ticketTime, ticketDelete: ticketDelete, ticketForfait: ticketForfait, ticketProposeDate: ticketProposeDate,
-    ckpReste: ckpReste, ckpEstim: ckpEstim, ckpAjoutPasse: ckpAjoutPasse, ckTRelancer: ckTRelancer, ckpFinir: ckpFinir, ckpPasMaintenant: ckpPasMaintenant, ckpOrdreSysteme: ckpOrdreSysteme,
+    ckpReste: ckpReste, ckpEstim: ckpEstim, ckpAjoutPasse: ckpAjoutPasse, ckTRelancer: ckTRelancer, ckTTraiter: ckTTraiter, ckpFinir: ckpFinir, ckpPasMaintenant: ckpPasMaintenant, ckpOrdreSysteme: ckpOrdreSysteme,
     ckTSetTri: ckTSetTri, ckTSetFiltre: ckTSetFiltre, ckTOuvrir: ckTOuvrir, ckTGrand: ckTGrand, ckMenu: ckMenu,
     ckTRepondre: ckTRepondre, ckTCloturer: ckTCloturer, ckTSupprimer: ckTSupprimer, ckTCreerStb: ckTCreerStb, inbSetOnglet: inbSetOnglet, inbChoisir: inbChoisir, inbRefuser: inbRefuser, inbToutVu: inbToutVu, ckTSetCote: ckTSetCote, ckTVoir: ckTVoir, ckTEtape: ckTEtape,
     ckTAEstimer: ckTAEstimer,
