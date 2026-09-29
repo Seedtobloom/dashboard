@@ -3633,12 +3633,7 @@
           srv.unshift(erdynTrame()); changed = true;
           try { localStorage.setItem('stb_erdyn_seeded', '1'); } catch (e) {}
         }
-        // Trame CERDD (cadrage du 30 septembre) : ajoutée une fois, comme ERDYN.
-        var cseed = false; try { cseed = localStorage.getItem('stb_cerdd_seeded') === '1'; } catch (e) {}
-        if (!cseed && !srv.some(function (t) { return t.id === 't_cerdd_cadrage'; })) {
-          srv.unshift(cerddTrame()); changed = true;
-          try { localStorage.setItem('stb_cerdd_seeded', '1'); } catch (e) {}
-        }
+        if (tramesSemer(srv)) changed = true;
         // Passage au tutoiement : la trame était déjà enregistrée, et le
         // drapeau de semis l'empêche d'être réajoutée. On remplace donc son
         // contenu, une seule fois (les notes prises pendant un appel vivent
@@ -3820,6 +3815,15 @@
       "« C'est toi qui valides directement les créations, ou quelqu'un d'autre dans la boucle ? »"
     ];
     return { id: 't_kakemono_h2eau', title: 'Découverte projet print (kakémonos)', content: L.join('\n') };
+  }
+  // Trame CERDD (cadrage du 30 septembre) : ajoutée une fois, quel que soit
+  // le chemin qui charge les trames (Visios ou Modèles).
+  function tramesSemer(srv) {
+    var cseed = false; try { cseed = localStorage.getItem('stb_cerdd_seeded2') === '1'; } catch (e) {}
+    if (cseed || srv.some(function (t) { return t.id === 't_cerdd_cadrage'; })) return false;
+    srv.unshift(cerddTrame());
+    try { localStorage.setItem('stb_cerdd_seeded2', '1'); } catch (e) {}
+    return true;
   }
   function cerddTrame() {
     var L = [
@@ -13144,7 +13148,7 @@
     var maj = function () { var n = el('mdl-nav'); if (n) n.innerHTML = mdlNavHtml(); };
     if (!PRJ_LOADED) api('/api/project-templates').then(function (r) { return r.json(); }).then(function (d) { if (PRJ_LOADED) return; PRJ = (d && d.templates) || []; PRJ_LOADED = true; maj(); if (VIEW === 'projtpl') renderPrjBody(); }).catch(function () {});
     if (!QNR_LOADED) api('/api/questionnaires').then(function (r) { return r.json(); }).then(function (d) { if (QNR_LOADED) return; QNR = (d && d.questionnaires) || []; QNR_LOADED = true; maj(); if (VIEW === 'questionnaires') renderQnrBody(); }).catch(function () {});
-    if (!TRAMES_LOADED && VIEW !== 'trames') api('/api/call-trames').then(function (r) { return r.json(); }).then(function (d) { if (TRAMES_LOADED) return; var a = (d && Array.isArray(d.trames)) ? d.trames : []; if (a.length) { TRAMES_SRV = a; TRAMES_LOADED = true; } maj(); }).catch(function () {});
+    if (!TRAMES_LOADED && VIEW !== 'trames') api('/api/call-trames').then(function (r) { return r.json(); }).then(function (d) { if (TRAMES_LOADED) return; var a = (d && Array.isArray(d.trames)) ? d.trames : []; if (a.length) { TRAMES_SRV = a; TRAMES_LOADED = true; if (tramesSemer(a)) jpost('/api/call-trames', { trames: a }, 'PATCH').catch(function () {}); } maj(); }).catch(function () {});
   }
   function mdlNavMaj() { var n = el('mdl-nav'); if (n) n.innerHTML = mdlNavHtml(); }
   function mdlSel(vue, liste) {
