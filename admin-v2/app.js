@@ -4090,6 +4090,9 @@
     if (!Array.isArray(TRAMES_SRV)) return [kakemonoTrame(), defaultTrame()];
     var a = TRAMES_SRV;
     if (!a.length) { a = [kakemonoTrame(), defaultTrame()]; tramesSaveAll(a); }
+    // Trame CERDD (appel du 30 septembre) : toujours proposée tant qu'elle
+    // n'est pas dans la bibliothèque, même si un autre onglet l'a écrasée.
+    if (!a.some(function (t) { return t.id === 't_cerdd_cadrage'; })) a.unshift(cerddTrame());
     return a;
   }
   function trameNew() { var a = tramesGet(); var t = { id: 't' + Date.now(), title: 'Nouvelle trame', content: '' }; a.unshift(t); tramesSaveAll(a); MDL_SEL.trames = t.id; CALL_TRAME_SEL = t.id; CALL_TRAME_EDIT = true; VIS_TRAME_OPEN = t.id; TRAME_ED.id = null; renderVisiosBody(); }
