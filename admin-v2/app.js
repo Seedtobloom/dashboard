@@ -3633,6 +3633,12 @@
           srv.unshift(erdynTrame()); changed = true;
           try { localStorage.setItem('stb_erdyn_seeded', '1'); } catch (e) {}
         }
+        // Trame CERDD (cadrage du 30 septembre) : ajoutée une fois, comme ERDYN.
+        var cseed = false; try { cseed = localStorage.getItem('stb_cerdd_seeded') === '1'; } catch (e) {}
+        if (!cseed && !srv.some(function (t) { return t.id === 't_cerdd_cadrage'; })) {
+          srv.unshift(cerddTrame()); changed = true;
+          try { localStorage.setItem('stb_cerdd_seeded', '1'); } catch (e) {}
+        }
         // Passage au tutoiement : la trame était déjà enregistrée, et le
         // drapeau de semis l'empêche d'être réajoutée. On remplace donc son
         // contenu, une seule fois (les notes prises pendant un appel vivent
@@ -3814,6 +3820,112 @@
       "« C'est toi qui valides directement les créations, ou quelqu'un d'autre dans la boucle ? »"
     ];
     return { id: 't_kakemono_h2eau', title: 'Découverte projet print (kakémonos)', content: L.join('\n') };
+  }
+  function cerddTrame() {
+    var L = [
+      "① DÉMARRER LA RÉUNION",
+      "Laisse-les présenter leur ordre du jour et l’état du projet. Quand tu dois prendre la parole, tu peux rappeler ta compréhension en 30 secondes :",
+      "« De mon côté, ce que j’ai vraiment retenu du projet, c’est l’enjeu de rendre les sobriétés accessibles à des élu·es qui ne sont pas forcément déjà sensibilisé·es au sujet. La publication doit d’abord les accrocher par des bénéfices très concrets pour leur territoire, le bien-vivre, l’économie, la santé et la souveraineté, avant de les amener progressivement vers la notion de sobriété structurelle et les ressources pour agir. Mon travail sera notamment de rendre ce parcours très clair et engageant graphiquement. »",
+      "C’est fidèle à leur brief : ils veulent précisément sortir d’un argumentaire centré d’emblée sur l’environnement et toucher des décideur·euses locaux·ales hésitant·es ou peu sensibles à ces enjeux.",
+      "",
+      "② OBJECTIFS & CIBLE",
+      "À comprendre absolument. Tu peux partir de :",
+      "« Pour bien guider mes choix graphiques, j’aimerais préciser avec vous ce que vous souhaitez provoquer chez le lecteur. »",
+      "« Si un élu ne devait retenir que 2 ou 3 choses après avoir parcouru la publication, lesquelles seraient-elles ? »",
+      "« Et qu’aimeriez-vous qu’il fasse ensuite ? » S’informer ? Consulter les ressources ? Contacter un acteur ? Commencer à réfléchir à une politique locale ?",
+      "« Parmi les quatre entrées, bien-vivre, économie, santé et souveraineté, doivent-elles avoir le même poids ? »",
+      "« Quelles sont aujourd’hui les principales résistances ou incompréhensions que vous rencontrez lorsque vous parlez de sobriété aux élu·es ? »",
+      "« Grâce à votre travail avec les maires ruraux, avez-vous identifié des formulations, arguments ou exemples qui fonctionnent particulièrement bien auprès d’eux ? »",
+      "Cette dernière question est très intéressante : leur projet auprès des maires ruraux en 2025 est justement à l’origine d’une partie de leur réflexion sur la façon de construire cet argumentaire.",
+      "« Messages prioritaires : »",
+      "",
+      "③ CONTENUS",
+      "Tu veux ensuite comprendre avec quelle matière tu vas réellement travailler.",
+      "« Où en êtes-vous aujourd’hui dans la rédaction ? »",
+      "« Quelles parties sont déjà relativement stabilisées ? »",
+      "« Quelles parties vont encore beaucoup évoluer ? »",
+      "« Le chemin de fer du cahier des charges est-il toujours d’actualité ? »",
+      "Leur structure initiale est : couverture → introduction → quatre co-bénéfices → définition des sobriétés → mise en œuvre et ressources → quatrième de couverture.",
+      "« Y a-t-il déjà des contenus qui vous semblent difficiles à faire passer uniquement par du texte et pour lesquels vous imaginez davantage un traitement visuel ? »",
+      "« Quand vais-je recevoir les contenus préparatoires ? »",
+      "Tu avais justement indiqué dans ton offre vouloir les recevoir dès le cadrage afin de construire tes premiers essais sur de la matière réelle.",
+      "",
+      "④ TES PREMIERS ESSAIS GRAPHIQUES",
+      "Là, tu prends davantage ta posture de graphiste/conseil.",
+      "« Pour les deux doubles pages test, je pensais qu’il pourrait être intéressant d’en choisir deux assez différentes. Par exemple, une double page autour d’un co-bénéfice, donc plutôt argumentative, et une autre autour de la définition des sobriétés, davantage pédagogique. Ça me permettrait de vérifier que le système graphique fonctionne dans deux situations différentes. »",
+      "« Est-ce que cette approche leur semble pertinente ? »",
+      "« Y a-t-il une double page qu’elles aimeraient particulièrement voir testée ? »",
+      "Tu n’as pas besoin d’avoir déjà des maquettes demain. Ton offre prévoit explicitement que la direction graphique vient après le cadrage.",
+      "",
+      "⑤ INFOGRAPHIES & OPTIONS",
+      "À ne surtout pas oublier.",
+      "« Est-ce que vous avez déjà pu arbitrer les différentes options de la proposition ou souhaitez-vous qu’on en discute ensemble ? »",
+      "« Infographie “Comprendre les sobriétés”, 450 € HT : OUI / NON / À DÉCIDER »",
+      "« Infographie “Territoire sobre”, 600 € HT : OUI / NON / À DÉCIDER »",
+      "« Pages supplémentaires : besoin identifié ? OUI / NON »",
+      "Tu as recommandé en priorité « Comprendre les sobriétés », parce qu’elle intervient au cœur définitionnel du plaidoyer et permet de visualiser les différentes dimensions et leurs interactions. L’infographie « territoire sobre » sert davantage à montrer concrètement à quoi pourrait ressembler une sobriété structurelle réussie.",
+      "Si elles te demandent laquelle tu recommandes, tu sais donc quoi répondre.",
+      "Et pense aux 4 schémas simples prévus dans ton périmètre.",
+      "« J’ai également prévu jusqu’à quatre schémas simples dans le forfait. Je vous propose plutôt d’identifier les endroits où ils seraient réellement utiles une fois que j’aurai pris connaissance des contenus. »",
+      "",
+      "⑥ UNIVERS GRAPHIQUE & RESSOURCES",
+      "Pas besoin de demander « vous voulez quelles couleurs ? ».",
+      "« Pouvez-vous me transmettre la charte graphique et les différents éléments associés ? »",
+      "« Quelles publications existantes du Cerdd peuvent être intéressantes à consulter ? »",
+      "« Y a-t-il des choses que vous souhaitez conserver de vos publications actuelles ? »",
+      "« À l’inverse, des choses que vous aimeriez faire évoluer ? »",
+      "« Disposez-vous d’une banque de photos / illustrations / pictogrammes utilisables ? »",
+      "« Des visuels sont-ils déjà prévus pour cette publication ? »",
+      "« Y a-t-il des représentations de la sobriété que vous souhaitez éviter ? »",
+      "Cette dernière peut provoquer une discussion très intéressante compte tenu des représentations négatives de la sobriété qu'ils évoquent eux-mêmes : privation, rationnement, déclassement, etc.",
+      "",
+      "⑦ COUVERTURE",
+      "Tu dois produire deux propositions.",
+      "« Le principe d’un titre autour de “la commune idéale” est-il toujours d’actualité ? »",
+      "« Où en est la réflexion sur le titre ? »",
+      "« Quand sera-t-il définitivement validé ? »",
+      "« Quels logos / partenaires / mentions doivent obligatoirement apparaître ? »",
+      "Le cahier des charges précise que le titre devait mettre l’accent sur « la commune idéale », la sobriété structurelle n’arrivant qu’en sous-titre.",
+      "",
+      "⑧ VALIDATIONS",
+      "Très important pour te protéger des retours dans tous les sens.",
+      "« Qui sera mon interlocutrice principale ? »",
+      "« Qui participe aux validations ? »",
+      "« Qui donne la validation finale ? »",
+      "« D’autres personnes ou partenaires devront-ils valider le document ? »",
+      "« Comme trois vagues de retours consolidés sont prévues, est-ce que l’une de vous pourra centraliser les retours avant de me les transmettre ? »",
+      "C’est exactement le fonctionnement annoncé dans ta proposition.",
+      "« Contact principal : »",
+      "« Validation finale : »",
+      "« Retours centralisés par : »",
+      "",
+      "⑨ IMPRESSION & ÉCO-CONCEPTION",
+      "Pas besoin de régler tous les détails demain, mais vérifie :",
+      "« Un imprimeur est-il déjà identifié ? »",
+      "« Le tirage envisagé est-il connu ? »",
+      "« Y a-t-il déjà des contraintes concernant le papier ou l’impression ? »",
+      "« Où sera principalement diffusé le PDF numérique ? »",
+      "Tu as toi-même prévu dans ton offre une réflexion sur l’encrage, les fonds, la pérennité des contenus, le PDF interactif et une recommandation d’impression responsable.",
+      "Si elles n’ont encore aucune réponse : ce n’est pas grave. Note simplement « à définir ».",
+      "",
+      "⑩ FIN DE RÉUNION : LE MOMENT À NE PAS RATER",
+      "Garde 5 minutes pour ça. Tu reprends tes notes et tu dis :",
+      "« Avant qu’on termine, je vous propose qu’on récapitule rapidement les prochaines étapes pour être sûres que tout est clair de chaque côté. »",
+      "« Donc, si je récapitule : vous me transmettez [X] pour [date]. De mon côté, je vais commencer par [X]. Je vous présenterai les deux doubles pages test et les deux propositions de couverture pour [date]. Concernant les options, nous avons convenu [X]. Et notre prochaine étape de validation sera [X]. C’est bien ça ? »",
+      "Et sur ta feuille, tu ne raccroches idéalement pas sans avoir rempli ça :",
+      "« Contenus préparatoires : reçus / prévus le »",
+      "« Charte + éléments graphiques : »",
+      "« Doubles pages test choisies : »",
+      "« Options : »",
+      "« Personne qui centralise les retours : »",
+      "« Ma prochaine livraison : »",
+      "« Date : »",
+      "« Prochaine validation : »",
+      "Si tu as ces sept informations, ton cadrage a rempli son rôle.",
+      "Et un dernier conseil pour demain : ne cherche pas à remplir les silences en donnant immédiatement une solution graphique. Tu es encore en phase de compréhension. Si elles te donnent une information intéressante, tu peux très bien répondre : « D’accord, c’est intéressant à savoir, je vais justement garder ça en tête dans ma réflexion sur le système graphique. » Tu n’as pas besoin d’avoir instantanément une idée créative à chaque fois.",
+      "Après la réunion, je ferais également un mail récapitulatif très court qui acte les décisions, les options retenues, ce qu’elles doivent t’envoyer et ta prochaine échéance. Ça te donnera une trace écrite propre pour démarrer."
+    ];
+    return { id: 't_cerdd_cadrage', title: 'Visio de cadrage · CERDD (mercredi 30 septembre)', content: L.join('\n') };
   }
   function erdynTrame() {
     var L = [
@@ -4003,8 +4115,8 @@
       // 🌱 / 📝 sont des emojis « astraux » (paires de substitution) : hors d'une
       // classe [...] et via une alternance, on les retire proprement (sinon on ne
       // supprime qu'une moitié et il reste un « � »).
-      var isHead = /^([①②③④⑤⑥⑦⑧⑨]|🌱|📝)/.test(t) || (t.length > 5 && t === t.toLocaleUpperCase('fr') && /[A-ZÀ-Ÿ]/.test(t) && t.indexOf('«') === -1);
-      if (isHead) { cur = { title: trameTitleClean(t.replace(/^([①②③④⑤⑥⑦⑧⑨]|🌱|📝)\s*/, '')), hint: '', questions: [] }; secs.push(cur); return; }
+      var isHead = /^([①②③④⑤⑥⑦⑧⑨⑩]|🌱|📝)/.test(t) || (t.length > 5 && t === t.toLocaleUpperCase('fr') && /[A-ZÀ-Ÿ]/.test(t) && t.indexOf('«') === -1);
+      if (isHead) { cur = { title: trameTitleClean(t.replace(/^([①②③④⑤⑥⑦⑧⑨⑩]|🌱|📝)\s*/, '')), hint: '', questions: [] }; secs.push(cur); return; }
       if (!cur) { cur = { title: '', hint: '', questions: [] }; secs.push(cur); }
       // Question = une réplique à dire : le « … » est en tête de ligne (éventuel
       // court libellé « Label : » avant). Sinon = phrase d'aide/repère (même si
@@ -4073,7 +4185,7 @@
     return lines.map(function (l) {
       var t = l.trim();
       if (t === '') return '<div style="height:11px"></div>';
-      if (/^([①②③④⑤⑥⑦⑧⑨]|🌱|📝)/.test(t)) return '<div style="font-family:\'Alegreya\',Georgia,serif;font-weight:400;font-size:19px;color:var(--terre);margin:18px 0 8px">' + esc(trameTitleClean(t.replace(/^([①②③④⑤⑥⑦⑧⑨]|🌱|📝)\s*/, ''))) + '</div>';
+      if (/^([①②③④⑤⑥⑦⑧⑨⑩]|🌱|📝)/.test(t)) return '<div style="font-family:\'Alegreya\',Georgia,serif;font-weight:400;font-size:19px;color:var(--terre);margin:18px 0 8px">' + esc(trameTitleClean(t.replace(/^([①②③④⑤⑥⑦⑧⑨⑩]|🌱|📝)\s*/, ''))) + '</div>';
       var gi = l.indexOf('→');
       if (gi !== -1) {
         // Avant la flèche = condition / mots du client (à NE PAS dire) ; après = ta réponse.
