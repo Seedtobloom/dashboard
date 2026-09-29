@@ -816,9 +816,9 @@ async function handleClientApi(
     await saveClient(env, key, data);
     if (publishNotify) {
       const qt = (container.questionnaireTitle || '').toString().trim() || 'Un questionnaire';
-      await notifyClient(env, data, `Un questionnaire t'attend${label ? ' · ' + label : ''}`,
-        `<p>Bonjour ${escHtml(getClient(data).prenom || '')},</p>` +
-        `<p><strong>${escHtml(qt.charAt(0).toUpperCase() + qt.slice(1))}</strong> t'attend dans ton espace. Prends un moment pour le remplir quand tu le souhaites, tes réponses m'aident à avancer.</p>`, key);
+      await notifyClient(env, data, 'Un questionnaire pour toi',
+        mailBonjour(data) +
+        `<p><strong>${escHtml(qt.charAt(0).toUpperCase() + qt.slice(1))}</strong> t'attend dans ton espace. Prends ton temps, tes réponses m'aident à bien avancer.</p>` + MAIL_SIGNE, key);
     }
     return json({ ok: true, questionnaire: container.questionnaire || [], questionnaireTitle: container.questionnaireTitle || '', questionnaireReady: container.questionnaireReady === true });
   }
@@ -902,20 +902,17 @@ async function handleClientApi(
     tk.seenByAdmin = true;
     await saveClient(env, key, data);
     if (ticketDoneNotify) {
-      await notifyClient(env, data, `Ta demande est résolue · ${escHtml(tk.title || '')}`,
-        `<p>Bonne nouvelle : ta demande <strong>${escHtml(tk.title || '')}</strong> est résolue ✅.</p>` +
-        `<p>Tu peux en retrouver le détail dans ton espace, dans tes tickets.</p>`, key);
+      await notifyClient(env, data, `C'est réglé : ${tk.title || ''}`,
+        mailBonjour(data) + `<p><strong>${escHtml(tk.title || '')}</strong> est réglé. Le détail est dans ton espace, rubrique tickets.</p>` + MAIL_SIGNE, key);
     }
     if (ticketStartNotify) {
-      await notifyClient(env, data, `Je m'occupe de ta demande · ${escHtml(tk.title || '')}`,
-        `<p>Petit mot pour te dire que j'ai commencé à travailler sur ta demande <strong>${escHtml(tk.title || '')}</strong>.</p>` +
-        `<p>Je reviens vers toi dès que c'est prêt 😊</p>`, key);
+      await notifyClient(env, data, `Je m'y mets : ${tk.title || ''}`,
+        mailBonjour(data) + `<p>Je viens de commencer <strong>${escHtml(tk.title || '')}</strong>. Je te dis dès que c'est prêt.</p>` + MAIL_SIGNE, key);
     }
     if (ticketProposeNotify) {
       const frd = (tk.proposedDueDate || '').split('-').reverse().join('/');
-      await notifyClient(env, data, `Report de date proposé · ${escHtml(tk.title || '')}`,
-        `<p>Pour ta demande <strong>${escHtml(tk.title || '')}</strong>, Cindy propose plutôt la date du <strong>${escHtml(frd)}</strong>.</p>` +
-        `<p>Connecte-toi à ton espace pour accepter cette nouvelle date.</p>`);
+      await notifyClient(env, data, `Une autre date pour ${tk.title || ''} ?`,
+        mailBonjour(data) + `<p>Pour <strong>${escHtml(tk.title || '')}</strong>, je te propose plutôt le <strong>${escHtml(frd)}</strong>. Tu me dis si ça te va depuis ton espace ?</p>` + MAIL_SIGNE, key);
     }
     return json(tk);
   }
@@ -949,8 +946,8 @@ async function handleClientApi(
     inst.updatedAt = nowIso();
     await saveClient(env, key, data);
     if (reopenNotify) {
-      await notifyClient(env, data, `Questionnaire à revoir · ${escHtml(inst.name || '')}`,
-        `<p>Cindy t'invite à compléter ou revoir tes réponses au questionnaire <strong>${escHtml(inst.name || '')}</strong> dans ton espace.</p>`, key);
+      await notifyClient(env, data, 'Tu peux revoir tes réponses ?',
+        mailBonjour(data) + `<p>J'aurais besoin que tu complètes quelques réponses au questionnaire <strong>${escHtml(inst.name || '')}</strong>. Tout est dans ton espace.</p>` + MAIL_SIGNE, key);
     }
     return json(inst);
   }
@@ -1133,7 +1130,7 @@ async function handleClientApi(
       await saveClient(env, key, data);
       // Notif cliente optionnelle quand une action lui incombe.
       if (body.notify === true && (j.owner === 'cliente' || j.owner === 'les_deux')) {
-        await notifyClient(env, data, 'Ton planning · une action t\'attend', `<p>Une étape t'attend dans le planning de ton projet : <strong>${escHtml(j.title)}</strong>.</p><p>Retrouve la suite dans ton espace.</p>`, key);
+        await notifyClient(env, data, `À toi de jouer : ${j.title || ''}`, mailBonjour(data) + `<p>Une étape t'attend dans ton planning : <strong>${escHtml(j.title)}</strong>. La suite est dans ton espace.</p>` + MAIL_SIGNE, key);
       }
       return json(j);
     }
@@ -1287,7 +1284,7 @@ async function handleAdminMessage(request: Request, env: Env, key: string, data:
   if (topic) entry.topic = topic;
   container.chat.push(entry);
   await saveClient(env, key, data);
-  await notifyClient(env, data, `Nouveau message · ${label}`, `<p>Cindy t'a répondu dans <em>${escHtml(label)}</em>. Connecte-toi à ton espace pour lire le message.</p>`, key);
+  await notifyClient(env, data, 'Je t\'ai répondu', mailBonjour(data) + `<p>Je t'ai répondu dans <em>${escHtml(label)}</em>. Le message t'attend dans ton espace.</p>` + MAIL_SIGNE, key);
   return json({ message: mapMsg(entry) }, 201);
 }
 
@@ -1461,15 +1458,15 @@ async function handleTaskPatch(request: Request, env: Env, key: string, data: An
       t.stage = 'task'; t.clientNotif = false;
       if (t.status !== 'in_progress' && t.status !== 'review' && t.status !== 'done') t.status = 'todo';
       await saveClient(env, key, data);
-      if (body.notify !== false) await notifyClient(env, data, `Demande acceptée · ${escHtml(t.title || '')}`,
-        `<p>Ta demande <strong>${escHtml(t.title || '')}</strong> a été acceptée et planifiée. Tu pourras suivre son avancement dans ton espace.</p>`, key, t.id, 'Voir ma demande');
+      if (body.notify !== false) await notifyClient(env, data, `C'est noté : ${t.title || ''}`,
+        mailBonjour(data) + `<p><strong>${escHtml(t.title || '')}</strong> est dans mon planning. Tu peux suivre où j'en suis dans ton espace.</p>` + MAIL_SIGNE, key, t.id, 'Voir ma demande');
       return json(t);
     }
     if (tri === 'hors_forfait') {
       t.stage = 'out_of_scope';
       await saveClient(env, key, data);
-      if (body.notify !== false) await notifyClient(env, data, `Ta demande · ${escHtml(t.title || '')}`,
-        `<p>Ta demande <strong>${escHtml(t.title || '')}</strong> sort du cadre de ton forfait Partenaire créative. Je reviens vers toi avec une proposition adaptée.</p>`);
+      if (body.notify !== false) await notifyClient(env, data, `À propos de ${t.title || ''}`,
+        mailBonjour(data) + `<p><strong>${escHtml(t.title || '')}</strong> dépasse un peu ce que couvre ton forfait Partenaire créative. Je te prépare une proposition sur mesure et je reviens vers toi.</p>` + MAIL_SIGNE);
       return json(t);
     }
     if (tri === 'refuse') {
@@ -1589,35 +1586,34 @@ async function handleTaskPatch(request: Request, env: Env, key: string, data: An
      *  - « la version N » devient « la nouvelle version » au premier envoi,
      *    « la version 1 » ne voulant rien dire pour la cliente. */
     const quelleVersion = tour > 1 ? `la version ${tour}` : 'la nouvelle version';
-    await notifyClient(env, data, `${titre} : ta nouvelle version est en ligne`,
+    await notifyClient(env, data, `${t.title || ''} : ${tour > 1 ? 'la version ' + tour : 'la nouvelle version'} est en ligne`,
       `<p>Bonjour${prenom ? ' ' + escHtml(prenom) : ''},</p>` +
-      `<p>Je te partage ${quelleVersion} de <strong>${titre}</strong>${avaitRetours ? ', mise à jour avec l’ensemble de tes derniers retours' : ''}.</p>` +
-      `<p style="margin:20px 0"><a href="${escHtml(url)}" style="display:inline-block;background:#412F21;color:#F2E5C2;text-decoration:none;padding:12px 22px;border-radius:10px;font-weight:600">👉 Voir la nouvelle version</a></p>` +
-      `<p>Tu peux la retrouver via le même lien que précédemment, qui reste inchangé.</p>` +
-      `<p>Je te laisse la découvrir tranquillement ! Si tout te convient, tu pourras directement la valider depuis <a href="${escHtml(clientDemandeUrl(env, t.id))}" style="color:#412F21">ton espace</a>. Et si quelques ajustements sont encore nécessaires, tu pourras également m’y transmettre tes retours.</p>` +
-      `<p>Bien sûr, je reste disponible si tu as la moindre question en la parcourant.</p>` +
-      `<p>Belle journée à toi,<br>Cindy</p>`);
+      `<p>Voici ${quelleVersion} de <strong>${titre}</strong>${avaitRetours ? ', avec tes derniers retours' : ''}.</p>` +
+      `<p style="margin:20px 0"><a href="${escHtml(url)}" style="display:inline-block;background:#412F21;color:#F2E5C2;text-decoration:none;padding:12px 22px;border-radius:10px;font-weight:600">Voir la nouvelle version</a></p>` +
+      `<p>C'est le même lien qu'avant. Si tout te va, tu la valides depuis <a href="${escHtml(clientDemandeUrl(env, t.id))}" style="color:#412F21">ton espace</a>. S'il reste des ajustements, tu me les envoies au même endroit.</p>` +
+      `<p>Belle journée,<br>Cindy</p>`);
   }
   // E-mail seulement aux moments clés (terminée, à valider) : les
   // allers-retours de statut intermédiaires ne génèrent plus de mail.
   if (body.status && body.status !== prevStatus && (body.status === 'done' || body.status === 'review') && body.notify !== false) {
     const label = body.status === 'done' ? 'terminée' : 'à valider';
-    let bodyHtml = `<p>Ta tâche <strong>${escHtml(t.title || '')}</strong> est maintenant <strong>${escHtml(label)}</strong>.</p>`;
+    let bodyHtml = mailBonjour(data) + (body.status === 'done'
+      ? `<p><strong>${escHtml(t.title || '')}</strong> est terminée. Tu retrouves tout dans ton espace.</p>`
+      : `<p><strong>${escHtml(t.title || '')}</strong> est prête. Tu me dis si elle te va, ou ce que tu veux changer ?</p>`) + MAIL_SIGNE;
     // Si un lien de révision est présent, on invite explicitement le client à
     // le consulter et à donner son retour (validation ou demande de révision).
     if (body.status === 'review' && t.reviewLink) {
       const url = /^https?:\/\//i.test(t.reviewLink) ? t.reviewLink : 'https://' + t.reviewLink;
-      bodyHtml = `<p>Cindy t'invite à vérifier un élément de ta tâche <strong>${escHtml(t.title || '')}</strong>. Elle est en attente de ta révision.</p>` +
+      bodyHtml = mailBonjour(data) + `<p><strong>${escHtml(t.title || '')}</strong> est prête.</p>` +
         `<p style="margin:18px 0"><a href="${escHtml(url)}" style="display:inline-block;background:#412F21;color:#F2E5C2;text-decoration:none;padding:12px 22px;border-radius:10px;font-weight:600">Vérifier le travail</a></p>` +
-        `<p style="color:#8a6f54;font-size:13px">Retrouve aussi ce lien et tes boutons de validation dans ton espace, sur la tâche concernée.</p>`;
+        `<p>Le lien et les boutons pour valider sont aussi dans ton espace.</p>` + MAIL_SIGNE;
     }
-    await notifyClient(env, data, `Tâche ${label} · ${escHtml(t.title || '')}`, bodyHtml, key, t.id, body.status === 'review' ? 'Voir et valider' : 'Voir ma demande');
+    await notifyClient(env, data, body.status === 'done' ? `C'est terminé : ${t.title || ''}` : `Tu peux vérifier ${t.title || ''} ?`, bodyHtml, key, t.id, body.status === 'review' ? 'Voir et valider' : 'Voir ma demande');
   }
   if (proposedNotify) {
     const frd = (t.proposedDueDate || '').split('-').reverse().join('/');
-    await notifyClient(env, data, `Report d'échéance proposé · ${escHtml(t.title || '')}`,
-      `<p>Cindy propose de reporter l'échéance de ta tâche <strong>${escHtml(t.title || '')}</strong> au <strong>${escHtml(frd)}</strong>.</p>` +
-      `<p>Connecte-toi à ton espace pour accepter cette nouvelle date.</p>`, key, t.id, 'Répondre');
+    await notifyClient(env, data, `Une autre date pour ${t.title || ''} ?`,
+      mailBonjour(data) + `<p>Pour <strong>${escHtml(t.title || '')}</strong>, je te propose plutôt le <strong>${escHtml(frd)}</strong>. Tu me dis si ça te va depuis ton espace ?</p>` + MAIL_SIGNE, key, t.id, 'Répondre');
   }
   return json(t);
 }
@@ -1633,7 +1629,7 @@ async function handleTaskComment(request: Request, env: Env, key: string, data: 
   // Répondre lève le marqueur « commentaire client non lu ».
   found.task.clientCommentNotif = false;
   await saveClient(env, key, data);
-  await notifyClient(env, data, `Commentaire · ${escHtml(found.task.title || '')}`, `<p>Cindy a commenté la tâche <strong>${escHtml(found.task.title || '')}</strong>.</p>`, key, found.task.id, 'Lire le commentaire');
+  await notifyClient(env, data, `Un mot sur ${found.task.title || ''}`, mailBonjour(data) + `<p>Je t'ai laissé un mot sur <strong>${escHtml(found.task.title || '')}</strong>. Il t'attend dans ton espace.</p>` + MAIL_SIGNE, key, found.task.id, 'Lire le commentaire');
   return json(comment, 201);
 }
 
@@ -1666,8 +1662,8 @@ async function handleStepPatch(request: Request, env: Env, key: string, data: An
   if (body.status && body.status !== 'done') step.completedAt = null;
   await saveClient(env, key, data);
   if (body.status && body.status !== prev) {
-    if (body.status === 'done') await notifyClient(env, data, `Étape validée · ${label}`, `<p>L'étape <strong>${escHtml(step.title || '')}</strong> de ton projet ${escHtml(label)} vient d'être validée ✓.</p>`);
-    else if (body.status === 'waiting_client') await notifyClient(env, data, `Action requise · ${label}`, `<p>L'étape <strong>${escHtml(step.title || '')}</strong> attend une action de ta part.</p>` + (step.clientAction ? `<p>${escHtml(step.clientAction)}</p>` : ''), key);
+    if (body.status === 'done') await notifyClient(env, data, `C'est validé : ${step.title || ''}`, mailBonjour(data) + `<p><strong>${escHtml(step.title || '')}</strong> est validée. Le projet avance bien.</p>` + MAIL_SIGNE, key);
+    else if (body.status === 'waiting_client') await notifyClient(env, data, `À toi de jouer : ${step.title || ''}`, mailBonjour(data) + `<p>Une étape t'attend : <strong>${escHtml(step.title || '')}</strong>.</p>` + (step.clientAction ? `<p>${escHtml(step.clientAction)}</p>` : '') + MAIL_SIGNE, key);
   }
   return json(step);
 }
@@ -1842,7 +1838,7 @@ async function handleUpload(request: Request, env: Env, key: string, data: AnyOb
       attachDeliverableParent(container, deliverable, taskId || null);
       await saveClient(env, key, data);
       if ((form.get('notify') as string) !== 'false') {
-        await notifyClient(env, data, 'Nouveau livrable à valider', `<p>Un nouveau livrable <strong>${escHtml(fileName)}</strong>${deliverable.taskTitle ? ` pour la tâche <em>${escHtml(deliverable.taskTitle)}</em>` : ''} est disponible dans ton espace. Merci de le valider ou de demander une révision.</p>`, key, deliverable.taskId || undefined, 'Voir et valider');
+        await notifyClient(env, data, `${fileName} est prêt pour toi`, mailBonjour(data) + `<p>Nouveau livrable dans ton espace : <strong>${escHtml(fileName)}</strong>${deliverable.taskTitle ? ` pour <em>${escHtml(deliverable.taskTitle)}</em>` : ''}. Tu me dis s'il te va, ou ce que tu veux changer ?</p>` + MAIL_SIGNE, key, deliverable.taskId || undefined, 'Voir et valider');
       }
     }
   }
@@ -1884,7 +1880,7 @@ async function handleDeliverableLink(request: Request, env: Env, key: string, da
   container.livrables.push(deliverable);
   await saveClient(env, key, data);
   if (body.notify !== false) {
-    await notifyClient(env, data, 'Nouveau livrable à valider', `<p>Un nouveau livrable <strong>${escHtml(name)}</strong>${deliverable.taskTitle ? ` pour la tâche <em>${escHtml(deliverable.taskTitle)}</em>` : ''} est disponible (lien) dans ton espace. Merci de le valider ou de demander une révision.</p>`, key, deliverable.taskId || undefined, 'Voir et valider');
+    await notifyClient(env, data, `${name} est prêt pour toi`, mailBonjour(data) + `<p>Nouveau livrable dans ton espace : <strong>${escHtml(name)}</strong>${deliverable.taskTitle ? ` pour <em>${escHtml(deliverable.taskTitle)}</em>` : ''}. Tu me dis s'il te va, ou ce que tu veux changer ?</p>` + MAIL_SIGNE, key, deliverable.taskId || undefined, 'Voir et valider');
   }
   return json({ deliverable }, 201);
 }
@@ -2860,31 +2856,31 @@ const EMAIL_TPL_DEFAULTS: Record<string, { label: string; vars: string[]; subjec
     label: 'Invitation au bilan de collaboration',
     vars: ['prenom'],
     subject: 'Ton avis sur notre collaboration',
-    body: 'Bonjour {prenom},\n\nTon accompagnement arrive à son terme et ton retour compte beaucoup pour faire grandir le studio.\n\nConnecte-toi à ton espace, onglet Bilan, pour le partager en quelques minutes. Merci à toi.',
+    body: 'Bonjour {prenom},\n\nNotre collaboration touche à sa fin, et ton avis m\'aide vraiment à faire grandir le studio.\n\nÇa prend quelques minutes, dans ton espace, onglet Bilan. Merci à toi,\nCindy',
   },
   welcome: {
     label: 'Bienvenue · création de l\'espace',
     vars: ['prenom'],
-    subject: 'Ton espace client Seed to Bloom est prêt',
-    body: 'Bonjour {prenom},\n\nJe viens de créer ton espace client : c\'est ici que je centralise tout ce que je fais pour toi (avancement, livrables à valider, messages, documents).\n\nJe te transmets ta clé d\'accès personnelle juste après. Garde-la précieusement, elle te servira à chaque connexion.\n\nÀ très vite !',
+    subject: 'Ton espace Seed to Bloom est prêt',
+    body: 'Bonjour {prenom},\n\nJe viens de créer ton espace. C\'est là que tu retrouves tout : où on en est, les livrables à valider, nos messages, tes documents.\n\nJe t\'envoie ta clé d\'accès juste après. Garde-la bien, elle te servira à chaque connexion.\n\nÀ très vite,\nCindy',
   },
   offer_active: {
     label: 'Activation d\'une offre',
     vars: ['prenom', 'offre'],
-    subject: 'C\'est parti : ton offre {offre} est active',
-    body: 'Bonjour {prenom},\n\nBonne nouvelle : ton offre {offre} vient d\'être activée dans ton espace client.\n\nConnecte-toi pour découvrir ton suivi, déposer tes demandes et retrouver tes documents. Je t\'y attends !',
+    subject: 'C\'est parti pour {offre}',
+    body: 'Bonjour {prenom},\n\nTon offre {offre} est active. Dans ton espace, tu peux suivre où on en est, m\'envoyer tes demandes et retrouver tes documents.\n\nJe t\'y attends,\nCindy',
   },
   remind_deliverable: {
     label: 'Relance · livrable à valider',
     vars: ['prenom', 'titre', 'projet'],
-    subject: 'Un petit mot au sujet de {titre}',
-    body: 'Bonjour {prenom},\n\nJ\'espère que tu vas bien.\n\nJe reviens vers toi au sujet de {titre}, qui t\'attend dans ton espace. Je sais que les journées filent vite : rien d\'urgent, c\'est simplement pour que rien ne se perde en route.\n\nQuand tu auras un moment, tu pourras le valider ou me dire ce que tu aimerais changer. Et si quelque chose te fait hésiter, dis-le-moi, on en parle ensemble.\n\nBelle journée à toi,\nCindy',
+    subject: 'Tu as pu jeter un œil à {titre} ?',
+    body: 'Bonjour {prenom},\n\n{titre} t\'attend dans ton espace. Rien d\'urgent, je voulais juste être sûre qu\'il ne s\'était pas perdu dans ta boîte mail.\n\nSi ça te va, tu valides. Si un truc te chiffonne, dis-le-moi, on ajuste.\n\nÀ bientôt,\nCindy',
   },
   remind_action: {
     label: 'Relance · action en attente',
     vars: ['prenom', 'titre', 'projet'],
-    subject: 'Où en es-tu pour {titre} ?',
-    body: 'Bonjour {prenom},\n\nJ\'espère que tout va bien de ton côté.\n\nJe voulais prendre de tes nouvelles au sujet de {titre}. Pour avancer, j\'ai besoin de ton retour, sans aucune pression : j\'aimerais simplement savoir où tu en es, pour m\'organiser au mieux.\n\nTu peux me répondre directement depuis ton espace. Si tu as besoin de plus de temps ou d\'un coup de main, dis-le-moi sans hésiter.\n\nBelle journée à toi,\nCindy',
+    subject: 'Où tu en es pour {titre} ?',
+    body: 'Bonjour {prenom},\n\nJ\'attends ton retour sur {titre} pour avancer. Aucune pression, j\'ai juste besoin de savoir où tu en es pour caler mon planning.\n\nBesoin de plus de temps ou d\'un coup de main ? Dis-le-moi.\n\nCindy',
   },
 };
 async function getEmailTemplates(env: Env): Promise<Record<string, { subject: string; body: string }>> {
@@ -3157,12 +3153,11 @@ async function handleQnrAssign(request: Request, env: Env, key: string, data: An
     const prenom = getClient(data).prenom || '';
     const dueStr = inst.dueDate ? String(inst.dueDate).split('-').reverse().join('/') : '';
     const deadlineLine = dueStr
-      ? `Merci de le compléter avant le <strong>${escHtml(dueStr)}</strong> afin que nous puissions poursuivre le projet dans les délais prévus.`
-      : `Merci de le compléter afin que nous puissions poursuivre le projet.`;
-    await notifyClient(env, data, `Ton questionnaire est prêt · ${escHtml(tpl.name || '')}`,
-      `<p>Bonjour ${escHtml(prenom)},</p>` +
-      `<p>Ton questionnaire est prêt ! 😊</p>` +
-      `<p>Tu le trouveras dans ton espace, onglet « Questionnaires ». ${deadlineLine}</p>`, key);
+      ? `Si tu peux le remplir avant le <strong>${escHtml(dueStr)}</strong>, on garde le bon rythme.`
+      : '';
+    await notifyClient(env, data, 'Ton questionnaire est prêt',
+      `<p>Bonjour${prenom ? ' ' + escHtml(prenom) : ''},</p>` +
+      `<p>Ton questionnaire${tpl.name ? ' <strong>' + escHtml(tpl.name) + '</strong>' : ''} est prêt. Il est dans ton espace, onglet Questionnaires. ${deadlineLine}</p>` + MAIL_SIGNE, key);
   }
   return json(inst, 201);
 }
@@ -3417,6 +3412,9 @@ function clientSpaceUrl(env: Env): string {
 function clientDemandeUrl(env: Env, taskId: string): string {
   return clientSpaceUrl(env) + '?demande=' + encodeURIComponent(taskId);
 }
+/* Les e-mails aux clientes : « Bonjour Prénom, » en tête, signés Cindy. Courts, comme on parle. */
+function mailBonjour(data: AnyObj): string { const p = getClient(data).prenom || ''; return `<p>Bonjour${p ? ' ' + escHtml(p) : ''},</p>`; }
+const MAIL_SIGNE = '<p>Cindy</p>';
 async function notifyClient(env: Env, data: AnyObj, subject: string, bodyHtml: string, withLink?: boolean | string, demande?: string, ctaLabel?: string): Promise<void> {
   const email = getClient(data).email;
   if (!email) return;
