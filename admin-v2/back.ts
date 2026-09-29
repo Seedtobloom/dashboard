@@ -860,6 +860,20 @@ async function handleClientApi(
     }
     return json({ ok: true });
   }
+  // Projet long : Cindy crée elle-même un ticket « projet » (ex. une refonte).
+  if (method === 'POST' && sub === '/tickets') {
+    const body = await readJson(request);
+    const { container } = resolveProject(esp, (body.projectId || 'maintenance').toString());
+    if (!container) return json({ error: 'Projet introuvable' }, 404);
+    const title = (body.title || '').toString().trim().slice(0, 200);
+    if (!title) return json({ error: 'title requis' }, 400);
+    if (!Array.isArray(container.tickets)) container.tickets = [];
+    const tk: AnyObj = { id: genId(), title, description: '', priority: 'moyenne', category: '', dueDate: null, status: 'in_progress',
+      kind: body.kind === 'projet' ? 'projet' : '', etapes: [], miseEnLigne: '', attachments: [], seenByAdmin: true, createdAt: nowIso() };
+    container.tickets.unshift(tk);
+    await saveClient(env, key, data);
+    return json(tk, 201);
+  }
   // Tickets : mise à jour (statut, priorité, échéance, temps passé) côté admin
   m = sub.match(/^\/tickets\/([a-f0-9]+)$/);
   if (m && method === 'PATCH') {
@@ -870,6 +884,11 @@ async function handleClientApi(
     if (!tk) return json({ error: 'Ticket introuvable' }, 404);
     const prevStatus = tk.status;
     ['title', 'description', 'priority', 'category', 'status', 'dueDate', 'studioNote'].forEach((k) => { if (k in body) tk[k] = body[k]; });
+    if ('miseEnLigne' in body) tk.miseEnLigne = String(body.miseEnLigne || '').slice(0, 80);
+    if (Array.isArray(body.etapes)) tk.etapes = body.etapes.slice(0, 30).map((e: AnyObj) => ({
+      nom: String((e && e.nom) || '').slice(0, 120),
+      etat: ['fait', 'encours', 'avenir'].includes(String(e && e.etat)) ? String(e.etat) : 'avenir',
+    })).filter((e: AnyObj) => e.nom);
     // Notifications de changement de statut (à la demande : body.notify === true).
     let ticketDoneNotify = false, ticketStartNotify = false;
     if ('status' in body && body.notify === true) {
@@ -899,6 +918,17 @@ async function handleClientApi(
       tk.proposedAt = pdd ? nowIso() : null;
       ticketProposeNotify = !!pdd && body.notify !== false;
     }
+    // « Il te manque une info ? » : Cindy pose une question, la demande passe
+    // chez la cliente (statut waiting_client) jusqu'à sa réponse.
+    let ticketAskNotify = '';
+    if (typeof body.askInfo === 'string' && body.askInfo.trim()) {
+      const q = body.askInfo.trim().slice(0, 2000);
+      if (!Array.isArray(tk.infos)) tk.infos = [];
+      tk.infos.push({ id: genId(), q, askedAt: nowIso(), r: '', answeredAt: '' });
+      if (tk.status !== 'waiting_client') tk.statusAvantInfo = tk.status || 'open';
+      tk.status = 'waiting_client';
+      ticketAskNotify = q;
+    }
     tk.seenByAdmin = true;
     await saveClient(env, key, data);
     if (ticketDoneNotify) {
@@ -908,6 +938,12 @@ async function handleClientApi(
     if (ticketStartNotify) {
       await notifyClient(env, data, `Je m'y mets : ${tk.title || ''}`,
         mailBonjour(data) + `<p>Je viens de commencer <strong>${escHtml(tk.title || '')}</strong>. Je te dis dès que c'est prêt.</p>` + MAIL_SIGNE, key);
+    }
+    if (ticketAskNotify) {
+      await notifyClient(env, data, `Une petite question sur ${tk.title || 'ta demande'}`,
+        mailBonjour(data) + `<p>Pour avancer sur <strong>${escHtml(tk.title || '')}</strong>, il me manque une info :</p>` +
+        `<p style="background:#E6E5B2;padding:14px 18px;border-radius:10px;font-size:16px">${escHtml(ticketAskNotify)}</p>` +
+        `<p>Tu peux me répondre directement dans ton espace.</p>` + MAIL_SIGNE, true, undefined, 'Répondre');
     }
     if (ticketProposeNotify) {
       const frd = (tk.proposedDueDate || '').split('-').reverse().join('/');
@@ -2345,6 +2381,9 @@ async function handleDashboard(env: Env): Promise<Response> {
         dueDate: t.dueDate || '', doDate: '', startDate: '',
         createdAt: t.createdAt || '', completedAt: t.resolvedAt || '',
         pole: 'Maintenance', content: t.description || '',
+        infos: Array.isArray(t.infos) ? t.infos : [],
+        links: Array.isArray(t.links) ? t.links : [],
+        ticketKind: t.kind || '',
         studioNote: t.studioNote || '',
         priority: t.priority || 'moyenne',
         timeSpentSeconds: t.timeSpentSeconds || (t.timeSpentMinutes || 0) * 60,

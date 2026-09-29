@@ -4744,7 +4744,10 @@
       sentCount: t.sentCount || 0,
       envoyeLe: t.reviewSentAt || t.lastSentAt || '',
       dernierEnvoi: t.lastName || '', dernierStatut: t.lastStatus || '',
-      etapes: Array.isArray(t.subtasks) ? t.subtasks : []
+      etapes: Array.isArray(t.subtasks) ? t.subtasks : [],
+      // Tickets : les questions posées à la cliente (et ses réponses), ses liens.
+      infos: Array.isArray(t.infos) ? t.infos : [],
+      liens: Array.isArray(t.links) ? t.links : []
     };
   }
   // Tout le travail vivant, terminé COMPRIS : un projet a besoin de ce qui est
@@ -5758,6 +5761,45 @@
     });
   }
 
+  /* ── Ticket : « Il te manque une info ? » ────────────────────────────────
+     Une question part par mail, la demande passe chez la cliente jusqu'à sa
+     réponse. Les échanges déjà faits restent lisibles au-dessus. */
+  function ckTLiens(t) {
+    if (!t.liens || !t.liens.length) return '';
+    return '<div class="ckr-liens">' + t.liens.map(function (u) {
+      var href = /^https?:\/\//i.test(u) ? u : 'https://' + u;
+      return '<a class="ckr-f" href="' + esc(href) + '" target="_blank" rel="noopener">' + esc(u) + '</a>';
+    }).join('') + '</div>';
+  }
+  function ckTInfo(t) {
+    if (t.src !== 'ticket' || t.statut === 'done') return '';
+    var qui = ckTPrenom(t);
+    var faites = (t.infos || []).map(function (x) {
+      return '<div class="ckr-q"><p class="ckr-qq">Ta question : « ' + esc(x.q) + ' »</p>' +
+        (x.r ? '<p class="ckr-qr"><b>Sa réponse</b>' + esc(x.r) + '</p>'
+          : '<p class="ckr-qa">' + (x.askedAt ? 'Envoyée le ' + esc(ckpDateLongue(String(x.askedAt).slice(0, 10))) + ', en attente de sa réponse.' : 'En attente de sa réponse.') + '</p>') + '</div>';
+    }).join('');
+    var attend = (t.infos || []).some(function (x) { return !x.r; });
+    return '<div class="ckr-info">' + faites +
+      (attend ? '' : '<h3>Il te manque une info ?</h3>' +
+        '<textarea id="ckt-info-' + esc(t.id) + '" class="inp" rows="2" aria-label="Ta question pour ' + esc(qui) + '" placeholder="Ta question pour ' + esc(qui) + '"></textarea>' +
+        '<div class="ckr-info-a"><span>Un mail part à ' + esc(qui) + ', la demande passe de son côté.</span>' +
+        '<button class="ckr-b" onclick="ADM.ckTDemander(\'' + esc(t.id) + '\')">Lui demander</button></div>') +
+      '</div>';
+  }
+  function ckTDemander(id) {
+    var t = ckpToutes().filter(function (x) { return x.id === id; })[0];
+    var el = document.getElementById('ckt-info-' + id);
+    var q = el ? el.value.trim() : '';
+    if (!t || !q) { if (el) el.focus(); return; }
+    jpost('/api/clients/' + t.key + '/tickets/' + t.id, { projectId: 'maintenance', askInfo: q }, 'PATCH').then(function (r) {
+      if (r && r.ok) {
+        toast('Question envoyée à ' + ckTPrenom(t));
+        ckpApres(id, function (b) { if (!Array.isArray(b.infos)) b.infos = []; b.infos.push({ q: q, askedAt: new Date().toISOString(), r: '' }); });
+      } else toast('Erreur');
+    }).catch(function () { toast('Erreur'); });
+  }
+
   /* ── Le panneau de droite : qui, quoi, les trois repères, le brief, le geste ── */
 
   function ckTPanneauDroit(t) {
@@ -5779,6 +5821,8 @@
       (brief || lignes ? '<div class="ckp-b"><h3>Son brief</h3>' + (brief ? '<div class="ckp-bt">' + brief + '</div>' : '') +
         (lignes ? '<p class="ckp-tab">Avec un tableau de ' + lignes + ' ligne' + (lignes > 1 ? 's' : '') + '. ' +
           ckTPetitLien('Le voir en grand', 'ADM.ckTGrand(1)') + '</p>' : '') + '</div>' : '') +
+      (t.src === 'ticket' && t.liens.length ? '<div class="ckp-b"><h3>Ses liens</h3>' + ckTLiens(t) + '</div>' : '') +
+      ckTInfo(t) +
       '<div class="ckp-a">' + ckTBoutonFini(t) +
         (t.src === 'client' ? '<button class="pjc-lien" onclick="ADM.prioAddDlv(\'' + esc(t.key) + '\',\'' + esc(t.id) + '\',\'' + esc(t.projet || 'partner') + '\')">Ajouter un livrable</button>' : '') +
         '<span class="ck-esp"></span>' + ckTMenu(t, 'haut') + '</div>' +
@@ -5822,7 +5866,7 @@
           '<span>' + esc(ckTRaison(t)) + '</span></div></header>' +
       '<div class="ckgv-g"><div class="ckgv-m">' +
         '<section class="ckgv-s"><h2>Ce qu’il faut faire</h2>' + (brief || '<p class="ckg-doux">Pas de brief pour cette tâche.</p>') + table + '</section>' +
-        (t.src !== 'ticket' ? ckTEtapes(t) : '') +
+        (t.src !== 'ticket' ? ckTEtapes(t) : '<section class="ckgv-s">' + ckTInfo(t) + '</section>') +
         (t.src !== 'perso' ? '<section class="ckgv-s"><h2>Échanges' + (t.src === 'client' ? ' avec ' + esc(t.qui) : '') + '</h2>' +
           (ech.length ? ech.map(function (m) {
             var mien = m.author === 'cindy';
@@ -5841,6 +5885,7 @@
           prop('Créneau', f.creneau.v, ckTPetitLien(f.futur ? 'Déplacer' : 'Poser un créneau', 'ADM.ckLDepuis(\'' + esc(t.id) + '\')')) +
         '</section>' +
         (t.src !== 'perso' ? '<section class="ckgv-s"><h2>Fichiers</h2>' + (fs.length ? fs.map(fichier).join('') : '<p class="ckg-doux">Aucun fichier.</p>') +
+          ckTLiens(t) +
           (t.lien ? '<div class="ckgv-fi"><a href="' + esc(/^https?:\/\//i.test(t.lien) ? t.lien : 'https://' + t.lien) + '" target="_blank" rel="noopener">Le lien donné par le client</a></div>' : '') +
           (t.src === 'client' ? '<button class="pjc-lien" onclick="ADM.prioAddDlv(\'' + esc(t.key) + '\',\'' + esc(t.id) + '\',\'' + esc(t.projet || 'partner') + '\')">Ajouter un livrable</button>' : '') +
           '</section>' : '') +
@@ -10696,7 +10741,58 @@
     var list = wsReadInputs().filter(function (s) { return s.day && s.from; });
     jpost('/api/clients/' + CURKEY + '/forfait', { projectId: 'partner', workSlots: list }, 'PATCH').then(function (r) { if (r.ok) { toast('Créneaux enregistrés ✓'); WORKSLOTS = list; wsRepaint(); } else toast('Erreur'); });
   }
-  var TICKET_STATUS = [['open', 'À faire'], ['in_progress', 'En cours'], ['done', 'Fait']];
+  var TICKET_STATUS = [['open', 'À faire'], ['waiting_client', 'Chez la cliente'], ['in_progress', 'En cours'], ['done', 'Fait']];
+  /* ── Projet long (ex. une refonte) dans l'espace tickets ─────────────────
+     C'est un ticket comme un autre (le temps s'y saisit pareil et entre dans
+     le forfait), avec en plus des étapes et une date estimée que la cliente
+     voit dans son onglet. */
+  var MPL_ETATS = [['fait', 'Fait'], ['encours', 'En cours'], ['avenir', 'À venir']];
+  function maintProjetsLongs(all) {
+    var pl = all.filter(function (t) { return t.kind === 'projet' && t.status !== 'done' && t.status !== 'closed'; });
+    return '<div class="card mpl" style="background:var(--card);padding:20px 22px;margin-bottom:16px">' +
+      '<h3 style="margin:0 0 4px">Projet long</h3>' +
+      '<p class="mpl-aide">Une refonte ou un gros chantier qui avance au rythme du forfait. Le client le suit dans son propre onglet.</p>' +
+      pl.map(function (t) {
+        var et = Array.isArray(t.etapes) ? t.etapes : [];
+        return '<div class="mpl-p">' +
+          '<label class="mpl-l">Nom<input class="inp" value="' + esc(t.title || '') + '" onchange="ADM.mplPatch(\'' + t.id + '\',{title:this.value})"></label>' +
+          '<label class="mpl-l">Mise en ligne estimée<input class="inp" placeholder="vers février" value="' + esc(t.miseEnLigne || '') + '" onchange="ADM.mplPatch(\'' + t.id + '\',{miseEnLigne:this.value})"></label>' +
+          '<div class="mpl-et"><b>Les étapes</b>' + et.map(function (e, i) {
+            return '<div class="mpl-e"><input class="inp" value="' + esc(e.nom || '') + '" onchange="ADM.mplEtape(\'' + t.id + '\',' + i + ',\'nom\',this.value)">' +
+              '<select class="inp" onchange="ADM.mplEtape(\'' + t.id + '\',' + i + ',\'etat\',this.value)">' + MPL_ETATS.map(function (x) { return '<option value="' + x[0] + '"' + ((e.etat || 'avenir') === x[0] ? ' selected' : '') + '>' + x[1] + '</option>'; }).join('') + '</select>' +
+              '<button class="btn btn--outline btn--sm" onclick="ADM.mplEtape(\'' + t.id + '\',' + i + ',\'suppr\')">Retirer</button></div>';
+          }).join('') +
+          '<div class="mpl-e"><input id="mpl-new-' + t.id + '" class="inp" placeholder="Nouvelle étape" onkeydown="if(event.key===\'Enter\')ADM.mplEtape(\'' + t.id + '\',-1,\'ajout\')">' +
+            '<button class="btn btn--outline btn--sm" onclick="ADM.mplEtape(\'' + t.id + '\',-1,\'ajout\')">Ajouter</button></div></div>' +
+        '</div>';
+      }).join('') +
+      '<div class="mpl-e"><input id="mpl-titre" class="inp" placeholder="Ex. Refonte du site">' +
+        '<button class="btn btn--dark btn--sm" onclick="ADM.mplCreer()">Lancer un projet long</button></div>' +
+    '</div>';
+  }
+  function mplCreer() {
+    var el = document.getElementById('mpl-titre'), titre = el ? el.value.trim() : '';
+    if (!titre) { if (el) el.focus(); return; }
+    var d = findDomain('maintenance'); if (!d) return;
+    jpost('/api/clients/' + CURKEY + '/tickets', { projectId: 'maintenance', title: titre, kind: 'projet' }).then(function (r) {
+      return r.ok ? r.json() : Promise.reject();
+    }).then(function (tk) {
+      if (!Array.isArray(d.content.tickets)) d.content.tickets = [];
+      d.content.tickets.unshift(tk); toast('Projet lancé'); renderClient();
+    }).catch(function () { toast('Erreur'); });
+  }
+  function mplTk(id) { var d = findDomain('maintenance'); var ts = d && Array.isArray(d.content.tickets) ? d.content.tickets : []; return ts.filter(function (t) { return t.id === id; })[0] || null; }
+  function mplPatch(id, patch) { ticketUpdate(id, patch, 'Enregistré'); }
+  function mplEtape(id, i, quoi, v) {
+    var t = mplTk(id); if (!t) return;
+    var et = (Array.isArray(t.etapes) ? t.etapes : []).map(function (e) { return { nom: e.nom, etat: e.etat }; });
+    if (quoi === 'ajout') {
+      var el = document.getElementById('mpl-new-' + id), nom = el ? el.value.trim() : '';
+      if (!nom) return; et.push({ nom: nom, etat: 'avenir' });
+    } else if (quoi === 'suppr') et.splice(i, 1);
+    else if (et[i]) et[i][quoi] = v;
+    ticketUpdate(id, { etapes: et }, 'Enregistré');
+  }
   function maintTickets(d) {
     var all = Array.isArray(d.content.tickets) ? d.content.tickets : [];
     var PRIO = { haute: 0, moyenne: 1, basse: 2 };
@@ -10781,7 +10877,7 @@
       '</div>' +
       (carryMin < 0 ? '<div class="micro" style="text-transform:none;letter-spacing:0;color:#6a4a0b;margin-top:8px">' + fmtMin(-carryMin) + ' de dépassement du mois dernier déduites de ce mois' + (billedMin > 0 ? ' · ' + fmtMin(billedMin) + ' à facturer (au-delà d\'un mois de forfait)' : '') + '.</div>' : '') +
     '</div>';
-    return forfaitCard +
+    return forfaitCard + maintProjetsLongs(all) +
       '<div class="card" style="background:var(--card);padding:18px 20px;margin-bottom:16px"><h3 style="margin:0 0 4px"><span class="infocard__dot" style="background:#9c6f18"></span>Tickets de la cliente</h3>' +
       '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted)">La cliente ouvre ses tickets depuis son espace. Fais avancer chaque ticket avec le statut « À faire · En cours · Fait» et note le temps passé. Elle est prévenue à chaque changement.</div></div>' +
       list + histBlock;
@@ -13725,7 +13821,7 @@
     msWeek: msWeek, msFilter: msFilter, msToggleCap: msToggleCap, msMode: msMode, msDaySel: msDaySel, msPlace: msPlace, msDone: msDone, msDelete: msDelete, msNoteOpen: msNoteOpen, msPlanOver: msPlanOver, msPlanLeave: msPlanLeave, msPlanDrop: msPlanDrop, msPlanUnplace: msPlanUnplace, msAutoPlan: msAutoPlan, msOrganizeWeek: msOrganizeWeek, msOrganizeDay: msOrganizeDay, msUnplace: msUnplace, msDragStart: msDragStart, msDragEnd: msDragEnd, msDayOver: msDayOver, msDayLeave: msDayLeave, msDrop: msDrop, msSlotOver: msSlotOver, msDropSlot: msDropSlot, msNewBlock: msNewBlock, msSaveBlock: msSaveBlock, msDeleteBlock: msDeleteBlock, msEst: msEst, msEstH: msEstH, msAddTop: msAddTop, msAddDay: msAddDay,
     openClient: openClient, tab: tab, subtab: subtab, ffShow: ffShow, saveInfos: saveInfos, saveForfait: saveForfait, forfaitOverrideAdd: forfaitOverrideAdd, forfaitOverrideDel: forfaitOverrideDel, testEmail: testEmail, toggleOffer: toggleOffer, addOffer: addOffer, setBanner: setBanner, setMaintenance: setMaintenance, renameSupport: renameSupport, cloturerProjet: cloturerProjet, rouvrirProjet: rouvrirProjet, addSupportQuick: addSupportQuick, delSupport: delSupport, crAdd: crAdd, crSet: crSet, crCloturer: crCloturer, crRouvrir: crRouvrir, cgToggle: cgToggle, cgNeuve: cgNeuve, pjEdit: pjEdit, crReply: crReply, crDel: crDel, crAddVersion: crAddVersion, crAddVersionLink: crAddVersionLink, crDelVersion: crDelVersion, pjAdd: pjAdd, pjSet: pjSet, pjMove: pjMove, pjDel: pjDel, pjStart: pjStart, pjNotify: pjNotify, pjNeuf: pjNeuf, pjPatch: pjPatch, pjDuree: pjDuree, pjDateOuvrir: pjDateOuvrir, pjDateFermer: pjDateFermer, pjDate: pjDate, pjToggle: pjToggle, deleteClient: deleteClient,
     toggleTicketsSpace: toggleTicketsSpace, ticketStatus: ticketStatus, ticketDue: ticketDue, ticketTime: ticketTime, ticketDelete: ticketDelete, ticketForfait: ticketForfait, ticketProposeDate: ticketProposeDate,
-    ckpReste: ckpReste, ckpEstim: ckpEstim, ckpAjoutPasse: ckpAjoutPasse, ckTRelancer: ckTRelancer, ckTTraiter: ckTTraiter, ckpFinir: ckpFinir, ckpPasMaintenant: ckpPasMaintenant, ckpOrdreSysteme: ckpOrdreSysteme,
+    ckpReste: ckpReste, ckpEstim: ckpEstim, ckpAjoutPasse: ckpAjoutPasse, ckTRelancer: ckTRelancer, ckTDemander: ckTDemander, mplCreer: mplCreer, mplPatch: mplPatch, mplEtape: mplEtape, ckTTraiter: ckTTraiter, ckpFinir: ckpFinir, ckpPasMaintenant: ckpPasMaintenant, ckpOrdreSysteme: ckpOrdreSysteme,
     ckTSetTri: ckTSetTri, ckTSetFiltre: ckTSetFiltre, ckTOuvrir: ckTOuvrir, ckTGrand: ckTGrand, ckMenu: ckMenu,
     ckTRepondre: ckTRepondre, ckTCloturer: ckTCloturer, ckTSupprimer: ckTSupprimer, ckTCreerStb: ckTCreerStb, inbSetOnglet: inbSetOnglet, inbChoisir: inbChoisir, inbRefuser: inbRefuser, inbToutVu: inbToutVu, ckTSetCote: ckTSetCote, ckTVoir: ckTVoir, ckTEtape: ckTEtape,
     ckTAEstimer: ckTAEstimer,

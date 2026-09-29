@@ -778,14 +778,14 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       var tickets = Array.isArray(project.tickets) ? project.tickets : [];
       var pdt = new Date(); pdt.setMonth(pdt.getMonth() - 1);
       var pk = pdt.getFullYear() + '-' + String(pdt.getMonth() + 1).padStart(2, '0');
-      function tmin(t) { return t.timeSpentMinutes || Math.round((t.timeSpentSeconds || 0) / 60) || 0; }
-      function mo(t) { return String(t.resolvedAt || t.createdAt || '').slice(0, 7); }
-      function usedIn(ym) { return tickets.reduce(function (s, t) { return mo(t) === ym ? s + tmin(t) : s; }, 0); }
-      function activeIn(ym) { return tickets.some(function (t) { return mo(t) === ym; }); }
+      // Le temps compte au mois où il a été passé (saisies datées), comme
+      // pour l'accompagnement créatif.
+      function usedIn(ym) { return tickets.reduce(function (s, t) { return s + (stbTaskMinByMonth(t)[ym] || 0); }, 0); }
+      function activeIn(ym) { return usedIn(ym) > 0 || tickets.some(function (t) { return String(t.createdAt || '').slice(0, 7) === ym; }); }
       var baseMin = base * 60, carryMin = 0;
       if (baseMin && activeIn(pk)) { var diff = baseMin - usedIn(pk); if (diff >= 0) carryMin = Math.min(120, diff); else carryMin = -Math.min(-diff, baseMin); }
       var d2 = 0, w2 = 0;
-      tickets.forEach(function (t) { if (mo(t) !== mk) return; var m = tmin(t); if (t.status === 'done' || t.status === 'closed') d2 += m; else w2 += m; });
+      tickets.forEach(function (t) { var m = stbTaskMinByMonth(t)[mk] || 0; if (!m) return; if (t.status === 'done' || t.status === 'closed') d2 += m; else w2 += m; });
       return { availMin: baseMin + carryMin, doneMin: d2, wipMin: w2 };
     }
     return null;
@@ -3805,199 +3805,232 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     return head + hist;
   }
 
-  // ── Espace Maintenance — TicketsView design ──────────────────────────────
+  // ── Espace Maintenance : « Mon site » ──────────────────────────────────
+  // De haut en bas : ce qui attend la cliente (J'ai besoin de toi), la
+  // demande à écrire tout de suite, puis ses demandes et son forfait en
+  // onglets. Peu de choses par écran, du texte assez gros.
+  var MNT_DRAFT = {};   // pid -> { kind, text, files, links, urgent, lien }
+  var MNT_REP = {};     // ticketId -> { open, text }
+  var MNT_FAITES = {};  // pid -> liste des demandes faites dépliée
+  var MNT_KINDS = [['panne', 'Quelque chose ne marche pas'], ['modif', 'Changer un texte ou une image'], ['ajout', 'Ajouter quelque chose']];
+  function mntDraft(pid) { if (!MNT_DRAFT[pid]) MNT_DRAFT[pid] = { kind: 'panne', text: '', files: [], links: [], urgent: false, lien: null }; return MNT_DRAFT[pid]; }
+  function mntMin(min) { min = Math.max(0, Math.round(min || 0)); var h = Math.floor(min / 60), m = min % 60; return h ? (h + ' h' + (m ? ' ' + String(m).padStart(2, '0') : '')) : m + ' min'; }
+  function mntTmin(t) { return t.timeSpentMinutes || Math.round((t.timeSpentSeconds || 0) / 60) || 0; }
+  function mntParMois(tickets) {
+    var out = {};
+    tickets.forEach(function (t) { var mm = stbTaskMinByMonth(t); Object.keys(mm).forEach(function (k) { out[k] = (out[k] || 0) + mm[k]; }); });
+    return out;
+  }
+  function mntAttend(t) { var inf = Array.isArray(t.infos) ? t.infos : []; return t.status === 'waiting_client' && inf.some(function (x) { return !x.r; }); }
+  function mntQuestion(t) { var inf = (Array.isArray(t.infos) ? t.infos : []).filter(function (x) { return !x.r; }); return inf.length ? inf[inf.length - 1].q : ''; }
+  function mntQuand(iso) {
+    if (!iso) return '';
+    var d = new Date(iso); if (isNaN(d)) return '';
+    var j = Math.round((new Date(_todayStr() + 'T12:00:00') - new Date(String(iso).slice(0, 10) + 'T12:00:00')) / 86400000);
+    if (j === 0) return d.getHours() < 12 ? 'ce matin' : 'aujourd’hui';
+    if (j === 1) return 'hier';
+    return 'le ' + d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
+  }
+  function mntResume(t) {
+    var atts = Array.isArray(t.attachments) ? t.attachments : [], links = Array.isArray(t.links) ? t.links : [];
+    var nImg = atts.filter(function (a) { return (a.type || '').indexOf('image') === 0; }).length, nFic = atts.length - nImg;
+    var avec = [];
+    if (nImg) avec.push(nImg + ' photo' + (nImg > 1 ? 's' : ''));
+    if (nFic) avec.push(nFic + ' fichier' + (nFic > 1 ? 's' : ''));
+    if (links.length) avec.push(links.length + ' lien' + (links.length > 1 ? 's' : ''));
+    var s = 'Envoyée ' + mntQuand(t.createdAt);
+    if (t.priority === 'haute') s += ', urgente';
+    if (avec.length) s += ', avec ' + (avec.length > 1 ? avec.slice(0, -1).join(', ') + ' et ' + avec[avec.length - 1] : avec[0]);
+    return s + '.';
+  }
+  function mntPill(t) {
+    if (mntAttend(t)) return '<span class="mn-pill mn-pill--toi">À toi de répondre</span>';
+    if (t.status === 'in_progress') return '<span class="mn-pill mn-pill--cours">En cours</span>';
+    if (t.status === 'done' || t.status === 'closed') return '<span class="mn-pill">Faite</span>';
+    return '<span class="mn-pill">Reçue</span>';
+  }
+
   function buildClientMaintenance(pd) {
-    var project = pd.project;
-    var pid = project.id;
-    var cat = cliMaintTab[pid] || 'demandes';
-    var stFilter = cliMaintStatusFilter[pid] || 'all';
-
+    var project = pd.project, pid = project.id;
     var tickets = Array.isArray(project.tickets) ? project.tickets : [];
-    var quotaMin = (project.monthlyHours || 0) * 60;
-    var usedMin  = tickets.reduce(function(n,t){ return n + (t.timeSpentMinutes||0); }, 0);
-    var remaining = quotaMin - usedMin;
-    var over = remaining < 0;
-    // Mode allégé : sans forfait d'heures, l'espace se résume aux tickets
-    // (pas de bloc forfait, pas d'onglets de catégorie) — le plus simple possible.
-    var showForfait = quotaMin > 0;
-
-    // Quota strip
-    var quotaBarPct = quotaMin ? Math.min(100, Math.round(usedMin / quotaMin * 100)) : 0;
-    var remainH = quotaMin ? (Math.abs(remaining) >= 60 ? Math.floor(Math.abs(remaining)/60)+'h'+(Math.abs(remaining)%60?String(Math.abs(remaining)%60).padStart(2,'0'):'') : Math.abs(remaining)+' min') : '—';
-    var totalH  = quotaMin ? (quotaMin >= 60 ? Math.floor(quotaMin/60)+'h'+(quotaMin%60?String(quotaMin%60).padStart(2,'0'):'') : quotaMin+' min') : '—';
-    var usedH   = quotaMin ? (usedMin  >= 60 ? Math.floor(usedMin/60)+'h'+(usedMin%60?String(usedMin%60).padStart(2,'0'):'')   : usedMin+' min') : '—';
-    var barColor = over ? '#5A2A11' : (quotaBarPct > 75 ? 'var(--glycine-700)' : 'var(--terre)');
-    var borderColor = over ? '#F8F6F2' : (quotaBarPct > 75 ? 'var(--glycine-200)' : 'var(--bone-d)');
-    var quotaStrip = '<div style="margin-bottom:28px">' +
-      // Forfait card first (masqué s'il n'y a pas de forfait d'heures)
-      (showForfait ? (
-      '<div style="padding:18px 22px;margin-bottom:18px;background:'+(over?'#F8F6F2':'var(--card)')+';border:1.5px solid '+borderColor+';border-radius:var(--radius-3)">' +
-        '<div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">' +
-          cpIcon('timer', 16, 'color:'+(over?'#5A2A11':'var(--terre-600)')) +
-          '<span style="font-family:var(--font-micro);font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--terre-600);font-weight:600">Forfait mensuel</span>' +
-        '</div>' +
-        (quotaMin
-          ? '<div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:14px">' +
-              '<span style="font-family:var(--font-display);font-style:italic;font-size:40px;line-height:1;color:'+(over?'#5A2A11':barColor)+'">'+(over?'-':'')+remainH+'</span>' +
-              '<span style="font-family:var(--font-micro);font-size:12px;color:var(--terre-600);letter-spacing:0.04em">restant'+(over?' · dépassement':' · sur '+totalH+' / mois')+'</span>' +
-            '</div>' +
-            '<div style="background:var(--bone-d,#F8F6F2);border-radius:20px;height:10px;overflow:hidden;margin-bottom:9px">' +
-              '<div style="height:100%;width:'+quotaBarPct+'%;background:'+barColor+';border-radius:20px;transition:width .4s ease"></div>' +
-            '</div>' +
-            '<div style="display:flex;justify-content:space-between;font-family:var(--font-micro);font-size:10.5px;color:var(--terre-400)">' +
-              '<span>'+usedH+' utilisé</span>' +
-              '<span>'+totalH+' total</span>' +
-            '</div>'
-          : '<p style="font-family:var(--font-micro);font-size:12px;color:var(--terre-400);margin:0">Forfait non encore configuré.</p>'
-        ) +
-      '</div>' ) : '') +
-      // Big CTA button below the forfait
-      '<button onclick="cliOpenSubmitTicket(\''+pid+'\')" style="display:flex;align-items:center;justify-content:center;gap:12px;width:100%;padding:18px 24px;border:none;border-radius:var(--radius-3);background:var(--terre);color:var(--paille);font-family:var(--font-ui);font-size:16px;font-weight:600;cursor:pointer;letter-spacing:0.01em;box-shadow:none;transition:opacity .15s" onmouseover="this.style.opacity=\'.88\'" onmouseout="this.style.opacity=\'1\'">' +
-        cpIcon('plus', 19, 'color:var(--paille)') + ' Ouvrir un ticket de maintenance' +
-      '</button>' +
-    '</div>';
-
-    // Category tabs
+    var projets = tickets.filter(function (t) { return t.kind === 'projet'; });
+    var demandes = tickets.filter(function (t) { return t.kind !== 'projet'; });
+    var quotaMin = (parseFloat(project.monthlyHours) || 0) * 60;
     var counsels = Array.isArray(project.counsels) ? project.counsels : [];
     var feedbacks = Array.isArray(project.feedbacks) ? project.feedbacks : [];
-    // En mode allégé (pas de forfait, pas de conseils/retours) on n'affiche que
-    // la liste des tickets : pas d'onglets de catégorie.
-    var showCats = showForfait || counsels.length || feedbacks.length;
-    if (!showCats) cat = 'demandes';
-    var MAINT_CATS = [
-      ['demandes', 'Demandes', tickets.length, 'settings'],
-      ['suivi', 'Suivi mensuel', null, 'chart'],
-      ['conseils', 'Conseils & ameliorations', counsels.length || null, 'plus'],
-      ['retours', 'Retours clients', feedbacks.length || null, 'chat'],
-    ];
-    var catTabsHtml = '<div style="display:flex;gap:2px;border-bottom:1px solid var(--bone-d);flex-wrap:wrap;margin-bottom:22px">' +
-      MAINT_CATS.map(function(c) {
-        var id=c[0], lab=c[1], n=c[2], ic=c[3];
-        var active = cat===id;
-        return '<button onclick="cliMaintSwitch(\''+pid+'\',\''+id+'\')" style="display:inline-flex;align-items:center;gap:8px;padding:11px 15px;background:none;border:0;border-bottom:2px solid '+(active?'var(--terre)':'transparent')+';color:'+(active?'var(--terre)':'var(--terre-600)')+';cursor:pointer;font-family:var(--font-micro);font-size:11.5px;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:-1px">'+
-          cpIcon(ic,13)+' '+lab+(n!=null?' <span style="opacity:0.55">'+n+'</span>':'')+
-        '</button>';
-      }).join('') +
-    '</div>';
+    var P = '\'' + pid + '\'';
 
-    function buildTicketsList() {
-      // Status filter tabs
-      var MAINT_ST_KEYS = ['all','open','in_progress','done','closed'];
-      var MAINT_ST_LABELS = { all:'Tout', open:'À faire', in_progress:'En cours', done:'Fait', closed:'Fermé' };
-      var MAINT_ST_COLORS = { open:'#CD8F6E', in_progress:'var(--st-progress)', done:'var(--st-done)', closed:'#ccc' };
-      var presentSt = MAINT_ST_KEYS.filter(function(sk){ return sk==='all'||tickets.some(function(t){ return t.status===sk; }); });
-      var stTabsHtml = '<div style="display:flex;gap:2px;border-bottom:1px solid var(--bone-d);flex-wrap:wrap;margin-bottom:22px">' +
-        presentSt.map(function(sk) {
-          var active = stFilter===sk;
-          var cnt = sk==='all' ? tickets.length : tickets.filter(function(t){ return t.status===sk; }).length;
-          var dot = sk!=='all' ? '<span style="width:7px;height:7px;border-radius:2px;background:'+(MAINT_ST_COLORS[sk]||'var(--bone-d)')+';transform:rotate(45deg);display:inline-block;flex-shrink:0"></span> ' : '';
-          return '<button onclick="cliMaintFilterStatus(\''+pid+'\',\''+sk+'\')" style="display:inline-flex;align-items:center;gap:7px;padding:10px 14px;background:none;border:0;border-bottom:2px solid '+(active?'var(--terre)':'transparent')+';color:'+(active?'var(--terre)':'var(--terre-600)')+';cursor:pointer;font-family:var(--font-micro);font-size:11px;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:-1px">'+
-            dot+(MAINT_ST_LABELS[sk]||'Tout')+' <span style="opacity:0.55">'+cnt+'</span>'+
-          '</button>';
-        }).join('') +
+    // 1. J'ai besoin de toi
+    var attente = demandes.concat(projets).filter(mntAttend);
+    var besoin = attente.length ? '<section class="mn-sec"><h2 class="mn-h2">J’ai besoin de toi</h2>' + attente.map(function (t) {
+      var r = MNT_REP[t.id] || {};
+      return '<div class="mn-besoin"><div class="mn-ligne"><b class="mn-titre">' + esc(t.title || 'Ta demande') + '</b>' + mntPill(t) + '</div>' +
+        '<p class="mn-question">' + esc(mntQuestion(t)) + '</p>' +
+        (r.open
+          ? '<textarea class="mn-area" rows="3" placeholder="Ta réponse" oninput="cliMntRepTexte(\'' + t.id + '\',this.value)">' + esc(r.text || '') + '</textarea>' +
+            '<div class="mn-actions"><button class="mn-btn mn-btn--fonce" onclick="cliMntRepondre(' + P + ',\'' + t.id + '\')">Envoyer ma réponse</button>' +
+            '<button class="mn-lien" onclick="cliMntRepOuvrir(\'' + t.id + '\',false)">Annuler</button></div>'
+          : '<div><button class="mn-btn mn-btn--fonce" onclick="cliMntRepOuvrir(\'' + t.id + '\',true)">Répondre</button></div>') +
       '</div>';
+    }).join('') + '</section>' : '';
 
-      var PRIO_ORDER = { haute: 0, moyenne: 1, basse: 2 };
-      function sortTickets(arr) {
-        return arr.slice().sort(function(a, b) {
-          var da = a.dueDate || a.deadline || '', db = b.dueDate || b.deadline || '';
-          var pa = PRIO_ORDER[a.priority||a.urgency] != null ? PRIO_ORDER[a.priority||a.urgency] : 99;
-          var pb = PRIO_ORDER[b.priority||b.urgency] != null ? PRIO_ORDER[b.priority||b.urgency] : 99;
-          // no deadline goes last
-          if (da && !db) return -1;
-          if (!da && db) return 1;
-          if (da !== db) return da < db ? -1 : 1;
-          return pa - pb;
-        });
-      }
-      var shown = stFilter==='all'
-        ? sortTickets(tickets.filter(function(t){ return t.status!=='done' && t.status!=='closed'; }))
-        : sortTickets(tickets.filter(function(t){ return t.status===stFilter; }));
+    // 2. Une nouvelle demande, directement dans la page
+    var d = mntDraft(pid);
+    var puces = d.files.map(function (f, i) {
+      var img = (f.type || '').indexOf('image') === 0;
+      return '<span class="mn-puce">' + (img ? '<span class="mn-vign"></span>' : '') + esc(f.name || 'fichier') +
+        '<button class="mn-retirer" onclick="cliMntRetirer(' + P + ',\'f\',' + i + ')">retirer</button></span>';
+    }).concat(d.links.map(function (u, i) {
+      return '<span class="mn-puce">' + esc(u) + '<button class="mn-retirer" onclick="cliMntRetirer(' + P + ',\'l\',' + i + ')">retirer</button></span>';
+    })).join('');
+    var form = '<section class="mn-sec"><h2 class="mn-h2">Une nouvelle demande</h2><div class="mn-carte mn-form">' +
+      '<div class="mn-q">Qu’est-ce qu’il se passe ?</div>' +
+      '<div class="mn-choix">' + MNT_KINDS.map(function (k) {
+        return '<button class="mn-chip' + (d.kind === k[0] ? ' is-on' : '') + '" onclick="cliMntKind(' + P + ',\'' + k[0] + '\')">' + k[1] + '</button>';
+      }).join('') + '</div>' +
+      '<textarea id="mn-texte-' + pid + '" class="mn-area" rows="4" placeholder="Raconte-moi ce que tu vois, ou ce que tu voudrais." oninput="cliMntTexte(' + P + ',this.value)">' + esc(d.text) + '</textarea>' +
+      (puces ? '<div class="mn-puces">' + puces + '</div>' : '') +
+      (d.lien !== null ? '<div class="mn-lienbox"><input id="mn-lien-' + pid + '" class="mn-inp" type="url" placeholder="Colle le lien de la page" value="' + esc(d.lien) + '" oninput="cliMntLienTexte(' + P + ',this.value)" onkeydown="if(event.key===\'Enter\'){event.preventDefault();cliMntLienOk(' + P + ')}">' +
+        '<button class="mn-btn" onclick="cliMntLienOk(' + P + ')">Ajouter</button></div>' : '') +
+      '<div class="mn-bas"><div class="mn-choix">' +
+        '<label class="mn-btn">Ajouter des photos ou des fichiers<input type="file" multiple hidden onchange="cliMntFichiers(' + P + ',this)"></label>' +
+        '<button class="mn-btn" onclick="cliMntLien(' + P + ')">Ajouter un lien</button></div>' +
+        '<div class="mn-envoi"><span class="mn-urg-q">C’est urgent ?</span><span class="mn-seg">' +
+          '<button class="' + (!d.urgent ? 'is-on' : '') + '" onclick="cliMntUrgent(' + P + ',false)">Non</button>' +
+          '<button class="' + (d.urgent ? 'is-on' : '') + '" onclick="cliMntUrgent(' + P + ',true)">Oui, ça bloque</button></span>' +
+        '<button class="mn-btn mn-btn--fonce" onclick="cliMntEnvoyer(' + P + ')">Envoyer</button></div></div>' +
+    '</div></section>';
 
-      function ticketCard(t) {
-        var isOpen = t.status!=='done' && t.status!=='closed';
-        var prio = t.priority || t.urgency;
-        var prioHtml = (prio==='haute'||prio===true) ? '<span title="Urgent" style="width:8px;height:8px;border-radius:2px;background:#5A2A11;transform:rotate(45deg);flex:0 0 auto;display:inline-block"></span>' : '';
-        var catBadge = t.category ? '<span style="display:inline-flex;align-items:center;padding:4px 10px;border-radius:var(--radius-2);background:var(--brume-50);color:var(--brume-900);font-family:var(--font-micro);font-size:10px;font-weight:500;letter-spacing:0.03em">'+esc(t.category)+'</span>' : '';
-        var proposeBanner = t.proposedDueDate
-          ? '<div style="margin-bottom:11px;padding:12px 14px;border-radius:10px;background:#F8F6F2;border:1px solid #F8F6F2">'+
-              '<div style="font-size:12.5px;color:var(--terre,#110704);line-height:1.5;margin-bottom:9px">📅 Cindy propose plutôt le <strong>'+esc(String(t.proposedDueDate).split('-').reverse().join('/'))+'</strong> pour cette demande. Est-ce que cela vous convient ?</div>'+
-              '<div style="display:flex;gap:7px;flex-wrap:wrap">'+
-                '<button onclick="cliRespondTicketDate(\''+pid+'\',\''+t.id+'\',true)" style="padding:8px 14px;border:none;border-radius:8px;background:#5A2A11;color:#fff;font-size:12px;font-weight:700;cursor:pointer">Accepter cette date</button>'+
-                '<button onclick="cliRespondTicketDate(\''+pid+'\',\''+t.id+'\',false)" style="padding:8px 14px;border:1px solid #F8F6F2;border-radius:8px;background:#fff;color:var(--navy,#110704);font-size:12px;cursor:pointer">Refuser</button>'+
-              '</div>'+
-            '</div>'
-          : '';
-        return '<div style="padding:15px 18px;display:flex;gap:14px;align-items:flex-start;background:var(--card);border:1px solid var(--bone-d);border-radius:var(--radius-3)">' +
-          '<div style="flex:1;min-width:0">' +
-            '<div style="display:flex;align-items:center;gap:9px;margin-bottom:7px;flex-wrap:wrap">' +
-              prioHtml +
-              '<span style="font-family:var(--font-display);font-size:17.5px;color:var(--terre);line-height:1.15">'+esc(t.title||'Sans titre')+'</span>' +
-            '</div>' +
-            (t.description ? '<p style="font-size:13.5px;color:var(--terre-600);line-height:1.5;margin-bottom:11px">'+esc(t.description)+'</p>' : '') +
-            (Array.isArray(t.attachments)&&t.attachments.length ? '<div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:11px">'+t.attachments.map(function(a){ var isImg=(a.type||'').indexOf('image')===0; return '<a href="'+API_BASE+'/files/'+encodeURIComponent(a.key)+'/download" target="_blank" style="display:inline-flex;align-items:center;gap:5px;padding:5px 10px;background:var(--surface,#F8F6F2);border:1px solid var(--bone-d);border-radius:8px;font-size:11.5px;color:var(--terre);text-decoration:none">'+(isImg?'🖼️':'📎')+' '+esc(a.name||'fichier')+'</a>'; }).join('')+'</div>' : '') +
-            proposeBanner +
-            '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">'+
-              catBadge +
-              cpDeadlinePill(t.dueDate||t.deadline, !isOpen, true) +
-            '</div>' +
-          '</div>' +
-          '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:10px;flex:0 0 auto">' +
-            cpStatusPill(t.status) +
-            (isOpen ? '<div style="display:flex;gap:8px">' +
-              '<button onclick="cliMaintEditTicket(\''+pid+'\',\''+t.id+'\')" style="display:inline-flex;align-items:center;gap:6px;padding:8px 15px;border:1px solid var(--bone-d);background:#fff;border-radius:9px;cursor:pointer;font-family:var(--font-ui);font-size:13px;font-weight:500;color:var(--terre)">'+cpIcon('edit',14,'color:var(--terre-600)')+'Modifier</button>' +
-              '<button onclick="cliMaintDeleteTicket(\''+pid+'\',\''+t.id+'\')" style="display:inline-flex;align-items:center;gap:6px;padding:8px 15px;border:1px solid #F8F6F2;background:#fff;border-radius:9px;cursor:pointer;font-family:var(--font-ui);font-size:13px;font-weight:500;color:#5A2A11">'+cpIcon('trash',14,'color:#5A2A11')+'Supprimer</button>' +
-            '</div>' : '') +
-          '</div>' +
-        '</div>';
-      }
+    // 3. Onglets
+    var nums = cpForfaitNums(project);
+    var mk = _todayStr().slice(0, 7);
+    var parMois = mntParMois(tickets);
+    var dispo = nums ? nums.availMin : quotaMin, utilise = parMois[mk] || 0, reste = dispo - utilise;
+    var onglets = [['demandes', 'Mes demandes']];
+    projets.forEach(function (t) { onglets.push(['p_' + t.id, t.title || 'Mon projet']); });
+    if (quotaMin) onglets.push(['forfait', 'Mon forfait']);
+    if (counsels.length) onglets.push(['conseils', 'Conseils']);
+    if (feedbacks.length) onglets.push(['retours', 'Retours']);
+    var tab = cliMaintTab[pid] || 'demandes';
+    if (!onglets.some(function (o) { return o[0] === tab; })) tab = 'demandes';
+    var jauge = '';
+    if (quotaMin) {
+      var plein = dispo > 0 ? Math.round(Math.min(1, utilise / dispo) * 12) : 12, segs = '';
+      for (var i = 0; i < 12; i++) segs += '<i class="' + (i < plein ? 'is-on' : '') + '"></i>';
+      jauge = '<div class="mn-jauge"><span><b class="num">' + (reste < 0 ? '0 min' : mntMin(reste)) + '</b> encore ce mois-ci</span><div class="mn-segs">' + segs + '</div></div>';
+    }
+    var barre = '<div class="mn-tabs">' + (onglets.length > 1 ? '<div class="mn-choix">' + onglets.map(function (o) {
+      return '<button class="mn-chip' + (tab === o[0] ? ' is-on' : '') + '" onclick="cliMaintSwitch(' + P + ',\'' + o[0] + '\')">' + esc(o[1]) + '</button>';
+    }).join('') + '</div>' : '') + jauge + '</div>';
 
-      var histHtml = '';
-      if (stFilter==='all') {
-        var resolved = tickets.filter(function(t){ return t.status==='done' || t.status==='closed'; })
-          .sort(function(a,b){ return (b.resolvedAt||b.createdAt||'').localeCompare(a.resolvedAt||a.createdAt||''); });
-        if (resolved.length) {
-          var groups = {}, order = [];
-          resolved.forEach(function(t){ var k=(t.resolvedAt||t.createdAt||'').slice(0,7); if(!groups[k]){groups[k]=[];order.push(k);} groups[k].push(t); });
-          var body = order.map(function(k){
-            var label = k ? new Date(k+'-01T12:00:00').toLocaleDateString('fr-FR',{month:'long',year:'numeric'}) : 'Sans date';
-            label = label.charAt(0).toUpperCase()+label.slice(1);
-            var rows = groups[k].map(function(t){
-              return '<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:7px">' +
-                '<span style="color:#5A2A11;font-size:13px;flex-shrink:0">✓</span>' +
-                '<span style="flex:1;font-size:12px;color:var(--terre,#110704);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-decoration:line-through;opacity:0.85">'+esc(t.title||'Sans titre')+'</span>' +
-                (t.category?'<span style="font-size:10px;color:#5A2A11;flex-shrink:0">'+esc(t.category)+'</span>':'') +
-                '<button onclick="cliMaintReopenTicket(\''+pid+'\',\''+t.id+'\')" title="Rouvrir" style="font-size:10px;padding:2px 8px;border:1px solid var(--bone-d);border-radius:6px;background:#fff;color:var(--terre-600);cursor:pointer;flex-shrink:0">Rouvrir</button>' +
-              '</div>';
-            }).join('');
-            return '<div style="margin-bottom:10px"><div style="font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#5A2A11;margin-bottom:4px">'+esc(label)+' · '+groups[k].length+'</div>'+rows+'</div>';
-          }).join('');
-          histHtml = '<details style="background:var(--card,#fff);border:1px solid var(--bone-d);border-radius:14px;padding:14px 18px;margin-top:16px">' +
-            '<summary style="cursor:pointer;font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--terre-600);list-style:none">📁 Historique, '+resolved.length+' demande'+(resolved.length>1?'s':'')+' résolue'+(resolved.length>1?'s':'')+'</summary>' +
-            '<div style="margin-top:12px;max-height:340px;overflow-y:auto">'+body+'</div></details>';
-        }
-      }
-      return stTabsHtml +
-        (shown.length
-          ? '<div style="display:grid;gap:11px">'+shown.map(ticketCard).join('')+'</div>'
-          : '<p style="font-family:var(--font-micro);font-size:11px;color:var(--terre-400);letter-spacing:0.06em">Aucune demande en cours.</p>') +
-        histHtml;
+    var corps = '';
+    if (tab === 'demandes') {
+      var enCours = demandes.filter(function (t) { return t.status !== 'done' && t.status !== 'closed' && !mntAttend(t); })
+        .sort(function (a, b) { return String(b.createdAt || '').localeCompare(String(a.createdAt || '')); });
+      var faites = demandes.filter(function (t) { return t.status === 'done' || t.status === 'closed'; })
+        .sort(function (a, b) { return String(b.resolvedAt || b.createdAt || '').localeCompare(String(a.resolvedAt || a.createdAt || '')); });
+      corps = '<h2 class="mn-h2">En cours</h2>' +
+        (enCours.length ? enCours.map(function (t) {
+          return '<div class="mn-carte mn-dem"><div class="mn-ligne"><b class="mn-titre">' + esc(t.title || 'Sans titre') + '</b>' + mntPill(t) + '</div>' +
+            '<div class="mn-ligne"><p class="mn-txt">' + esc(mntResume(t)) + '</p>' +
+            (t.status === 'open' ? '<button class="mn-lien" onclick="cliMaintEditTicket(' + P + ',\'' + t.id + '\')">Modifier</button>' : '') + '</div></div>';
+        }).join('') : '<p class="mn-txt mn-doux">Rien en cours. Une demande envoyée apparaîtra ici.</p>') +
+        (faites.length ? '<button class="mn-lien mn-lien--gros" onclick="cliMntFaites(' + P + ')">' + (MNT_FAITES[pid] ? 'Masquer' : 'Voir') + ' les ' + faites.length + ' demande' + (faites.length > 1 ? 's' : '') + ' faite' + (faites.length > 1 ? 's' : '') + '</button>' +
+          (MNT_FAITES[pid] ? '<div class="mn-carte mn-liste">' + faites.map(function (t) {
+            return '<div class="mn-ligne"><span class="mn-txt">' + esc(t.title || 'Sans titre') + '</span><span class="mn-txt mn-doux">' + esc((t.resolvedAt || t.createdAt) ? new Date(t.resolvedAt || t.createdAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' }) : '') + (mntTmin(t) ? ', ' + mntMin(mntTmin(t)) : '') + '</span></div>';
+          }).join('') + '</div>' : '') : '');
+    } else if (tab === 'forfait') {
+      var nd = new Date(); nd.setMonth(nd.getMonth() + 1, 1);
+      var ou = tickets.map(function (t) { return { t: t, m: stbTaskMinByMonth(t)[mk] || 0 }; }).filter(function (x) { return x.m > 0; }).sort(function (a, b) { return b.m - a.m; });
+      var avant = Object.keys(parMois).filter(function (k) { return k < mk && parMois[k] > 0; }).sort().reverse().slice(0, 3);
+      corps = '<div class="mn-carte mn-fcarte"><h3 class="mn-h3">Ce mois-ci</h3>' +
+          '<div class="mn-gros"><b class="num">' + (reste < 0 ? '0 min' : mntMin(reste)) + '</b> encore disponibles</div>' +
+          '<p class="mn-txt"><b class="num">' + mntMin(utilise) + '</b> utilisées sur <b class="num">' + mntMin(dispo) + '</b>. Le compteur repart à ' + mntMin(quotaMin) + ' le 1er ' + nd.toLocaleDateString('fr-FR', { month: 'long' }) + '.</p></div>' +
+        '<div class="mn-carte mn-fcarte"><h3 class="mn-h3">Où est passé ton temps</h3>' +
+          (ou.length ? ou.map(function (x) { return '<div class="mn-ligne mn-row"><span>' + esc(x.t.title || 'Sans titre') + '</span><b class="num">' + mntMin(x.m) + '</b></div>'; }).join('') : '<p class="mn-txt mn-doux">Pas encore de temps passé ce mois-ci.</p>') + '</div>' +
+        (avant.length ? '<div class="mn-carte mn-fcarte"><h3 class="mn-h3">Les mois précédents</h3>' + avant.map(function (k) {
+          var lab = new Date(k + '-01T12:00:00').toLocaleDateString('fr-FR', { month: 'long' });
+          return '<div class="mn-ligne mn-row"><span>' + esc(lab.charAt(0).toUpperCase() + lab.slice(1)) + '</span><b class="num">' + mntMin(parMois[k]) + '</b></div>';
+        }).join('') + '</div>' : '') +
+        '<p class="mn-txt">Si une demande dépasse ce qu’il te reste, je te préviens avant de commencer.</p>';
+    } else if (tab.indexOf('p_') === 0) {
+      var pt = projets.filter(function (t) { return 'p_' + t.id === tab; })[0];
+      corps = pt ? mntProjetHtml(pt, quotaMin) : '';
+    } else if (tab === 'conseils') {
+      corps = counsels.map(function (c) { return '<div class="mn-carte mn-dem"><b class="mn-titre">' + esc(c.title || c) + '</b>' + (c.body ? '<p class="mn-txt">' + esc(c.body) + '</p>' : '') + '</div>'; }).join('');
+    } else if (tab === 'retours') {
+      corps = feedbacks.map(function (f) { return '<div class="mn-carte mn-dem"><b class="mn-titre">' + esc(f.author || 'Retour') + '</b>' + (f.content || f.body ? '<p class="mn-txt">' + esc(f.content || f.body) + '</p>' : '') + '</div>'; }).join('');
     }
 
-    var mainContent = '';
-    if (cat==='demandes') mainContent = buildTicketsList();
-    else if (cat==='suivi')    mainContent = buildMaintSuiviClient(project);
-    else if (cat==='conseils') {
-      var addC = '<div style="display:flex;justify-content:flex-end;margin-bottom:14px"><button onclick="cliAddCounsel(\''+pid+'\')" class="cp-btn cp-btn--dark" style="padding:8px 16px;font-size:10px">+ Ajouter un conseil</button></div>';
-      mainContent = addC + (counsels.length ? '<div style="display:grid;gap:11px">' + counsels.map(function(c){ return '<div class="card" style="padding:15px 18px;position:relative">' + (c.author==='client'?'<span style="position:absolute;top:12px;right:14px;font-family:var(--font-micro);font-size:9px;letter-spacing:0.06em;text-transform:uppercase;color:var(--terre-400)">Vous</span>':'') + '<div style="font-family:var(--font-display);font-size:16px;color:var(--terre);padding-right:50px">' + esc(c.title||c) + '</div>' + (c.body ? '<p style="font-size:13px;color:var(--terre-600);margin-top:6px">' + esc(c.body) + '</p>' : '') + (c.author==='client'?'<button onclick="cliDeleteCounsel(\''+pid+'\',\''+c.id+'\')" style="margin-top:8px;font-size:11px;background:none;border:none;color:#5A2A11;cursor:pointer;padding:0">Supprimer</button>':'') + '</div>'; }).join('') + '</div>' : '<p style="font-family:var(--font-micro);font-size:11px;color:var(--terre-400);letter-spacing:0.06em">Aucun conseil pour le moment.</p>');
-    }
-    else if (cat==='retours') {
-      var addR = '<div style="display:flex;justify-content:flex-end;margin-bottom:14px"><button onclick="cliAddFeedback(\''+pid+'\')" class="cp-btn cp-btn--dark" style="padding:8px 16px;font-size:10px">+ Ajouter un retour</button></div>';
-      mainContent = addR + (feedbacks.length ? '<div style="display:grid;gap:11px">' + feedbacks.map(function(f){ return '<div class="card" style="padding:15px 18px"><div style="display:flex;justify-content:space-between;align-items:baseline"><div style="font-family:var(--font-display);font-size:16px;color:var(--terre)">' + esc(f.author||'Retour') + '</div>'+(f.createdAt?'<span style="font-family:var(--font-micro);font-size:10px;color:var(--terre-400)">'+fmtDate(f.createdAt)+'</span>':'')+'</div>' + (f.content||f.body ? '<p style="font-size:13px;color:var(--terre-600);margin-top:6px">' + esc(f.content||f.body) + '</p>' : '') + '<button onclick="cliDeleteFeedback(\''+pid+'\',\''+f.id+'\')" style="margin-top:8px;font-size:11px;background:none;border:none;color:#5A2A11;cursor:pointer;padding:0">Supprimer</button></div>'; }).join('') + '</div>' : '<p style="font-family:var(--font-micro);font-size:11px;color:var(--terre-400);letter-spacing:0.06em">Aucun retour pour le moment.</p>');
-    }
-
-    return quotaStrip + (showCats ? catTabsHtml : '') + mainContent;
+    return '<div class="mn">' + besoin + form + '<div class="mn-bloc">' + barre + '<div class="mn-corps">' + corps + '</div></div></div>';
   }
+
+  // Un projet long (ex. une refonte) avance au rythme du forfait : où on en
+  // est, les étapes, le temps.
+  function mntProjetHtml(t, quotaMin) {
+    var et = Array.isArray(t.etapes) ? t.etapes : [];
+    var faites = et.filter(function (e) { return e.etat === 'fait'; }).length;
+    var cours = et.filter(function (e) { return e.etat === 'encours'; })[0];
+    var mm = stbTaskMinByMonth(t), mk = _todayStr().slice(0, 7);
+    var LAB = { fait: 'Fait', encours: 'En cours', avenir: 'À venir' };
+    return '<div class="mn-carte mn-fcarte"><h3 class="mn-h3">Où on en est</h3>' +
+        (et.length ? '<p class="mn-gros2">' + faites + ' étape' + (faites > 1 ? 's' : '') + ' sur ' + et.length + ' faite' + (faites > 1 ? 's' : '') + '.' + (cours ? ' En ce moment : ' + esc(cours.nom) + '.' : '') + '</p>' : '<p class="mn-txt mn-doux">Les étapes arrivent bientôt.</p>') +
+        (t.miseEnLigne ? '<p class="mn-txt">Au rythme de ton forfait, mise en ligne <b>' + esc(t.miseEnLigne) + '</b>.</p>' : '') + '</div>' +
+      (et.length ? '<div class="mn-carte mn-fcarte"><h3 class="mn-h3">Les étapes</h3>' + et.map(function (e) {
+        return '<div class="mn-ligne mn-row"><span>' + esc(e.nom) + '</span><span class="mn-pill' + (e.etat === 'encours' ? ' mn-pill--cours' : (e.etat === 'fait' ? ' mn-pill--fait' : '')) + '">' + (LAB[e.etat] || 'À venir') + '</span></div>';
+      }).join('') + '</div>' : '') +
+      '<div class="mn-carte mn-fcarte"><h3 class="mn-h3">Le temps</h3>' +
+        '<p class="mn-txt">Ce mois-ci : <b class="num">' + mntMin(mm[mk] || 0) + '</b> sur ce projet.</p>' +
+        '<p class="mn-txt">Depuis le début : <b class="num">' + mntMin(mntTmin(t)) + '</b>' + (quotaMin ? ', sur les ' + mntMin(quotaMin) + ' de ton forfait chaque mois' : '') + '.</p>' +
+        '<p class="mn-txt mn-doux">Tes petites demandes passent toujours en premier. Le reste du forfait avance ce projet.</p></div>';
+  }
+
+  window.cliMntKind = function (pid, k) { mntDraft(pid).kind = k; renderShell(); };
+  window.cliMntTexte = function (pid, v) { mntDraft(pid).text = v; };
+  window.cliMntUrgent = function (pid, v) { mntDraft(pid).urgent = !!v; renderShell(); };
+  window.cliMntLien = function (pid) { var d = mntDraft(pid); if (d.lien === null) d.lien = ''; renderShell(); setTimeout(function () { var el = document.getElementById('mn-lien-' + pid); if (el) el.focus(); }, 30); };
+  window.cliMntLienTexte = function (pid, v) { mntDraft(pid).lien = v; };
+  window.cliMntLienOk = function (pid) { var d = mntDraft(pid); var u = String(d.lien || '').trim(); if (u) d.links.push(u); d.lien = null; renderShell(); };
+  window.cliMntRetirer = function (pid, quoi, i) { var d = mntDraft(pid); (quoi === 'f' ? d.files : d.links).splice(i, 1); renderShell(); };
+  window.cliMntFaites = function (pid) { MNT_FAITES[pid] = !MNT_FAITES[pid]; renderShell(); };
+  window.cliMntFichiers = function (pid, inp) {
+    var files = Array.prototype.slice.call(inp.files || []); inp.value = '';
+    if (!files.length) return;
+    var big = cliAnyTooBig(files); if (big) { toast(cliBigMsg(big), true); return; }
+    toast('Envoi du fichier…');
+    Promise.all(files.map(function (f) { return cliUploadFile(f, pid); })).then(function (res) {
+      res.forEach(function (f) { mntDraft(pid).files.push(f); }); renderShell();
+    }).catch(function () { toast('Le fichier n’est pas passé, réessaie.', true); });
+  };
+  window.cliMntEnvoyer = function (pid) {
+    var d = mntDraft(pid), txt = String(d.text || '').trim();
+    if (!txt) { var el = document.getElementById('mn-texte-' + pid); if (el) el.focus(); toast('Écris ta demande en quelques mots.'); return; }
+    if (d.lien) { d.links.push(String(d.lien).trim()); d.lien = null; }
+    var premiere = txt.split('\n')[0];
+    var titre = premiere.length > 70 ? premiere.slice(0, 67).replace(/\s+\S*$/, '') + '…' : premiere;
+    var body = { projectId: pid, title: titre, description: txt, kind: d.kind, priority: d.urgent ? 'haute' : 'moyenne', status: 'open', attachments: d.files, links: d.links };
+    fetch(API_BASE + '/tickets', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+      .then(function (r) { return r.ok ? r.json() : Promise.reject(r); })
+      .then(function (ticket) {
+        var pd2 = getPD(pid);
+        if (pd2) { if (!Array.isArray(pd2.project.tickets)) pd2.project.tickets = []; pd2.project.tickets.unshift(ticket); }
+        delete MNT_DRAFT[pid]; cliMaintTab[pid] = 'demandes';
+        toast('C’est envoyé, je m’en occupe.'); renderShell();
+      }).catch(function () { toast('Ça n’est pas parti, réessaie.', true); });
+  };
+  window.cliMntRepOuvrir = function (id, v) { MNT_REP[id] = { open: !!v, text: (MNT_REP[id] && MNT_REP[id].text) || '' }; renderShell(); };
+  window.cliMntRepTexte = function (id, v) { if (!MNT_REP[id]) MNT_REP[id] = { open: true }; MNT_REP[id].text = v; };
+  window.cliMntRepondre = function (pid, id) {
+    var txt = String((MNT_REP[id] && MNT_REP[id].text) || '').trim();
+    if (!txt) { toast('Écris ta réponse.'); return; }
+    fetch(API_BASE + '/tickets/' + id + '/answer', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ projectId: pid, text: txt }) })
+      .then(function (r) { return r.ok ? r.json() : Promise.reject(r); })
+      .then(function (tk) {
+        var pd2 = getPD(pid);
+        if (pd2 && Array.isArray(pd2.project.tickets)) { var i = pd2.project.tickets.findIndex(function (x) { return x.id === tk.id; }); if (i !== -1) pd2.project.tickets[i] = tk; }
+        delete MNT_REP[id]; toast('Merci, c’est noté.'); renderShell();
+      }).catch(function () { toast('Ça n’est pas parti, réessaie.', true); });
+  };
 
   // ── Suivi mensuel maintenance — cote CLIENT (lecture seule) ─────────────────
   function buildMaintSuiviClient(project){

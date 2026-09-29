@@ -3579,3 +3579,23 @@ a.ckr-b{text-decoration:none;display:inline-block}
 .ckr-b--c{background:#fff;color:#110704;box-shadow:inset 0 0 0 1px #110704;padding:8px 14px}
 .ckr-aide{margin:10px 0 0;font-size:13px;color:#7a5540}
 .ckr-l{align-items:center}
+
+/* Ticket : « Il te manque une info ? » */
+.ckr-info{padding:20px 30px;display:flex;flex-direction:column;gap:12px;border-top:1px solid rgba(17,7,4,0.1)}
+.ckgv-s .ckr-info{padding:0;border-top:none}
+.ckr-info h3{margin:0;font-size:17px;font-weight:600}
+.ckr-info textarea{font-size:16px;line-height:1.5}
+.ckr-info-a{display:flex;align-items:center;justify-content:space-between;gap:14px}
+.ckr-info-a span{font-size:14px;color:#3b2a20}
+.ckr-q{background:#E6E5B2;border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:6px}
+.ckr-q p{margin:0;font-size:15px;line-height:1.45}
+.ckr-qa{color:#3b2a20}
+.ckr-qr b{display:block;font-size:13px;font-weight:600;margin-bottom:2px}
+.ckr-liens{display:flex;flex-direction:column;gap:6px}
+.mpl-aide{margin:0 0 14px;font-size:15px;color:var(--muted)}
+.mpl-p{display:flex;flex-direction:column;gap:12px;padding:16px 0;border-top:1px solid rgba(17,7,4,0.1)}
+.mpl-l{display:flex;flex-direction:column;gap:6px;font-size:14px;font-weight:600}
+.mpl-et{display:flex;flex-direction:column;gap:8px;font-size:15px}
+.mpl-e{display:flex;gap:8px;align-items:center}
+.mpl-e .inp{flex:1}
+.mpl-e select.inp{flex:0 0 150px}

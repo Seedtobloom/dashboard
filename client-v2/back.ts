@@ -271,6 +271,8 @@ async function handleClientApi(
   if (method === 'POST' && sub === '/tickets') return handleTicketCreate(request, env, masterKey, data);
   t = sub.match(/^\/tickets\/([a-f0-9]+)\/propose-date$/);
   if (t && method === 'POST') return handleTicketProposeDate(request, env, masterKey, data, t[1]);
+  t = sub.match(/^\/tickets\/([a-f0-9]+)\/answer$/);
+  if (t && method === 'POST') return handleTicketAnswer(request, env, masterKey, data, t[1]);
   t = sub.match(/^\/tickets\/([a-f0-9]+)$/);
   if (t && method === 'PATCH') return handleTicketUpdate(request, env, masterKey, data, t[1]);
   if (t && method === 'DELETE') return handleTicketDelete(request, env, masterKey, data, t[1], url);
@@ -1687,6 +1689,8 @@ async function handleTicketCreate(request: Request, env: Env, masterKey: string,
     dueDate: (body.dueDate || '').toString().trim() || null,
     status: 'open',
     attachments: Array.isArray(body.attachments) ? body.attachments : [],
+    links: cleanLinks(body.links),
+    kind: ['panne', 'modif', 'ajout'].includes(String(body.kind)) ? String(body.kind) : '',
     seenByAdmin: false,
     createdAt: nowIso(),
   };
@@ -1694,8 +1698,44 @@ async function handleTicketCreate(request: Request, env: Env, masterKey: string,
   await save(env, masterKey, data);
   await notifyAdmin(env, `Nouvelle demande · ${clientFullName(data)}`,
     `<p><strong>${escHtml(clientFullName(data))}</strong> a ouvert un ticket : <strong>${escHtml(ticket.title)}</strong></p>` +
-    (ticket.description ? `<p style="color:#412F21">${escHtml(ticket.description)}</p>` : ''));
+    (ticket.priority === 'haute' ? `<p><strong>Urgent, ça bloque.</strong></p>` : '') +
+    (ticket.description ? `<p style="color:#412F21">${escHtml(ticket.description)}</p>` : '') +
+    (ticket.links.length ? `<p>${ticket.links.map((l: string) => escHtml(l)).join('<br>')}</p>` : ''));
   return json(ticket, 201);
+}
+
+// Liens joints à une demande : texte court, dix au plus.
+function cleanLinks(v: unknown): string[] {
+  if (!Array.isArray(v)) return [];
+  return v.map((x) => String(x || '').trim().slice(0, 500)).filter(Boolean).slice(0, 10);
+}
+
+// La cliente répond à « Il te manque une info ? » : la réponse s'ajoute à la
+// question en attente, la demande revient chez Cindy.
+async function handleTicketAnswer(request: Request, env: Env, masterKey: string, data: AnyObj, ticketId: string): Promise<Response> {
+  const body = await readJson(request);
+  const { container } = resolveProject(getEspace(data), (body.projectId || 'maintenance').toString());
+  if (!container) return json({ error: 'Project not found' }, 404);
+  const tk = ticketsOf(container).find((t) => t.id === ticketId);
+  if (!tk) return json({ error: 'Ticket not found' }, 404);
+  const text = (body.text || '').toString().trim().slice(0, 4000);
+  if (!text) return json({ error: 'text is required' }, 400);
+  const infos: AnyObj[] = Array.isArray(tk.infos) ? tk.infos : [];
+  const q = infos.filter((x) => !x.r).pop();
+  if (!q) return json({ error: 'Aucune question en attente' }, 400);
+  q.r = text;
+  q.answeredAt = nowIso();
+  if (Array.isArray(body.attachments) && body.attachments.length) tk.attachments = (Array.isArray(tk.attachments) ? tk.attachments : []).concat(body.attachments);
+  const more = cleanLinks(body.links);
+  if (more.length) tk.links = (Array.isArray(tk.links) ? tk.links : []).concat(more).slice(0, 20);
+  if (tk.status === 'waiting_client') tk.status = tk.statusAvantInfo || 'open';
+  tk.seenByAdmin = false;
+  await save(env, masterKey, data);
+  await notifyAdmin(env, `Réponse reçue · ${clientFullName(data)}`,
+    `<p><strong>${escHtml(clientFullName(data))}</strong> a répondu sur <strong>${escHtml(tk.title || '')}</strong>.</p>` +
+    `<p style="color:#412F21">Ta question : ${escHtml(q.q || '')}</p>` +
+    `<p style="background:#F2E5C2;padding:12px 16px;border-radius:8px">${escHtml(text)}</p>`);
+  return json(tk);
 }
 
 async function handleTicketUpdate(request: Request, env: Env, masterKey: string, data: AnyObj, ticketId: string): Promise<Response> {
