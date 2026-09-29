@@ -3917,11 +3917,12 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     if (quotaMin) {
       var plein = dispo > 0 ? Math.round(Math.min(1, utilise / dispo) * 12) : 12, segs = '';
       for (var i = 0; i < 12; i++) segs += '<i class="' + (i < plein ? 'is-on' : '') + '"></i>';
-      jauge = '<div class="mn-jauge"><span><b class="num">' + (reste < 0 ? '0 min' : mntMin(reste)) + '</b> encore ce mois-ci</span><div class="mn-segs">' + segs + '</div></div>';
+      jauge = '<div class="mn-carte mn-haut"><div class="mn-jauge"><span><b class="num">' + (reste < 0 ? '0 min' : mntMin(reste)) + '</b> encore ce mois-ci</span><div class="mn-segs">' + segs + '</div></div>' +
+        '<button class="mn-lien" onclick="cliMntVoirForfait(' + P + ')">Voir mon forfait</button></div>';
     }
     var barre = '<div class="mn-tabs">' + (onglets.length > 1 ? '<div class="mn-choix">' + onglets.map(function (o) {
       return '<button class="mn-chip' + (tab === o[0] ? ' is-on' : '') + '" onclick="cliMaintSwitch(' + P + ',\'' + o[0] + '\')">' + esc(o[1]) + '</button>';
-    }).join('') + '</div>' : '') + jauge + '</div>';
+    }).join('') + '</div>' : '') + '</div>';
 
     var corps = '';
     if (tab === 'demandes') {
@@ -3964,7 +3965,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       corps = feedbacks.map(function (f) { return '<div class="mn-carte mn-dem"><b class="mn-titre">' + esc(f.author || 'Retour') + '</b>' + (f.content || f.body ? '<p class="mn-txt">' + esc(f.content || f.body) + '</p>' : '') + '</div>'; }).join('');
     }
 
-    return '<div class="mn">' + besoin + form + '<div class="mn-bloc">' + barre + '<div class="mn-corps">' + corps + '</div></div></div>';
+    return '<div class="mn">' + jauge + besoin + form + '<div class="mn-bloc" id="mn-bloc-' + pid + '">' + barre + '<div class="mn-corps">' + corps + '</div></div></div>';
   }
 
   // Un projet long (ex. une refonte) avance au rythme du forfait : où on en
@@ -3987,6 +3988,10 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
         '<p class="mn-txt mn-doux">Tes petites demandes passent toujours en premier. Le reste du forfait avance ce projet.</p></div>';
   }
 
+  window.cliMntVoirForfait = function (pid) {
+    cliMaintTab[pid] = 'forfait'; renderShell();
+    setTimeout(function () { var el = document.getElementById('mn-bloc-' + pid); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 30);
+  };
   window.cliMntKind = function (pid, k) { mntDraft(pid).kind = k; renderShell(); };
   window.cliMntTexte = function (pid, v) { mntDraft(pid).text = v; };
   window.cliMntUrgent = function (pid, v) { mntDraft(pid).urgent = !!v; renderShell(); };

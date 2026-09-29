@@ -1571,7 +1571,10 @@ button.cpnd-j:hover { box-shadow: inset 0 0 0 1px #110704; }
 .mn-tabs{display:flex;flex-direction:column;align-items:flex-start;gap:16px}
 .mn-tabs .mn-chip{font-weight:600;padding:9px 18px}
 .mn-jauge{display:flex;align-items:center;gap:14px;font-size:17px;color:#110704;flex-wrap:wrap}
-.mn-segs{display:flex;gap:4px;width:220px}
+.mn-segs{display:flex;gap:4px;width:320px}
+.mn-haut{flex-direction:row;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap;padding:24px 32px}
+.mn-haut .mn-jauge{font-size:19px}
+.mn-haut .mn-segs i{height:10px}
 .mn-segs i{flex:1;height:8px;border-radius:99px;background:#e6e0d4}
 .mn-segs i.is-on{background:#110704}
 .mn-corps{display:flex;flex-direction:column;gap:16px}
