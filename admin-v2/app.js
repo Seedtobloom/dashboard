@@ -5487,8 +5487,9 @@
   document.addEventListener('click', function (e) { if (!e.target.closest || !e.target.closest('.ckm')) ckMenuFermer(); });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') ckMenuFermer(); });
 
+  // Le temps se note dans « Déjà passé » : terminer ne le redemande pas.
   function ckTBoutonFini(t) {
-    return '<details class="ckt-fini"><summary class="ckt-bp">J’ai terminé</summary>' + ckpChampFini(t, 'tp') + '</details>';
+    return '<button class="ckt-bp" onclick="ADM.ckpFinir(\'' + esc(t.id) + '\',\'tp\')">J’ai terminé</button>';
   }
   function ckTBrief(t) {
     var avecBlocs = !!(t.blocks && t.blocks.length);
@@ -5583,7 +5584,7 @@
           (t.src === 'client' ? '<button class="pjc-lien" onclick="ADM.prioAddDlv(\'' + esc(t.key) + '\',\'' + esc(t.id) + '\',\'' + esc(t.projet || 'partner') + '\')">Ajouter un livrable</button>' : '') +
           '</section>' : '') +
       '</aside></div>' +
-      '<div class="ckgv-a">' + ckTBoutonFini(t) + '<span class="ckg-doux">Le temps passé te sera demandé avant de clôturer.</span><span class="ck-esp"></span>' + ckTMenu(t, 'haut') + '</div>' +
+      '<div class="ckgv-a">' + ckTBoutonFini(t) + '<span class="ck-esp"></span>' + ckTMenu(t, 'haut') + '</div>' +
       '</div>';
   }
 
@@ -6582,7 +6583,7 @@
         '<button class="tps-lien" onclick="ADM.openClient(\'' + esc(p.key) + '\')">' + esc(p.client) + '</button></nav>' +
       '<div class="pj-tete"><div><h1 class="pg-h1">' + esc(p.projectLabel) + '</h1><p class="pj-tete__s">' + esc(ckJSousTete(p)) + '</p></div>' +
         '<div class="pj-tete__a"><button class="tps-lien" onclick="ADM.ckJOnglet(\'echanges\')">Écrire à ' + esc(ckJPrenom(p)) + '</button>' + menu + '</div></div>' +
-      (p.prestation === 'support' ? ckJSupHero(p) : ckJMaintenant(p)) +
+      (p.prestation === 'support' ? (CKJ.onglet === 'creations' && CG_OPEN.id ? '' : ckJSupHero(p)) : ckJMaintenant(p)) +
       '<div class="pj-ongs" role="tablist" aria-label="' + esc(p.projectLabel) + '">' + ong('ensemble', 'Suivi', 0) + ong('echanges', 'Échanges', msgN) + ong('fichiers', 'Fichiers', 0) + '</div>';
     var corps;
     if (CKJ.onglet === 'ensemble') corps = ckJSuivi(p, d);
@@ -9472,6 +9473,10 @@
             ? '<button class="btn btn--outline btn--sm" onclick="ADM.crRouvrir(\'' + pid + '\',\'' + c.id + '\')" title="Terminée le ' + esc(String(c.clotureAt).slice(0, 10).split('-').reverse().join('/')) + '">Rouvrir</button>'
             : '<button class="btn btn--outline btn--sm" onclick="ADM.crCloturer(\'' + pid + '\',\'' + c.id + '\')">Clôturer</button>') +
         '</div>' +
+        '<section class="cg-bloc cg-plan-bloc">' +
+          '<h3 class="pl-titre">Le planning de cette création</h3>' +
+          '<div id="planwrap-' + fullPid + '-' + c.id + '" class="cg-plan">' + planningEditor(fullPid, c.planning, c.planningStart, c.id) + '</div>' +
+        '</section>' +
         '<section class="cg-bloc cg-regl">' +
           '<div class="cg-lbl">Réglages</div>' +
           '<div class="cg-reglg">' +
@@ -9500,10 +9505,6 @@
               '<button class="cg-ib cg-ib--del" style="margin-left:auto" onclick="ADM.crDel(\'' + pid + '\',\'' + c.id + '\')" title="Supprimer la création">' + cgIcon('trash', 15) + '</button>' +
             '</div>' +
           '</div>' +
-          '</section>' +
-          '<section class="cg-bloc">' +
-            '<h3 class="pl-titre">Le planning de cette création</h3>' +
-            '<div id="planwrap-' + fullPid + '-' + c.id + '" class="cg-plan">' + planningEditor(fullPid, c.planning, c.planningStart, c.id) + '</div>' +
           '</section>' +
         '</div>' +
         crExchange(pid, c) +
@@ -9633,7 +9634,7 @@
     }
     function duree(j) {
       if (j.dateMode === 'fixed') return 'date fixe';
-      if (j.dateMode === 'range') return 'plage';
+      if (j.dateMode === 'range') return 'dates fixes';
       var n = j.durationValue || 0;
       return j.durationUnit === 'jours' ? n + ' j' : n + ' sem.';
     }
@@ -9649,7 +9650,7 @@
       if (j.owner === 'cliente' || j.owner === 'les_deux') plus.push(['Prévenir la cliente par e-mail', a('pjNotify', jq)]);
       return '<div class="pl-l">' +
         '<span class="pl-q"><span class="pl-dot" style="background:' + dot + '"></span>' + quand + '</span>' +
-        '<input class="pl-in pl-in--t" value="' + esc(j.title || '') + '" aria-label="Étape" onchange="' + a('pjSet', jq + ',\'title\',this.value') + '">' +
+        '<textarea class="pl-in pl-in--t" rows="1" aria-label="Étape" onkeydown="if(event.key===\'Enter\'){event.preventDefault();this.blur();}" onchange="' + a('pjSet', jq + ',\'title\',this.value') + '">' + esc(j.title || '') + '</textarea>' +
         seg(j.owner || 'studio', function (o) { return a('pjSet', jq + ',\'owner\',\'' + o + '\''); }) +
         '<span class="pl-dur"><button type="button" aria-label="Plus court" onclick="' + a('pjDuree', jq + ',-1') + '">−</button><span class="num">' + esc(duree(j)) + '</span><button type="button" aria-label="Plus long" onclick="' + a('pjDuree', jq + ',1') + '">+</button></span>' +
         '<select class="pl-st" style="background:' + st[1] + ';color:' + st[2] + '" aria-label="Où ça en est" onchange="' + a('pjSet', jq + ',\'status\',this.value') + '">' +
