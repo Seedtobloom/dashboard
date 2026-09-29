@@ -10866,14 +10866,8 @@
     function activeIn(ym) { return all.some(function (t) { return String(t.resolvedAt || t.createdAt || '').slice(0, 7) === ym; }); }
     var usedThisMonth = usedMinIn(mk);
     function fmtMin(m) { m = Math.round(m || 0); var h = Math.floor(m / 60), mm = m % 60; return h ? h + 'h' + (mm ? String(mm).padStart(2, '0') : '') : m + ' min'; }
-    // Report du dépassement / des heures non utilisées, comme le forfait partenaire.
-    var baseMin = mh * 60, capMin = 2 * 60;
-    var carryMin = 0, billedMin = 0;
-    if (baseMin && activeIn(pk)) {
-      var diff = baseMin - usedMinIn(pk);
-      if (diff >= 0) carryMin = Math.min(capMin, diff);
-      else { var ov = -diff; var ded = Math.min(ov, baseMin); carryMin = -ded; billedMin = ov - ded; }
-    }
+    // Pas de report d'heures en maintenance : chaque mois repart au forfait.
+    var baseMin = mh * 60, carryMin = 0, billedMin = 0;
     var availMin = baseMin + carryMin;
     var forfaitCard = '<div class="card" style="background:var(--card);padding:18px 20px;margin-bottom:16px">' +
       '<h3 style="margin:0 0 4px"><span class="infocard__dot" style="background:#9c6f18"></span>Forfait mensuel</h3>' +

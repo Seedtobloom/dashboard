@@ -776,14 +776,10 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     if (project.type === 'maintenance') {
       var base = parseFloat(project.monthlyHours) || 0; if (!base) return null;
       var tickets = Array.isArray(project.tickets) ? project.tickets : [];
-      var pdt = new Date(); pdt.setMonth(pdt.getMonth() - 1);
-      var pk = pdt.getFullYear() + '-' + String(pdt.getMonth() + 1).padStart(2, '0');
       // Le temps compte au mois où il a été passé (saisies datées), comme
       // pour l'accompagnement créatif.
-      function usedIn(ym) { return tickets.reduce(function (s, t) { return s + (stbTaskMinByMonth(t)[ym] || 0); }, 0); }
-      function activeIn(ym) { return usedIn(ym) > 0 || tickets.some(function (t) { return String(t.createdAt || '').slice(0, 7) === ym; }); }
+      // Pas de report d'heures en maintenance : chaque mois repart au forfait.
       var baseMin = base * 60, carryMin = 0;
-      if (baseMin && activeIn(pk)) { var diff = baseMin - usedIn(pk); if (diff >= 0) carryMin = Math.min(120, diff); else carryMin = -Math.min(-diff, baseMin); }
       var d2 = 0, w2 = 0;
       tickets.forEach(function (t) { var m = stbTaskMinByMonth(t)[mk] || 0; if (!m) return; if (t.status === 'done' || t.status === 'closed') d2 += m; else w2 += m; });
       return { availMin: baseMin + carryMin, doneMin: d2, wipMin: w2 };
@@ -3947,7 +3943,6 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       corps = '<div class="mn-carte mn-fcarte"><h3 class="mn-h3">Ce mois-ci</h3>' +
           '<div class="mn-gros"><b class="num">' + (reste < 0 ? '0 min' : mntMin(reste)) + '</b> encore disponibles</div>' +
           '<p class="mn-txt"><b class="num">' + mntMin(utilise) + '</b> utilisées sur <b class="num">' + mntMin(dispo) + '</b>' +
-            (dispo > quotaMin ? ' (ton forfait de ' + mntMin(quotaMin) + ', plus ' + mntMin(dispo - quotaMin) + ' pas utilisées le mois dernier)' : (dispo < quotaMin ? ' (ton forfait de ' + mntMin(quotaMin) + ', moins ' + mntMin(quotaMin - dispo) + ' de dépassement le mois dernier)' : '')) +
             '. Le compteur repart à ' + mntMin(quotaMin) + ' le 1er ' + nd.toLocaleDateString('fr-FR', { month: 'long' }) + '.</p></div>' +
         '<div class="mn-carte mn-fcarte"><h3 class="mn-h3">Où est passé ton temps</h3>' +
           (ou.length ? ou.map(function (x) { return '<div class="mn-ligne mn-row"><span>' + esc(x.t.title || 'Sans titre') + '</span><b class="num">' + mntMin(x.m) + '</b></div>'; }).join('') : '<p class="mn-txt mn-doux">Pas encore de temps passé ce mois-ci.</p>') + '</div>' +
@@ -4341,17 +4336,13 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var maxMonthMin = Math.max.apply(null, months.map(function (m) { return m.min; })) || 1;
     var CHART_H = 150;
 
-    // ── Forfait (report conservé) ──
+    // ── Forfait (sans report) ──
     var mPrev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     var prevKey = mPrev.getFullYear() + '-' + String(mPrev.getMonth() + 1).padStart(2, '0');
     function usedMinIn(ym) { return tickets.reduce(function (n, t) { return tkMonth(t) === ym ? n + tkMin(t) : n; }, 0); }
     function activeIn(ym) { return tickets.some(function (t) { return tkMonth(t) === ym; }); }
+    // Pas de report d'heures en maintenance : chaque mois repart au forfait.
     var baseMin = forfaitH * 60, carryMin = 0, billedMin = 0;
-    if (baseMin && activeIn(prevKey)) {
-      var diff = baseMin - usedMinIn(prevKey);
-      if (diff >= 0) carryMin = Math.min(120, diff);
-      else { var ov = -diff, ded = Math.min(ov, baseMin); carryMin = -ded; billedMin = Math.round(ov - ded); }
-    }
     var availMin = baseMin + carryMin, usedMin = usedMinIn(curMonthKey), remMin = availMin - usedMin, over = remMin < 0;
     var mDone = 0, mWip = 0;
     tickets.forEach(function (t) { if (tkMonth(t) !== curMonthKey) return; var m = tkMin(t); if (t.status === 'done' || t.status === 'closed') mDone += m; else mWip += m; });
