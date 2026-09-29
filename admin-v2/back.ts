@@ -2220,6 +2220,17 @@ async function handleDashboard(env: Env): Promise<Response> {
             blocks: Array.isArray(t.blocks) ? t.blocks : [],
             table: (t.table && typeof t.table === 'object') ? t.table : null,
             reviewSentAt: (hist2.length ? hist2[hist2.length - 1].at : '') || '',
+            // Les retours de la cliente sur chaque version envoyée : ce qu'elle
+            // a dit, ses fichiers, et où en est la version.
+            retours: livs.filter((l: AnyObj) => l.clientComment || l.status === 'refuse' || l.status === 'revision' || (Array.isArray(l.clientAttachments) && l.clientAttachments.length)).slice(-10).map((l: AnyObj) => ({
+              version: Number(l.version) || 0, name: String(l.name || '').slice(0, 160), status: String(l.status || ''),
+              comment: String(l.clientComment || '').slice(0, 1500), at: String(l.validatedAt || l.createdAt || ''),
+              link: String(l.clientLink || '').slice(0, 2000),
+              attachments: (Array.isArray(l.clientAttachments) ? l.clientAttachments : [])
+                .map((x: AnyObj) => ({ name: String(x.name || 'fichier').slice(0, 120), key: String(x.key || x.fileKey || '').slice(0, 300) }))
+                .filter((x: AnyObj) => x.key),
+            })),
+            commentNotif: !!t.clientCommentNotif,
           });
         }
         // Tâche Partenaire créative active → agrégée dans « Ma semaine ».

@@ -4625,6 +4625,11 @@
       fichiers: Array.isArray(t.attachments) ? t.attachments : [],
       lien: t.clientLink || '',
       echanges: Array.isArray(t.comments) ? t.comments : [],
+      retours: Array.isArray(t.retours) ? t.retours : [],
+      nouveau: !!(t.needsRework || t.commentNotif),
+      sentCount: t.sentCount || 0,
+      envoyeLe: t.reviewSentAt || t.lastSentAt || '',
+      dernierEnvoi: t.lastName || '', dernierStatut: t.lastStatus || '',
       etapes: Array.isArray(t.subtasks) ? t.subtasks : []
     };
   }
@@ -5446,7 +5451,8 @@
   function ckTRang(t) {
     var r = ckpRestant(t), on = CKT.ouverte === t.id;
     return '<div class="ckg-r' + (on ? ' on' : '') + '" tabindex="0" data-kb role="button" aria-pressed="' + on + '" onclick="ADM.ckTOuvrir(\'' + esc(t.id) + '\')">' +
-      '<div><div class="ckg-tt">' + esc(t.titre) + '</div>' + (t.ctx ? '<div class="ckg-ctx">' + esc(t.ctx) + '</div>' : '') + '</div>' +
+      '<div><div class="ckg-tt">' + esc(t.titre) + '</div>' + (t.ctx ? '<div class="ckg-ctx">' + esc(t.ctx) + '</div>' : '') +
+        (t.nouveau ? '<span class="ck-tag ckr-nv">Nouveau retour</span>' : '') + '</div>' +
       '<div class="num">' + ckTEcheanceCourte(t) + '</div>' +
       '<div class="ckg-re num">' + (r === null ? '<span class="ck-tag ck-tag--paille">À estimer</span>' : (r ? '<b>' + esc(ckpDuree(r)) + '</b>' : '<span class="ckg-doux">Rien</span>')) + '</div>' +
       '</div>';
@@ -5533,6 +5539,70 @@
     return t.brief ? '<div class="ckt-bt">' + admRichSafe(t.brief) + '</div>' : '';
   }
 
+  /* ── Ses retours, et la relance quand la tâche attend la cliente ─────── */
+  function ckTQuandIso(iso) {
+    var d = new Date(iso); if (isNaN(d)) return '';
+    var h = d.getHours(), m = d.getMinutes();
+    return ckpDateLongue(msIso(d)) + ' à ' + h + ' h' + (m ? ' ' + (m < 10 ? '0' : '') + m : '');
+  }
+  function ckTPrenom(t) { return ckJPrenom({ key: t.key, client: t.qui }); }
+  function ckTFichier(t, a) {
+    return '<a class="ckr-f" href="/api/clients/' + esc(t.key) + '/files/' + encodeURIComponent(a.key) + '/download" target="_blank" rel="noopener">' + esc(a.name || 'fichier') + '</a>';
+  }
+  function ckTRetoursListe(t) {
+    var out = [], vmax = 0;
+    (t.retours || []).forEach(function (r) { if (r.version > vmax) vmax = r.version; });
+    (t.retours || []).forEach(function (r) {
+      var pil = (r.status === 'refuse' || r.status === 'revision') ? (r.version && r.version < (t.sentCount || vmax) ? '' : 'À revoir') : (r.status === 'valide' ? 'Validé' : '');
+      out.push({ titre: r.version ? 'Sur la V' + r.version : (r.name ? 'Sur ' + r.name : 'Sur la version envoyée'), pil: pil,
+        corrige: !!(r.version && r.version < (t.sentCount || vmax)), texte: r.comment, at: r.at, atts: r.attachments || [], lien: r.link });
+    });
+    (t.echanges || []).forEach(function (m) {
+      if (m.author !== 'client') return;
+      out.push({ titre: 'Son message', pil: '', texte: m.text, at: m.at, atts: m.attachments || [], lien: '' });
+    });
+    return out.sort(function (a, b) { return String(b.at).localeCompare(String(a.at)); });
+  }
+  function ckTRetours(t) {
+    if (t.src === 'perso') return '';
+    var l = ckTRetoursListe(t);
+    if (!l.length) return '';
+    var qui = ckTPrenom(t), a0 = l[0], autres = l.slice(1, 4);
+    var lien = function (u) { return '<a class="ckr-f" href="' + esc(/^https?:\/\//i.test(u) ? u : 'https://' + u) + '" target="_blank" rel="noopener">Son lien</a>'; };
+    var grand = '<div class="ckr-der">' +
+      '<div class="ckr-h"><b>' + esc(a0.titre) + '</b>' + (a0.pil ? '<span class="ckr-pil' + (a0.pil === 'Validé' ? ' ckr-pil--ok' : '') + '">' + esc(a0.pil) + '</span>' : '') + '</div>' +
+      (a0.texte ? '<p class="ckr-t">' + esc(a0.texte) + '</p>' : '') +
+      '<div class="ckr-m"><span>' + esc(qui) + (a0.at ? ', le ' + esc(ckTQuandIso(a0.at)) : '') + '</span>' +
+        a0.atts.map(function (x) { return ckTFichier(t, x); }).join('') + (a0.lien ? lien(a0.lien) : '') + '</div></div>';
+    var petits = autres.map(function (x) {
+      return '<div class="ckr-anc"><div class="ckr-h"><b>' + esc(x.titre) + '</b><span class="ckr-d">' +
+        (x.corrige ? 'corrigé' + (x.at ? ', le ' + esc(ckpDateLongue(String(x.at).slice(0, 10))) : '') : (x.at ? 'le ' + esc(ckpDateLongue(String(x.at).slice(0, 10))) : '')) + '</span></div>' +
+        (x.texte ? '<p class="ckr-t">' + esc(x.texte) + '</p>' : '') + '</div>';
+    }).join('');
+    return '<div class="ckr"><div class="ckr-tete"><h3>Ses retours</h3><span>' + l.length + ' retour' + (l.length > 1 ? 's' : '') + '</span></div>' +
+      grand + petits +
+      '<div class="ckr-l">' + (t.src === 'client' ? ckTPetitLien('Répondre à ' + qui, 'ADM.ckTGrand(1)') : '') + ckTPetitLien('Tous les échanges', 'ADM.ckTGrand(1)') + '</div></div>';
+  }
+  function ckTRelance(t) {
+    if (t.statut !== 'review' || t.src === 'perso') return '';
+    var qui = ckTPrenom(t), envoi = t.envoyeLe || '';
+    var j = envoi ? Math.max(0, Math.round((ckpD(ckpAuj()) - ckpD(String(envoi).slice(0, 10))) / 86400000)) : null;
+    var depuis = j === null ? '' : (j === 0 ? ' depuis aujourd’hui' : (j === 1 ? ' depuis hier' : ' depuis ' + j + ' jours'));
+    return '<div class="ckr-rel"><div><b>Chez ' + esc(qui) + esc(depuis) + '</b>' +
+      (envoi ? '<span>Tu lui as envoyé ' + esc(t.dernierEnvoi || 'la dernière version') + ' le ' + esc(ckpDateLongue(String(envoi).slice(0, 10))) + '.</span>' : '') + '</div>' +
+      '<button class="ckr-b" onclick="ADM.ckTRelancer(\'' + esc(t.id) + '\')">Lui demander où elle en est</button></div>';
+  }
+  function ckTRelancer(id) {
+    var t = ckpToutes().filter(function (x) { return x.id === id; })[0];
+    if (!t) return;
+    var qui = ckTPrenom(t);
+    admConfirm({ title: 'Envoyer un e-mail à ' + qui + ' ?', message: esc('Pour lui demander où elle en est sur « ' + t.titre + ' ».'), yes: 'Oui, envoyer', no: 'Non' }, function () {
+      jpost('/api/clients/' + t.key + '/remind', { kind: t.dernierStatut === 'a_valider' ? 'deliverable' : 'action', title: t.titre, projectLabel: t.ctx || '' })
+        .then(function (r) { toast(r && r.ok ? 'E-mail envoyé à ' + qui : 'Erreur'); })
+        .catch(function () { toast('Erreur'); });
+    });
+  }
+
   /* ── Le panneau de droite : qui, quoi, les trois repères, le brief, le geste ── */
 
   function ckTPanneauDroit(t) {
@@ -5550,6 +5620,7 @@
         '<div><dt>Encore à faire</dt><dd><b>' + esc(f.reste.v) + '</b>' + (f.reste.s ? '<span>' + esc(f.reste.s) + '</span>' : '') + ckTCorriger(t) + '</dd></div>' +
         '<div class="ckp-f__passe"><dt>Déjà passé</dt><dd><b>' + esc(f.passe.v) + '</b>' + (f.passe.s ? '<span>' + esc(f.passe.s) + '</span>' : '') + ckpChampPasse(t, 'pan') + '</dd></div>' +
       '</dl>' +
+      ckTRelance(t) + ckTRetours(t) +
       (brief || lignes ? '<div class="ckp-b"><h3>Son brief</h3>' + (brief ? '<div class="ckp-bt">' + brief + '</div>' : '') +
         (lignes ? '<p class="ckp-tab">Avec un tableau de ' + lignes + ' ligne' + (lignes > 1 ? 's' : '') + '. ' +
           ckTPetitLien('Le voir en grand', 'ADM.ckTGrand(1)') + '</p>' : '') + '</div>' : '') +
@@ -13499,7 +13570,7 @@
     msWeek: msWeek, msFilter: msFilter, msToggleCap: msToggleCap, msMode: msMode, msDaySel: msDaySel, msPlace: msPlace, msDone: msDone, msDelete: msDelete, msNoteOpen: msNoteOpen, msPlanOver: msPlanOver, msPlanLeave: msPlanLeave, msPlanDrop: msPlanDrop, msPlanUnplace: msPlanUnplace, msAutoPlan: msAutoPlan, msOrganizeWeek: msOrganizeWeek, msOrganizeDay: msOrganizeDay, msUnplace: msUnplace, msDragStart: msDragStart, msDragEnd: msDragEnd, msDayOver: msDayOver, msDayLeave: msDayLeave, msDrop: msDrop, msSlotOver: msSlotOver, msDropSlot: msDropSlot, msNewBlock: msNewBlock, msSaveBlock: msSaveBlock, msDeleteBlock: msDeleteBlock, msEst: msEst, msEstH: msEstH, msAddTop: msAddTop, msAddDay: msAddDay,
     openClient: openClient, tab: tab, subtab: subtab, ffShow: ffShow, saveInfos: saveInfos, saveForfait: saveForfait, forfaitOverrideAdd: forfaitOverrideAdd, forfaitOverrideDel: forfaitOverrideDel, testEmail: testEmail, toggleOffer: toggleOffer, addOffer: addOffer, setBanner: setBanner, setMaintenance: setMaintenance, renameSupport: renameSupport, cloturerProjet: cloturerProjet, rouvrirProjet: rouvrirProjet, addSupportQuick: addSupportQuick, delSupport: delSupport, crAdd: crAdd, crSet: crSet, crCloturer: crCloturer, crRouvrir: crRouvrir, cgToggle: cgToggle, cgNeuve: cgNeuve, pjEdit: pjEdit, crReply: crReply, crDel: crDel, crAddVersion: crAddVersion, crAddVersionLink: crAddVersionLink, crDelVersion: crDelVersion, pjAdd: pjAdd, pjSet: pjSet, pjMove: pjMove, pjDel: pjDel, pjStart: pjStart, pjNotify: pjNotify, pjNeuf: pjNeuf, pjPatch: pjPatch, pjDuree: pjDuree, pjDateOuvrir: pjDateOuvrir, pjDateFermer: pjDateFermer, pjDate: pjDate, pjToggle: pjToggle, deleteClient: deleteClient,
     toggleTicketsSpace: toggleTicketsSpace, ticketStatus: ticketStatus, ticketDue: ticketDue, ticketTime: ticketTime, ticketDelete: ticketDelete, ticketForfait: ticketForfait, ticketProposeDate: ticketProposeDate,
-    ckpReste: ckpReste, ckpEstim: ckpEstim, ckpAjoutPasse: ckpAjoutPasse, ckpFinir: ckpFinir, ckpPasMaintenant: ckpPasMaintenant, ckpOrdreSysteme: ckpOrdreSysteme,
+    ckpReste: ckpReste, ckpEstim: ckpEstim, ckpAjoutPasse: ckpAjoutPasse, ckTRelancer: ckTRelancer, ckpFinir: ckpFinir, ckpPasMaintenant: ckpPasMaintenant, ckpOrdreSysteme: ckpOrdreSysteme,
     ckTSetTri: ckTSetTri, ckTSetFiltre: ckTSetFiltre, ckTOuvrir: ckTOuvrir, ckTGrand: ckTGrand, ckMenu: ckMenu,
     ckTRepondre: ckTRepondre, ckTCloturer: ckTCloturer, ckTSupprimer: ckTSupprimer, ckTCreerStb: ckTCreerStb, inbSetOnglet: inbSetOnglet, inbChoisir: inbChoisir, inbRefuser: inbRefuser, inbToutVu: inbToutVu, ckTSetCote: ckTSetCote, ckTVoir: ckTVoir, ckTEtape: ckTEtape,
     ckTAEstimer: ckTAEstimer,

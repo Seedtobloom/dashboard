@@ -3550,3 +3550,25 @@ h1.cdhead__n{margin:0;font-weight:400;font-size:36px}
 .pl-seg button{padding:5px 10px}
 .cg-plan-bloc{margin-bottom:18px;background:#fff;box-shadow:inset 0 0 0 1px rgba(17,7,4,.08)}
 button.ckt-bp{border:none;font-family:inherit}
+/* Tâche ouverte : ses retours et la relance. */
+.ckr-rel{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 30px;background:#E6E5B2}
+.ckr-rel b{display:block;font-size:15px;font-weight:600}
+.ckr-rel span{display:block;font-size:13px;color:#3b2a20;margin-top:2px}
+.ckr-b{border:none;border-radius:999px;background:#110704;color:#F8F6F2;font:inherit;font-size:14px;font-weight:600;padding:10px 16px;white-space:nowrap;cursor:pointer}
+.ckr{padding:22px 30px 18px;border-bottom:1px solid rgba(17,7,4,.1)}
+.ckr-tete{display:flex;justify-content:space-between;align-items:baseline}
+.ckr-tete h3{margin:0;font-size:15px;font-weight:600}
+.ckr-tete span,.ckr-d{font-size:13px;color:#7a5540}
+.ckr-der{margin-top:12px;padding:16px 18px;border-radius:12px;background:#F8F6F2}
+.ckr-anc{margin-top:10px;padding:12px 18px;border-radius:12px;box-shadow:inset 0 0 0 1px rgba(17,7,4,.1)}
+.ckr-h{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.ckr-h b{font-size:14px;font-weight:600}
+.ckr-pil{display:inline-block;font-size:13px;font-weight:600;padding:4px 10px;border-radius:999px;background:#F5E3D9;color:#8A4522}
+.ckr-pil--ok{background:#EDE4DE;color:#5A2A11}
+.ckr-t{margin:8px 0 0;font-size:15px;line-height:1.55;white-space:pre-wrap;overflow-wrap:anywhere}
+.ckr-anc .ckr-t{font-size:14px;color:#3b2a20;margin-top:6px}
+.ckr-m{margin-top:8px;display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;font-size:13px;color:#7a5540}
+.ckr-f{font-size:14px;font-weight:600;color:#5A2A11}
+.ckr-l{margin-top:14px;display:flex;gap:20px}
+.ckr-l .ckt-pl{font-size:14px}
+.ckr-nv{display:inline-block;margin-top:6px;background:#F5E3D9;color:#8A4522}
