@@ -3599,3 +3599,18 @@ a.ckr-b{text-decoration:none;display:inline-block}
 .mpl-e{display:flex;gap:8px;align-items:center}
 .mpl-e .inp{flex:1}
 .mpl-e select.inp{flex:0 0 150px}
+.trm-carte{background:#fff;border-radius:18px;padding:24px 30px}
+.trm-ag{border:none;border-radius:999px;background:#fff;box-shadow:inset 0 0 0 1px #110704;font:inherit;font-size:15px;font-weight:600;padding:8px 16px;cursor:pointer;color:#110704;white-space:nowrap}
+.trm-leg{margin:0 0 6px;font-size:15px;color:var(--muted)}
+.trm-leg span{background:#F8F6F2;color:var(--terre);font-weight:500;border-radius:6px;padding:2px 8px}
+.trm{max-height:calc(100vh - 250px);overflow:auto;padding-right:8px}
+.trm-sec{padding:26px 0;border-top:1px solid rgba(17,7,4,0.1);display:flex;flex-direction:column;gap:14px}
+.trm-sec:first-child{border-top:none;padding-top:14px}
+.trm-h{display:flex;align-items:center;gap:14px}
+.trm-n{width:34px;height:34px;border-radius:50%;background:#110704;color:#F8F6F2;font-size:16px;font-weight:600;display:grid;place-items:center;flex:0 0 auto}
+.trm-h h3{margin:0;font-family:'Cormorant Garamond',Georgia,serif;font-weight:500;font-size:28px;line-height:1.15;color:var(--terre)}
+.trm-rep{margin:0;font-size:16px;line-height:1.7;color:#6B5A50}
+.trm-dit{background:#F8F6F2;border-radius:12px;padding:14px 18px;font-size:17px;line-height:1.6;font-weight:500;color:var(--terre)}
+.trm--large .trm-rep{font-size:18px}
+.trm--large .trm-dit{font-size:19px}
+.trm--large .trm-h h3{font-size:30px}

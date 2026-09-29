@@ -4101,6 +4101,33 @@
   function trameSet(id, field, val) { var a = tramesGet(); var t = a.filter(function (x) { return x.id === id; })[0]; if (!t) return; t[field] = val; tramesSaveAll(a); }
   function trameEditToggle() { CALL_TRAME_EDIT = !CALL_TRAME_EDIT; TRAME_ED.id = null; renderVisiosBody(); }
   function callRight(mode) { CALL_RIGHT = mode; renderVisiosBody(); }
+  // Trame agrandie : la liste des notes se cache, la trame prend ~60 %.
+  var CALL_LARGE = false; try { CALL_LARGE = localStorage.getItem('stb_call_large') === '1'; } catch (e) {}
+  function callLarge() { CALL_LARGE = !CALL_LARGE; try { localStorage.setItem('stb_call_large', CALL_LARGE ? '1' : '0'); } catch (e) {} renderVisiosBody(); }
+  // Notes : un tiret suivi d'une espace devient une puce ; Entrée continue la
+  // liste, Entrée sur une puce vide l'arrête ; Tab décale la puce.
+  function callPuces(ev, ta) {
+    var v = ta.value, pos = ta.selectionStart;
+    var deb = v.lastIndexOf('\n', pos - 1) + 1, ligne = v.slice(deb, pos);
+    var m = ligne.match(/^(\s*)([•◦]) /);
+    function poser(nv, curseur) { ta.value = nv; ta.selectionStart = ta.selectionEnd = curseur; ta.dispatchEvent(new Event('input')); }
+    if (ev.key === ' ' && /^\s*-$/.test(ligne)) {
+      ev.preventDefault();
+      var ind = ligne.slice(0, -1);
+      poser(v.slice(0, deb) + ind + '• ' + v.slice(pos), deb + ind.length + 2);
+    } else if (ev.key === 'Enter' && !ev.shiftKey && m && pos === ta.selectionEnd) {
+      ev.preventDefault();
+      if (ligne.trim() === m[2]) poser(v.slice(0, deb) + v.slice(pos), deb);
+      else { var ajout = '\n' + m[1] + m[2] + ' '; poser(v.slice(0, pos) + ajout + v.slice(pos), pos + ajout.length); }
+    } else if (ev.key === 'Tab' && m) {
+      ev.preventDefault();
+      var fin = v.indexOf('\n', deb); if (fin === -1) fin = v.length;
+      var l2 = v.slice(deb, fin), n2;
+      if (ev.shiftKey) { if (!/^\s+/.test(l2)) return; n2 = l2.replace(/^ {1,4}/, '').replace(/^(\s*)◦ /, function (x, sp) { return sp ? x : '• '; }); }
+      else n2 = '    ' + l2.replace(/^(\s*)• /, '$1◦ ');
+      poser(v.slice(0, deb) + n2 + v.slice(fin), pos + (n2.length - l2.length));
+    }
+  }
 
   // ── Onglet « Trames d'appel » : bibliothèque de cartes + mode appel interactif (cocher + noter) ──
   var VIS_TRAME_OPEN = null, VIS_TRAME_ANS = {};
@@ -4187,27 +4214,34 @@
   }
   // Une ligne « repère » (à NE PAS dire) : gris, italique.
   function trameNote(s, ml) { return '<div style="font-family:var(--font-micro);font-size:15px;line-height:1.55;color:var(--muted);font-style:italic;margin-bottom:' + (ml || 2) + 'px">' + esc(s) + '</div>'; }
+  // Trame affichée pendant l'appel : une étape = un bloc numéroté, les
+  // phrases à dire dans leur propre bloc clair, les repères en gris aéré.
   function trameRender(content) {
-    var lines = String(content || '').split('\n');
-    return lines.map(function (l) {
+    var lines = String(content || '').split('\n'), out = '', n = 0, ouvert = false;
+    function ouvrir(titre) {
+      if (ouvert) out += '</section>';
+      out += '<section class="trm-sec">' + (titre ? '<div class="trm-h"><span class="trm-n">' + (++n) + '</span><h3>' + esc(titre) + '</h3></div>' : '');
+      ouvert = true;
+    }
+    lines.forEach(function (l) {
       var t = l.trim();
-      if (t === '') return '<div style="height:11px"></div>';
-      if (/^([①②③④⑤⑥⑦⑧⑨⑩]|🌱|📝)/.test(t)) return '<div style="font-family:\'Alegreya\',Georgia,serif;font-weight:400;font-size:19px;color:var(--terre);margin:18px 0 8px">' + esc(trameTitleClean(t.replace(/^([①②③④⑤⑥⑦⑧⑨⑩]|🌱|📝)\s*/, ''))) + '</div>';
+      if (t === '') return;
+      var tete = /^([①②③④⑤⑥⑦⑧⑨⑩]|🌱|📝)/.test(t) || (t.length > 5 && t === t.toLocaleUpperCase('fr') && /[A-ZÀ-Ÿ]/.test(t) && t.indexOf('«') === -1);
+      if (tete) { ouvrir(trameTitleClean(t.replace(/^([①②③④⑤⑥⑦⑧⑨⑩]|🌱|📝)\s*/, ''))); return; }
+      if (!ouvert) ouvrir('');
       var gi = l.indexOf('→');
       if (gi !== -1) {
-        // Avant la flèche = condition / mots du client (à NE PAS dire) ; après = ta réponse.
-        var cond = l.slice(0, gi).trim();
-        var resp = l.slice(gi + 1).trim();
-        var respHasQ = /«[^»]*»/.test(resp);
-        var condHtml = cond ? trameNote(cond, 1) : '';
-        var respColor = respHasQ ? 'var(--terre-600,#6b533b)' : 'var(--muted)';
-        var respIt = respHasQ ? '' : ';font-style:italic';
-        var respHtml = '<div style="font-family:var(--font-micro);font-size:15px;line-height:1.6;color:' + respColor + respIt + ';margin:0 0 9px ' + (cond ? '16px' : '0') + '"><span style="color:var(--terre-400,#8a6f54)">→ </span>' + (respHasQ ? trameHi(resp) : esc(resp)) + '</div>';
-        return condHtml + respHtml;
+        var cond = l.slice(0, gi).trim(), resp = l.slice(gi + 1).trim();
+        out += (cond ? '<p class="trm-rep">' + esc(cond) + '</p>' : '') +
+          (/«[^»]*»/.test(resp) ? '<div class="trm-dit">' + esc(resp) + '</div>' : '<p class="trm-rep">→ ' + esc(resp) + '</p>');
+        return;
       }
-      if (/«[^»]*»/.test(l)) return '<div style="font-family:var(--font-micro);font-size:15px;line-height:1.6;color:var(--terre-600,#6b533b);margin-bottom:7px">' + trameHi(l) + '</div>';
-      return trameNote(l, 7);
-    }).join('');
+      var qi = t.indexOf('«');
+      if (qi !== -1 && qi <= 20) { out += '<div class="trm-dit">' + esc(t) + '</div>'; return; }
+      out += '<p class="trm-rep">' + esc(t) + '</p>';
+    });
+    if (ouvert) out += '</section>';
+    return out;
   }
   // ── Éditeur structuré d'une trame : étapes → titre + repères + questions ──
   // On garde le stockage en texte (compatible mode appel) mais on édite par blocs.
@@ -4289,12 +4323,13 @@
     var cur = trames.filter(function (t) { return t.id === CALL_TRAME_SEL; })[0];
     if (CALL_TRAME_EDIT) return trameStructEditor(cur);
     var opts = trames.map(function (t) { return '<option value="' + t.id + '"' + (t.id === CALL_TRAME_SEL ? ' selected' : '') + '>' + esc(t.title || 'Sans titre') + '</option>'; }).join('');
-    return '<div style="background:#fff;border-radius:14px;padding:14px 16px">' +
+    return '<div class="trm-carte">' +
       '<div class="row" style="gap:8px;align-items:center;margin-bottom:12px"><select class="inp" style="flex:1;font-size:15px" onchange="ADM.trameSel(this.value)">' + opts + '</select>' +
         '<button class="btn btn--outline btn--sm" title="Éditer" onclick="ADM.trameEditToggle()">' + IC_CRAYON + '</button>' +
-        '<button class="btn btn--outline btn--sm" title="Nouvelle trame" onclick="ADM.trameNew()">+</button></div>' +
-      '<div style="font-family:var(--font-micro);font-size:15px;color:var(--muted);margin-bottom:10px;display:flex;align-items:center;gap:6px;flex-wrap:wrap"><span style="background:#F0E2D6;color:var(--terre);font-weight:600;border-radius:4px;padding:1px 5px">« … »</span> ce que tu dis · <span style="font-style:italic">gris = tes repères / mots du client (à ne pas dire)</span></div>' +
-      '<div style="max-height:calc(100vh - 250px);overflow:auto;padding-right:4px">' + trameRender(cur.content) + '</div>' +
+        '<button class="btn btn--outline btn--sm" title="Nouvelle trame" onclick="ADM.trameNew()">+</button>' +
+        '<button class="trm-ag" onclick="ADM.callLarge()">' + (CALL_LARGE ? 'Réduire' : 'Agrandir') + '</button></div>' +
+      '<p class="trm-leg"><span>sur fond clair</span> ce que tu dis · en gris, tes repères</p>' +
+      '<div class="trm' + (CALL_LARGE ? ' trm--large' : '') + '">' + trameRender(cur.content) + '</div>' +
     '</div>';
   }
   function callEditor(n) {
@@ -4304,7 +4339,7 @@
         '<span style="font-family:var(--font-micro);font-size:15px;color:var(--muted);white-space:nowrap">' + esc(n.date || '') + '</span>' +
         '<button class="tps-lien" onclick="ADM.callNoteDel(\'' + n.id + '\')">Supprimer</button>' +
       '</div>' +
-      '<textarea oninput="ADM.callNoteSet(\'' + n.id + '\',\'text\',this.value)" placeholder="Note à l\'arrache : mots-clés, verbatims, ce que tu retiens…" style="width:100%;box-sizing:border-box;min-height:calc(100vh - 220px);resize:vertical;border:none;background:#F8F6F2;border-radius:12px;padding:16px 18px;font-family:var(--font-micro);font-size:16px;line-height:1.65;color:var(--terre);outline:none">' + esc(n.text || '') + '</textarea>' +
+      '<textarea onkeydown="ADM.callPuces(event,this)" oninput="ADM.callNoteSet(\'' + n.id + '\',\'text\',this.value)" placeholder="Note à l\'arrache : mots-clés, verbatims… Un tiret puis espace fait une puce." style="width:100%;box-sizing:border-box;min-height:calc(100vh - 220px);resize:vertical;border:none;background:#F8F6F2;border-radius:12px;padding:16px 18px;font-family:var(--font-micro);font-size:16px;line-height:1.65;color:var(--terre);outline:none">' + esc(n.text || '') + '</textarea>' +
     '</div>';
   }
   function visFicheHtml() {
@@ -4329,7 +4364,9 @@
       '<button class="subtab' + (CALL_RIGHT === 'anti' ? ' active' : '') + '" onclick="ADM.callRight(\'anti\')">Anti-sèche</button>' +
     '</div>';
     var right = '<aside style="position:sticky;top:12px">' + rtoggle + (CALL_RIGHT === 'trame' ? callTrame() : callAntiseche()) + '</aside>';
-    return '<div style="display:grid;grid-template-columns:210px minmax(0,1fr) 560px;gap:18px;align-items:start">' + list + editor + right + '</div>';
+    return CALL_LARGE
+      ? '<div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.5fr);gap:22px;align-items:start">' + editor + right + '</div>'
+      : '<div style="display:grid;grid-template-columns:210px minmax(0,1fr) 640px;gap:18px;align-items:start">' + list + editor + right + '</div>';
   }
   /* Visios : la prochaine en grand, les autres en liste, le calendrier dans
      une carte calme. Les visios viennent des fiches du tableau de bord et des
@@ -13822,7 +13859,7 @@
     msWeek: msWeek, msFilter: msFilter, msToggleCap: msToggleCap, msMode: msMode, msDaySel: msDaySel, msPlace: msPlace, msDone: msDone, msDelete: msDelete, msNoteOpen: msNoteOpen, msPlanOver: msPlanOver, msPlanLeave: msPlanLeave, msPlanDrop: msPlanDrop, msPlanUnplace: msPlanUnplace, msAutoPlan: msAutoPlan, msOrganizeWeek: msOrganizeWeek, msOrganizeDay: msOrganizeDay, msUnplace: msUnplace, msDragStart: msDragStart, msDragEnd: msDragEnd, msDayOver: msDayOver, msDayLeave: msDayLeave, msDrop: msDrop, msSlotOver: msSlotOver, msDropSlot: msDropSlot, msNewBlock: msNewBlock, msSaveBlock: msSaveBlock, msDeleteBlock: msDeleteBlock, msEst: msEst, msEstH: msEstH, msAddTop: msAddTop, msAddDay: msAddDay,
     openClient: openClient, tab: tab, subtab: subtab, ffShow: ffShow, saveInfos: saveInfos, saveForfait: saveForfait, forfaitOverrideAdd: forfaitOverrideAdd, forfaitOverrideDel: forfaitOverrideDel, testEmail: testEmail, toggleOffer: toggleOffer, addOffer: addOffer, setBanner: setBanner, setMaintenance: setMaintenance, renameSupport: renameSupport, cloturerProjet: cloturerProjet, rouvrirProjet: rouvrirProjet, addSupportQuick: addSupportQuick, delSupport: delSupport, crAdd: crAdd, crSet: crSet, crCloturer: crCloturer, crRouvrir: crRouvrir, cgToggle: cgToggle, cgNeuve: cgNeuve, pjEdit: pjEdit, crReply: crReply, crDel: crDel, crAddVersion: crAddVersion, crAddVersionLink: crAddVersionLink, crDelVersion: crDelVersion, pjAdd: pjAdd, pjSet: pjSet, pjMove: pjMove, pjDel: pjDel, pjStart: pjStart, pjNotify: pjNotify, pjNeuf: pjNeuf, pjPatch: pjPatch, pjDuree: pjDuree, pjDateOuvrir: pjDateOuvrir, pjDateFermer: pjDateFermer, pjDate: pjDate, pjToggle: pjToggle, deleteClient: deleteClient,
     toggleTicketsSpace: toggleTicketsSpace, ticketStatus: ticketStatus, ticketDue: ticketDue, ticketTime: ticketTime, ticketDelete: ticketDelete, ticketForfait: ticketForfait, ticketProposeDate: ticketProposeDate,
-    ckpReste: ckpReste, ckpEstim: ckpEstim, ckpAjoutPasse: ckpAjoutPasse, ckTRelancer: ckTRelancer, ckTDemander: ckTDemander, mplCreer: mplCreer, mplPatch: mplPatch, mplEtape: mplEtape, ckTTraiter: ckTTraiter, ckpFinir: ckpFinir, ckpPasMaintenant: ckpPasMaintenant, ckpOrdreSysteme: ckpOrdreSysteme,
+    ckpReste: ckpReste, ckpEstim: ckpEstim, ckpAjoutPasse: ckpAjoutPasse, ckTRelancer: ckTRelancer, ckTDemander: ckTDemander, callLarge: callLarge, callPuces: callPuces, mplCreer: mplCreer, mplPatch: mplPatch, mplEtape: mplEtape, ckTTraiter: ckTTraiter, ckpFinir: ckpFinir, ckpPasMaintenant: ckpPasMaintenant, ckpOrdreSysteme: ckpOrdreSysteme,
     ckTSetTri: ckTSetTri, ckTSetFiltre: ckTSetFiltre, ckTOuvrir: ckTOuvrir, ckTGrand: ckTGrand, ckMenu: ckMenu,
     ckTRepondre: ckTRepondre, ckTCloturer: ckTCloturer, ckTSupprimer: ckTSupprimer, ckTCreerStb: ckTCreerStb, inbSetOnglet: inbSetOnglet, inbChoisir: inbChoisir, inbRefuser: inbRefuser, inbToutVu: inbToutVu, ckTSetCote: ckTSetCote, ckTVoir: ckTVoir, ckTEtape: ckTEtape,
     ckTAEstimer: ckTAEstimer,
