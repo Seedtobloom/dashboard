@@ -3622,3 +3622,6 @@ a.ckr-b{text-decoration:none;display:inline-block}
 .env-mot em{font-style:normal;font-weight:400;color:var(--muted)}
 .env-mot small{font-weight:400;font-size:13px;color:var(--muted)}
 .env-mot textarea{width:100%;box-sizing:border-box;font-size:15px;line-height:1.5;resize:vertical;font-weight:400}
+.inb-envoye{display:flex;flex-direction:column;gap:6px;padding:14px 16px;border-radius:12px;background:#F8F6F2;margin:6px 0;font-size:15px}
+.inb-envoye b{font-weight:600}
+.inb-envoye a{color:#5A2A11;text-decoration:underline;overflow-wrap:anywhere}

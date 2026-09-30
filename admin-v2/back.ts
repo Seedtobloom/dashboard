@@ -2324,7 +2324,13 @@ async function handleDashboard(env: Env): Promise<Response> {
           const last = cc.length ? cc[cc.length - 1] : null;
           const cAtts = (last && Array.isArray(last.attachments) ? last.attachments : []).map((a: AnyObj) => ({ name: a.name || 'fichier', key: a.key || a.fileKey || '' })).filter((a: AnyObj) => a.key);
           const _seen: AnyObj = {}; const allAtts = cAtts.concat(taskAtts).filter((a: AnyObj) => { if (_seen[a.key]) return false; _seen[a.key] = 1; return true; });
-          commentTasks.push({ key: ci.key, client: who, id: t.id, title: t.title, text: last ? (last.text || '') : '', at: last ? (last.createdAt || '') : '', attachments: allAtts });
+          // Ce que Cindy lui a envoyé en dernier : pour rouvrir la version dont
+          // parle le commentaire sans aller la chercher.
+          const lvC = (pc && Array.isArray(pc.livrables) ? pc.livrables : []).filter((l: AnyObj) => l.taskId === t.id);
+          const lastL = lvC.length ? lvC[lvC.length - 1] : null;
+          commentTasks.push({ key: ci.key, client: who, id: t.id, title: t.title, text: last ? (last.text || '') : '', at: last ? (last.createdAt || '') : '', attachments: allAtts,
+            sentLink: String((lastL && lastL.reviewLink) || t.reviewLink || '').slice(0, 2000), sentFile: String((lastL && lastL.fileKey) || ''),
+            sentName: String((lastL && lastL.name) || ''), sentAt: String((lastL && lastL.createdAt) || (Array.isArray(t.reviewHistory) && t.reviewHistory.length ? t.reviewHistory[t.reviewHistory.length - 1].at : '') || '') });
         }
       });
     }

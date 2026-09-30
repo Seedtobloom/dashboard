@@ -1506,7 +1506,13 @@
     } else if (t === 'revision') {
       titreCorps = 'Son retour';
       corps = x.comment ? '<p class="ckp-bt">« ' + esc(x.comment) + ' »</p>' : '<p class="ckg-doux">Pas de commentaire.</p>';
-    } else if (t === 'comment') { titreCorps = 'Son message'; corps = x.text ? '<p class="ckp-bt">' + esc(x.text) + '</p>' : ''; }
+    } else if (t === 'comment') {
+      titreCorps = 'Son message'; corps = x.text ? '<p class="ckp-bt">' + esc(x.text) + '</p>' : '';
+      var envC = x.sentLink || '';
+      if (envC || x.sentFile) corps += '<div class="inb-envoye"><b>Ce que tu lui as envoyé' + (x.sentAt ? ' le ' + esc(fmtDate(x.sentAt)) : '') + '</b>' +
+        (envC ? '<a href="' + esc(/^https?:\/\//i.test(envC) ? envC : 'https://' + envC) + '" target="_blank" rel="noopener">Ouvrir le lien envoyé</a>' : '') +
+        (x.sentFile ? '<a href="/api/clients/' + esc(x.key) + '/files/' + encodeURIComponent(x.sentFile) + '/download" target="_blank" rel="noopener">' + esc(x.sentName || 'Le fichier envoyé') + '</a>' : '') + '</div>';
+    }
     else if (t === 'rework') { titreCorps = 'Ses retours'; corps = (x.text || x.content) ? '<p class="ckp-bt">' + esc(x.text || x.content) + '</p>' : ''; }
     else if (t === 'validated') { titreCorps = 'Validé'; corps = '<p class="ckp-bt">' + esc(x.name || 'Livrable') + (x.taskTitle ? ', pour « ' + esc(x.taskTitle) + ' »' : '') + '.</p>'; }
     else if (t === 'qnr') { titreCorps = 'Questionnaire complété'; corps = '<p class="ckp-bt">' + esc(x.name || 'Questionnaire') + '</p>'; }
@@ -1654,6 +1660,13 @@
     if (x.createdAt) meta.push('Reçu le ' + esc(fmtDate(x.createdAt)));
     if (x.forfaitConfigured) meta.push(x.forfaitRemaining <= 0 ? 'Forfait épuisé' : 'Reste ' + x.forfaitRemaining + ' h');
     var link = x.clientLink ? '<a class="btn btn--outline btn--sm" href="' + esc(/^https?:\/\//i.test(x.clientLink) ? x.clientLink : 'https://' + x.clientLink) + '" target="_blank" rel="noopener">Lien de la cliente</a>' : '';
+    // Ce que tu lui as envoyé : le lien ou le fichier dont parle son retour.
+    var envL = x.sentLink || x.reviewLink || '';
+    if (envL || x.sentFile) {
+      link += '<div class="inb-envoye"><b>Ce que tu lui as envoyé' + (x.sentAt ? ' le ' + esc(fmtDate(x.sentAt)) : '') + '</b>' +
+        (envL ? '<a href="' + esc(/^https?:\/\//i.test(envL) ? envL : 'https://' + envL) + '" target="_blank" rel="noopener">' + esc(x.sentName && !x.sentFile ? x.sentName : 'Ouvrir le lien envoyé') + '</a>' : '') +
+        (x.sentFile ? '<a href="/api/clients/' + esc(x.key) + '/files/' + encodeURIComponent(x.sentFile) + '/download" target="_blank" rel="noopener">' + esc(x.sentName || 'Le fichier envoyé') + '</a>' : '') + '</div>';
+    }
     // Actions selon le type (chaque action ferme le panneau puis agit)
     var C = 'ADM.inboxDrawerClose();';
     var acts = '';
