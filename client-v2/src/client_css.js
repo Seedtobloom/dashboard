@@ -1597,11 +1597,12 @@ button.cpnd-j:hover { box-shadow: inset 0 0 0 1px #110704; }
   .mn-question{font-size:19px}
 }
 /* Page de suivi (Support de com mené par étapes) */
+.cps .cpb-h1{font-family:'Alegreya',Georgia,serif}
 .cps .cpb__in{display:flex;flex-direction:column;gap:32px}
 .cps-hero{background:#E6E5B2;border-radius:18px;padding:32px 38px;display:flex;justify-content:space-between;align-items:center;gap:24px}
 .cps-hero__txt{display:flex;flex-direction:column;gap:8px}
 .cps-hero__k{font-size:17px;font-weight:600}
-.cps-hero__t{font-family:'Cormorant Garamond',serif;font-size:38px;line-height:1.1}
+.cps-hero__t{font-family:'Alegreya',Georgia,serif;font-size:38px;line-height:1.1}
 .cps-hero p{margin:0;font-size:18px;line-height:1.5}
 .cps-hero__a{display:flex;gap:10px;flex-wrap:wrap;flex-shrink:0}
 .cps-calme{background:#fff;border-radius:18px;padding:24px 30px;font-size:18px}
@@ -1631,7 +1632,7 @@ button.cpnd-j:hover { box-shadow: inset 0 0 0 1px #110704; }
 .cps-qui{padding:4px 12px;border-radius:999px;font-size:15px;font-weight:600;background:#fff;box-shadow:inset 0 0 0 1px rgba(17,7,4,.25)}
 .cps-qui--toi{background:#E6E5B2;box-shadow:none}
 .cps-qui--cindy{background:#110704;color:#F8F6F2;box-shadow:none}
-.cps-grand{font-family:'Cormorant Garamond',serif;font-size:34px;line-height:1.1}
+.cps-grand{font-family:'Alegreya',Georgia,serif;font-size:34px;line-height:1.1}
 .cps-li{display:flex;justify-content:space-between;gap:12px;font-size:17px;padding:8px 0;border-top:1px solid rgba(17,7,4,.08)}
 .cps-li span+span{color:#6B5A50;white-space:nowrap}
 .cps-ret{display:flex;align-items:center;gap:14px;flex-wrap:wrap;font-size:17px}
