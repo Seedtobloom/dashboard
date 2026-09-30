@@ -4275,8 +4275,8 @@
     if (!a.length) { a = [kakemonoTrame(), defaultTrame()]; tramesSaveAll(a); }
     // Trame CERDD (appel du 30 septembre) : toujours proposée tant qu'elle
     // n'est pas dans la bibliothèque, même si un autre onglet l'a écrasée.
-    if (!a.some(function (t) { return t.id === 't_cerdd_propo'; })) a.splice(1, 0, cerddPropoTrame());
-    if (!a.some(function (t) { return t.id === 't_cerdd_glossaire'; })) a.splice(1, 0, cerddGlossaireTrame());
+    // Proposition et glossaire CERDD sont devenus des onglets de la trame.
+    if (a.some(function (t) { return t.id === 't_cerdd_propo' || t.id === 't_cerdd_glossaire'; })) { a = a.filter(function (t) { return t.id !== 't_cerdd_propo' && t.id !== 't_cerdd_glossaire'; }); TRAMES_SRV = a; }
     if (!a.some(function (t) { return t.id === 't_cerdd_cadrage'; })) a.unshift(cerddTrame());
     return a;
   }
@@ -4286,6 +4286,16 @@
   function trameSet(id, field, val) { var a = tramesGet(); var t = a.filter(function (x) { return x.id === id; })[0]; if (!t) return; t[field] = val; tramesSaveAll(a); }
   function trameEditToggle() { CALL_TRAME_EDIT = !CALL_TRAME_EDIT; TRAME_ED.id = null; renderVisiosBody(); }
   function callRight(mode) { CALL_RIGHT = mode; renderVisiosBody(); }
+  // Fiches d'appui d'une trame, affichées en onglets à côté d'elle.
+  var CALL_COMPAGNONS = {
+    t_cerdd_cadrage: [['Ma proposition', function () { return cerddPropoTrame(); }], ['Glossaire', function () { return cerddGlossaireTrame(); }]]
+  };
+  function callCompagnon(c) {
+    var t = c[1]();
+    return '<div class="trm-carte"><div class="row" style="gap:8px;align-items:center;margin-bottom:12px"><div style="flex:1;font-size:17px;font-weight:600">' + esc(t.title) + '</div>' +
+      '<button class="trm-ag" onclick="ADM.callLarge()">' + (CALL_LARGE ? 'Réduire' : 'Agrandir') + '</button></div>' +
+      '<div class="trm' + (CALL_LARGE ? ' trm--large' : '') + '">' + trameRender(t.content) + '</div></div>';
+  }
   // Trame agrandie : la liste des notes se cache, la trame prend ~60 %.
   var CALL_LARGE = false; try { CALL_LARGE = localStorage.getItem('stb_call_large') === '1'; } catch (e) {}
   function callLarge() { CALL_LARGE = !CALL_LARGE; try { localStorage.setItem('stb_call_large', CALL_LARGE ? '1' : '0'); } catch (e) {} renderVisiosBody(); }
@@ -4545,11 +4555,17 @@
     var editor = cur
       ? '<div style="background:#fff;border-radius:16px;padding:18px 20px">' + callEditor(cur) + '</div>'
       : '<div style="background:#fff;border-radius:16px;padding:60px 26px;text-align:center;color:var(--muted);font-family:var(--font-micro);font-size:15px">Crée une note pour préparer et suivre ton appel.<br>L\'anti-sèche reste affichée à droite.</div>';
+    // Onglets en plus de la trame : ses fiches d'appui (proposition, glossaire).
+    var tr0 = tramesGet(), tsel = CALL_TRAME_SEL || (tr0[0] && tr0[0].id);
+    var comp = CALL_COMPAGNONS[tsel] || [];
+    if (CALL_RIGHT.indexOf('c') === 0 && !comp[+CALL_RIGHT.slice(1)]) CALL_RIGHT = 'trame';
     var rtoggle = '<div class="subtabs" style="margin-bottom:10px">' +
       '<button class="subtab' + (CALL_RIGHT === 'trame' ? ' active' : '') + '" onclick="ADM.callRight(\'trame\')">Trame</button>' +
+      comp.map(function (c, ci) { return '<button class="subtab' + (CALL_RIGHT === 'c' + ci ? ' active' : '') + '" onclick="ADM.callRight(\'c' + ci + '\')">' + esc(c[0]) + '</button>'; }).join('') +
       '<button class="subtab' + (CALL_RIGHT === 'anti' ? ' active' : '') + '" onclick="ADM.callRight(\'anti\')">Anti-sèche</button>' +
     '</div>';
-    var right = '<aside style="position:sticky;top:12px">' + rtoggle + (CALL_RIGHT === 'trame' ? callTrame() : callAntiseche()) + '</aside>';
+    var corps = CALL_RIGHT === 'trame' ? callTrame() : (CALL_RIGHT === 'anti' ? callAntiseche() : callCompagnon(comp[+CALL_RIGHT.slice(1)]));
+    var right = '<aside style="position:sticky;top:12px">' + rtoggle + corps + '</aside>';
     return CALL_LARGE
       ? '<div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.5fr);gap:22px;align-items:start">' + editor + right + '</div>'
       : '<div style="display:grid;grid-template-columns:210px minmax(0,1fr) 640px;gap:18px;align-items:start">' + list + editor + right + '</div>';
