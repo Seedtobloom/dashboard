@@ -4411,6 +4411,20 @@
   function trameNote(s, ml) { return '<div style="font-family:var(--font-micro);font-size:15px;line-height:1.55;color:var(--muted);font-style:italic;margin-bottom:' + (ml || 2) + 'px">' + esc(s) + '</div>'; }
   // Trame affichée pendant l'appel : une étape = un bloc numéroté, les
   // phrases à dire dans leur propre bloc clair, les repères en gris aéré.
+  // Une ligne de repère : le libellé du début (« Foncière : », « Qui agit. »)
+  // en gras foncé, les montants en gras, les citations en foncé.
+  function trameRep(t) {
+    var lab = '', rest = t;
+    var md = t.match(/^([^.:«»?!]{2,28}\.) /), mc = t.match(/^([^:«»]{2,64}?) : /);
+    var m = (md && (!mc || md[0].length < mc[0].length)) ? md : mc;
+    if (m) { lab = m[1]; rest = t.slice(m[0].length); }
+    var corps = esc(rest)
+      // Un libellé en milieu de ligne (« Structurelle : », « Dans une commune : »).
+      .replace(/(^|\. )([A-ZÀ-Ý][^.:«»&]{1,30}) : /g, '$1<b>$2 :</b> ')
+      .replace(/(\d[\d\s ]*(?:,\d+)?\s?€(?:\s?HT)?(?:\s?(?:\/|la)\s?page)?)/g, '<b>$1</b>')
+      .replace(/«[^»]*»/g, function (q) { return '<span class="trm-q">' + q + '</span>'; });
+    return '<p class="trm-rep">' + (lab ? '<b class="trm-lab">' + esc(lab) + (/\.$/.test(lab) ? '' : ' :') + '</b> ' : '') + corps + '</p>';
+  }
   function trameRender(content) {
     var lines = String(content || '').split('\n'), out = '', n = 0, ouvert = false;
     function ouvrir(titre) {
@@ -4428,13 +4442,13 @@
       var gi = l.indexOf('→');
       if (gi !== -1 && l.indexOf('→', gi + 1) === -1) {
         var cond = l.slice(0, gi).trim(), resp = l.slice(gi + 1).trim();
-        out += (cond ? '<p class="trm-rep">' + esc(cond) + '</p>' : '') +
+        out += (cond ? trameRep(cond) : '') +
           (/«[^»]*»/.test(resp) ? '<div class="trm-dit">' + esc(resp) + '</div>' : '<p class="trm-rep">→ ' + esc(resp) + '</p>');
         return;
       }
       var qi = t.indexOf('«');
       if (qi !== -1 && qi <= 20) { out += '<div class="trm-dit">' + esc(t) + '</div>'; return; }
-      out += '<p class="trm-rep">' + esc(t) + '</p>';
+      out += trameRep(t);
     });
     if (ouvert) out += '</section>';
     return out;

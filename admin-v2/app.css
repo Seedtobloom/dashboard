@@ -3614,3 +3614,6 @@ a.ckr-b{text-decoration:none;display:inline-block}
 .trm--large .trm-rep{font-size:18px}
 .trm--large .trm-dit{font-size:19px}
 .trm--large .trm-h h3{font-size:30px}
+.trm-lab{color:var(--terre);font-weight:600}
+.trm-rep b{color:var(--terre);font-weight:600}
+.trm-q{color:var(--terre);font-weight:500}
