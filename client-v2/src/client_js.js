@@ -109,7 +109,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var initials = name ? name.split(' ').map(function(w){return w[0];}).join('').slice(0,2).toUpperCase() : '?';
     var bg = isCindy ? 'var(--terre)' : 'var(--glycine)';
     var fg = isCindy ? 'var(--paille)' : 'var(--terre)';
-    return '<span style="width:'+size+'px;height:'+size+'px;border-radius:50%;background:'+bg+';color:'+fg+';display:grid;place-items:center;font-family:var(--font-display);font-style:italic;font-size:'+(Math.round(size*0.42))+'px;flex-shrink:0">'+initials+'</span>';
+    return '<span style="width:'+size+'px;height:'+size+'px;border-radius:50%;background:'+bg+';color:'+fg+';display:grid;place-items:center;font-family:var(--font-display);font-size:'+(Math.round(size*0.42))+'px;flex-shrink:0">'+initials+'</span>';
   }
   function cpStatusDot(status) {
     var colors = { todo:'var(--st-todo)', in_progress:'var(--st-progress)', waiting_client:'var(--st-review)', done:'var(--st-done)', upcoming:'var(--terre-200)', review:'var(--st-review)' };
@@ -866,7 +866,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap">' +
         '<div>' +
           '<div style="font-family:var(--font-micro);font-size:10px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:#F8F6F2">' + eyebrow + '</div>' +
-          '<div style="margin-top:10px;max-width:560px"><div style="font-family:var(--font-display);font-style:italic;font-size:29px;line-height:1;color:' + (_cm.tone === 'over' ? '#CD8F6E' : '#F8F6F2') + '">' + _cm.label + '</div>' +
+          '<div style="margin-top:10px;max-width:560px"><div style="font-family:var(--font-display);font-size:29px;line-height:1;color:' + (_cm.tone === 'over' ? '#CD8F6E' : '#F8F6F2') + '">' + _cm.label + '</div>' +
           '<div style="font-family:var(--font-body);font-size:14px;color:#F8F6F2;margin-top:9px;line-height:1.5">' + _cm.note + '</div></div>' +
         '</div>' +
         '<button onclick="cpOpenStats(\'' + pid + '\')" style="font-family:var(--font-micro);font-size:11.5px;font-weight:600;letter-spacing:0.03em;color:#110704;background:#C5DEFF;border:none;border-radius:999px;padding:9px 15px;cursor:pointer">Voir ce qui avance →</button>' +
@@ -1079,7 +1079,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
         var mForfaitCard = '<div class="card" style="padding:22px 24px;'+(mOver?'border-color:#CD8F6E;background:rgba(205,143,110,.14)':'')+(mBarPct>75&&!mOver?'border-color:var(--glycine-200)':'')+ '">' +
           '<div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--terre-600);margin-bottom:14px">Forfait du mois</div>' +
           (mBaseMin
-            ? '<div style="display:flex;align-items:baseline;gap:8px;margin-bottom:14px"><span style="font-family:var(--font-display);font-style:italic;font-size:36px;color:'+(mOver?'#5A2A11':mBarColor)+'">'+(mOver?'-':'')+mRemH+'</span><span style="font-family:var(--font-micro);font-size:11px;color:var(--terre-600)">restant'+(mOver?' · dépassement':' · sur '+mTotH)+'</span></div>' +
+            ? '<div style="display:flex;align-items:baseline;gap:8px;margin-bottom:14px"><span style="font-family:var(--font-display);font-size:36px;color:'+(mOver?'#5A2A11':mBarColor)+'">'+(mOver?'-':'')+mRemH+'</span><span style="font-family:var(--font-micro);font-size:11px;color:var(--terre-600)">restant'+(mOver?' · dépassement':' · sur '+mTotH)+'</span></div>' +
               '<div style="height:8px;background:var(--bone-d);border-radius:999px;overflow:hidden;margin-bottom:8px"><div style="height:100%;width:'+mBarPct+'%;background:'+mBarColor+';border-radius:999px"></div></div>' +
               '<div style="display:flex;justify-content:space-between;font-family:var(--font-micro);font-size:10px;color:var(--terre-400)"><span>'+mUsedH+' utilisé</span><span>'+mTotH+' ce mois'+(mCarryMin<0?' (report du dépassement)':(mCarryMin>0?' (report inclus)':''))+'</span></div>' +
               (mCarryMin<0 ? '<div style="font-family:var(--font-body);font-size:12px;color:#5A2A11;line-height:1.45;margin-top:10px">'+fmtMn(-mCarryMin)+' de dépassement du mois dernier ont été déduites'+(mBilledMin>0?', et '+fmtMn(mBilledMin)+' facturées':'')+'.</div>':'')
@@ -1179,7 +1179,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
           nextCard = '<div class="card" style="padding:22px 26px;display:flex;gap:18px;align-items:flex-start;border-color:var(--glycine-200);background:var(--glycine-50)">' +
             '<div style="flex-shrink:0;width:36px;height:36px;border-radius:50%;background:var(--glycine-200);display:grid;place-items:center">' + cpIcon('check',18,'color:var(--glycine-900)') + '</div>' +
             '<div style="flex:1">' +
-              '<div style="font-family:var(--font-display);font-style:italic;font-size:22px;color:var(--terre);margin-bottom:6px">Rien à faire de votre côté</div>' +
+              '<div style="font-family:var(--font-display);font-size:22px;color:var(--terre);margin-bottom:6px">Rien à faire de votre côté</div>' +
               '<div style="font-size:14px;color:var(--terre-600);line-height:1.5">Cindy s\'occupe de « ' + esc(inProgressStep.title) + ' ». Je vous préviens dès qu\'un livrable attend votre validation.</div>' +
               (inProgressStep.dueDate ? '<div style="margin-top:10px">' + cpDeadlinePill(inProgressStep.dueDate, false, true) + '</div>' : '') +
             '</div>' +
@@ -1263,7 +1263,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
           forfaitCard = '<div class="card" style="padding:22px 24px'+(fOver?';border-color:#CD8F6E;background:rgba(205,143,110,.14)':'')+'">' +
             '<div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--terre-600);margin-bottom:12px">Forfait du mois</div>' +
             '<div style="display:flex;align-items:baseline;gap:8px;margin-bottom:10px">' +
-              '<span style="font-family:var(--font-display);font-style:italic;font-size:34px;color:'+(fOver?'#5A2A11':'var(--terre)')+'">'+(fOver?'−'+cpFmtH(f.over):cpFmtH(f.remaining))+'</span>' +
+              '<span style="font-family:var(--font-display);font-size:34px;color:'+(fOver?'#5A2A11':'var(--terre)')+'">'+(fOver?'−'+cpFmtH(f.over):cpFmtH(f.remaining))+'</span>' +
               '<span style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.06em;text-transform:uppercase;color:var(--terre-600)">'+(fOver?'de dépassement':'restantes')+'</span>' +
             '</div>' +
             '<div style="height:6px;background:var(--bone-d);border-radius:999px;overflow:hidden;margin-bottom:8px"><div style="height:100%;width:'+fPctUsed+'%;background:'+fBarCol+';border-radius:999px"></div></div>' +
@@ -1280,7 +1280,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       var progressCard = '<div class="card" style="padding:22px 24px">' +
         '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:13px">' +
           '<span style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--terre-600)">Avancement du projet</span>' +
-          '<span style="font-family:var(--font-display);font-style:italic;font-size:26px;color:var(--terre)">'+pct+'<span style="font-size:15px">%</span></span>' +
+          '<span style="font-family:var(--font-display);font-size:26px;color:var(--terre)">'+pct+'<span style="font-size:15px">%</span></span>' +
         '</div>' +
         '<div class="cp-prog"><div class="cp-prog__fill" style="width:'+pct+'%"></div></div>' +
         '<div style="margin-top:11px;font-family:var(--font-body);font-size:14px;font-style:italic;opacity:0.75;color:var(--terre)">'+done+' étape'+(done>1?'s':'')+(done>0?' terminée'+(done>1?'s':''):'')+ ' sur '+steps.length+'</div>' +
@@ -1321,14 +1321,14 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
         monthStripHtml = '<div style="display:flex;align-items:center;border:1px solid var(--bone-d);border-radius:var(--radius-3);background:var(--card);margin-bottom:22px;overflow:hidden">' +
           '<div style="padding:16px 22px;border-right:1px solid var(--bone-d);flex-shrink:0">' +
             '<div style="font-family:var(--font-micro);font-size:9px;color:var(--terre-400);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:4px">Ce mois-ci</div>' +
-            '<div style="font-family:var(--font-display);font-style:italic;font-size:18px;color:var(--terre)">' + mLabel + '</div>' +
+            '<div style="font-family:var(--font-display);font-size:18px;color:var(--terre)">' + mLabel + '</div>' +
           '</div>' +
           '<div style="padding:16px 22px;border-right:1px solid var(--bone-d);flex-shrink:0">' +
-            '<div style="font-family:var(--font-display);font-style:italic;font-size:26px;color:var(--terre);line-height:1">' + livreCeMois + '</div>' +
+            '<div style="font-family:var(--font-display);font-size:26px;color:var(--terre);line-height:1">' + livreCeMois + '</div>' +
             '<div style="font-family:var(--font-micro);font-size:9px;color:var(--terre-400);letter-spacing:0.07em;text-transform:uppercase;margin-top:3px">Demandes livrées</div>' +
           '</div>' +
           '<div style="padding:16px 22px;border-right:1px solid var(--bone-d);flex-shrink:0">' +
-            '<div style="font-family:var(--font-display);font-style:italic;font-size:26px;color:var(--terre);line-height:1">' + enCours + '</div>' +
+            '<div style="font-family:var(--font-display);font-size:26px;color:var(--terre);line-height:1">' + enCours + '</div>' +
             '<div style="font-family:var(--font-micro);font-size:9px;color:var(--terre-400);letter-spacing:0.07em;text-transform:uppercase;margin-top:3px">Demandes en cours</div>' +
           '</div>' +
           (mForfH ? '<div style="padding:16px 22px;flex:1;min-width:0">' +
@@ -1761,7 +1761,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       ov.innerHTML = '<div style="background:#fff;border-radius:18px 18px 0 0;max-width:520px;width:100%;box-shadow:none;max-height:85vh;overflow-y:auto">' +
         '<div style="background:' + bannerColor + ';padding:20px 24px;border-radius:18px 18px 0 0;position:relative">' +
           (card.statusLabel ? '<div style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:rgba(255,255,255,0.65);margin-bottom:4px">' + esc(card.statusLabel) + '</div>' : '') +
-          '<div style="font-size:19px;font-family:\'Cormorant Garamond\',serif;font-style:italic;color:#fff">' + esc(card.title) + '</div>' +
+          '<div style="font-size:19px;font-family:\'Alegreya\',serif;color:#fff">' + esc(card.title) + '</div>' +
           ((card.startDate || card.duration)
             ? '<div style="font-size:12px;color:rgba(255,255,255,0.65);margin-top:6px">' +
                 (card.startDate ? fmtDate(card.startDate) : '') +
@@ -1820,7 +1820,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
         var delBtn = ed ? '<button onclick="cliDeleteStepBlock(\'' + pid + '\',\'' + stepId + '\',\'' + blk.id + '\')" style="margin-left:auto;flex-shrink:0;width:22px;height:22px;border-radius:50%;border:1px solid var(--bone-d);background:transparent;color:var(--terre-400);font-size:14px;line-height:1;cursor:pointer;display:grid;place-items:center;opacity:0.7" title="Supprimer">×</button>' : '';
         if (blk.type === 'title') {
           return '<div style="display:flex;align-items:flex-start;gap:8px">' +
-            '<h2' + editAttrs + ' style="font-family:var(--font-display);font-style:italic;font-size:24px;color:var(--terre);font-weight:400;margin:0;flex:1;outline:none;border-bottom:1.5px dashed transparent;padding-bottom:2px">' + esc(blk.content || '') + '</h2>' +
+            '<h2' + editAttrs + ' style="font-family:var(--font-display);font-size:24px;color:var(--terre);font-weight:400;margin:0;flex:1;outline:none;border-bottom:1.5px dashed transparent;padding-bottom:2px">' + esc(blk.content || '') + '</h2>' +
             delBtn +
           '</div>';
         }
@@ -1906,7 +1906,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       '</div>' +
       // Body
       '<div style="padding:28px 32px;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:16px">' +
-        '<h1 style="font-family:var(--font-display);font-style:italic;font-size:34px;color:var(--terre);font-weight:400;margin:0;line-height:1.15">' + esc(step.title) + '</h1>' +
+        '<h1 style="font-family:var(--font-display);font-size:34px;color:var(--terre);font-weight:400;margin:0;line-height:1.15">' + esc(step.title) + '</h1>' +
         '<hr style="border:none;border-top:1px solid var(--bone-d);margin:0">' +
         (step.description ? '<p style="font-size:15px;color:var(--terre-600);font-style:italic;line-height:1.6;margin:0">' + esc(step.description) + '</p>' : '') +
         (blocksHtml ? '<div style="display:flex;flex-direction:column;gap:14px">' + blocksHtml + '</div>' : '') +
@@ -1981,7 +1981,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     }).join('');
     return '<div style="background:var(--card);border:1.5px solid var(--bone-d);border-radius:var(--radius-3);padding:20px 22px;margin-bottom:22px;position:relative">'+
       '<button onclick="cpOnboardDismiss(\''+pid+'\')" title="Masquer ce guide" style="position:absolute;top:14px;right:16px;background:none;border:none;cursor:pointer;color:var(--terre-400);font-size:20px;line-height:1">×</button>'+
-      '<div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">'+cpIcon('flower',18,'color:var(--terre)')+'<span style="font-family:var(--font-display);font-style:italic;font-size:22px;color:var(--terre)">Par où commencer ?</span></div>'+
+      '<div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">'+cpIcon('flower',18,'color:var(--terre)')+'<span style="font-family:var(--font-display);font-size:22px;color:var(--terre)">Par où commencer ?</span></div>'+
       '<div style="font-family:var(--font-micro);font-size:10.5px;letter-spacing:0.06em;text-transform:uppercase;color:var(--terre-600);margin-bottom:14px">'+doneN+' / '+total+' étape'+(total>1?'s':'')+' · vous y êtes presque</div>'+
       '<div style="height:7px;background:var(--bone-d);border-radius:999px;overflow:hidden;margin-bottom:8px"><div style="height:100%;width:'+pct+'%;background:var(--terre);border-radius:999px;transition:width .4s ease"></div></div>'+
       rows+
@@ -2002,7 +2002,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
   function cpQFieldHtml(q, ans) {
     if (q.type === 'section') {
       return '<div style="margin:22px 0 12px;padding-bottom:8px;border-bottom:2px solid var(--border)">' +
-        '<div style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:20px;color:var(--navy);font-weight:600">' + esc(q.label) + '</div>' +
+        '<div style="font-family:\'Alegreya\',serif;font-size:20px;color:var(--navy);font-weight:400">' + esc(q.label) + '</div>' +
         (q.help ? '<div style="font-size:12.5px;color:var(--muted);line-height:1.6;margin-top:6px;white-space:pre-wrap">' + esc(q.help) + '</div>' : '') +
       '</div>';
     }
@@ -2046,7 +2046,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     return '<button type="button" onclick="cpOpenQuestionnaire(\'' + esc(project.id) + '\')" style="width:100%;text-align:left;border:none;padding:0;background:none;cursor:pointer;border-radius:14px;overflow:hidden;box-shadow:none;margin-bottom:14px;display:block">' +
         '<div style="background:' + bannerCol + ';padding:18px 20px 14px;position:relative">' +
           '<div style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:rgba(255,255,255,0.6);margin-bottom:4px">Questionnaire' + (allAnswered ? '' : ' · à compléter') + '</div>' +
-          '<div style="font-size:17px;font-weight:600;color:#fff;font-family:\'Cormorant Garamond\',serif;font-style:italic">' + esc(qTitle) + '</div>' +
+          '<div style="font-size:17px;font-weight:400;color:#fff;font-family:\'Alegreya\',serif;">' + esc(qTitle) + '</div>' +
           (allAnswered
             ? '<span style="position:absolute;top:14px;right:14px;font-size:11px;background:rgba(255,255,255,0.2);color:#fff;padding:3px 10px;border-radius:999px;font-weight:600">Complété ✓</span>'
             : '<span style="position:absolute;top:14px;right:14px;font-size:11px;background:rgba(255,200,0,0.25);color:#fff;padding:3px 10px;border-radius:999px;font-weight:600">À compléter</span>') +
@@ -2180,7 +2180,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
         '<div style="font-size:34px;line-height:1">' + stage.emoji + '</div>' +
         '<div style="flex:1;min-width:180px">' +
           '<div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--terre-400,#F8F6F2)">Ton parcours</div>' +
-          '<div style="font-family:var(--font-display);font-style:italic;font-size:23px;color:var(--terre);line-height:1.15">' + esc(stage.phrase) + '</div>' +
+          '<div style="font-family:var(--font-display);font-size:23px;color:var(--terre);line-height:1.15">' + esc(stage.phrase) + '</div>' +
         '</div>' +
         '<div style="font-size:13.5px;font-weight:600;color:' + esc(accent) + ';white-space:nowrap">' + headline + '</div>' +
       '</div>' +
@@ -2254,7 +2254,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
         var last = i === prows.length - 1;
         var dot = '<span style="width:13px;height:13px;border-radius:50%;flex-shrink:0;background:' + (done ? st[1] : '#fff') + ';border:2.5px solid ' + st[1] + ';box-shadow:0 0 0 4px ' + st[2] + '"></span>';
         return '<div style="display:flex;gap:16px;align-items:stretch">' +
-          '<div style="width:82px;flex-shrink:0;text-align:right;padding-top:1px"><span style="font-family:var(--font-display);font-style:italic;font-size:14.5px;color:var(--terre-600,#5A2A11);line-height:1.3">' + esc(r.label || '—') + '</span></div>' +
+          '<div style="width:82px;flex-shrink:0;text-align:right;padding-top:1px"><span style="font-family:var(--font-display);font-size:14.5px;color:var(--terre-600,#5A2A11);line-height:1.3">' + esc(r.label || '—') + '</span></div>' +
           '<div style="display:flex;flex-direction:column;align-items:center;flex-shrink:0">' + dot + (last ? '' : '<span style="flex:1;width:2px;background:var(--bone-d,#F8F6F2);margin:3px 0"></span>') + '</div>' +
           '<div style="flex:1;padding-bottom:' + (last ? '2px' : '24px') + '">' +
             '<div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:4px">' +
@@ -2821,7 +2821,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       var numBdr = isDone ? svAccent.mid : 'var(--bone-d)';
       return '<button onclick="cpOpenStepModal(\''+s.id+'\')" style="width:100%;text-align:left;padding:0;background:none;border:none;cursor:pointer">' +
         '<div class="cp-card cp-step-card" style="background:var(--card);border:1px solid var(--bone-d);transition:box-shadow 150ms" onmouseenter="this.style.boxShadow=\'0 3px 14px rgba(92,70,51,0.08)\'" onmouseleave="this.style.boxShadow=\'\'">' +
-          '<span style="width:42px;height:42px;border-radius:50%;flex-shrink:0;display:grid;place-items:center;background:'+numBg+';border:1px solid '+numBdr+';font-family:var(--font-display);font-style:italic;font-size:18px;color:var(--terre)">'+(i+1)+'</span>' +
+          '<span style="width:42px;height:42px;border-radius:50%;flex-shrink:0;display:grid;place-items:center;background:'+numBg+';border:1px solid '+numBdr+';font-family:var(--font-display);font-size:18px;color:var(--terre)">'+(i+1)+'</span>' +
           '<div style="min-width:0">' +
             '<div style="font-family:var(--font-display);font-size:22px;color:var(--terre);margin-bottom:6px;display:inline-flex;align-items:center;gap:8px">'+esc(s.title)+' '+cpIcon('arrow',14,'color:var(--terre-400)')+'</div>' +
             (s.description ? '<p style="font-size:15px;color:var(--terre-600);line-height:1.55;margin-bottom:14px">'+esc(s.description)+'</p>' : '') +
@@ -2838,7 +2838,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       var bannerBg = s.bannerUrl ? 'url('+esc(s.bannerUrl)+') center/cover no-repeat' : (s.bannerColor ? s.bannerColor.split('|')[0] : svAccent.soft);
       return '<button onclick="cpOpenStepModal(\''+s.id+'\')" style="padding:0;overflow:hidden;text-align:left;cursor:pointer;background:var(--card);border:1px solid var(--bone-d);border-radius:10px;width:100%;display:flex;flex-direction:column;transition:transform 180ms,box-shadow 180ms" onmouseenter="this.style.transform=\'translateY(-3px)\';this.style.boxShadow=\'0 6px 24px rgba(92,70,51,0.1)\'" onmouseleave="this.style.transform=\'\';this.style.boxShadow=\'\'">' +
         '<div style="position:relative;height:130px;background:'+bannerBg+';border-radius:10px 10px 0 0;overflow:hidden">' +
-          '<span style="position:absolute;top:10px;left:12px;width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,0.9);display:grid;place-items:center;font-family:var(--font-display);font-style:italic;font-size:13px;color:'+svAccent.ink+'">'+(i+1)+'</span>' +
+          '<span style="position:absolute;top:10px;left:12px;width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,0.9);display:grid;place-items:center;font-family:var(--font-display);font-size:13px;color:'+svAccent.ink+'">'+(i+1)+'</span>' +
           (!s.bannerUrl ? '<div style="position:absolute;inset:0;display:grid;place-items:center">'+cpIcon('image',32,'color:'+svAccent.deep+';opacity:0.35')+'</div>' : '') +
         '</div>' +
         '<div style="padding:18px 20px 20px;flex:1;display:flex;flex-direction:column;gap:10px">' +
@@ -3170,7 +3170,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
           ? 'background:url(' + esc(p.bannerUrl) + ') center/cover no-repeat;'
           : (p.bannerColor ? 'background:' + esc(p.bannerColor.split('|')[0]) + ';' : 'background:' + pvAccent.soft + ';');
         var coverHtml = '<div style="position:relative;height:130px;' + bannerBg + 'border-radius:8px 8px 0 0;overflow:hidden">' +
-          '<span style="position:absolute;top:10px;left:12px;width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,0.9);display:grid;place-items:center;font-family:var(--font-display);font-style:italic;font-size:13px;color:' + pvAccent.ink + '">' + (i+1) + '</span>' +
+          '<span style="position:absolute;top:10px;left:12px;width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,0.9);display:grid;place-items:center;font-family:var(--font-display);font-size:13px;color:' + pvAccent.ink + '">' + (i+1) + '</span>' +
           (!p.bannerUrl ? '<div style="position:absolute;inset:0;display:grid;place-items:center">' + cpIcon('image', 32, 'color:' + pvAccent.deep + ';opacity:0.35') + '</div>' : '') +
         '</div>';
         return '<button onclick="cpOpenStepModal(\'' + p.id + '\')" style="padding:0;overflow:hidden;text-align:left;cursor:pointer;background:var(--card,#fff);border:1px solid var(--bone-d);border-radius:10px;width:100%;display:flex;flex-direction:column;transition:transform 180ms,box-shadow 180ms" onmouseenter="this.style.transform=\'translateY(-3px)\';this.style.boxShadow=\'0 6px 24px rgba(92,70,51,0.1)\'" onmouseleave="this.style.transform=\'\';this.style.boxShadow=\'\'">' +
@@ -3190,7 +3190,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
         var i = steps.indexOf(p);
         var isDone = p.status === 'done';
         return '<button onclick="cpOpenStepModal(\'' + p.id + '\')" style="width:100%;text-align:left;padding:20px 24px;background:var(--card,#fff);border:1px solid var(--bone-d);border-radius:10px;cursor:pointer;display:flex;align-items:flex-start;gap:18px;transition:box-shadow 150ms" onmouseenter="this.style.boxShadow=\'0 3px 14px rgba(92,70,51,0.08)\'" onmouseleave="this.style.boxShadow=\'\'">' +
-          '<span style="width:36px;height:36px;flex-shrink:0;border-radius:50%;background:' + pvAccent.soft + ';display:grid;place-items:center;font-family:var(--font-display);font-style:italic;font-size:16px;color:' + pvAccent.ink + '">' + (i+1) + '</span>' +
+          '<span style="width:36px;height:36px;flex-shrink:0;border-radius:50%;background:' + pvAccent.soft + ';display:grid;place-items:center;font-family:var(--font-display);font-size:16px;color:' + pvAccent.ink + '">' + (i+1) + '</span>' +
           '<div style="flex:1;min-width:0">' +
             '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">' +
               '<div style="font-family:var(--font-display);font-size:22px;color:var(--terre);font-weight:400;line-height:1.15;display:inline-flex;align-items:center;gap:8px">' + esc(p.title) + ' ' + cpIcon('arrow', 14, 'color:var(--terre-400)') + '</div>' +
@@ -3282,7 +3282,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       : '';
     var body = '';
     if (b.type === 'title') {
-      body = '<div style="font-family:\'Cormorant Garamond\',serif;font-size:20px;font-style:italic;color:var(--navy);padding:6px 10px">'+(b.content||'')+'</div>';
+      body = '<div style="font-family:\'Alegreya\',serif;font-size:20px;color:var(--navy);padding:6px 10px">'+(b.content||'')+'</div>';
     } else if (b.type === 'text') {
       body = '<div style="font-size:14px;color:var(--text);padding:6px 10px;white-space:pre-wrap">'+(b.content||'')+'</div>';
     } else if (b.type === 'list') {
@@ -3675,7 +3675,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
           '<button onclick="cliDeleteTask(\''+pid+'\',\''+t.id+'\')" style="background:none;border:1.5px solid #CD8F6E;border-radius:8px;padding:3px 9px;cursor:pointer;font-size:11px;color:#5A2A11">✕</button>' +
         '</div>' +
       '</div>' +
-      '<div style="font-family:\'Cormorant Garamond\',serif;font-size:16px;font-style:italic;color:var(--navy);line-height:1.4;margin-bottom:10px">'+esc(t.title)+'</div>' +
+      '<div style="font-family:\'Alegreya\',serif;font-size:16px;color:var(--navy);line-height:1.4;margin-bottom:10px">'+esc(t.title)+'</div>' +
       (t.dueDate?'<div style="font-size:12px;color:var(--muted);margin-bottom:6px"><span style="font-weight:600;color:var(--text)">Deadline :</span> '+fmtDate(t.dueDate)+'</div>':'') +
       ((t.v1Date||t.v2Date)?'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">'+
         (t.v1Date?'<span style="font-size:11px;font-weight:600;letter-spacing:0.03em;color:#5A2A11;background:#C5DEFF;border-radius:999px;padding:3px 10px">V1 · '+fmtDate(t.v1Date)+'</span>':'')+
@@ -3780,7 +3780,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       '<div style="display:flex;align-items:flex-start;gap:12px">' +
         '<span style="flex-shrink:0;width:38px;height:38px;border-radius:50%;background:' + circle + ';display:flex;align-items:center;justify-content:center">' + cpIcon('clock', 18, 'color:' + accent) + '</span>' +
         '<div style="flex:1;min-width:0">' +
-          '<div style="font-family:var(--font-display);font-style:italic;font-size:18px;color:' + accent + ';margin-bottom:2px">' + esc(title) + '</div>' +
+          '<div style="font-family:var(--font-display);font-size:18px;color:' + accent + ';margin-bottom:2px">' + esc(title) + '</div>' +
           '<div style="font-size:13.5px;color:var(--terre-600);line-height:1.5">' + esc(msg) + '</div>' +
           sols + actions +
         '</div>' +
@@ -3811,7 +3811,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     // ── Cartes récap (empilées dans la colonne de droite) ──
     var cardCss = 'background:F8F6F2;border:none;border-radius:18px;padding:20px 22px';
     var statLbl = 'font-family:var(--font-micro);font-size:11px;text-transform:uppercase;letter-spacing:.1em;font-weight:600;color:var(--terre-400,#5A2A11);margin-bottom:10px';
-    var statVal = 'font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:34px;line-height:1;font-weight:600';
+    var statVal = 'font-family:\'Alegreya\',serif;font-size:34px;line-height:1;font-weight:400';
     var statForfait = '<div style="' + cardCss + '">' +
         '<div style="'+statLbl+'">Forfait restant</div>' +
         '<div style="'+statVal+';color:'+(forfaitLeft<0?'var(--red)':forfaitLeft<2?'var(--orange)':'var(--terre)')+'">' +
@@ -3867,13 +3867,13 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
             '<span style="flex:1;font-family:var(--font-micro);font-size:12.5px;font-weight:700;color:var(--terre)">' + esc(when) + '</span>' +
             '<span style="font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:0.03em;text-transform:uppercase;padding:5px 10px;border-radius:999px;background:' + sm.bg + ';color:' + sm.color + '">' + esc(sm.label) + '</span>' +
           '</div>' +
-          '<div style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:22px;line-height:1.1;color:var(--terre)">' + esc(t.title) + '</div>' +
+          '<div style="font-family:\'Alegreya\',serif;font-size:22px;line-height:1.1;color:var(--terre)">' + esc(t.title) + '</div>' +
           action +
         '</button>';
       }).join('');
       return '<section style="background:#C5DEFF;border-radius:22px;padding:22px 24px;margin-bottom:20px">' +
         '<div style="display:flex;align-items:baseline;gap:11px;margin-bottom:16px">' +
-          '<h2 style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:27px;color:var(--terre);margin:0">À faire en priorité</h2>' +
+          '<h2 style="font-family:\'Alegreya\',serif;font-size:27px;color:var(--terre);margin:0">À faire en priorité</h2>' +
           '<span style="font-family:var(--font-micro);font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--terre-600);font-weight:600">Classé par date</span>' +
         '</div>' +
         '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px">' + cards + '</div>' +
@@ -3911,7 +3911,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
   // Onglet dédié aux tâches archivées (= terminées + archivées).
   function buildPartArchives(pid, tasks) {
     var finished = (tasks||[]).filter(function(t){ return t.archived || t.status==='done'; });
-    var head = '<div style="font-family:var(--font-display);font-style:italic;font-size:24px;color:var(--terre);margin-bottom:4px">Tâches terminées</div>' +
+    var head = '<div style="font-family:var(--font-display);font-size:24px;color:var(--terre);margin-bottom:4px">Tâches terminées</div>' +
       '<div style="font-family:var(--font-ui);font-size:13px;color:var(--terre-600);margin-bottom:18px">Vos tâches finies, classées par mois. Cliquez sur « Rouvrir » pour en réactiver une.</div>';
     if (!finished.length) {
       return head + '<div style="background:var(--card,#fff);border:1px solid var(--bone-d);border-radius:14px;padding:34px;text-align:center;color:var(--terre-400);font-family:var(--font-ui);font-size:14px">Aucune tâche terminée pour le moment.</div>';
@@ -4186,14 +4186,14 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     ];
     var kpiHtml = '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px">' +
       kpis.map(function(k){ return '<div style="background:var(--card);border:1px solid var(--bone-d);border-radius:var(--radius-3);padding:22px 24px">' +
-        '<div style="font-family:var(--font-display);font-style:italic;font-size:32px;color:var(--terre);line-height:1;margin-bottom:4px">'+k.v+'</div>' +
+        '<div style="font-family:var(--font-display);font-size:32px;color:var(--terre);line-height:1;margin-bottom:4px">'+k.v+'</div>' +
         '<div style="font-family:var(--font-micro);font-size:10px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:var(--terre-600)">'+k.k+'</div>' +
       '</div>'; }).join('') + '</div>';
 
     var chartMonths = months.slice(-Math.max(5, months.length>12?12:months.length));
     var maxM = Math.max.apply(null, chartMonths.map(function(m){return byMonth[m]||0;}).concat([1]));
     var chart = '<div style="background:var(--card);border:1px solid var(--bone-d);border-radius:var(--radius-3);padding:24px 28px;margin-bottom:24px">' +
-      '<div style="font-family:var(--font-display);font-style:italic;font-size:24px;color:var(--terre);margin-bottom:16px">Consommation par mois</div>' +
+      '<div style="font-family:var(--font-display);font-size:24px;color:var(--terre);margin-bottom:16px">Consommation par mois</div>' +
       '<div style="display:flex;align-items:flex-end;gap:14px;height:130px">' +
         chartMonths.map(function(m){ var v=byMonth[m]||0; var h=Math.round(v/maxM*100); var lab=new Date(m+'-01T12:00:00').toLocaleDateString('fr-FR',{month:'short'}); var over=quotaMin&&v>quotaMin;
           return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;height:100%;justify-content:flex-end">' +
@@ -4218,7 +4218,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       '</tr>';
     }).join('');
     var table = '<div style="background:var(--card);border:1px solid var(--bone-d);border-radius:var(--radius-3);padding:20px 22px;overflow-x:auto">' +
-      '<div style="font-family:var(--font-display);font-style:italic;font-size:24px;color:var(--terre);margin-bottom:14px">Historique mensuel</div>' +
+      '<div style="font-family:var(--font-display);font-size:24px;color:var(--terre);margin-bottom:14px">Historique mensuel</div>' +
       '<table style="width:100%;border-collapse:collapse;font-family:var(--font-ui)">' +
         '<thead><tr style="border-bottom:2px solid var(--bone-d)">'+
           ['Mois','Quota','Consommé','Restant','Régularisation'].map(function(h,i){ return '<th style="padding:8px 12px;font-family:var(--font-micro);font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:var(--terre-600);text-align:'+(i===0?'left':'center')+'">'+h+'</th>'; }).join('') +
@@ -4287,7 +4287,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
 
     // helpers markup
     function card(inner, extra) { return '<section style="background:F8F6F2;border-radius:18px;padding:22px 24px;height:100%' + (extra || '') + '">' + inner + '</section>'; }
-    function cardHead(title, ic, col) { return '<div style="display:flex;align-items:baseline;gap:10px;margin-bottom:4px">' + (ic ? cpIcon(ic, 15, 'color:' + (col || 'var(--glycine-900)')) : '') + '<span style="font-family:var(--font-display);font-style:italic;font-size:22px;color:var(--terre)">' + title + '</span></div>'; }
+    function cardHead(title, ic, col) { return '<div style="display:flex;align-items:baseline;gap:10px;margin-bottom:4px">' + (ic ? cpIcon(ic, 15, 'color:' + (col || 'var(--glycine-900)')) : '') + '<span style="font-family:var(--font-display);font-size:22px;color:var(--terre)">' + title + '</span></div>'; }
     function sub(txt) { return '<p style="font-size:12.5px;color:var(--terre-600);line-height:1.5;margin:0 0 14px">' + txt + '</p>'; }
     function chip(bg, col, txt) { return '<span style="display:inline-flex;align-items:center;gap:6px;font-family:var(--font-micro);font-size:10px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;padding:4px 10px;border-radius:999px;background:' + bg + ';color:' + col + '">' + txt + '</span>'; }
 
@@ -4307,7 +4307,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var _cm2 = cpMood(_availMin, _usedMin, _pf.cap);
     var hero = forfaitH ? '<section style="background:#110704;border-radius:20px;padding:clamp(24px,3vw,32px);color:#F8F6F2;height:100%">' +
       '<div style="font-size:10px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:#F8F6F2">Votre accompagnement · ' + esc(monthLbl2) + '</div>' +
-      '<div style="font-family:var(--font-display);font-style:italic;font-size:clamp(30px,4.5vw,42px);line-height:1;margin:12px 0 0;color:' + (_cm2.tone === 'over' ? '#CD8F6E' : '#F8F6F2') + '">' + _cm2.label + '</div>' +
+      '<div style="font-family:var(--font-display);font-size:clamp(30px,4.5vw,42px);line-height:1;margin:12px 0 0;color:' + (_cm2.tone === 'over' ? '#CD8F6E' : '#F8F6F2') + '">' + _cm2.label + '</div>' +
       '<div style="font-size:15px;color:#F8F6F2;margin-top:12px;line-height:1.55;max-width:560px">' + _cm2.note + '</div>' +
       '<div style="height:15px;background:rgba(251,250,246,.14);border-radius:999px;overflow:hidden;display:flex;margin:26px 0 13px"><span style="height:100%;width:' + _dPct + '%;background:#F8F6F2"></span><span style="height:100%;width:' + _wPct + '%;background:#C5DEFF;box-shadow:inset 2.5px 0 0 #110704"></span></div>' +
       '<div style="display:flex;flex-wrap:wrap;gap:10px 24px">' + flag('#F8F6F2', 'terminé') + (_fwip > 0 ? flag('#C5DEFF', 'en cours') : '') + flag('rgba(251,250,246,.22)', 'disponible') + '</div>' +
@@ -4330,7 +4330,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       var segs = '';
       if (m.min) stackOrder.forEach(function (c) { var mn = m.byCat[c]; if (!mn) return; segs += '<span style="width:100%;height:' + Math.round(mn / m.min * barH) + 'px;background:' + colOf(c) + '"></span>'; });
       return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:8px">' +
-        '<div style="font-family:var(--font-display);font-style:italic;font-size:18px;color:' + (m.min ? 'var(--terre)' : 'var(--terre-200)') + ';line-height:1">' + (m.min ? hmm(m.min) : '·') + '</div>' +
+        '<div style="font-family:var(--font-display);font-size:18px;color:' + (m.min ? 'var(--terre)' : 'var(--terre-200)') + ';line-height:1">' + (m.min ? hmm(m.min) : '·') + '</div>' +
         '<div style="width:100%;max-width:54px;border-radius:8px 8px 0 0;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;min-height:6px;height:' + barH + 'px;' + (m.min ? '' : 'background:#C5DEFF') + '">' + segs + '</div>' +
         '<div style="font-family:var(--font-micro);font-size:11px;font-weight:600;letter-spacing:.04em;color:' + (isCur ? 'var(--glycine-900)' : 'var(--terre-400)') + '">' + esc(m.label) + '</div>' +
       '</div>';
@@ -4345,7 +4345,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       var statusChip = wip ? chip('var(--glycine-50,#C5DEFF)', 'var(--glycine-900,#5A2A11)', 'En cours') : chip('#F8F6F2', '#5A2A11', '✓ Terminée');
       var catChip = '<span style="display:inline-flex;align-items:center;gap:6px;font-family:var(--font-micro);font-size:10px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;padding:4px 10px;border-radius:999px;background:#F8F6F2;color:var(--warm-ink,#5A2A11)"><i style="width:9px;height:9px;border-radius:2px;background:' + colOf(cat) + '"></i>' + esc(cat) + '</span>';
       return '<div style="padding:14px 0' + (wip ? ';background:#C5DEFF;border-radius:12px;padding:13px 15px;margin:6px 0' : '') + '">' +
-        '<div style="display:flex;justify-content:space-between;gap:14px;align-items:baseline"><span style="font-size:15px;color:var(--terre)">' + esc(t.title || 'Tâche') + '</span><span style="font-family:var(--font-display);font-style:italic;font-size:22px;color:' + (wip ? 'var(--glycine-900)' : 'var(--terre)') + ';flex-shrink:0">' + hmm(o.mins) + '</span></div>' +
+        '<div style="display:flex;justify-content:space-between;gap:14px;align-items:baseline"><span style="font-size:15px;color:var(--terre)">' + esc(t.title || 'Tâche') + '</span><span style="font-family:var(--font-display);font-size:22px;color:' + (wip ? 'var(--glycine-900)' : 'var(--terre)') + ';flex-shrink:0">' + hmm(o.mins) + '</span></div>' +
         '<div style="display:flex;flex-wrap:wrap;gap:7px;margin-top:8px">' + statusChip + catChip + '</div>' +
       '</div>';
     }).join('');
@@ -4353,9 +4353,9 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       sub(monthTasks.length ? 'D\'où viennent les <b style="color:var(--terre)">' + hmm(Math.round(monthReel * 60)) + '</b> décomptées, tâche par tâche.' : 'Le temps travaillé ce mois apparaîtra ici, tâche par tâche.') +
       (monthTasks.length
         ? detailRows +
-          '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:13px 16px;background:var(--warm-soft,#F8F6F2);border-radius:12px;margin-top:12px"><span style="font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--warm-ink,#5A2A11)">Total travaillé · ' + esc(monthLbl2) + '</span><span style="font-family:var(--font-display);font-style:italic;font-size:23px;color:var(--terre)">' + hmm(Math.round(monthReel * 60)) + '</span></div>' +
+          '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:13px 16px;background:var(--warm-soft,#F8F6F2);border-radius:12px;margin-top:12px"><span style="font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--warm-ink,#5A2A11)">Total travaillé · ' + esc(monthLbl2) + '</span><span style="font-family:var(--font-display);font-size:23px;color:var(--terre)">' + hmm(Math.round(monthReel * 60)) + '</span></div>' +
           '<p style="font-size:12px;color:var(--terre-400);line-height:1.5;margin-top:12px">Compté dans le mois où le travail est réellement fait, pas à la date de validation.</p>'
-        : '<p style="font-family:var(--font-display);font-style:italic;font-size:15px;color:var(--terre-600)">Aucune heure travaillée ce mois-ci pour l\'instant.</p>');
+        : '<p style="font-family:var(--font-display);font-size:15px;color:var(--terre-600)">Aucune heure travaillée ce mois-ci pour l\'instant.</p>');
     var detailCard = card(detailInner);
 
     // ── 5. Moyennes par type (mêmes couleurs que le graphe) ──
@@ -4367,7 +4367,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
         var avg = c.n ? Math.round(c.min / c.n) : 0;
         return '<div style="display:flex;justify-content:space-between;align-items:center;gap:14px;padding:11px 0' + (i ? ';border-top:1px solid #F8F6F2' : '') + '">' +
           '<div style="display:flex;align-items:center;gap:10px;min-width:0"><i style="width:12px;height:12px;border-radius:3px;background:' + colOf(c.name) + ';flex-shrink:0"></i><div><div style="font-size:14px;color:var(--terre)">' + esc(c.name) + '</div><div style="font-family:var(--font-micro);font-size:9.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--terre-400);margin-top:2px">' + c.n + ' tâche' + (c.n > 1 ? 's' : '') + ' · ' + partFmtH(c.min) + ' au total</div></div></div>' +
-          '<div style="font-family:var(--font-display);font-style:italic;font-size:23px;color:#CD8F6E;flex-shrink:0">' + partFmtH(avg) + '</div>' +
+          '<div style="font-family:var(--font-display);font-size:23px;color:#CD8F6E;flex-shrink:0">' + partFmtH(avg) + '</div>' +
         '</div>';
       }).join('');
     var catCard = cats.length ? card(catInner) : '';
@@ -4376,7 +4376,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var archived2 = archived;
     var archAccordion = '<details style="background:#F8F6F2;border-radius:14px;padding:2px 4px;margin-top:16px">' +
       '<summary style="list-style:none;cursor:pointer;padding:15px 20px;display:flex;align-items:center;gap:10px;font-family:var(--font-micro);font-size:13px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--terre-600)">' + cpIcon('archive', 14) + ' Voir les tâches archivées (' + archived2.length + ')</summary>' +
-      (archived2.length ? archived2.map(function (t) { return '<div style="padding:10px 20px;font-size:14px;color:var(--terre-600);text-decoration:line-through">' + esc(t.title || 'Tâche') + '</div>'; }).join('') : '<div style="padding:10px 20px;font-family:var(--font-display);font-style:italic;font-size:14px;color:var(--terre-600)">Aucune tâche archivée.</div>') +
+      (archived2.length ? archived2.map(function (t) { return '<div style="padding:10px 20px;font-size:14px;color:var(--terre-600);text-decoration:line-through">' + esc(t.title || 'Tâche') + '</div>'; }).join('') : '<div style="padding:10px 20px;font-family:var(--font-display);font-size:14px;color:var(--terre-600)">Aucune tâche archivée.</div>') +
     '</details>';
 
     // ── Détail MOIS PAR MOIS (chaque mois : les tâches qui l'ont consommé, sans logique interne) ──
@@ -4398,8 +4398,8 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
         return '<details' + (isCur ? ' open' : '') + ' style="border-top:1px solid #F8F6F2">' +
           '<summary class="cp-mrow" style="list-style:none;cursor:pointer;display:flex;align-items:center;gap:12px;padding:13px 12px">' +
             '<span class="cp-chev" style="flex-shrink:0;color:var(--terre-400)"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span>' +
-            '<span style="flex:1;font-family:var(--font-display);font-style:italic;font-size:19px;color:var(--terre);text-transform:capitalize">' + esc(dl) + (isCur ? ' <span style="font-family:var(--font-micro);font-style:normal;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--terre-400)">· en cours</span>' : '') + '</span>' +
-            '<span style="font-family:var(--font-display);font-style:italic;font-size:22px;color:var(--terre);flex-shrink:0">' + hmm(tot) + '</span>' +
+            '<span style="flex:1;font-family:var(--font-display);font-size:19px;color:var(--terre);text-transform:capitalize">' + esc(dl) + (isCur ? ' <span style="font-family:var(--font-micro);font-style:normal;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--terre-400)">· en cours</span>' : '') + '</span>' +
+            '<span style="font-family:var(--font-display);font-size:22px;color:var(--terre);flex-shrink:0">' + hmm(tot) + '</span>' +
             '<span class="cp-see" style="flex-shrink:0;font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--terre-400)">détail</span>' +
           '</summary>' +
           '<div style="padding:0 2px 12px">' + rows.map(function (o) {
@@ -4407,7 +4407,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
             return '<div style="display:flex;justify-content:space-between;gap:12px;align-items:baseline;padding:8px 0"><span style="font-size:15.5px;color:var(--terre)">' + esc(o.t.title || 'Tâche') + (wip ? ' <span style="font-family:var(--font-micro);font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:var(--glycine-900)">en cours</span>' : '') + '</span><span style="font-weight:600;font-size:15.5px;flex-shrink:0">' + hmm(o.min) + '</span></div>';
           }).join('') + '</div>' +
         '</details>';
-      }).join('') : '<p style="font-family:var(--font-display);font-style:italic;font-size:15px;color:var(--terre-600)">Le détail apparaîtra ici au fil des mois.</p>');
+      }).join('') : '<p style="font-family:var(--font-display);font-size:15px;color:var(--terre-600)">Le détail apparaîtra ici au fil des mois.</p>');
     var byMonthCard = card(byMonthInner);
 
     // ── Layout dashboard : forfait dominant en haut à gauche ──
@@ -4473,7 +4473,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
 
     // helpers markup
     function card(inner) { return '<section style="background:F8F6F2;border-radius:18px;padding:22px 24px;height:100%">' + inner + '</section>'; }
-    function cardHead(title, ic) { return '<div style="display:flex;align-items:baseline;gap:10px;margin-bottom:4px">' + (ic ? cpIcon(ic, 15, 'color:var(--glycine-900)') : '') + '<span style="font-family:var(--font-display);font-style:italic;font-size:22px;color:var(--terre)">' + title + '</span></div>'; }
+    function cardHead(title, ic) { return '<div style="display:flex;align-items:baseline;gap:10px;margin-bottom:4px">' + (ic ? cpIcon(ic, 15, 'color:var(--glycine-900)') : '') + '<span style="font-family:var(--font-display);font-size:22px;color:var(--terre)">' + title + '</span></div>'; }
     function sub(txt) { return '<p style="font-size:12.5px;color:var(--terre-600);line-height:1.5;margin:0 0 14px">' + txt + '</p>'; }
 
     // ── 1. Synthèse ──
@@ -4491,7 +4491,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     function flag(c, txt) { return '<span style="display:inline-flex;align-items:center;gap:8px;font-size:12px;color:#F8F6F2"><i style="width:12px;height:12px;border-radius:3px;background:' + c + ';flex-shrink:0"></i>' + txt + '</span>'; }
     var hero = forfaitH ? '<section style="background:#110704;border-radius:20px;padding:clamp(24px,3vw,32px);color:#F8F6F2;height:100%">' +
       '<div style="font-size:10px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:#F8F6F2">Votre forfait · ' + esc(mMoisLbl) + '</div>' +
-      '<div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin:12px 0 0"><span style="font-family:var(--font-display);font-style:italic;font-size:clamp(46px,6vw,64px);line-height:.8;color:' + (over ? '#CD8F6E' : '#F8F6F2') + '">' + hmm(Math.abs(remMin)) + '</span><span style="font-size:15px;color:#F8F6F2">' + (over ? 'de dépassement' : 'restantes sur ' + hmm(availMin) + ' ce mois') + '</span></div>' +
+      '<div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin:12px 0 0"><span style="font-family:var(--font-display);font-size:clamp(46px,6vw,64px);line-height:.8;color:' + (over ? '#CD8F6E' : '#F8F6F2') + '">' + hmm(Math.abs(remMin)) + '</span><span style="font-size:15px;color:#F8F6F2">' + (over ? 'de dépassement' : 'restantes sur ' + hmm(availMin) + ' ce mois') + '</span></div>' +
       '<div style="height:15px;background:rgba(251,250,246,.14);border-radius:999px;overflow:hidden;display:flex;margin:26px 0 13px"><span style="height:100%;width:' + mdPct + '%;background:#F8F6F2"></span><span style="height:100%;width:' + mwPct + '%;background:#C5DEFF;box-shadow:inset 2.5px 0 0 #110704"></span></div>' +
       '<div style="display:flex;flex-wrap:wrap;gap:10px 24px">' + flag('#F8F6F2', hmm(mDone) + ' résolu') + (mWip > 0 ? flag('#C5DEFF', hmm(mWip) + ' en cours') : '') + flag('rgba(251,250,246,.22)', 'le reste, disponible') + '</div>' +
       '<div style="height:1px;background:rgba(251,250,246,.14);margin:26px 0"></div>' +
@@ -4509,7 +4509,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       var segs = '';
       if (m.min) stackOrder.forEach(function (c) { var mn = m.byCat[c]; if (!mn) return; segs += '<span style="width:100%;height:' + Math.round(mn / m.min * barH) + 'px;background:' + colOf(c) + '"></span>'; });
       return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:8px">' +
-        '<div style="font-family:var(--font-display);font-style:italic;font-size:18px;color:' + (m.min ? 'var(--terre)' : 'var(--terre-200)') + ';line-height:1">' + (m.min ? hmm(m.min) : '·') + '</div>' +
+        '<div style="font-family:var(--font-display);font-size:18px;color:' + (m.min ? 'var(--terre)' : 'var(--terre-200)') + ';line-height:1">' + (m.min ? hmm(m.min) : '·') + '</div>' +
         '<div style="width:100%;max-width:54px;border-radius:8px 8px 0 0;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;min-height:6px;height:' + barH + 'px;' + (m.min ? '' : 'background:#C5DEFF') + '">' + segs + '</div>' +
         '<div style="font-family:var(--font-micro);font-size:11px;font-weight:600;letter-spacing:.04em;color:' + (isCur ? 'var(--glycine-900)' : 'var(--terre-400)') + '">' + esc(m.label) + '</div>' +
       '</div>';
@@ -4524,7 +4524,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       var statusChip = wip ? '<span style="display:inline-flex;align-items:center;gap:6px;font-family:var(--font-micro);font-size:10px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;padding:4px 10px;border-radius:999px;background:var(--glycine-50,#C5DEFF);color:var(--glycine-900,#5A2A11)">En cours</span>' : '<span style="display:inline-flex;align-items:center;gap:6px;font-family:var(--font-micro);font-size:10px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;padding:4px 10px;border-radius:999px;background:#F8F6F2;color:#5A2A11">✓ Résolue</span>';
       var catChip = '<span style="display:inline-flex;align-items:center;gap:6px;font-family:var(--font-micro);font-size:10px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;padding:4px 10px;border-radius:999px;background:#F8F6F2;color:var(--warm-ink,#5A2A11)"><i style="width:9px;height:9px;border-radius:2px;background:' + colOf(cat) + '"></i>' + esc(cat) + '</span>';
       return '<div style="padding:14px 0' + (wip ? ';background:#C5DEFF;border-radius:12px;padding:13px 15px;margin:6px 0' : '') + '">' +
-        '<div style="display:flex;justify-content:space-between;gap:14px;align-items:baseline"><span style="font-size:15px;color:var(--terre)">' + esc(t.title || t.subject || 'Demande') + '</span><span style="font-family:var(--font-display);font-style:italic;font-size:22px;color:' + (wip ? 'var(--glycine-900)' : 'var(--terre)') + ';flex-shrink:0">' + hmm(o.mins) + '</span></div>' +
+        '<div style="display:flex;justify-content:space-between;gap:14px;align-items:baseline"><span style="font-size:15px;color:var(--terre)">' + esc(t.title || t.subject || 'Demande') + '</span><span style="font-family:var(--font-display);font-size:22px;color:' + (wip ? 'var(--glycine-900)' : 'var(--terre)') + ';flex-shrink:0">' + hmm(o.mins) + '</span></div>' +
         '<div style="display:flex;flex-wrap:wrap;gap:7px;margin-top:8px">' + statusChip + catChip + '</div>' +
       '</div>';
     }).join('');
@@ -4532,9 +4532,9 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       sub(monthTk.length ? 'D\'où viennent les <b style="color:var(--terre)">' + hmm(usedMin) + '</b> décomptées, demande par demande.' : 'Le temps sur vos demandes ce mois apparaîtra ici.') +
       (monthTk.length
         ? detailRows +
-          '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:13px 16px;background:var(--warm-soft,#F8F6F2);border-radius:12px;margin-top:12px"><span style="font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--warm-ink,#5A2A11)">Total ce mois · ' + esc(mMoisLbl) + '</span><span style="font-family:var(--font-display);font-style:italic;font-size:23px;color:var(--terre)">' + hmm(usedMin) + '</span></div>' +
+          '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:13px 16px;background:var(--warm-soft,#F8F6F2);border-radius:12px;margin-top:12px"><span style="font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--warm-ink,#5A2A11)">Total ce mois · ' + esc(mMoisLbl) + '</span><span style="font-family:var(--font-display);font-size:23px;color:var(--terre)">' + hmm(usedMin) + '</span></div>' +
           '<p style="font-size:12px;color:var(--terre-400);line-height:1.5;margin-top:12px">Compté sur le mois où la demande a été traitée.</p>'
-        : '<p style="font-family:var(--font-display);font-style:italic;font-size:15px;color:var(--terre-600)">Aucune heure sur vos demandes ce mois-ci pour l\'instant.</p>');
+        : '<p style="font-family:var(--font-display);font-size:15px;color:var(--terre-600)">Aucune heure sur vos demandes ce mois-ci pour l\'instant.</p>');
     var detailCard = card(detailInner);
 
     // ── 5. Par type (total, mêmes couleurs) ──
@@ -4543,7 +4543,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       cats.map(function (c, i) {
         return '<div style="display:flex;justify-content:space-between;align-items:center;gap:14px;padding:11px 0' + (i ? ';border-top:1px solid #F8F6F2' : '') + '">' +
           '<div style="display:flex;align-items:center;gap:10px;min-width:0"><i style="width:12px;height:12px;border-radius:3px;background:' + colOf(c.name) + ';flex-shrink:0"></i><div><div style="font-size:14px;color:var(--terre)">' + esc(c.name) + '</div><div style="font-family:var(--font-micro);font-size:9.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--terre-400);margin-top:2px">' + c.n + ' demande' + (c.n > 1 ? 's' : '') + '</div></div></div>' +
-          '<div style="font-family:var(--font-display);font-style:italic;font-size:23px;color:#CD8F6E;flex-shrink:0">' + partFmtH(c.min) + '</div>' +
+          '<div style="font-family:var(--font-display);font-size:23px;color:#CD8F6E;flex-shrink:0">' + partFmtH(c.min) + '</div>' +
         '</div>';
       }).join('');
     var catCard = cats.length ? card(catInner) : '';
@@ -4551,7 +4551,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     // ── 6. Demandes résolues (repliées) ──
     var resolvedAccordion = '<details style="background:#F8F6F2;border-radius:14px;padding:2px 4px;margin-top:16px">' +
       '<summary style="list-style:none;cursor:pointer;padding:15px 20px;display:flex;align-items:center;gap:10px;font-family:var(--font-micro);font-size:13px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--terre-600)">' + cpIcon('check', 14) + ' Voir les demandes résolues (' + doneT.length + ')</summary>' +
-      (doneT.length ? doneT.map(function (t) { return '<div style="padding:10px 20px;font-size:14px;color:var(--terre-600)">' + esc(t.title || t.subject || 'Demande') + '</div>'; }).join('') : '<div style="padding:10px 20px;font-family:var(--font-display);font-style:italic;font-size:14px;color:var(--terre-600)">Aucune demande résolue.</div>') +
+      (doneT.length ? doneT.map(function (t) { return '<div style="padding:10px 20px;font-size:14px;color:var(--terre-600)">' + esc(t.title || t.subject || 'Demande') + '</div>'; }).join('') : '<div style="padding:10px 20px;font-family:var(--font-display);font-size:14px;color:var(--terre-600)">Aucune demande résolue.</div>') +
     '</details>';
 
     return synth +
@@ -4620,7 +4620,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var calHeader = '<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap">' +
       '<div style="display:flex;align-items:center;gap:6px">' +
         '<button onclick="cliCalNav(\''+pid+'\',-1)" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--terre,#110704);padding:4px 6px;line-height:1">←</button>' +
-        '<span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:20px;color:var(--terre,#110704);min-width:150px;text-align:center">'+monthNameCap+'</span>' +
+        '<span style="font-family:\'Alegreya\',serif;font-size:20px;color:var(--terre,#110704);min-width:150px;text-align:center">'+monthNameCap+'</span>' +
         '<button onclick="cliCalNav(\''+pid+'\',1)" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--terre,#110704);padding:4px 6px;line-height:1">→</button>' +
       '</div>' +
       '<button onclick="cliCalGoToday(\''+pid+'\')" style="padding:6px 14px;border-radius:999px;border:1.5px solid #F8F6F2;background:var(--surface,ffffff);color:var(--terre,#110704);font-size:11px;font-weight:700;letter-spacing:0.07em;cursor:pointer;white-space:nowrap">AUJOURD\'HUI</button>' +
@@ -4799,7 +4799,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
         '<button onclick="cliCloseTaskDrawer(\''+pid+'\')" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--muted,#C5DEFF);padding:2px 6px;line-height:1">✕</button>' +
       '</div>' +
       // Titre (editable)
-      '<input id="_pt-title-'+t.id+'" value="'+esc(t.title)+'" oninput="cliTaskAutosave(\''+pid+'\',\''+t.id+'\',\'title\',this.value)" onchange="cliEditTaskField(\''+pid+'\',\''+t.id+'\',\'title\',this.value)" placeholder="Titre de la tache" style="font-family:\'Cormorant Garamond\',serif;font-size:20px;font-style:italic;color:var(--navy,#110704);line-height:1.3;margin-bottom:14px;width:100%;border:none;border-bottom:1.5px solid transparent;background:none;padding:2px 0;outline:none" onfocus="this.style.borderBottomColor=\'var(--border,#F8F6F2)\'" onblur="this.style.borderBottomColor=\'transparent\'">' +
+      '<input id="_pt-title-'+t.id+'" value="'+esc(t.title)+'" oninput="cliTaskAutosave(\''+pid+'\',\''+t.id+'\',\'title\',this.value)" onchange="cliEditTaskField(\''+pid+'\',\''+t.id+'\',\'title\',this.value)" placeholder="Titre de la tache" style="font-family:\'Alegreya\',serif;font-size:20px;color:var(--navy,#110704);line-height:1.3;margin-bottom:14px;width:100%;border:none;border-bottom:1.5px solid transparent;background:none;padding:2px 0;outline:none" onfocus="this.style.borderBottomColor=\'var(--border,#F8F6F2)\'" onblur="this.style.borderBottomColor=\'transparent\'">' +
       // Statut (la cliente a-t-elle terminé son brief ?) + Échéance
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">' +
         '<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#C5DEFF);margin-bottom:4px">Statut</div>' +
@@ -5599,7 +5599,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     var html = '<div id="_cp-datepick" style="position:fixed;inset:0;z-index:9600;display:flex;align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)cpDateClose()">' +
       '<div style="background:#fff;border-radius:16px;box-shadow:none;padding:18px;width:310px;max-width:100%">' +
         '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><button type="button" onclick="cpDateNav(-1)" style="background:none;border:none;font-size:20px;cursor:pointer;color:#5A2A11;line-height:1">‹</button>' +
-          '<span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:18px;color:var(--nuit,#110704)">' + MONTHS[m] + ' ' + y + '</span>' +
+          '<span style="font-family:\'Alegreya\',serif;font-size:18px;color:var(--nuit,#110704)">' + MONTHS[m] + ' ' + y + '</span>' +
           '<button type="button" onclick="cpDateNav(1)" style="background:none;border:none;font-size:20px;cursor:pointer;color:#5A2A11;line-height:1">›</button></div>' +
         '<div style="display:grid;grid-template-columns:repeat(7,1fr)">' + dow + cells + '</div>' +
         '<div style="text-align:center;margin-top:8px"><button type="button" onclick="cpDateClose()" style="background:none;border:none;color:#5A2A11;cursor:pointer;font-family:var(--font-micro);font-size:11px;letter-spacing:0.05em;text-transform:uppercase">Fermer</button></div>' +
@@ -5690,7 +5690,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     ov.style.cssText = 'position:fixed;inset:0;background:rgba(28,18,5,0.5);z-index:8000;display:flex;align-items:center;justify-content:center;padding:20px;overflow-y:auto';
     var S = 'width:100%;padding:9px 12px;border:1.5px solid #F8F6F2;border-radius:9px;font-family:\'Inter Tight\',sans-serif;font-size:14px;box-sizing:border-box';
     ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px 24px;max-width:520px;width:100%;box-shadow:none">' +
-      '<h3 style="font-family:\'Cormorant Garamond\',serif;font-style:italic;color:#110704;font-size:18px;margin-bottom:16px">'+(opts.taskId?'Modifier la demande':'Nouvelle demande')+'</h3>' +
+      '<h3 style="font-family:\'Alegreya\',serif;color:#110704;font-size:18px;margin-bottom:16px">'+(opts.taskId?'Modifier la demande':'Nouvelle demande')+'</h3>' +
       '<div style="margin-bottom:10px"><label style="font-size:12px;color:#5A2A11;display:block;margin-bottom:4px">Mission / Titre</label><input type="text" id="clt-title" value="'+esc(opts.title||'')+'" style="'+S+'"></div>' +
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">' +
         '<div><label style="font-size:12px;color:#5A2A11;display:block;margin-bottom:4px">État du brief</label><select id="clt-brief" style="'+S+'">'+briefSel+'</select></div>' +
@@ -5739,7 +5739,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     ov.style.cssText = 'position:fixed;inset:0;background:rgba(28,18,5,0.55);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px';
     var card = 'width:100%;background:#fff;border:1.5px solid var(--border,#F8F6F2);border-radius:16px;padding:18px 20px;cursor:pointer;text-align:left;transition:box-shadow .15s';
     ov.innerHTML = '<div style="background:#fff;border-radius:20px;padding:30px;max-width:560px;width:100%;box-shadow:none;max-height:90vh;overflow-y:auto">' +
-      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:24px;color:var(--navy,#110704)">De quoi as-tu besoin ?</span><button onclick="document.getElementById(\'_cp-demande-gate\').remove()" style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--muted,#C5DEFF);line-height:1">✕</button></div>' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><span style="font-family:\'Alegreya\',serif;font-size:24px;color:var(--navy,#110704)">De quoi as-tu besoin ?</span><button onclick="document.getElementById(\'_cp-demande-gate\').remove()" style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--muted,#C5DEFF);line-height:1">✕</button></div>' +
       '<div style="font-size:13.5px;color:var(--terre-600,#5A2A11);line-height:1.55;margin-bottom:20px">Choisis ce qui correspond le mieux, je m\'occupe du reste.</div>' +
       '<button onclick="(function(){document.getElementById(\'_cp-demande-gate\').remove();window.cliOpenAddTask(\'' + pid + '\',\'\');})()" style="' + card + ';margin-bottom:14px" onmouseenter="this.style.boxShadow=\'0 4px 16px rgba(28,18,5,0.1)\';this.style.borderColor=\'var(--terre,#110704)\'" onmouseleave="this.style.boxShadow=\'none\';this.style.borderColor=\'var(--border,#F8F6F2)\'">' +
         '<div style="display:flex;align-items:center;gap:12px;margin-bottom:6px">' +
@@ -5766,7 +5766,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     ov.style.cssText = 'position:fixed;inset:0;background:rgba(28,18,5,0.55);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px';
     var S = 'width:100%;padding:9px 12px;border:1.5px solid var(--border,#F8F6F2);border-radius:8px;font-size:13px;font-family:inherit;box-sizing:border-box;color:var(--navy,#110704)';
     ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px;max-width:480px;width:100%;box-shadow:none;max-height:90vh;overflow-y:auto">' +
-      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px"><span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:22px;color:var(--navy,#110704)">Parle-moi de ton projet</span><button onclick="document.getElementById(\'_cp-project-req\').remove()" style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--muted,#C5DEFF);line-height:1">✕</button></div>' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px"><span style="font-family:\'Alegreya\',serif;font-size:22px;color:var(--navy,#110704)">Parle-moi de ton projet</span><button onclick="document.getElementById(\'_cp-project-req\').remove()" style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--muted,#C5DEFF);line-height:1">✕</button></div>' +
       '<div style="background:#F8F6F2;border:1px solid #F8F6F2;border-radius:12px;padding:14px 16px;margin-bottom:18px;font-size:13.5px;color:#5A2A11;line-height:1.55">Ce type de demande sort du cadre de ton forfait Partenaire créative. Écris-moi quelques lignes, je reviendrai vers toi avec une proposition adaptée. 💛</div>' +
       '<div style="margin-bottom:14px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#C5DEFF);display:block;margin-bottom:6px">Ton projet en quelques mots *</label>' +
         '<input id="_preq-title" type="text" placeholder="Ex, refonte de mon site vitrine" style="' + S + '"></div>' +
@@ -5824,7 +5824,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
       }).join('');
       ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px;max-width:480px;width:100%;box-shadow:none;max-height:90vh;overflow-y:auto">' +
         '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:22px">' +
-          '<span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:22px;color:var(--navy,#110704)">' + (src ? 'Dupliquer une demande' : 'Nouvelle demande') + '</span>' +
+          '<span style="font-family:\'Alegreya\',serif;font-size:22px;color:var(--navy,#110704)">' + (src ? 'Dupliquer une demande' : 'Nouvelle demande') + '</span>' +
           '<button onclick="document.getElementById(\'_cp-partenaire-task-ov\').remove()" style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--muted,#C5DEFF);line-height:1">✕</button>' +
         '</div>' +
         (src
@@ -6443,7 +6443,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
       ? folders.map(folderHtml).join('') + addFolderHtml
       : '<div class="card" style="padding:36px 28px;text-align:center">' +
           cpIcon('folder',32,'color:var(--terre-400);margin:0 auto 14px;display:block') +
-          '<div style="font-family:var(--font-display);font-style:italic;font-size:20px;color:var(--terre);margin-bottom:8px">Pas encore de ressources partagées</div>' +
+          '<div style="font-family:var(--font-display);font-size:20px;color:var(--terre);margin-bottom:8px">Pas encore de ressources partagées</div>' +
           '<div style="font-family:var(--font-micro);font-size:11px;color:var(--terre-400);letter-spacing:0.06em;margin-bottom:18px">Cindy déposera ici vos guides, accès et documents partagés.</div>' +
           '<button class="cp-btn" style="margin:0 auto" onclick="cpOpenMessages()">Demander à Cindy ' + cpIcon('arrow',13) + '</button>' +
         '</div>';
@@ -6906,7 +6906,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
   function cpQnrField(b, ans, qnum) {
     var col = 'var(--nuit)';
     // Titres et paragraphes = intertitres de section, hors carte.
-    if (b.type === 'title') return '<h2 style="font-family:var(--font-display);font-style:italic;font-size:27px;margin:34px 0 6px;color:' + col + '">' + esc(b.label || '') + '</h2>';
+    if (b.type === 'title') return '<h2 style="font-family:var(--font-display);font-size:27px;margin:34px 0 6px;color:' + col + '">' + esc(b.label || '') + '</h2>';
     // Consigne = ENCADRÉ, pas un petit gris qu'on saute. Fond Azur + texte Ébène
     // (aplat clair, texte foncé : la règle de contraste de la charte).
     if (b.type === 'paragraph') return '<div style="font-size:16.5px;color:var(--nuit);line-height:1.65;background:rgba(197,222,255,0.36);border-radius:14px;padding:16px 18px;margin:16px 0 20px;white-space:pre-wrap">' + esc(b.label || '') + '</div>';
@@ -6991,7 +6991,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
       var desc = (inst.description || '').trim();
       return wrap(
         '<div style="font-family:var(--font-micro);font-size:12.5px;letter-spacing:0.16em;text-transform:uppercase;color:' + esc(col) + ';margin-bottom:12px">Questionnaire</div>' +
-        '<h1 style="font-family:var(--font-display);font-style:italic;font-size:clamp(32px,5vw,44px);line-height:1.08;color:var(--nuit);margin:0 0 20px">' + esc(inst.name || 'Questionnaire') + '</h1>' +
+        '<h1 style="font-family:var(--font-display);font-size:clamp(32px,5vw,44px);line-height:1.08;color:var(--nuit);margin:0 0 20px">' + esc(inst.name || 'Questionnaire') + '</h1>' +
         (desc ? '<div style="font-size:17.5px;line-height:1.75;color:var(--terre-600,#5A2A11);white-space:pre-wrap;max-width:62ch">' + esc(desc) + '</div>' : '<div style="font-size:16px;line-height:1.7;color:var(--terre-600,#5A2A11)">Prends un moment pour y répondre, tes réponses sont enregistrées automatiquement, tu peux revenir quand tu veux.</div>') +
         '<div style="display:flex;align-items:center;gap:16px;margin-top:24px;font-family:var(--font-micro);font-size:12.5px;letter-spacing:0.05em;text-transform:uppercase;color:var(--muted)">' +
           '<span>' + nS + ' étape' + (nS > 1 ? 's' : '') + '</span><span>·</span><span>' + nQ + ' question' + (nQ > 1 ? 's' : '') + '</span>' +
@@ -7015,13 +7015,13 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
           return '<div style="margin-bottom:15px"><div style="font-size:15px;font-weight:600;color:var(--nuit)">' + esc(b.label || '') + '</div><div style="font-size:16px;color:' + (disp === 'Sans réponse' ? 'var(--muted)' : 'var(--terre-600,#5A2A11)') + ';white-space:pre-wrap;margin-top:2px">' + esc(disp) + '</div></div>';
         }).join('');
         return '<div style="background:#fff;border-radius:14px;box-shadow:none;padding:18px 20px;margin-bottom:14px">' +
-          '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><h3 style="margin:0;font-family:var(--font-display);font-style:italic;font-size:19px">' + esc(s.title || ('Étape ' + (si+1))) + '</h3>' +
+          '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><h3 style="margin:0;font-family:var(--font-display);font-size:19px">' + esc(s.title || ('Étape ' + (si+1))) + '</h3>' +
           (isDone ? '' : '<button onclick="cpQnrGoStep(' + si + ')" style="background:none;border:none;color:' + esc(col) + ';cursor:pointer;font-size:13px;font-weight:600">Modifier</button>') + '</div>' +
           qs +
         '</div>';
       }).join('');
       var header = '<div style="font-family:var(--font-micro);font-size:12.5px;letter-spacing:0.16em;text-transform:uppercase;color:' + esc(col) + ';margin-bottom:8px">Questionnaire</div>' +
-        '<h1 style="font-family:var(--font-display);font-style:italic;font-size:28px;margin-bottom:4px">' + esc(inst.name || 'Questionnaire') + '</h1>';
+        '<h1 style="font-family:var(--font-display);font-size:28px;margin-bottom:4px">' + esc(inst.name || 'Questionnaire') + '</h1>';
       if (isDone) {
         return wrap(header +
           '<p style="color:#5A2A11;font-weight:600;margin-bottom:20px">Complété ✓' + (inst.completedAt ? ' le ' + esc(String(inst.completedAt).slice(0,10).split('-').reverse().join('/')) : '') + '. Merci !</p>' +
@@ -7048,7 +7048,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
       '<div style="display:flex;justify-content:space-between;font-size:13px;color:var(--muted);margin-bottom:6px"><span>Étape ' + (cpQnrStep + 1) + ' sur ' + steps.length + '</span><span>' + Math.round((cpQnrStep + 1) / steps.length * 100) + '%</span></div>' +
       '<div style="height:7px;background:var(--brume,#eee);border-radius:999px;overflow:hidden"><div style="height:100%;width:' + Math.round((cpQnrStep + 1) / steps.length * 100) + '%;background:' + esc(col) + ';transition:width 220ms"></div></div>' +
     '</div>';
-    var stepHead = '<h1 style="font-family:var(--font-display);font-style:italic;font-size:31px;line-height:1.15;margin-bottom:' + (s.help ? '6px' : '20px') + '">' + esc(s.title || inst.name || 'Questionnaire') + '</h1>' +
+    var stepHead = '<h1 style="font-family:var(--font-display);font-size:31px;line-height:1.15;margin-bottom:' + (s.help ? '6px' : '20px') + '">' + esc(s.title || inst.name || 'Questionnaire') + '</h1>' +
       (s.help ? '<p style="font-size:16.5px;color:var(--muted);line-height:1.6;margin-bottom:22px;white-space:pre-wrap">' + esc(s.help) + '</p>' : '');
     var nav = '<div style="display:flex;gap:10px;margin-top:10px">' +
       (cpQnrStep > 0 ? '<button onclick="cpQnrPrev()" style="padding:13px 22px;border-radius:12px;border:1.5px solid var(--border,#F8F6F2);background:#fff;cursor:pointer;font-size:16px;font-weight:600">← Précédent</button>' : '') +
@@ -7775,7 +7775,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     var ov = document.createElement('div');
     ov.style.cssText = 'position:fixed;inset:0;background:rgba(28,18,5,0.45);z-index:9600;display:flex;align-items:center;justify-content:center;padding:20px';
     ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px;max-width:460px;width:100%;box-shadow:none;font-family:\'Inter Tight\',sans-serif">' +
-      '<div style="font-family:var(--font-display);font-style:italic;font-size:22px;color:var(--terre);margin-bottom:6px">' + esc(stepTitle) + '</div>' +
+      '<div style="font-family:var(--font-display);font-size:22px;color:var(--terre);margin-bottom:6px">' + esc(stepTitle) + '</div>' +
       (ask ? '<div style="font-size:14px;color:var(--terre-600);line-height:1.55;margin-bottom:' + (desc ? '8' : '14') + 'px"><strong style="color:var(--terre)">Ce qui vous est demandé :</strong> ' + esc(ask) + '</div>' : '') +
       (desc ? '<div style="font-size:13px;color:var(--terre-400);line-height:1.5;margin-bottom:14px">' + esc(desc) + '</div>' : '') +
       '<p style="font-size:13.5px;color:var(--terre-600);line-height:1.5;margin:6px 0 14px">Confirmez que vous avez fait votre part. Cindy est prévenue et reprend la suite : cette étape n\'attendra plus votre retour.</p>' +
@@ -7939,7 +7939,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
       '<div style="background:#fff;border-radius:18px;width:100%;max-width:560px;overflow:hidden;box-shadow:none">' +
         '<div style="background:' + bannerCol + ';padding:24px 28px;position:relative">' +
           '<div style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:rgba(255,255,255,0.6);margin-bottom:4px">Questionnaire</div>' +
-          '<div style="font-size:20px;font-weight:600;color:#fff;font-family:\'Cormorant Garamond\',serif;font-style:italic">' + esc((project.questionnaireTitle || '').trim() || project.projectTitle) + '</div>' +
+          '<div style="font-size:20px;font-weight:400;color:#fff;font-family:\'Alegreya\',serif;">' + esc((project.questionnaireTitle || '').trim() || project.projectTitle) + '</div>' +
           '<button onclick="document.getElementById(\'cp-q-overlay\').remove()" style="position:absolute;top:16px;right:16px;background:rgba(255,255,255,0.15);border:none;color:#fff;border-radius:8px;padding:6px 10px;cursor:pointer;font-size:16px;line-height:1">✕</button>' +
         '</div>' +
         '<div style="padding:24px 28px">' +
@@ -8183,7 +8183,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
       '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#F8F6F2;padding:20px">' +
       '<div style="background:#fff;border-radius:20px;padding:48px 40px;max-width:440px;width:100%;text-align:center;box-shadow:none">' +
         '<div style="font-size:44px;margin-bottom:20px">🌸</div>' +
-        '<h1 style="font-family:\'Cormorant Garamond\',serif;color:#110704;font-size:24px;margin-bottom:12px;font-weight:400;font-style:italic">' + hello + '</h1>' +
+        '<h1 style="font-family:\'Alegreya\',serif;color:#110704;font-size:24px;margin-bottom:12px;font-weight:400;">' + hello + '</h1>' +
         '<p style="color:#5A2A11;line-height:1.7;font-size:15px">Votre espace est en cours de préparation. Cindy y ajoutera très bientôt vos projets, votre suivi et vos livrables.<br><br>' +
         '<button onclick="location.reload()" style="padding:11px 22px;border:none;border-radius:999px;background:#110704;color:#F8F6F2;font-size:14px;cursor:pointer">Actualiser</button><br><br>' +
         'Une question ? Écrivez à <a href="mailto:hello@seedtobloom.fr" style="color:#5A2A11">Cindy</a>.</p>' +
@@ -8203,7 +8203,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
       '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#F8F6F2;padding:20px">' +
       '<div style="background:#fff;border-radius:20px;padding:48px 40px;max-width:400px;width:100%;text-align:center;box-shadow:none">' +
         '<div style="font-size:44px;margin-bottom:20px">🌸</div>' +
-        '<h1 style="font-family:\'Cormorant Garamond\',serif;color:#110704;font-size:22px;margin-bottom:12px;font-weight:400;font-style:italic">' + title + '</h1>' +
+        '<h1 style="font-family:\'Alegreya\',serif;color:#110704;font-size:22px;margin-bottom:12px;font-weight:400;">' + title + '</h1>' +
         '<p style="color:#5A2A11;line-height:1.7;font-size:15px">' + body + '</p>' +
       '</div></div>';
   }
@@ -8359,7 +8359,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
             cpIcon('flower', 18, 'color:var(--brume)') +
             '<span style="font-family:var(--font-micro);font-size:9px;font-weight:500;letter-spacing:0.22em;text-transform:uppercase">Seed to Bloom</span>' +
           '</div>' +
-          '<div style="font-family:var(--font-display);font-style:italic;font-size:15px;color:rgba(242,229,194,0.6);margin-bottom:6px">Bonjour, ici</div>' +
+          '<div style="font-family:var(--font-display);font-size:15px;color:rgba(242,229,194,0.6);margin-bottom:6px">Bonjour, ici</div>' +
           '<h1 style="font-family:var(--font-display);font-size:clamp(40px,7vw,60px);font-weight:400;line-height:1.04;color:var(--brume);margin:0 0 22px">l\'atelier de <span style="font-style:italic;color:var(--glycine)">Cindy</span></h1>' +
           '<p style="font-family:var(--font-body);font-size:16px;line-height:1.7;color:rgba(242,229,194,0.7);margin:0 auto 34px;max-width:380px">Vous entrez dans l\'espace prive dedie a votre projet. C\'est ici que je vous tiens au courant de tout, en toute confiance. Entrez le code que je vous ai transmis.</p>' +
           '<div style="display:flex;gap:10px;justify-content:center;margin-bottom:12px">' +

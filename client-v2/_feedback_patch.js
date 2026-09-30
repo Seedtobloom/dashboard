@@ -9,7 +9,7 @@
     ov: 'position:fixed;top:0;left:0;right:0;bottom:0;width:100vw;height:100vh;z-index:1000;display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box;background:rgba(17,7,4,0.42)',
     carte: 'max-height:calc(100vh - 48px);background:#F8F6F2;border-radius:14px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 30px 80px -20px rgba(17,7,4,0.5);font-family:var(--font-micro);color:#110704',
     tete: 'display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:26px 28px 0;flex-shrink:0',
-    titre: 'font-family:\'Cormorant Garamond\',serif;font-weight:500;font-size:30px;line-height:1.1;color:#110704',
+    titre: 'font-family:\'Alegreya\',serif;font-weight:400;font-size:30px;line-height:1.1;color:#110704',
     fermer: 'background:none;border:none;cursor:pointer;color:#5A2A11;padding:4px;margin:-2px -6px 0 0;line-height:0',
     corps: 'flex:1;overflow-y:auto;padding:14px 28px 28px',
     intro: 'font-size:14px;line-height:1.55;color:#5A2A11;margin:0 0 22px',
@@ -73,7 +73,7 @@
     return stbFbMerci('Merci pour ton retour', 'Ton bilan a bien été transmis au studio.') +
       '<div style="text-align:center;font-size:13.5px;color:#110704;margin:16px 0 18px">Ta note : <strong>' + (Number(b.rating) || 0) + ' sur 5</strong></div>' +
       (b.liked ? '<div style="margin-bottom:14px"><div style="' + STB_FB.lab + '">Ce qui t’a plu</div><div style="font-size:14px;line-height:1.55;color:#110704">' + esc(b.liked) + '</div></div>' : '') +
-      (b.testimonial ? '<div style="background:#E6E5B2;border-radius:10px;padding:14px 16px;font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:18px;line-height:1.4;color:#110704">' + esc(b.testimonial) + '</div>' : '');
+      (b.testimonial ? '<div style="background:#E6E5B2;border-radius:10px;padding:14px 16px;font-family:\'Alegreya\',serif;font-size:18px;line-height:1.4;color:#110704">' + esc(b.testimonial) + '</div>' : '');
   }
   window.stbBilanSubmit = function(){
     if (!STB_BILAN.rating){ stbFbErreur('cp-bilan-err', 'Choisis une note de 1 à 5 avant d’envoyer.'); return; }

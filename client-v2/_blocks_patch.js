@@ -855,7 +855,7 @@
       if (t._migrated) setTimeout(function(){ stbBlocksSave(pid, t.id); }, 0);
     }
     return '<div style="border-top:2px solid var(--bone-d,#F8F6F2);margin-top:22px;padding-top:20px">'+
-      '<div style="margin-bottom:4px"><span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:20px;color:var(--navy,#110704)">Ta demande</span></div>'+
+      '<div style="margin-bottom:4px"><span style="font-family:\'Alegreya\',serif;font-size:20px;color:var(--navy,#110704)">Ta demande</span></div>'+
       '<div style="font-size:11.5px;color:var(--muted,rgba(17,7,4,.55));margin-bottom:12px">Le brief que tu as rédigé. Clique dans le texte pour le compléter ou le modifier quand tu veux.</div>'+
       '<div id="stb-blocks-'+t.id+'" style="min-height:120px">'+stbBlocksInner(pid, t)+'</div>'+
     '</div>';

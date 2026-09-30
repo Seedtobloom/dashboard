@@ -437,7 +437,7 @@
     } else if (st) { msg = 'Erreur ' + st + '.'; }
     else { msg = 'Connexion impossible.'; hint = 'Vérifie ta connexion, puis réessaie.'; }
     el('app').innerHTML = '<div class="center" style="max-width:460px;margin:0 auto;padding:40px 20px;text-align:center">' +
-      '<p style="font-family:var(--font-display);font-style:italic;font-size:22px;color:var(--terre);margin-bottom:10px">' + esc(msg) + '</p>' +
+      '<p style="font-family:var(--font-display);font-size:22px;color:var(--terre);margin-bottom:10px">' + esc(msg) + '</p>' +
       (hint ? '<p class="muted" style="font-size:15px;line-height:1.6;margin-bottom:18px">' + esc(hint) + '</p>' : '') +
       '<a class="btn btn--dark btn--sm" href="javascript:location.reload()">Réessayer</a></div>';
   }
@@ -521,7 +521,7 @@
       var nm = clientName(c);
       var pr = presence(c.lastSeen);
       var av = '<span style="position:relative;flex-shrink:0;width:22px;height:22px">' +
-        '<span style="width:22px;height:22px;border-radius:50%;background:rgba(242,229,194,0.16);display:inline-flex;align-items:center;justify-content:center;font-family:var(--font-display);font-style:italic;font-size:15px">' + esc((nm[0] || '?').toUpperCase()) + '</span>' +
+        '<span style="width:22px;height:22px;border-radius:50%;background:rgba(242,229,194,0.16);display:inline-flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:15px">' + esc((nm[0] || '?').toUpperCase()) + '</span>' +
         (pr.online ? '<span title="En ligne" style="position:absolute;bottom:-1px;right:-1px;width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 0 2px var(--nuit,#2a1f16)"></span>' : '') +
         '</span>';
       return '<button class="navitem' + (isCur ? ' active' : '') + '" onclick="ADM.navClientTab(\'' + c.key + '\',null)" title="' + esc(pr.label) + '">' +
@@ -635,7 +635,7 @@
         '</div></div>';
     }).join('');
     return '<div style="display:flex;justify-content:space-between;align-items:center;padding:14px 15px;border:none">' +
-      '<strong style="font-family:var(--font-display);font-style:italic;font-size:19px;color:var(--terre);font-weight:400">À traiter</strong>' +
+      '<strong style="font-family:var(--font-display);font-size:19px;color:var(--terre);font-weight:400">À traiter</strong>' +
       '<button aria-label="Fermer" onclick="ADM.notifToggle()" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:20px;line-height:1">' + IC_X + '</button></div>' +
       '<div style="max-height:60vh;overflow-y:auto">' + commentRows + reworkRows + rows + '</div>';
   }
@@ -1686,7 +1686,7 @@
       '<div style="position:sticky;top:0;background:var(--page,#fff);z-index:4;padding:16px 20px;display:flex;align-items:center;gap:12px">' +
         chip +
         '<div style="flex:1;min-width:0"><div class="micro" style="text-transform:uppercase;letter-spacing:0.05em;font-weight:700;color:' + cfg.ic + '">' + cfg.label + '</div>' +
-          '<div style="font-family:var(--font-display);font-style:italic;font-size:20px;color:var(--terre);line-height:1.15">' + esc(x.client || '') + '</div></div>' +
+          '<div style="font-family:var(--font-display);font-size:20px;color:var(--terre);line-height:1.15">' + esc(x.client || '') + '</div></div>' +
         '<button aria-label="Fermer" onclick="ADM.inboxDrawerClose()" style="background:none;border:none;cursor:pointer;font-size:22px;color:var(--muted);line-height:1;flex-shrink:0">' + IC_X + '</button>' +
       '</div>' +
       '<div style="padding:6px 22px 90px">' +
@@ -2974,10 +2974,10 @@
           '<div class="micro mb" style="text-transform:none;letter-spacing:0;color:var(--terre-600)">Les heures qu\'il te reste à livrer sur les forfaits ce mois, face à ta capacité.</div>' +
           '<div class="row" style="gap:8px;align-items:center;margin-bottom:14px"><span class="micro">Ma capacité</span><input class="inp" type="number" min="0" step="1" value="' + weeklyCap + '" style="width:80px" onchange="ADM.capSave(this.value)"><span class="micro" style="text-transform:none;letter-spacing:0">h/semaine' + (monthlyCap ? ' · ~' + monthlyCap + ' h/mois' : '') + '</span></div>' +
           (monthlyCap > 0
-            ? '<div style="display:flex;align-items:baseline;gap:8px;margin-bottom:8px"><span style="font-family:var(--font-display);font-style:italic;font-size:32px;color:' + (capOver ? '#8a4a2c' : 'var(--terre)') + '">' + engagedMonthly + ' h</span><span class="micro" style="text-transform:none;letter-spacing:0">engagées sur ~' + monthlyCap + ' h · ' + capPct + '%</span></div>' +
+            ? '<div style="display:flex;align-items:baseline;gap:8px;margin-bottom:8px"><span style="font-family:var(--font-display);font-size:32px;color:' + (capOver ? '#8a4a2c' : 'var(--terre)') + '">' + engagedMonthly + ' h</span><span class="micro" style="text-transform:none;letter-spacing:0">engagées sur ~' + monthlyCap + ' h · ' + capPct + '%</span></div>' +
               '<div class="bar' + (capOver ? ' over' : '') + '"><span style="width:' + capPct + '%"></span></div>' +
               (capOver ? '<div class="micro" style="color:#8a4a2c;margin-top:7px;text-transform:none;letter-spacing:0">Au-delà de ta capacité : prudence sur les nouveaux engagements.</div>' : '<div class="micro" style="color:var(--muted);margin-top:7px;text-transform:none;letter-spacing:0">Il te reste ~' + (Math.round((monthlyCap - engagedMonthly) * 10) / 10) + ' h de marge ce mois.</div>')
-            : '<div style="font-family:var(--font-display);font-style:italic;font-size:28px;color:var(--terre)">' + engagedMonthly + ' h engagées ce mois</div><div class="micro" style="color:var(--muted);margin-top:4px;text-transform:none;letter-spacing:0">Renseigne ta capacité hebdomadaire pour voir ta marge.</div>') +
+            : '<div style="font-family:var(--font-display);font-size:28px;color:var(--terre)">' + engagedMonthly + ' h engagées ce mois</div><div class="micro" style="color:var(--muted);margin-top:4px;text-transform:none;letter-spacing:0">Renseigne ta capacité hebdomadaire pour voir ta marge.</div>') +
         '</div>';
         tabBody = '<div class="pcols">' + capCard +
           '<div class="card infocard" style="background:var(--card)"><h3>Forfaits du mois</h3>' +
@@ -4766,8 +4766,8 @@
     function render() {
       var st = steps[i];
       var content = st.questions
-        ? '<div style="font-family:var(--font-display);font-style:italic;font-size:26px;color:var(--terre);margin-bottom:16px">Questions à poser</div>' + st.questions.map(function (q) { return '<label style="display:flex;align-items:flex-start;gap:11px;padding:9px 0;font-size:19px;line-height:1.5;color:var(--terre);cursor:pointer;border:none"><input type="checkbox"' + (q.done ? ' checked' : '') + ' onchange="ADM.visQToggle(\'' + id + '\',\'' + q.id + '\')" style="width:19px;height:19px;margin-top:3px;flex-shrink:0">' + esc(q.text) + '</label>'; }).join('')
-        : ((st.title ? '<div style="font-family:var(--font-display);font-style:italic;font-size:27px;color:var(--terre);margin-bottom:16px">' + esc(st.title) + '</div>' : '') + '<div style="font-size:21px;line-height:1.8;color:var(--terre)">' + (st.html || '') + '</div>');
+        ? '<div style="font-family:var(--font-display);font-size:26px;color:var(--terre);margin-bottom:16px">Questions à poser</div>' + st.questions.map(function (q) { return '<label style="display:flex;align-items:flex-start;gap:11px;padding:9px 0;font-size:19px;line-height:1.5;color:var(--terre);cursor:pointer;border:none"><input type="checkbox"' + (q.done ? ' checked' : '') + ' onchange="ADM.visQToggle(\'' + id + '\',\'' + q.id + '\')" style="width:19px;height:19px;margin-top:3px;flex-shrink:0">' + esc(q.text) + '</label>'; }).join('')
+        : ((st.title ? '<div style="font-family:var(--font-display);font-size:27px;color:var(--terre);margin-bottom:16px">' + esc(st.title) + '</div>' : '') + '<div style="font-size:21px;line-height:1.8;color:var(--terre)">' + (st.html || '') + '</div>');
       ov.innerHTML = '<div style="background:#fff;border-radius:20px;max-width:780px;width:100%;max-height:90vh;display:flex;flex-direction:column;box-shadow:none">' +
         '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 24px;border:none">' +
           '<div style="font-family:var(--font-micro);font-size:13px;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted)">' + esc(c.client || 'Visio') + ' · Étape ' + (i + 1) + ' / ' + steps.length + '</div>' +
@@ -8334,7 +8334,7 @@
     var body = tiles.map(function (t) {
       return '<div style="min-width:130px;padding:6px 20px 6px 0">' +
         '<div style="display:flex;align-items:center;gap:7px;font-family:var(--font-micro);font-size:13px;letter-spacing:0.06em;text-transform:uppercase;color:var(--glycine-900,#2c4a72);margin-bottom:5px"><span style="display:inline-flex;color:var(--glycine-900,#2c4a72)">' + admIcon(t[0]) + '</span>' + esc(t[2]) + '</div>' +
-        '<div style="font-family:var(--font-display);font-style:italic;font-size:30px;color:var(--terre);line-height:1">' + t[1] + '</div>' +
+        '<div style="font-family:var(--font-display);font-size:30px;color:var(--terre);line-height:1">' + t[1] + '</div>' +
       '</div>';
     }).join('');
     return '<div class="card" style="background:var(--card);border:none;padding:18px 20px;margin-bottom:18px">' +
@@ -8360,7 +8360,7 @@
     function tile(icon, big, label, danger) {
       return '<div style="min-width:150px;padding:6px 20px 6px 0">' +
         '<div style="display:flex;align-items:center;gap:7px;font-family:var(--font-micro);font-size:13px;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);margin-bottom:5px"><span style="display:inline-flex;color:var(--terre-400,#8a7d6b)">' + admIcon(icon) + '</span>' + esc(label) + '</div>' +
-        '<div style="font-family:var(--font-display);font-style:italic;font-size:28px;color:' + (danger ? '#8a4a2c' : 'var(--terre)') + ';line-height:1">' + big + '</div>' +
+        '<div style="font-family:var(--font-display);font-size:28px;color:' + (danger ? '#8a4a2c' : 'var(--terre)') + ';line-height:1">' + big + '</div>' +
       '</div>';
     }
     return '<div class="card" style="background:var(--card);border:none;padding:18px 20px;margin-bottom:18px">' +
@@ -8407,9 +8407,9 @@
     return '<div class="card infocard" style="background:var(--card)"><h3>Rentabilité · estimé vs réel</h3>' +
       '<div class="micro mb" style="text-transform:none;letter-spacing:0;color:var(--terre-600)">Sur les ' + pr.estCount + ' tâche' + (pr.estCount > 1 ? 's' : '') + ' terminée' + (pr.estCount > 1 ? 's' : '') + ' avec une estimation.</div>' +
       '<div class="row" style="gap:22px;flex-wrap:wrap;margin-bottom:14px">' +
-        '<div><div class="micro">Prévu</div><div style="font-family:var(--font-display);font-style:italic;font-size:28px;color:var(--terre)">' + estH + ' h</div></div>' +
-        '<div><div class="micro">Réel</div><div style="font-family:var(--font-display);font-style:italic;font-size:28px;color:' + (ratio > 110 ? '#8a4a2c' : 'var(--terre)') + '">' + realH + ' h</div></div>' +
-        '<div><div class="micro">Écart</div><div style="font-family:var(--font-display);font-style:italic;font-size:28px;color:' + (ratio > 110 ? '#8a4a2c' : (ratio < 90 ? '#4a6b43' : 'var(--terre)')) + '">' + ratio + '%</div></div>' +
+        '<div><div class="micro">Prévu</div><div style="font-family:var(--font-display);font-size:28px;color:var(--terre)">' + estH + ' h</div></div>' +
+        '<div><div class="micro">Réel</div><div style="font-family:var(--font-display);font-size:28px;color:' + (ratio > 110 ? '#8a4a2c' : 'var(--terre)') + '">' + realH + ' h</div></div>' +
+        '<div><div class="micro">Écart</div><div style="font-family:var(--font-display);font-size:28px;color:' + (ratio > 110 ? '#8a4a2c' : (ratio < 90 ? '#4a6b43' : 'var(--terre)')) + '">' + ratio + '%</div></div>' +
       '</div>' +
       '<h4 style="margin:6px 0 8px;font-size:15px">Par pôle</h4>' + (poleRows || '<div class="empty">—</div>') + '</div>';
   }
@@ -8446,7 +8446,7 @@
     function card(icon, big, label, sub, onclick) {
       return '<button onclick="' + onclick + '" style="text-align:left;background:var(--card);border:none;border-radius:14px;padding:15px 16px;cursor:pointer;display:flex;flex-direction:column;gap:4px;transition:box-shadow .14s" onmouseenter="this.style.boxShadow=\'0 3px 14px rgba(28,18,5,0.08)\'" onmouseleave="this.style.boxShadow=\'\'">' +
         '<span style="display:flex;align-items:center;gap:8px;font-family:var(--font-micro);font-size:13px;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted)"><span style="color:var(--terre-400,#8a7d6b);display:inline-flex">' + admIcon(icon) + '</span>' + esc(label) + '</span>' +
-        '<span style="font-family:var(--font-display);font-style:italic;font-size:26px;color:var(--terre);line-height:1.05">' + big + '</span>' +
+        '<span style="font-family:var(--font-display);font-size:26px;color:var(--terre);line-height:1.05">' + big + '</span>' +
         (sub ? '<span class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted)">' + sub + '</span>' : '') +
       '</button>';
     }
@@ -8459,10 +8459,10 @@
       card('done', hL(chronoWeek), 'Temps chronométré (semaine)', '', "ADM.nav('mytasks')");
     return '<div class="card" style="background:linear-gradient(135deg,' + hexA(scoreCol, 0.10) + ',var(--card));border-color:' + hexA(scoreCol, 0.3) + ';display:flex;align-items:center;gap:22px;flex-wrap:wrap;margin-bottom:16px">' +
         '<div style="width:96px;height:96px;border-radius:50%;flex-shrink:0;display:grid;place-items:center;background:conic-gradient(' + scoreCol + ' ' + (score * 3.6) + 'deg, var(--bone-d) 0deg)">' +
-          '<div style="width:76px;height:76px;border-radius:50%;background:var(--card);display:grid;place-items:center"><div style="font-family:var(--font-display);font-style:italic;font-size:28px;color:' + scoreCol + ';line-height:1">' + score + '</div></div>' +
+          '<div style="width:76px;height:76px;border-radius:50%;background:var(--card);display:grid;place-items:center"><div style="font-family:var(--font-display);font-size:28px;color:' + scoreCol + ';line-height:1">' + score + '</div></div>' +
         '</div>' +
         '<div style="min-width:0"><div style="font-family:var(--font-micro);font-size:13px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted)">Santé du studio</div>' +
-          '<div style="font-family:var(--font-display);font-style:italic;font-size:26px;color:var(--terre)">' + score + ' / 100</div>' +
+          '<div style="font-family:var(--font-display);font-size:26px;color:var(--terre)">' + score + ' / 100</div>' +
           '<div style="font-size:15px;color:' + scoreCol + ';font-weight:600;margin-top:2px">' + esc(scoreLbl) + '</div></div>' +
       '</div>' +
       '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:22px">' + cards + '</div>';
@@ -9816,7 +9816,7 @@
     var title = (d.content.questionnaireTitle || '').trim() || 'Questionnaire';
     var body = items.map(function (q) {
       var opts = q.options || [];
-      if (q.type === 'section') return '<div style="margin:20px 0 10px;padding-bottom:6px;border-bottom:2px solid var(--bone-d)"><div style="font-family:var(--font-display);font-style:italic;font-size:20px;color:var(--terre)">' + esc(q.label) + '</div>' + (q.help ? '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:5px;white-space:pre-wrap">' + esc(q.help) + '</div>' : '') + '</div>';
+      if (q.type === 'section') return '<div style="margin:20px 0 10px;padding-bottom:6px;border-bottom:2px solid var(--bone-d)"><div style="font-family:var(--font-display);font-size:20px;color:var(--terre)">' + esc(q.label) + '</div>' + (q.help ? '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:5px;white-space:pre-wrap">' + esc(q.help) + '</div>' : '') + '</div>';
       var lab = '<div style="font-size:15px;font-weight:600;color:var(--terre);margin-bottom:5px">' + esc(q.label) + '</div>' + (q.help ? '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-bottom:7px;white-space:pre-wrap">' + esc(q.help) + '</div>' : '');
       var inp;
       if (q.type === 'short') inp = '<input class="inp" disabled placeholder="Réponse courte…" style="width:100%;box-sizing:border-box">';
@@ -9829,7 +9829,7 @@
     var ov = document.createElement('div'); ov.className = 'admconfirm';
     ov.innerHTML = '<div class="admconfirm__box" style="max-width:600px;text-align:left;max-height:88vh;overflow-y:auto">' +
       '<div class="micro" style="letter-spacing:0.06em">Aperçu, tel que la cliente le voit</div>' +
-      '<div style="font-family:var(--font-display);font-style:italic;font-size:24px;color:var(--terre);margin:2px 0 16px">' + esc(title) + '</div>' +
+      '<div style="font-family:var(--font-display);font-size:24px;color:var(--terre);margin:2px 0 16px">' + esc(title) + '</div>' +
       (body || '<div class="empty">Aucune question.</div>') +
       '<div class="admconfirm__row"><button class="btn btn--sm" data-no style="background:var(--terre);color:#fff;border-color:var(--terre)">Fermer</button></div></div>';
     function close() { ov.remove(); }
@@ -11391,7 +11391,7 @@
         var rnd = last ? ((ci === 0 && !moveId ? 'border-bottom-left-radius:13px;' : '') + (ci === cols.length - 1 ? 'border-bottom-right-radius:13px;' : '')) : '';
         var raw = String(val).replace(/<[^>]*>/g, '').trim();
         if (ci === 0 && raw && raw.length <= 4) {
-          return '<td style="padding:14px 10px;text-align:center;vertical-align:top;background:' + cellBg + ';' + rnd + '"><span style="display:inline-grid;place-items:center;width:30px;height:30px;border-radius:9px;background:#F1DCA6;color:#7a5a1e;font-family:var(--font-display);font-style:italic;font-size:16px">' + esc(raw) + '</span></td>';
+          return '<td style="padding:14px 10px;text-align:center;vertical-align:top;background:' + cellBg + ';' + rnd + '"><span style="display:inline-grid;place-items:center;width:30px;height:30px;border-radius:9px;background:#F1DCA6;color:#7a5a1e;font-family:var(--font-display);font-size:16px">' + esc(raw) + '</span></td>';
         }
         var col = vis ? '#2c4a72' : 'var(--terre)';
         var extra = vis ? 'font-style:italic;font-size:15px;' : (ci === titIdx ? "font-family:var(--font-display);font-size:17px;line-height:1.25;" : 'font-size:15px;line-height:1.55;');
@@ -12859,7 +12859,7 @@
     var barCol = si.ended ? '#456039' : (lateN ? '#8a4a2c' : 'var(--terre)');
     return '<div class="card infocard" style="background:var(--card);max-width:860px">' +
       '<div class="between" style="align-items:flex-start;gap:12px;flex-wrap:wrap">' +
-        '<div><div style="font-family:var(--font-display);font-style:italic;font-size:19px;color:var(--terre)">' + title + '</div>' +
+        '<div><div style="font-family:var(--font-display);font-size:19px;color:var(--terre)">' + title + '</div>' +
           '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:3px">' + si.done + ' / ' + si.total + ' jalon' + (si.total > 1 ? 's' : '') + ' terminé' + (si.done > 1 ? 's' : '') + '</div></div>' +
         '<div style="display:flex;gap:8px;align-items:center">' + flag +
           (surPage ? '' : '<button class="btn btn--outline btn--sm" onclick="ADM.planGo(\'' + esc(pl.key) + '\',\'' + esc(pl.projectId) + '\')">Ouvrir</button>') + '</div>' +
@@ -13313,7 +13313,7 @@
     document.addEventListener('pointermove', admRankMove, { passive: false }); document.addEventListener('pointerup', admRankUp); document.addEventListener('pointercancel', admRankUp);
   }
   function qnrFieldPreview(b, qnum) {
-    if (b.type === 'title') return '<h3 style="margin:26px 0 6px;font-family:var(--font-display);font-style:italic;font-size:22px">' + esc(b.label || 'Titre de section') + '</h3>';
+    if (b.type === 'title') return '<h3 style="margin:26px 0 6px;font-family:var(--font-display);font-size:22px">' + esc(b.label || 'Titre de section') + '</h3>';
     // Même encadré que côté cliente, pour que l'aperçu dise la vérité.
     if (b.type === 'paragraph') return '<div style="font-size:16px;color:var(--nuit,#1c1205);line-height:1.65;background:rgba(197,222,255,0.36);border-radius:14px;padding:15px 17px;margin:14px 0 18px;white-space:pre-wrap">' + esc(b.label || '') + '</div>';
     var num = (typeof qnum === 'number' && qnum > 0) ? '<div class="micro" style="color:var(--terre-600);margin-bottom:7px">Question ' + qnum + '</div>' : '';
@@ -13365,7 +13365,7 @@
       body =
         '<div style="height:8px;border-radius:999px;background:' + esc(col) + ';width:60px;margin-bottom:22px"></div>' +
         '<div style="font-family:var(--font-micro);font-size:13px;letter-spacing:0.16em;text-transform:uppercase;color:' + esc(col) + ';margin-bottom:11px">Questionnaire</div>' +
-        '<h1 style="font-family:var(--font-display);font-style:italic;font-size:32px;line-height:1.1;margin:0 0 18px">' + esc(t.name || 'Questionnaire') + '</h1>' +
+        '<h1 style="font-family:var(--font-display);font-size:32px;line-height:1.1;margin:0 0 18px">' + esc(t.name || 'Questionnaire') + '</h1>' +
         (desc
           ? '<div style="font-size:17px;line-height:1.75;color:var(--terre-600);white-space:pre-wrap">' + esc(desc) + '</div>'
           : '<div style="font-size:15px;line-height:1.7;color:var(--terre-600)">Prends un moment pour y répondre : tes réponses sont enregistrées automatiquement, tu peux revenir quand tu veux.</div>') +
@@ -13391,7 +13391,7 @@
                  : '<button class="btn btn--sm" style="flex:1;background:' + esc(col) + ';color:#fff;border-color:' + esc(col) + '" data-no>Fin de l\'aperçu ✓</button>') + '</div>';
       var testHint = '<div style="font-size:15px;line-height:1.5;color:var(--terre-600);margin-bottom:16px;padding:12px 15px;background:var(--card);border:none;border-radius:11px">Aperçu interactif : tu peux cocher et écrire pour tester, rien n\'est enregistré.</div>';
       body = progress + whyBlock + testHint +
-        (s.title ? '<h2 style="margin:2px 0 6px;font-family:var(--font-display);font-style:italic;font-size:26px;line-height:1.15">' + esc(s.title) + '</h2>' : '') +
+        (s.title ? '<h2 style="margin:2px 0 6px;font-family:var(--font-display);font-size:26px;line-height:1.15">' + esc(s.title) + '</h2>' : '') +
         (s.help ? '<div style="font-size:16px;color:var(--muted);line-height:1.6;margin-bottom:12px;white-space:pre-wrap">' + esc(s.help) + '</div>' : '') +
         fields + nav;
     }

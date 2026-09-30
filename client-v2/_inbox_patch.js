@@ -245,7 +245,7 @@
     var ov = document.createElement('div');
     ov.style.cssText = 'position:fixed;inset:0;background:rgba(28,18,5,0.5);z-index:10001;display:flex;align-items:center;justify-content:center;padding:20px';
     ov.innerHTML = '<div style="background:#fff;border-radius:16px;padding:22px 24px;max-width:460px;width:100%">'+
-      '<div style="font-family:var(--font-display);font-style:italic;font-size:20px;color:var(--terre);margin-bottom:12px">Modifier votre message</div>'+
+      '<div style="font-family:var(--font-display);font-size:20px;color:var(--terre);margin-bottom:12px">Modifier votre message</div>'+
       '<textarea id="stb-medit" style="width:100%;min-height:110px;font-family:var(--font-body);font-size:15px;line-height:1.5;padding:12px 14px;border:1px solid var(--bone-d);border-radius:12px;resize:vertical;box-sizing:border-box;color:var(--terre)"></textarea>'+
       '<div style="display:flex;justify-content:flex-end;gap:10px;margin-top:14px">'+
         '<button id="stb-mcancel" style="font-family:var(--font-micro);font-size:12px;font-weight:600;padding:9px 16px;border-radius:999px;border:1px solid var(--bone-d);background:#fff;color:var(--terre);cursor:pointer">Annuler</button>'+

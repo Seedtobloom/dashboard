@@ -159,7 +159,7 @@
     var big = !!window.cliTaskBig;
     var expandBtn = '<button onclick="cliToggleTaskBig()" title="'+(big?'Réduire':'Agrandir')+'" style="position:absolute;top:16px;right:58px;z-index:2;background:rgba(255,255,255,0.92);border:none;border-radius:8px;width:32px;height:32px;cursor:pointer;font-size:14px;color:#110704;line-height:1">'+(big?'⤡':'⤢')+'</button>';
     var icon = '<div style="margin:-32px 0 0 24px;width:62px;height:62px;border-radius:16px;background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 18px -6px rgba(28,18,5,0.35)">'+cliUrgIcon(t.urgency, 28)+'</div>';
-    var title = '<input value="'+esc(t.title||'')+'" onchange="cliEditTaskField(\''+pid+'\',\''+t.id+'\',\'title\',this.value)" placeholder="Titre de la tâche" style="border:none;outline:none;background:none;font-family:\'Cormorant Garamond\',serif;font-size:30px;font-weight:600;color:var(--navy,#110704);width:100%;margin:14px 0 2px;padding:0">';
+    var title = '<input value="'+esc(t.title||'')+'" onchange="cliEditTaskField(\''+pid+'\',\''+t.id+'\',\'title\',this.value)" placeholder="Titre de la tâche" style="border:none;outline:none;background:none;font-family:\'Alegreya\',serif;font-size:30px;font-weight:400;color:var(--navy,#110704);width:100%;margin:14px 0 2px;padding:0">';
 
     // Lien de révision déposé par Cindy : appel à l'action mis en avant tant que
     // la tâche est en attente de la révision du client (statut « review »).
@@ -200,7 +200,7 @@
         revHist.map(function(h, i){
           var u = /^https?:\/\//i.test(h.url) ? h.url : 'https://' + h.url;
           return '<div style="display:flex;align-items:center;gap:9px;padding:8px 12px;background:#F8F6F2;border-radius:9px;font-size:13px;margin-bottom:6px">'+
-            '<span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:14px;color:#5A2A11;flex-shrink:0">R'+(revHist.length - i)+'</span>'+
+            '<span style="font-family:\'Alegreya\',serif;font-size:14px;color:#5A2A11;flex-shrink:0">R'+(revHist.length - i)+'</span>'+
             '<a href="'+esc(u)+'" target="_blank" rel="noopener" style="color:var(--navy,#110704);text-decoration:none;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(h.url)+'</a>'+
             '<span style="font-size:11px;color:var(--terre-400,rgba(17,7,4,.5));flex-shrink:0">'+fmtShort(h.at)+'</span>'+
           '</div>';
@@ -376,7 +376,7 @@
     }).join('');
     ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px;max-width:480px;width:100%;box-shadow:0 8px 40px rgba(28,18,5,0.18)">'+
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">'+
-        '<span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:22px;color:var(--navy,#110704)">Modifier ma demande</span>'+
+        '<span style="font-family:\'Alegreya\',serif;font-size:22px;color:var(--navy,#110704)">Modifier ma demande</span>'+
         '<button onclick="document.getElementById(\'_cp-edit-task-ov\').remove()" style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--muted,#C5DEFF);line-height:1">✕</button>'+
       '</div>'+
       '<div style="margin-bottom:14px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#C5DEFF);display:block;margin-bottom:6px">Titre de la demande</label>'+
