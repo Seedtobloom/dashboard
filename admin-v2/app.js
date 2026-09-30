@@ -1715,8 +1715,9 @@
     var url, body;
     if (type === 'qnr') { url = '/api/clients/' + key + '/questionnaires/' + id; body = { seenByAdmin: true }; }
     else if (type === 'ticket') { url = '/api/clients/' + key + '/tickets/' + id; body = { projectId: 'maintenance' }; }
-    else if (type === 'rework') { url = '/api/clients/' + key + '/tasks/' + id; body = { projectId: 'partner', needsRework: false }; }
-    else if (type === 'comment') { url = '/api/clients/' + key + '/tasks/' + id; body = { projectId: 'partner', clientCommentNotif: false }; }
+    // Message et « Retours reçus » d'une même tâche partent ensemble de l'écran :
+    // les deux marqueurs tombent ensemble, sinon l'autre carte revenait.
+    else if (type === 'rework' || type === 'comment') { url = '/api/clients/' + key + '/tasks/' + id; body = { projectId: 'partner', needsRework: false, clientCommentNotif: false }; }
     else if (type === 'validated' || type === 'revision') { url = '/api/clients/' + key + '/deliverables/' + id; body = { projectId: project || 'partner', seenByAdmin: true }; }
     else { url = '/api/clients/' + key + '/tasks/' + id; body = { projectId: 'partner', clientNotif: false }; }
     jpost(url, body, 'PATCH').catch(function () {});
