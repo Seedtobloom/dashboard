@@ -2504,7 +2504,7 @@ select.cg-in{cursor:pointer}
 .ckt-cor .inp,.ckt-champ .inp{width:78px}
 .ckp-b{padding:20px 30px 4px}
 .ckp-b h3,.ckgv-s h2{margin:0 0 6px;font-size:17px;font-weight:700}
-.ckp-bt{font-size:16px;line-height:1.55;max-height:240px;overflow:auto}
+.ckp-bt{font-size:16px;line-height:1.55;max-height:240px;overflow:auto;white-space:pre-wrap}
 .ckp-tab{margin:10px 0 0;font-size:15px;color:#7a5540}
 .ckp-tab .ckt-pl{font-size:15px}
 .ckp-a{margin-top:22px;padding:16px 30px 18px;background:#F8F6F2;border-top:1px solid rgba(17,7,4,.08);border-radius:0 0 18px 18px;display:flex;align-items:center;gap:18px;flex-wrap:wrap}
@@ -2549,7 +2549,7 @@ select.cg-in{cursor:pointer}
 .ckgv-msg{padding:14px 0;border-top:1px solid rgba(17,7,4,.08)}
 .ckgv-mq{font-size:13px;color:#7a5540}
 .ckgv-mq b{color:#110704}
-.ckgv-msg p{margin:4px 0 0;font-size:15px}
+.ckgv-msg p{margin:4px 0 0;font-size:15px;white-space:pre-wrap}
 .ckgv-rep{margin-top:10px;display:flex;flex-direction:column;align-items:flex-start;gap:4px}
 .ckgv-rep textarea{width:100%;border-radius:12px;padding:12px 14px;resize:vertical}
 .ckgv-a{position:sticky;bottom:0;margin:24px -40px 0;padding:16px 40px;background:rgba(248,246,242,.96);border-top:1px solid rgba(17,7,4,.1);display:flex;align-items:center;gap:22px;z-index:5}

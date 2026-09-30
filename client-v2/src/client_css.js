@@ -1164,9 +1164,11 @@ button.cpnd-j:hover { box-shadow: inset 0 0 0 1px #110704; }
 .cpd-bulles { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
 .cpd-bulle { align-self: flex-start; max-width: 85%; background: #110704; color: #F8F6F2; border-radius: 14px 14px 14px 4px; padding: 9px 13px; }
 .cpd-bulle--toi { align-self: flex-end; background: #F4EFE3; color: #110704; border-radius: 14px 14px 4px 14px; }
-.cpd-bulle p { margin: 0; font-size: 14px; line-height: 1.45; }
+.cpd-bulle p { margin: 0; font-size: 14px; line-height: 1.45; white-space: pre-wrap; overflow-wrap: anywhere; }
 .cpd-bulle span { display: block; font-size: 12px; opacity: .7; margin-top: 3px; }
-.cpd-ecrire { display: flex; gap: 8px; }
+.cpd-ecrire { display: flex; gap: 8px; align-items: flex-end; }
+.cpd-ecrire textarea { flex: 1; min-width: 0; border: 0; background: #F8F6F2; border-radius: 16px; padding: 10px 16px; font: 500 14px var(--font-micro); line-height: 1.45; color: #110704; resize: none; min-height: 44px; }
+.cpd-ecrire textarea:focus { outline: none; box-shadow: 0 0 0 1px #110704; }
 .cpd-ecrire input { flex: 1; min-width: 0; border: 0; background: #F8F6F2; border-radius: 999px; padding: 10px 16px; font: 500 14px var(--font-micro); color: #110704; }
 .cpd-ecrire input:focus { outline: none; box-shadow: 0 0 0 1px #110704; }
 .cpd-ecrire .cpb-btn { padding: 9px 16px; font-size: 14px; }

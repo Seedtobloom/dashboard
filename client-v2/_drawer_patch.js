@@ -113,7 +113,7 @@
       return '<div style="display:flex;'+(isStudio?'justify-content:flex-end':'justify-content:flex-start')+';margin-bottom:8px">'+
         '<div style="max-width:85%;padding:8px 12px;border-radius:'+(isStudio?'12px 12px 2px 12px':'12px 12px 12px 2px')+';background:'+(isStudio?'#F8F6F2':'#F8F6F2')+'">'+
           '<div style="font-size:10px;font-weight:700;color:#5A2A11;margin-bottom:3px">'+(isStudio?'Cindy':'Toi')+' · '+fmtShort(c.createdAt)+'</div>'+
-          '<div style="font-size:13px;color:var(--navy,#110704)">'+esc(c.text)+'</div>'+
+          '<div style="font-size:13px;white-space:pre-wrap;color:var(--navy,#110704)">'+esc(c.text)+'</div>'+
         '</div>'+
       '</div>';
     }).join('');
@@ -121,7 +121,7 @@
       '<div style="margin-bottom:10px"><span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#5A2A11">Commentaires</span></div>'+
       '<div style="margin-bottom:10px">'+(commentsHtml || '<div style="font-size:12.5px;color:var(--muted,rgba(17,7,4,.55));font-style:italic">Aucun commentaire pour le moment.</div>')+'</div>'+
       '<div style="display:flex;gap:6px">'+
-        '<input type="text" id="cli-tc-'+t.id+'" placeholder="Ajouter un commentaire…" style="flex:1;font-size:13px;padding:9px 14px;border:none;background:#F8F6F2;border-radius:999px;font-family:inherit">'+
+        '<textarea rows="2" id="cli-tc-'+t.id+'" placeholder="Ajouter un commentaire…" style="flex:1;font-size:13px;padding:9px 14px;border:none;background:#F8F6F2;border-radius:999px;font-family:inherit;resize:vertical;line-height:1.45;border-radius:12px"></textarea>'+
         '<button onclick="cliAddComment(\''+pid+'\',\''+t.id+'\')" style="padding:9px 15px;background:var(--navy,#110704);color:#fff;border:none;border-radius:999px;cursor:pointer;font-size:14px">→</button>'+
       '</div>';
 

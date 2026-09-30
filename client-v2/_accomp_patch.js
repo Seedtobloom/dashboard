@@ -58,7 +58,13 @@
   /* ── Page d'une demande ── */
   window.cpAccRepBascule = function (pid) { cpAccRepOuvert[pid] = !cpAccRepOuvert[pid]; renderShell(); };
   window.cpAccQuestion = function (id) { var el = document.getElementById('cli-tc-' + id); if (el) { el.focus(); el.scrollIntoView({ block: 'center', behavior: 'smooth' }); } };
-  window.cpAccEnvoyerMsg = function (e, pid, id) { if (e && e.key && e.key !== 'Enter') return; if (e) e.preventDefault(); window.cliAddComment(pid, id); };
+  // Entrée passe à la ligne (un message peut tenir sur plusieurs lignes) ;
+  // on envoie avec le bouton, ou Cmd/Ctrl + Entrée.
+  window.cpAccEnvoyerMsg = function (e, pid, id) {
+    if (e && e.key) { if (e.key !== 'Enter' || !(e.metaKey || e.ctrlKey)) return; e.preventDefault(); }
+    window.cliAddComment(pid, id);
+  };
+  window.cpAccMsgTaille = function (ta) { ta.style.height = 'auto'; ta.style.height = Math.min(ta.scrollHeight, 220) + 'px'; };
   window.cpAccFichierTache = function (pid, id, files) {
     var t = cpAccT(pid, id); if (!t || !files || !files.length) return;
     Array.prototype.forEach.call(files, function (f) {
@@ -180,7 +186,7 @@
     var pid = pd.project.id, com = t.comments || [];
     return '<section class="cpb-carte cpd-cote"><b class="cpd-cote__t">Questions et échanges</b><div class="cpd-bulles">' +
       (com.length ? com.map(function (c) { var s = (c.author === 'studio' || c.author === 'cindy'); return '<div class="cpd-bulle' + (s ? '' : ' cpd-bulle--toi') + '"><p>' + esc(c.text || '') + '</p><span>' + (s ? 'Cindy' : 'Toi') + ' · ' + esc(fmtShort(c.createdAt)) + '</span></div>'; }).join('') : '<p class="cpnd-note">Une question sur cette demande ? Cindy te répond ici.</p>') +
-      '</div><div class="cpd-ecrire"><input id="cli-tc-' + t.id + '" placeholder="Poser une question sur cette demande" aria-label="Message à Cindy" onkeydown="cpAccEnvoyerMsg(event,\'' + pid + '\',\'' + t.id + '\')"></div></section>';
+      '</div><div class="cpd-ecrire"><textarea id="cli-tc-' + t.id + '" rows="2" placeholder="Poser une question sur cette demande" aria-label="Message à Cindy" oninput="cpAccMsgTaille(this)" onkeydown="cpAccEnvoyerMsg(event,\'' + pid + '\',\'' + t.id + '\')"></textarea><button class="cpb-btn cpd-btn" onclick="cpAccEnvoyerMsg(null,\'' + pid + '\',\'' + t.id + '\')">Envoyer</button></div></section>';
   }
   function cpAccReporterCarte(pd, t) {
     var pid = pd.project.id;
@@ -513,7 +519,7 @@
       img + btns +
       '<div class="cpv-bloc"><b>Ton brief</b><p>' + esc(String(brief).slice(0, 220) || 'Pas encore de brief.') + '</p>' + (t.attachments || []).slice(0, 3).map(function (a) { return '<a class="cpl-lien" href="' + API_BASE + '/files/' + encodeURIComponent(a.fileKey || a.key || '') + '/download" target="_blank" rel="noopener">' + esc(a.name || 'fichier') + '</a>'; }).join(' ') + '</div>' +
       '<div class="cpv-bloc"><b>Vos échanges</b>' + (com.length ? com.map(function (c) { var s = (c.author === 'studio' || c.author === 'cindy'); return '<div class="cpd-bulle' + (s ? '' : ' cpd-bulle--toi') + '"><p>' + esc(c.text || '') + '</p></div>'; }).join('') : '<p class="cpnd-note">Pas encore d’échange.</p>') +
-        '<div class="cpd-ecrire"><input id="cli-tc-' + t.id + '" placeholder="Écrire un commentaire" aria-label="Message à Cindy" onkeydown="cpAccEnvoyerMsg(event,\'' + pid + '\',\'' + t.id + '\')"></div></div>' +
+        '<div class="cpd-ecrire"><textarea id="cli-tc-' + t.id + '" rows="2" placeholder="Écrire un commentaire" aria-label="Message à Cindy" oninput="cpAccMsgTaille(this)" onkeydown="cpAccEnvoyerMsg(event,\'' + pid + '\',\'' + t.id + '\')"></textarea><button class="cpb-btn cpd-btn" onclick="cpAccEnvoyerMsg(null,\'' + pid + '\',\'' + t.id + '\')">Envoyer</button></div></div>' +
       '<div class="cpv-liens"><button class="cpl-lien" onclick="cliOpenTaskDrawer(\'' + pid + '\',\'' + t.id + '\')">Ouvrir la demande</button><button class="cpl-lien" onclick="cpAccDupStart(event,\'' + pid + '\',\'' + t.id + '\')">Dupliquer</button>' + (t.status !== 'done' ? '<button class="cpl-lien" onclick="cpAccRepOuvrir(event,\'' + t.id + '\')">Changer la date</button>' : '') + '</div>' +
       (cpAccRep === t.id ? cpAccActions(pid, t, false).replace(/^<span class="cpa-acts">[\s\S]*?<\/span>/, '') : '') + '</aside>';
   }

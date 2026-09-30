@@ -3571,8 +3571,8 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
         statusSel +
         '<span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;background:'+urg+';color:var(--navy);padding:2px 8px;border-radius:999px;font-weight:600">'+(CLI_URG_LABEL[t.urgency]||'')+'</span>' +
       '</div>' +
-      (comments.length?'<div style="margin-top:8px;border-top:1px dashed var(--border);padding-top:8px">'+comments.map(function(c){return '<div style="font-size:12px;padding:3px 0"><strong style="color:var(--navy)">'+(c.author==='cindy'?'Cindy':'Vous')+'</strong> <span style="color:var(--muted)">· '+fmtShort(c.createdAt)+'</span><div style="margin-top:1px">'+esc(c.text)+'</div></div>';}).join('')+'</div>':'') +
-      '<div style="display:flex;gap:6px;margin-top:8px"><input type="text" id="cli-tc-'+t.id+'" placeholder="Commenter…" style="flex:1;font-size:12px;padding:5px 8px;border:1px solid var(--border);border-radius:8px"><button class="cp-btn cp-btn--sage" style="padding:5px 10px;font-size:12px" onclick="cliAddComment(\''+pid+'\',\''+t.id+'\')">→</button></div>' +
+      (comments.length?'<div style="margin-top:8px;border-top:1px dashed var(--border);padding-top:8px">'+comments.map(function(c){return '<div style="font-size:12px;padding:3px 0;white-space:pre-wrap"><strong style="color:var(--navy)">'+(c.author==='cindy'?'Cindy':'Vous')+'</strong> <span style="color:var(--muted)">· '+fmtShort(c.createdAt)+'</span><div style="margin-top:1px">'+esc(c.text)+'</div></div>';}).join('')+'</div>':'') +
+      '<div style="display:flex;gap:6px;margin-top:8px"><textarea rows="2" id="cli-tc-'+t.id+'" placeholder="Commenter…" style="flex:1;font-size:12px;padding:5px 8px;border:1px solid var(--border);border-radius:8px;resize:vertical;line-height:1.45;border-radius:12px"></textarea><button class="cp-btn cp-btn--sage" style="padding:5px 10px;font-size:12px" onclick="cliAddComment(\''+pid+'\',\''+t.id+'\')">→</button></div>' +
     '</div>';
   }
 
@@ -4661,7 +4661,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
       return '<div style="display:flex;'+(isStudio?'justify-content:flex-end':'justify-content:flex-start')+';margin-bottom:8px">' +
         '<div style="max-width:85%;padding:8px 12px;border-radius:'+(isStudio?'12px 12px 2px 12px':'12px 12px 12px 2px')+';background:'+(isStudio?'#F8F6F2':'var(--surface,ffffff)')+';border:1px solid '+(isStudio?'#CD8F6E':'var(--bone-d,#F8F6F2)')+';">' +
           '<div style="font-size:10px;font-weight:700;color:'+(isStudio?'#110704':'var(--muted,#C5DEFF)')+';margin-bottom:3px">'+(isStudio?'Studio':'Vous')+' · '+fmtShort(c.createdAt)+'</div>' +
-          '<div style="font-size:13px;color:'+(isStudio?'#110704':'var(--navy,#110704)')+'">'+esc(c.text)+'</div>' +
+          '<div style="font-size:13px;white-space:pre-wrap;color:'+(isStudio?'#110704':'var(--navy,#110704)')+'">'+esc(c.text)+'</div>' +
         '</div>' +
       '</div>';
     }).join('');
@@ -4747,7 +4747,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
         (commentsHtml || '<div style="font-size:12px;color:var(--muted,#C5DEFF);font-style:italic;text-align:center;padding:10px 0">Aucun echange pour le moment.</div>') +
       '</div>' +
       '<div style="display:flex;gap:6px">' +
-        '<input type="text" id="cli-tc-'+t.id+'" placeholder="Ecrire un message..." style="flex:1;font-size:12px;padding:8px 12px;border:1.5px solid var(--border,#F8F6F2);border-radius:999px;font-family:inherit">' +
+        '<textarea rows="2" id="cli-tc-'+t.id+'" placeholder="Ecrire un message..." style="flex:1;font-size:12px;padding:8px 12px;border:1.5px solid var(--border,#F8F6F2);border-radius:999px;font-family:inherit;resize:vertical;line-height:1.45;border-radius:12px"></textarea>' +
         '<button onclick="cliAddComment(\''+pid+'\',\''+t.id+'\')" style="padding:8px 14px;background:var(--navy,#110704);color:#fff;border:none;border-radius:999px;cursor:pointer;font-size:13px">→</button>' +
       '</div>' +
       sep +
