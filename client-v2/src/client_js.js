@@ -2410,7 +2410,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     if (st === 'review') return { k: 'toi', l: 'À valider' };
     if (t.proposedDueDate) return { k: 'toi', l: 'Date à confirmer' };
     var coms = Array.isArray(t.comments) ? t.comments : [];
-    if (coms.length && coms[coms.length - 1].author === 'studio' && st !== 'done') return { k: 'toi', l: 'Question pour toi' };
+    if (coms.length && (coms[coms.length - 1].author === 'studio' || coms[coms.length - 1].author === 'cindy') && st !== 'done') return { k: 'toi', l: 'Question pour toi' };
     if (t.needsRework) return { k: 'cindy', l: 'En révision' };
     if (st === 'in_progress') return { k: 'cindy', l: 'En cours' };
     if (pr.p_clientbrief === 'Brief en cours') return { k: 'toi', l: 'Brief à compléter' };
@@ -4657,7 +4657,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
         : ' <span style="font-size:10px;color:var(--muted,#C5DEFF)">J+'+daysUntilDue+'</span>') : '';
 
     var commentsHtml = comments.map(function(c){
-      var isStudio = c.author === 'studio';
+      var isStudio = (c.author === 'studio' || c.author === 'cindy');
       return '<div style="display:flex;'+(isStudio?'justify-content:flex-end':'justify-content:flex-start')+';margin-bottom:8px">' +
         '<div style="max-width:85%;padding:8px 12px;border-radius:'+(isStudio?'12px 12px 2px 12px':'12px 12px 12px 2px')+';background:'+(isStudio?'#F8F6F2':'var(--surface,ffffff)')+';border:1px solid '+(isStudio?'#CD8F6E':'var(--bone-d,#F8F6F2)')+';">' +
           '<div style="font-size:10px;font-weight:700;color:'+(isStudio?'#110704':'var(--muted,#C5DEFF)')+';margin-bottom:3px">'+(isStudio?'Studio':'Vous')+' · '+fmtShort(c.createdAt)+'</div>' +

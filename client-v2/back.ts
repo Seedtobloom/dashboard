@@ -247,6 +247,8 @@ async function handleClientApi(
   if (t && method === 'POST') return handleTaskComplete(request, env, masterKey, data, t[1]);
   t = sub.match(/^\/tasks\/([a-f0-9]+)\/feedback$/);
   if (t && method === 'POST') return handleTaskFeedback(request, env, masterKey, data, t[1]);
+  t = sub.match(/^\/tasks\/([a-f0-9]+)\/valider$/);
+  if (t && method === 'POST') return handleTaskValider(request, env, masterKey, data, t[1]);
   t = sub.match(/^\/tasks\/([a-f0-9]+)\/propose-date$/);
   if (t && method === 'POST') return handleTaskProposeDate(request, env, masterKey, data, t[1]);
   t = sub.match(/^\/tasks\/([a-f0-9]+)\/comments$/);
@@ -1325,6 +1327,22 @@ async function handleTaskFeedback(_request: Request, env: Env, masterKey: string
   await notifyAdmin(env, `Retours faits · ${clientFullName(data)}`,
     `<p><strong>${escHtml(clientFullName(data))}</strong> a fait ses retours sur la tâche <strong>${escHtml(found.task.title || '')}</strong>. La balle est dans votre camp.</p>`);
   return json(found.task);
+}
+
+// Le client valide une révision sans aucun retour : la tâche est terminée,
+// et Cindy est prévenue que c'est bon du premier coup.
+async function handleTaskValider(_request: Request, env: Env, masterKey: string, data: AnyObj, taskId: string): Promise<Response> {
+  const found = findTask(getEspace(data), taskId, '');
+  if (!found) return json({ error: 'Task not found' }, 404);
+  const tk = found.task;
+  tk.status = 'done';
+  tk.completedAt = nowIso();
+  tk.validatedByClientAt = nowIso();
+  tk.needsRework = false;
+  await save(env, masterKey, data);
+  await notifyAdmin(env, `Validé sans retour · ${clientFullName(data)}`,
+    `<p><strong>${escHtml(clientFullName(data))}</strong> a validé <strong>${escHtml(tk.title || '')}</strong>, sans aucun retour. La tâche est terminée.</p>`);
+  return json(tk);
 }
 
 async function handleTaskProposeDate(request: Request, env: Env, masterKey: string, data: AnyObj, taskId: string): Promise<Response> {

@@ -112,7 +112,7 @@
       var lien = dern.reviewLink ? (/^https?:\/\//i.test(dern.reviewLink) ? dern.reviewLink : 'https://' + dern.reviewLink) : '';
       if (lien && typeof cpConsulted !== 'undefined' && !cpConsulted[dern.id]) btns = '<a class="cpb-btn cpd-btn" href="' + esc(lien) + '" target="_blank" rel="noopener" onclick="window.cpMarkConsulted(\'' + dern.id + '\');setTimeout(renderShell,300)">Voir la version à valider</a>';
       else btns = '<button class="cpb-btn cpd-btn--clair" onclick="stbValidate(\'' + pid + '\',\'' + dern.id + '\',\'refuse\')">Demander une modif</button><button class="cpb-btn cpd-btn" onclick="stbValidate(\'' + pid + '\',\'' + dern.id + '\',\'valide\')">Valider</button>';
-    } else if (t.status === 'review' && t.reviewLink) btns = '<a class="cpb-btn cpd-btn--clair" href="' + esc(t.reviewLink) + '" target="_blank" rel="noopener">Voir le lien de relecture</a><button class="cpb-btn cpd-btn" onclick="cliFeedbackDone(\'' + pid + '\',\'' + t.id + '\')">J’ai fait mes retours</button>';
+    } else if (t.status === 'review' && t.reviewLink) btns = '<a class="cpb-btn cpd-btn--clair" href="' + esc(t.reviewLink) + '" target="_blank" rel="noopener">Voir le lien de relecture</a><button class="cpb-btn cpd-btn--clair" onclick="cliFeedbackDone(\'' + pid + '\',\'' + t.id + '\')">J’ai fait mes retours</button><button class="cpb-btn cpd-btn" onclick="cliTaskValider(\'' + pid + '\',\'' + t.id + '\')">C’est validé</button>';
     var meta = [t.dueDate ? 'pour le ' + fmtDate(t.dueDate) : 'date à choisir', 'urgence ' + cpAccUrg(t)];
     if (t.timeSpentMinutes) meta.push(cpbMin(t.timeSpentMinutes) + ' passées');
     if (t.createdAt) meta.push('créée par toi le ' + fmtShort(t.createdAt));
@@ -179,7 +179,7 @@
   function cpAccEchanges(pd, t) {
     var pid = pd.project.id, com = t.comments || [];
     return '<section class="cpb-carte cpd-cote"><b class="cpd-cote__t">Questions et échanges</b><div class="cpd-bulles">' +
-      (com.length ? com.map(function (c) { var s = c.author === 'studio'; return '<div class="cpd-bulle' + (s ? '' : ' cpd-bulle--toi') + '"><p>' + esc(c.text || '') + '</p><span>' + (s ? 'Cindy' : 'Toi') + ' · ' + esc(fmtShort(c.createdAt)) + '</span></div>'; }).join('') : '<p class="cpnd-note">Une question sur cette demande ? Cindy te répond ici.</p>') +
+      (com.length ? com.map(function (c) { var s = (c.author === 'studio' || c.author === 'cindy'); return '<div class="cpd-bulle' + (s ? '' : ' cpd-bulle--toi') + '"><p>' + esc(c.text || '') + '</p><span>' + (s ? 'Cindy' : 'Toi') + ' · ' + esc(fmtShort(c.createdAt)) + '</span></div>'; }).join('') : '<p class="cpnd-note">Une question sur cette demande ? Cindy te répond ici.</p>') +
       '</div><div class="cpd-ecrire"><input id="cli-tc-' + t.id + '" placeholder="Poser une question sur cette demande" aria-label="Message à Cindy" onkeydown="cpAccEnvoyerMsg(event,\'' + pid + '\',\'' + t.id + '\')"></div></section>';
   }
   function cpAccReporterCarte(pd, t) {
@@ -512,7 +512,7 @@
       '<h3 class="cpv-t">' + esc(t.title || 'Demande') + '</h3><p class="cpd-meta">' + esc([t.dueDate ? 'pour le ' + fmtDate(t.dueDate) : '', 'urgence ' + cpAccUrg(t), t.timeSpentMinutes ? cpbMin(t.timeSpentMinutes) + ' passées' : ''].filter(Boolean).join(' · ')) + '</p>' +
       img + btns +
       '<div class="cpv-bloc"><b>Ton brief</b><p>' + esc(String(brief).slice(0, 220) || 'Pas encore de brief.') + '</p>' + (t.attachments || []).slice(0, 3).map(function (a) { return '<a class="cpl-lien" href="' + API_BASE + '/files/' + encodeURIComponent(a.fileKey || a.key || '') + '/download" target="_blank" rel="noopener">' + esc(a.name || 'fichier') + '</a>'; }).join(' ') + '</div>' +
-      '<div class="cpv-bloc"><b>Vos échanges</b>' + (com.length ? com.map(function (c) { var s = c.author === 'studio'; return '<div class="cpd-bulle' + (s ? '' : ' cpd-bulle--toi') + '"><p>' + esc(c.text || '') + '</p></div>'; }).join('') : '<p class="cpnd-note">Pas encore d’échange.</p>') +
+      '<div class="cpv-bloc"><b>Vos échanges</b>' + (com.length ? com.map(function (c) { var s = (c.author === 'studio' || c.author === 'cindy'); return '<div class="cpd-bulle' + (s ? '' : ' cpd-bulle--toi') + '"><p>' + esc(c.text || '') + '</p></div>'; }).join('') : '<p class="cpnd-note">Pas encore d’échange.</p>') +
         '<div class="cpd-ecrire"><input id="cli-tc-' + t.id + '" placeholder="Écrire un commentaire" aria-label="Message à Cindy" onkeydown="cpAccEnvoyerMsg(event,\'' + pid + '\',\'' + t.id + '\')"></div></div>' +
       '<div class="cpv-liens"><button class="cpl-lien" onclick="cliOpenTaskDrawer(\'' + pid + '\',\'' + t.id + '\')">Ouvrir la demande</button><button class="cpl-lien" onclick="cpAccDupStart(event,\'' + pid + '\',\'' + t.id + '\')">Dupliquer</button>' + (t.status !== 'done' ? '<button class="cpl-lien" onclick="cpAccRepOuvrir(event,\'' + t.id + '\')">Changer la date</button>' : '') + '</div>' +
       (cpAccRep === t.id ? cpAccActions(pid, t, false).replace(/^<span class="cpa-acts">[\s\S]*?<\/span>/, '') : '') + '</aside>';

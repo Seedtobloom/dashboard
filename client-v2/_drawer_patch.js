@@ -109,7 +109,7 @@
     // Commentaires
     var comments = Array.isArray(t.comments) ? t.comments : [];
     var commentsHtml = comments.map(function(c){
-      var isStudio = c.author === 'studio';
+      var isStudio = (c.author === 'studio' || c.author === 'cindy');
       return '<div style="display:flex;'+(isStudio?'justify-content:flex-end':'justify-content:flex-start')+';margin-bottom:8px">'+
         '<div style="max-width:85%;padding:8px 12px;border-radius:'+(isStudio?'12px 12px 2px 12px':'12px 12px 12px 2px')+';background:'+(isStudio?'#F8F6F2':'#F8F6F2')+'">'+
           '<div style="font-size:10px;font-weight:700;color:#5A2A11;margin-bottom:3px">'+(isStudio?'Cindy':'Toi')+' · '+fmtShort(c.createdAt)+'</div>'+
@@ -168,10 +168,11 @@
           var u = /^https?:\/\//i.test(t.reviewLink) ? t.reviewLink : 'https://' + t.reviewLink;
           return '<div style="margin:18px 0 4px;padding:16px 18px;border-radius:14px;background:#F8F6F2;border:1px solid #F8F6F2">'+
             '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#5A2A11;margin-bottom:6px">À vérifier de ton côté</div>'+
-            '<div style="font-size:14px;color:var(--navy,#110704);line-height:1.5;margin-bottom:12px">Cindy t’invite à regarder ce travail et à donner ton retour. Une fois tes retours transmis (par le lien ou en commentaire), clique sur « J\'ai fait mes retours » pour la prévenir.</div>'+
+            '<div style="font-size:14px;color:var(--navy,#110704);line-height:1.5;margin-bottom:12px">Cindy t’invite à regarder ce travail et à donner ton retour. Une fois tes retours transmis (par le lien ou en commentaire), clique sur « J\'ai fait mes retours » pour la prévenir. Si tout te va, clique sur « C\'est validé ».</div>'+
             '<div style="display:flex;flex-wrap:wrap;gap:8px">'+
               '<a href="'+esc(u)+'" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:8px;padding:11px 20px;border-radius:999px;background:var(--terre,#110704);color:#fff;text-decoration:none;font-size:13px;font-weight:700">'+cpIcon('external',15)+' Vérifier le travail</a>'+
               '<button onclick="cliFeedbackDone(\''+pid+'\',\''+t.id+'\')" style="display:inline-flex;align-items:center;gap:8px;padding:11px 20px;border-radius:999px;background:#fff;border:1.5px solid var(--terre,#110704);color:var(--terre,#110704);cursor:pointer;font-size:13px;font-weight:700">'+cpIcon('check',15)+' J\'ai fait mes retours</button>'+
+              '<button onclick="cliTaskValider(\''+pid+'\',\''+t.id+'\')" style="display:inline-flex;align-items:center;gap:8px;padding:11px 20px;border-radius:999px;background:#fff;border:1.5px solid var(--terre,#110704);color:var(--terre,#110704);cursor:pointer;font-size:13px;font-weight:700">'+cpIcon('check',15)+' C\'est validé, aucun retour</button>'+
             '</div>'+
           '</div>';
         })()
@@ -317,6 +318,18 @@
 
   // Le client signale à Cindy qu'il a fait ses retours : la tâche repasse en
   // cours (côté Cindy), Cindy reçoit un e-mail.
+  // Aucun retour à faire : la cliente valide en un clic, la tâche est terminée.
+  window.cliTaskValider = function(pid, taskId){
+    var pd = getPD(pid);
+    var t = pd && (pd.project.tasks || []).find(function(x){ return x.id === taskId; });
+    if (!t) return;
+    showConfirm('Tout te va ? Cindy sera prévenue que c\'est validé, et la demande passera en terminée.', function(){
+      fetch(API_BASE + '/tasks/' + taskId + '/valider', { method:'POST' })
+        .then(function(r){ if(!r.ok) throw new Error(); return r.json(); })
+        .then(function(updated){ t.status = (updated && updated.status) || 'done'; t.completedAt = updated && updated.completedAt; toast('C\'est validé, merci !'); renderShell(); })
+        .catch(function(){ toast('Erreur, réessaie.'); });
+    }, { title: 'Valider sans retour ?', okLabel: 'Oui, c\'est validé' });
+  };
   window.cliFeedbackDone = function(pid, taskId){
     var pd = getPD(pid);
     var t = pd && (pd.project.tasks || []).find(function(x){ return x.id === taskId; });
