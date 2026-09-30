@@ -5029,6 +5029,7 @@
       nouveau: !!(t.needsRework || t.commentNotif),
       sentCount: t.sentCount || 0,
       envoyeLe: t.reviewSentAt || t.lastSentAt || '',
+      lienRevision: t.reviewLink || '',
       dernierEnvoi: t.lastName || '', dernierStatut: t.lastStatus || '',
       etapes: Array.isArray(t.subtasks) ? t.subtasks : [],
       // Tickets : les questions posées à la cliente (et ses réponses), ses liens.
@@ -5969,18 +5970,28 @@
     if (t.traitesAvant && String(at || '') <= String(t.traitesAvant)) return 'Marqué comme traité.';
     return '';
   }
+  // Ce qui était parti chez elle quand elle a écrit : la dernière version
+  // envoyée avant son message, sinon le lien de révision de la tâche.
+  function ckTEnvoiAvant(t, at) {
+    var l = (t.envois || []).filter(function (e) { return (e.link || e.file) && (!at || String(e.at || '') <= String(at)); })
+      .sort(function (a, b) { return String(a.at).localeCompare(String(b.at)); });
+    var e = l[l.length - 1];
+    if (e) return { v: e.version, at: e.at, url: ckTLienEnvoi(t, e.link, e.file) };
+    if (t.lienRevision) return { v: 0, at: t.envoyeLe, url: ckTLienEnvoi(t, t.lienRevision, '') };
+    return null;
+  }
   function ckTRetoursListe(t) {
     var out = [];
     (t.retours || []).forEach(function (r) {
       var suite = ckTSuite(t, r.at), valide = r.status === 'valide';
       out.push({ titre: r.version ? 'Sur la V' + r.version : (r.name ? 'Sur ' + r.name : 'Sur la version envoyée'),
         etat: valide ? 'valide' : (suite ? 'traite' : 'atraiter'), suite: suite, texte: r.comment, at: r.at, atts: r.attachments || [], lien: r.link,
-        envoi: { v: r.version, at: r.sentAt, url: ckTLienEnvoi(t, r.sentLink, r.sentFile) } });
+        envoi: (r.sentLink || r.sentFile) ? { v: r.version, at: r.sentAt, url: ckTLienEnvoi(t, r.sentLink, r.sentFile) } : ckTEnvoiAvant(t, r.at) });
     });
     (t.echanges || []).forEach(function (m) {
       if (m.author !== 'client') return;
       var suite = ckTSuite(t, m.at);
-      out.push({ titre: 'Son message', etat: suite ? 'traite' : 'atraiter', suite: suite, texte: m.text, at: m.at, atts: m.attachments || [], lien: '', envoi: null });
+      out.push({ titre: 'Son message', etat: suite ? 'traite' : 'atraiter', suite: suite, texte: m.text, at: m.at, atts: m.attachments || [], lien: '', envoi: ckTEnvoiAvant(t, m.at) });
     });
     return out.sort(function (a, b) { return String(b.at).localeCompare(String(a.at)); });
   }
