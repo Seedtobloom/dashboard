@@ -198,7 +198,7 @@
         '<button class="btn btn--sm" data-yes style="background:' + ac + ';color:#fff;border-color:' + ac + '">' + esc(opts.yes || 'Oui, envoyer') + '</button>' +
       '</div></div>';
     function close() { ov.remove(); }
-    ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+    ov.addEventListener('click', function (e) { if (e.target === ov && ADM_DOWN === ov) close(); });
     ov.querySelector('[data-no]').onclick = close;
     ov.querySelector('[data-yes]').onclick = function () { close(); onYes(); };
     document.body.appendChild(ov);
@@ -213,6 +213,11 @@
    * Mais pour un geste dont le SEUL but est de prévenir, mettre le silence en
    * avant est un contresens : on croit valider l'envoi et rien ne part.
    * D'où `envoiParDefaut` — la même fenêtre, l'accent inversé. */
+  // Une fenêtre ne se ferme au clic à côté que si le clic a COMMENCÉ à côté :
+  // agrandir un champ ou sélectionner du texte en relâchant hors de la
+  // fenêtre la fermait (et perdait ce qui était tapé).
+  var ADM_DOWN = null;
+  document.addEventListener('mousedown', function (e) { ADM_DOWN = e.target; }, true);
   // Le mot joint au dernier envoi (lien, fichier) : lu par l'appel qui suit.
   var ENVOI_MOT = '';
   function notifyConfirm(message, cb, envoiParDefaut) {
@@ -233,7 +238,7 @@
         '<button ' + (envoiParDefaut ? fort : doux) + ' data-notify>' + (envoiParDefaut ? 'Oui, envoyer l\'e-mail' : 'Oui, prévenir') + '</button>' +
       '</div></div>';
     function close() { ov.remove(); }
-    ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+    ov.addEventListener('click', function (e) { if (e.target === ov && ADM_DOWN === ov) close(); });
     ov.querySelector('[data-cancel]').onclick = close;
     var lireMot = function () { var m = ov.querySelector('#env-mot'); ENVOI_MOT = m ? (m.value || '').trim() : ''; };
     ov.querySelector('[data-notify]').onclick = function () { lireMot(); close(); cb(true); };
@@ -780,7 +785,7 @@
       '<div class="admconfirm__row"><button class="btn btn--outline btn--sm" data-no>Fermer</button>' +
         '<button class="btn btn--sm" data-yes style="background:var(--terre);color:#fff;border-color:var(--terre)">Envoyer le test</button></div></div>';
     function close() { ov.remove(); }
-    ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+    ov.addEventListener('click', function (e) { if (e.target === ov && ADM_DOWN === ov) close(); });
     ov.querySelector('[data-no]').onclick = close;
     ov.querySelector('[data-yes]').onclick = function () {
       var to = (el('te-to').value || '').trim(); if (!to) { toast('Adresse requise'); return; }
@@ -1051,7 +1056,7 @@
         '</div>' +
         '<div class="admconfirm__row"><button class="btn btn--outline btn--sm" data-no>Fermer</button></div></div>';
       function close() { ov.remove(); }
-      ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+      ov.addEventListener('click', function (e) { if (e.target === ov && ADM_DOWN === ov) close(); });
       ov.querySelector('[data-no]').onclick = close;
       ov.querySelectorAll('.qr-pick').forEach(function (btn) {
         btn.onclick = function () {
@@ -1109,7 +1114,7 @@
       '<div class="admconfirm__row"><button class="btn btn--outline btn--sm" data-no>Annuler</button>' +
         '<button class="btn btn--sm" data-yes style="background:#b5462f;color:#fff;border-color:#b5462f">Restaurer</button></div></div>';
     function close() { ov.remove(); }
-    ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+    ov.addEventListener('click', function (e) { if (e.target === ov && ADM_DOWN === ov) close(); });
     ov.querySelector('[data-no]').onclick = close;
     ov.querySelector('[data-yes]').onclick = function () {
       var target = el('bk-target').value; close();
@@ -1585,7 +1590,7 @@
       '<input id="ibx-dl-url" class="inp" style="width:100%;margin:0 0 6px" placeholder="https://…">' +
       '<div class="admconfirm__row"><button class="btn btn--outline btn--sm" data-no>Annuler</button><button class="btn btn--sm" data-yes style="background:var(--terre);color:#fff;border-color:var(--terre)">Envoyer à la cliente</button></div></div>';
     function close() { ov.remove(); }
-    ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+    ov.addEventListener('click', function (e) { if (e.target === ov && ADM_DOWN === ov) close(); });
     ov.querySelector('[data-no]').onclick = close;
     ov.querySelector('[data-yes]').onclick = function () {
       var url = (el('ibx-dl-url').value || '').trim(); if (!url) { toast('Colle un lien'); return; }
@@ -3555,7 +3560,7 @@
         '<button class="btn btn--sm" data-yes style="background:var(--terre);color:#fff;border-color:var(--terre)">Enregistrer</button></div>' +
     '</div>';
     function close() { ov.remove(); }
-    ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+    ov.addEventListener('click', function (e) { if (e.target === ov && ADM_DOWN === ov) close(); });
     ov.querySelector('[data-no]').onclick = close;
     ov.querySelector('[data-yes]').onclick = function () {
       var title = (el('mte-title').value || '').trim(); if (!title) { toast('Titre requis'); return; }
@@ -4769,7 +4774,7 @@
       var pv = ov.querySelector('#vp-prev'); if (pv && i > 0) pv.onclick = function () { i--; render(); };
       ov.querySelector('#vp-next').onclick = function () { if (i >= steps.length - 1) close(); else { i++; render(); } };
     }
-    ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+    ov.addEventListener('click', function (e) { if (e.target === ov && ADM_DOWN === ov) close(); });
     document.addEventListener('keydown', onKey);
     document.body.appendChild(ov);
     render();
@@ -8031,7 +8036,7 @@
       '<div class="admconfirm__row" style="margin-top:16px"><button class="btn btn--outline btn--sm" data-no>Annuler</button><button class="btn btn--sm" data-yes style="background:var(--terre);color:#fff">Créer le bloc</button></div>' +
     '</div>';
     function close() { ov.remove(); }
-    ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+    ov.addEventListener('click', function (e) { if (e.target === ov && ADM_DOWN === ov) close(); });
     ov.querySelector('[data-no]').onclick = close;
     ov.querySelector('[data-yes]').onclick = function () { msSaveBlock(close); };
     document.body.appendChild(ov);
@@ -8196,7 +8201,7 @@
         '<button class="btn btn--sm" data-yes style="background:var(--terre);color:#fff">Enregistrer</button>' +
       '</div></div>';
     function close() { ov.remove(); }
-    ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+    ov.addEventListener('click', function (e) { if (e.target === ov && ADM_DOWN === ov) close(); });
     ov.querySelector('[data-no]').onclick = close;
     var clr = ov.querySelector('[data-clear]'); if (clr) clr.onclick = function () { msPatch(id, { notes: '' }); close(); toast('Note effacée'); };
     ov.querySelector('[data-yes]').onclick = function () { var v = (el('ms-note-ta').value || '').trim(); msPatch(id, { notes: v }); close(); toast('Note enregistrée'); };
@@ -9046,7 +9051,7 @@
       '<div class="admconfirm__row"><button class="btn btn--outline btn--sm" data-no>Annuler</button>' +
         '<button class="btn btn--sm" data-yes style="background:var(--terre);color:#fff;border-color:var(--terre)">Envoyer au client</button></div></div>';
     function close() { ov.remove(); }
-    ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+    ov.addEventListener('click', function (e) { if (e.target === ov && ADM_DOWN === ov) close(); });
     ov.querySelector('[data-no]').onclick = close;
     var send = function () {
       var url = (el('prio-dl-url').value || '').trim();
@@ -9103,7 +9108,7 @@
         '<button class="btn btn--sm" data-yes style="background:var(--terre);color:#fff;border-color:var(--terre)">Envoyer au client</button>' +
       '</div></div>';
     function close() { ov.remove(); }
-    ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+    ov.addEventListener('click', function (e) { if (e.target === ov && ADM_DOWN === ov) close(); });
     ov.querySelector('[data-no]').onclick = close;
     var send = function () {
       var link = (el('prio-rl').value || '').trim();
@@ -9149,7 +9154,7 @@
         '<button class="btn btn--sm" data-yes style="background:var(--terre);color:#fff;border-color:var(--terre)">Enregistrer</button>' +
       '</div></div>';
     function close() { ov.remove(); }
-    ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+    ov.addEventListener('click', function (e) { if (e.target === ov && ADM_DOWN === ov) close(); });
     ov.querySelector('[data-no]').onclick = close;
     var save = function () {
       var h = Math.max(0, parseInt(el('prio-th').value, 10) || 0);
@@ -9192,7 +9197,7 @@
         '<button class="btn btn--sm" data-yes style="background:var(--terre);color:#fff;border-color:var(--terre)">Ajouter</button>' +
       '</div></div>';
     function close() { ov.remove(); }
-    ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+    ov.addEventListener('click', function (e) { if (e.target === ov && ADM_DOWN === ov) close(); });
     ov.querySelector('[data-no]').onclick = close;
     ov.querySelector('[data-yes]').onclick = function () {
       var h = Math.max(0, parseInt(el('prio-add-h').value, 10) || 0);
@@ -9803,7 +9808,7 @@
       (body || '<div class="empty">Aucune question.</div>') +
       '<div class="admconfirm__row"><button class="btn btn--sm" data-no style="background:var(--terre);color:#fff;border-color:var(--terre)">Fermer</button></div></div>';
     function close() { ov.remove(); }
-    ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+    ov.addEventListener('click', function (e) { if (e.target === ov && ADM_DOWN === ov) close(); });
     ov.querySelector('[data-no]').onclick = close;
     document.body.appendChild(ov);
   }
@@ -9829,7 +9834,7 @@
       '<textarea class="inp" id="qn-bulk" style="width:100%;box-sizing:border-box;min-height:260px;resize:vertical" placeholder="1. Priorités business\nParmi ces prestations, lesquelles veux-tu développer ?\nMariage\nChef à domicile…"></textarea>' +
       '<div class="admconfirm__row"><button class="btn btn--outline btn--sm" data-no>Annuler</button><button class="btn btn--sm" data-yes style="background:var(--terre);color:#fff;border-color:var(--terre)">Importer</button></div></div>';
     function close() { ov.remove(); }
-    ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+    ov.addEventListener('click', function (e) { if (e.target === ov && ADM_DOWN === ov) close(); });
     ov.querySelector('[data-no]').onclick = close;
     ov.querySelector('[data-yes]').onclick = function () {
       var txt = (el('qn-bulk') || {}).value || ''; var items = qnParse(txt); if (!items.length) { toast('Rien à importer'); return; }
@@ -10650,7 +10655,7 @@
       '<input id="cr-dl-url" class="inp" style="width:100%;margin:0 0 6px" placeholder="https://…">' +
       '<div class="admconfirm__row"><button class="btn btn--outline btn--sm" data-no>Annuler</button><button class="btn btn--sm" data-yes style="background:var(--terre);color:#fff;border-color:var(--terre)">Envoyer à la cliente</button></div></div>';
     function close() { ov.remove(); }
-    ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+    ov.addEventListener('click', function (e) { if (e.target === ov && ADM_DOWN === ov) close(); });
     ov.querySelector('[data-no]').onclick = close;
     ov.querySelector('[data-yes]').onclick = function () {
       var url = (el('cr-dl-url').value || '').trim(); if (!url) { toast('Colle un lien'); return; }
@@ -11674,7 +11679,7 @@
       '<div class="admconfirm__row"><button class="btn btn--outline btn--sm" data-no>Annuler</button><button class="btn btn--dark btn--sm" data-yes>Enregistrer</button></div>' +
       '</div>';
     function close() { ov.remove(); }
-    ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+    ov.addEventListener('click', function (e) { if (e.target === ov && ADM_DOWN === ov) close(); });
     ov.querySelector('[data-no]').onclick = close;
     ov.querySelector('[data-yes]').onclick = function () {
       var body = { projectId: 'partner', title: (el('te-title').value || '').trim(), content: el('te-content').value, dueDate: el('te-due').value || null };
@@ -11995,7 +12000,7 @@
     '</div>';
     function close() { ov.remove(); }
     function cancel() { close(); loadClient(); } // remet le sélecteur de statut à sa valeur
-    ov.addEventListener('click', function (e) { if (e.target === ov) cancel(); });
+    ov.addEventListener('click', function (e) { if (e.target === ov && ADM_DOWN === ov) cancel(); });
     ov.querySelector('[data-no]').onclick = cancel;
     ov.querySelector('[data-yes]').onclick = function () {
       var h = parseFloat(String((el('fin-h') || {}).value || '').replace(',', '.')) || 0;
@@ -12035,7 +12040,7 @@
       '<div class="admconfirm__row" style="margin-top:16px"><button class="btn btn--outline btn--sm" data-no>Annuler</button><button class="btn btn--sm" data-yes style="background:var(--terre);color:#fff">Enregistrer</button></div>' +
     '</div>';
     function close() { ov.remove(); }
-    ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+    ov.addEventListener('click', function (e) { if (e.target === ov && ADM_DOWN === ov) close(); });
     ov.querySelector('[data-no]').onclick = close;
     ov.querySelector('[data-yes]').onclick = function () {
       var h = parseInt((el('tm-h') || {}).value || '0', 10) || 0;
@@ -12200,7 +12205,7 @@
       '<div class="admconfirm__row"><button class="btn btn--outline btn--sm" data-no>Annuler</button>' +
         '<button class="btn btn--sm" data-yes style="background:var(--terre);color:#fff;border-color:var(--terre)">Enregistrer</button></div></div>';
     function close() { ov.remove(); }
-    ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+    ov.addEventListener('click', function (e) { if (e.target === ov && ADM_DOWN === ov) close(); });
     ov.querySelector('[data-no]').onclick = close;
     ov.querySelector('[data-yes]').onclick = function () {
       var title = (el('ste-title').value || '').trim(); if (!title) { toast('Intitulé requis'); return; }
@@ -12322,7 +12327,7 @@
       '<textarea id="msg-edit-ta" class="inp" style="width:100%;box-sizing:border-box;min-height:110px;margin:6px 0">' + esc(m.message || '') + '</textarea>' +
       '<div class="admconfirm__row"><button class="btn btn--outline btn--sm" data-no>Annuler</button><button class="btn btn--dark btn--sm" data-yes>Enregistrer</button></div></div>';
     function close() { ov.remove(); }
-    ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+    ov.addEventListener('click', function (e) { if (e.target === ov && ADM_DOWN === ov) close(); });
     ov.querySelector('[data-no]').onclick = close;
     ov.querySelector('[data-yes]').onclick = function () {
       var v = (el('msg-edit-ta').value || '').trim(); close();
@@ -12941,7 +12946,7 @@
         '<button class="btn btn--sm" data-yes style="background:var(--terre);color:#fff;border-color:var(--terre)">Importer</button>' +
       '</div></div>';
     function close() { ov.remove(); }
-    ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+    ov.addEventListener('click', function (e) { if (e.target === ov && ADM_DOWN === ov) close(); });
     ov.querySelector('[data-no]').onclick = close;
     ov.querySelector('[data-yes]').onclick = function () {
       var raw = ov.querySelector('#qnr-json-txt').value || '';
@@ -12997,7 +13002,7 @@
         '<div class="admconfirm__row" style="margin-top:14px"><button class="btn btn--outline btn--sm" data-no>Fermer</button></div></div>';
       ov.querySelector('textarea').value = txt;
       ov.querySelector('[data-no]').onclick = function () { ov.remove(); };
-      ov.addEventListener('click', function (e) { if (e.target === ov) ov.remove(); });
+      ov.addEventListener('click', function (e) { if (e.target === ov && ADM_DOWN === ov) ov.remove(); });
       document.body.appendChild(ov);
       var ta = ov.querySelector('textarea'); if (ta) { ta.focus(); ta.select(); }
     }
@@ -13211,7 +13216,7 @@
         '<button class="btn btn--sm" data-yes style="background:var(--terre);color:#fff;border-color:var(--terre)">Analyser &amp; créer</button>' +
       '</div></div>';
     function close() { ov.remove(); }
-    ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+    ov.addEventListener('click', function (e) { if (e.target === ov && ADM_DOWN === ov) close(); });
     ov.querySelector('[data-no]').onclick = close;
     ov.querySelector('[data-yes]').onclick = function () {
       var txt = ov.querySelector('#qnr-import-txt').value || '';
@@ -13337,7 +13342,7 @@
       header + body +
     '</div>';
     function close() { ov.remove(); }
-    ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+    ov.addEventListener('click', function (e) { if (e.target === ov && ADM_DOWN === ov) close(); });
     ov.querySelectorAll('[data-no]').forEach(function (b) { b.onclick = close; });
     document.body.appendChild(ov);
   }
@@ -13362,7 +13367,7 @@
           '<button class="btn btn--sm" data-yes style="background:var(--terre);color:#fff;border-color:var(--terre)">Envoyer</button>' +
         '</div></div>';
       function close() { ov.remove(); }
-      ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+      ov.addEventListener('click', function (e) { if (e.target === ov && ADM_DOWN === ov) close(); });
       ov.querySelector('[data-no]').onclick = close;
       ov.querySelector('[data-yes]').onclick = function () {
         var keys = Array.prototype.slice.call(ov.querySelectorAll('.qnr-asg:checked')).map(function (x) { return x.value; });
@@ -14016,7 +14021,7 @@
           '<button class="btn btn--sm" data-yes style="background:var(--terre);color:#fff;border-color:var(--terre)">Instancier</button>' +
         '</div></div>';
       function close() { ov.remove(); }
-      ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+      ov.addEventListener('click', function (e) { if (e.target === ov && ADM_DOWN === ov) close(); });
       ov.querySelector('[data-no]').onclick = close;
       ov.querySelector('[data-yes]').onclick = function () {
         var sel = ov.querySelector('#prj-asg-client');
