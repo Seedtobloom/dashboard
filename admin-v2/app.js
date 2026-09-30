@@ -3924,6 +3924,90 @@
     ];
     return { id: 't_cerdd_propo', title: 'Ma proposition · CERDD (rappel)', content: L.join('\n') };
   }
+  function cerddGlossaireTrame() {
+    var L = [
+      "SOBRIÉTÉ STRUCTURELLE, LA NOTION CENTRALE",
+      "En une phrase : rendre la sobriété possible grâce à l'organisation du territoire, plutôt que de compter sur les efforts de chacun.",
+      "Chez le Cerdd : dans leur cahier des charges, la sobriété structurelle est celle qui ne peut se faire que par la mobilisation des pouvoirs publics. Leur idée clé : sans elle, les habitants ne peuvent pas vraiment adopter un mode de vie sobre, même s'ils le veulent.",
+      "Qui agit. Individuelle : chaque habitant. Structurelle : la commune, les collectivités.",
+      "Sur quoi. Individuelle : les gestes du quotidien. Structurelle : infrastructures, urbanisme, services, règles, achats publics.",
+      "Exemple. Individuelle : « Prenez moins la voiture ». Structurelle : une piste cyclable sûre, un médecin et un commerce dans le bourg.",
+      "Image véhiculée. Individuelle : effort, privation. Structurelle : facilité, confort, évidence.",
+      "Pourquoi ça parle aux élus : c'est exactement le niveau où le maire a du pouvoir. Il ne décide pas des gestes des habitants, mais il décide de l'éclairage public, de la rénovation de l'école, du PLU, de la cantine.",
+      "Si je dois la reformuler à l'oral :",
+      "« En gros, c'est faire en sorte que consommer moins devienne naturel parce que le territoire est pensé pour ça. »",
+      "",
+      "LES SOBRIÉTÉS, AU PLURIEL",
+      "On parle des sobriétés au pluriel parce qu'il y en a une par ressource. C'est sans doute la matière de l'infographie « Comprendre les sobriétés ».",
+      "Énergétique : consommer moins d'énergie. Dans une commune : rénover l'école, réduire l'éclairage nocturne.",
+      "Foncière : consommer moins de terres agricoles et naturelles. Dans une commune : réhabiliter des logements vides plutôt que construire un lotissement.",
+      "En eau : préserver la ressource en eau. Dans une commune : récupérer l'eau de pluie, planter des espèces adaptées.",
+      "Matières : consommer moins d'objets et de matériaux. Dans une commune : réemploi, matériel partagé entre communes.",
+      "Numérique : alléger les usages numériques. Dans une commune : garder son matériel plus longtemps.",
+      "ZAN veut dire zéro artificialisation nette. C'est l'objectif national de ne plus bétonner de nouveaux sols d'ici 2050. Les élus le connaissent bien, souvent comme une contrainte.",
+      "",
+      "SOBRIÉTÉ, EFFICACITÉ ET FORMES DE SOBRIÉTÉ",
+      "Efficacité : faire la même chose en consommant moins. Remplacer les ampoules par des LED.",
+      "Sobriété : questionner le besoin lui-même. Est-ce qu'il faut éclairer toutes les rues toute la nuit ?",
+      "Les deux se complètent. Beaucoup d'élus confondent les deux, ou préfèrent l'efficacité parce qu'elle ne touche pas aux habitudes.",
+      "Les quatre formes de sobriété (classement de l'association négaWatt, souvent repris) :",
+      "Dimensionnelle : dimensionner au juste besoin. Exemple : une salle adaptée à l'usage réel, pas surdimensionnée.",
+      "D'usage : mieux utiliser ce qu'on a. Exemple : horaires d'éclairage, température des bâtiments.",
+      "Coopérative : mutualiser, partager. Exemple : matériel commun entre communes, covoiturage, tiers-lieu.",
+      "Organisationnelle : réorganiser les temps et les lieux de vie. Exemple : services de proximité, circuits courts.",
+      "Attention, leur grille à eux. Le Cerdd parle de quatre dimensions, dont trois dépassent la volonté individuelle. Il cite la sobriété structurelle et la sobriété dimensionnelle. Ce serait donc plutôt individuelle, collective, structurelle et dimensionnelle, mais c'est à leur faire confirmer, car c'est le cœur de l'infographie « Comprendre les sobriétés ».",
+      "Les confusions qu'ils veulent démonter : la sobriété réduite à l'énergie, confondue avec l'efficacité, avec la lutte contre le gaspillage ou avec les innovations « vertes ». Et surtout, la sobriété vue comme une affaire de gestes individuels.",
+      "Les a priori à éviter visuellement : rationnement, privation, « lubie d'écolo », peur du déclassement et des inégalités.",
+      "",
+      "LES MOTS DU PLAIDOYER",
+      "Co-bénéfices : les avantages de la sobriété au-delà de l'environnement. C'est l'angle d'entrée de toute la publication.",
+      "Bien-vivre : qualité de vie, lien social, attractivité de la commune.",
+      "Économie : factures en baisse, emplois locaux, argent qui reste sur le territoire.",
+      "Santé : air plus sain, logements confortables, mobilité active (marche, vélo).",
+      "Souveraineté : moins dépendre de l'extérieur, surtout des énergies importées et de leurs prix.",
+      "Résilience : capacité du territoire à encaisser une crise (prix de l'énergie, sécheresse) et à s'adapter.",
+      "Plaidoyer : document qui cherche à convaincre et à faire agir, pas seulement à informer.",
+      "Transition écologique : le passage progressif vers un mode de vie compatible avec les limites de la planète.",
+      "Acceptabilité : le fait qu'une mesure soit acceptée par les habitants. Souvent la grande peur des élus.",
+      "Un exemple qui réunit tout : rénover l'école fait baisser la facture (économie), améliore le confort des enfants (santé, bien-vivre) et réduit la dépendance au gaz (souveraineté).",
+      "",
+      "LES SIGLES ET MOTS DES COLLECTIVITÉS",
+      "PLU / PLUi : plan local d'urbanisme (intercommunal). Il fixe où et comment on peut construire.",
+      "SCoT : schéma de cohérence territoriale, le document d'urbanisme à l'échelle d'un grand bassin de vie.",
+      "PCAET : plan climat air énergie territorial, obligatoire pour les intercommunalités de plus de 20 000 habitants.",
+      "EPCI : l'intercommunalité (communauté de communes, d'agglomération, métropole).",
+      "Commande publique : les achats de la commune (cantine, travaux, fournitures), un levier de sobriété.",
+      "Décret tertiaire : obligation de réduire la consommation d'énergie des bâtiments de plus de 1 000 m².",
+      "Maires ruraux : les élus des petites communes, avec peu de moyens et d'équipe technique.",
+      "Décideurs locaux : les élus et responsables qui votent les budgets et les projets.",
+      "Territoire : la commune et ce qui l'entoure, vu comme un ensemble vivant.",
+      "",
+      "LES MOTS DU CERDD",
+      "Centre ressource : structure qui informe, outille et oriente, sans faire à la place des experts.",
+      "Rôle d'éclaireur : susciter l'intérêt puis orienter vers les bons interlocuteurs. C'est la fonction de la publication.",
+      "Déjà initiés, entre soi : le petit cercle déjà convaincu. La publication veut toucher au-delà.",
+      "Publics engageables : pas encore sensibilisés, mais qu'on peut convaincre.",
+      "Approche systémique, systémie : regarder les choses comme un tout où tout est lié, pas thème par thème.",
+      "Mise en récits : raconter la transition avec des histoires qui donnent envie, plutôt qu'avec des chiffres anxiogènes.",
+      "Accompagnement au changement : tout le volet humain et social pour que les gens acceptent et s'approprient les changements.",
+      "Résistance au changement : les freins, les rejets face à une mesure nouvelle.",
+      "Démocratie locale, participation : associer les habitants aux décisions de la commune.",
+      "Achats durables : acheter de façon responsable côté collectivité (commande publique).",
+      "Rev3 : la dynamique de transition de la Région Hauts-de-France, qui a intégré la sobriété dans sa feuille de route en 2025.",
+      "GIEC : le groupe d'experts du climat de l'ONU. Son 6e rapport parle de sobriété pour la première fois.",
+      "GIP : groupement d'intérêt public, le statut du Cerdd, entre l'État, la Région et les territoires.",
+      "Renverser la logique argumentative : mettre les bénéfices sociaux et économiques devant, et l'environnement au second plan.",
+      "",
+      "SI JE NE COMPRENDS PAS UN MOT PENDANT L'APPEL",
+      "C'est tout à fait normal de demander. Elles sont expertes du sujet, moi je suis là pour le rendre lisible. Poser la question montre que je veux bien faire passer leur message.",
+      "« Quand vous dites [mot], vous l'entendez comment exactement ? Je veux être sûre de bien le traduire visuellement. »",
+      "« Est-ce que vous avez un exemple concret dans une commune ? »",
+      "« Si un élu ne connaissait pas ce terme, vous le lui expliqueriez comment ? »",
+      "« Je note ce mot, je regarderai ça de plus près dans vos contenus. »",
+      "La troisième est la plus utile. Si le terme n'est pas clair pour moi, il ne le sera sans doute pas pour un élu peu sensibilisé, et leur réponse est souvent la meilleure formulation pour la publication."
+    ];
+    return { id: 't_cerdd_glossaire', title: 'Glossaire sobriété · CERDD', content: L.join('\n') };
+  }
   function cerddTrame() {
             var L = [
       "① DÉMARRER LA RÉUNION",
@@ -4192,6 +4276,7 @@
     // Trame CERDD (appel du 30 septembre) : toujours proposée tant qu'elle
     // n'est pas dans la bibliothèque, même si un autre onglet l'a écrasée.
     if (!a.some(function (t) { return t.id === 't_cerdd_propo'; })) a.splice(1, 0, cerddPropoTrame());
+    if (!a.some(function (t) { return t.id === 't_cerdd_glossaire'; })) a.splice(1, 0, cerddGlossaireTrame());
     if (!a.some(function (t) { return t.id === 't_cerdd_cadrage'; })) a.unshift(cerddTrame());
     return a;
   }
