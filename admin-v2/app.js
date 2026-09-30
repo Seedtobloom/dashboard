@@ -5377,14 +5377,15 @@
      terracotta = ça réclame, ciel = c'est pour maintenant ou chez la cliente,
      neutre = c'est posé. Écrite une fois, lue partout. */
   function ckpChEcheance(t) {
-    if (!t.echeance) return '<span class="ck-doux">Pas d’échéance</span>';
-    var auj = ckpAuj();
     // Une échéance dépassée pendant que la cliente a la main n'est pas un
     // retard de ton fait : elle n'a rien à faire en alerte.
     if (t.statut === 'review') {
-      return '<span class="ck-ch ck-ch--ciel">Chez elle</span>' +
-        '<div class="ck-ts">depuis ' + esc(ckpQuand(t.echeance)) + '</div>';
+      var env = t.envoyeLe ? String(t.envoyeLe).slice(0, 10) : t.echeance;
+      return '<span class="ck-rev">En révision</span>' +
+        '<div class="ck-ts">chez ' + esc(ckTPrenom(t)) + (env ? ' depuis ' + esc(ckpQuand(env)) : '') + '</div>';
     }
+    if (!t.echeance) return '<span class="ck-doux">Pas d’échéance</span>';
+    var auj = ckpAuj();
     if (ckpEnRetard(t)) return '<span class="ck-ch ck-ch--terra">En retard</span>' +
       '<div class="ck-ts">depuis ' + esc(ckpQuand(t.echeance)) + '</div>';
     if (t.echeance === auj) return '<span class="ck-ch ck-ch--ciel">Aujourd’hui</span>';
@@ -5819,7 +5820,7 @@
   }
   function ckTJoursRetard(t) { return Math.max(1, Math.round((ckpD(ckpAuj()) - ckpD(t.echeance)) / 86400000)); }
   function ckTEcheanceCourte(t) {
-    if (t.statut === 'review') return '<span class="ckg-doux">Chez le client</span>';
+    if (t.statut === 'review') return '<span class="ck-rev">En révision</span>';
     if (!t.echeance) return '<span class="ckg-doux">Sans date</span>';
     if (ckpEnRetard(t)) return '<b class="ckg-ret">En retard, ' + ckTJoursRetard(t) + ' j</b>';
     var q = ckpQuand(t.echeance);
@@ -6006,9 +6007,9 @@
     var qui = ckTPrenom(t), envoi = t.envoyeLe || '';
     var j = envoi ? Math.max(0, Math.round((ckpD(ckpAuj()) - ckpD(String(envoi).slice(0, 10))) / 86400000)) : null;
     var depuis = j === null ? '' : (j === 0 ? ' depuis aujourd’hui' : (j === 1 ? ' depuis hier' : ' depuis ' + j + ' jours'));
-    return '<div class="ckr-rel"><div><b>Chez ' + esc(qui) + esc(depuis) + '</b>' +
+    return '<div class="ckr-rel"><div><b>En révision chez ' + esc(qui) + esc(depuis) + '</b>' +
       (envoi ? '<span>Tu lui as envoyé ' + esc(t.dernierEnvoi || 'la dernière version') + ' le ' + esc(ckpDateLongue(String(envoi).slice(0, 10))) + '.</span>' : '') + '</div>' +
-      '<button class="ckr-b" onclick="ADM.ckTRelancer(\'' + esc(t.id) + '\')">Lui demander où elle en est</button></div>';
+      '<button class="ckr-b" onclick="ADM.ckTRelancer(\'' + esc(t.id) + '\')">Demander où ça en est</button></div>';
   }
   function ckTRelancer(id) {
     var t = ckpToutes().filter(function (x) { return x.id === id; })[0];
@@ -9002,7 +9003,8 @@
     }
     PRIO_TAB = 'waiting'; refreshPriorities();
   }
-  function prioAddDlv(key, id, pid) {
+  function prioAddDlv(key, id, pid, ok) {
+    if (!ok) { ckGardeRevision(key, id, function () { prioAddDlv(key, id, pid, true); }); return; }
     var rs = taskRes({ key: key, id: id, project: pid || 'partner' });
     var inp = document.createElement('input'); inp.type = 'file'; inp.style.cssText = 'position:fixed;left:-9999px;top:0';
     document.body.appendChild(inp);
@@ -9023,7 +9025,8 @@
     inp.click();
   }
   // Déposer un livrable sous forme de LIEN depuis Priorités.
-  function prioAddDlvLink(key, id, pid) {
+  function prioAddDlvLink(key, id, pid, ok) {
+    if (!ok) { ckGardeRevision(key, id, function () { prioAddDlvLink(key, id, pid, true); }); return; }
     var rs = taskRes({ key: key, id: id, project: pid || 'partner' });
     var ov = document.createElement('div');
     ov.className = 'admconfirm';
@@ -9068,7 +9071,20 @@
   }
   // Envoyer un lien de révision au client directement depuis Priorités :
   // petit prompt, puis PATCH (reviewLink + passage en « à valider » + journal).
-  function prioSendReview(key, id, cur) {
+  /* Garde « déjà en révision » : une tâche qui attend la cliente ne se
+     renvoie pas par mégarde. Si elle a fait un retour, renvoyer est normal. */
+  function ckGardeRevision(key, id, suite) {
+    var t = ckpToutes().filter(function (x) { return x.id === id && (!key || x.key === key); })[0];
+    if (!t || t.statut !== 'review' || t.nouveau) { suite(); return; }
+    var qui = ckTPrenom(t), env = t.envoyeLe ? String(t.envoyeLe).slice(0, 10) : '';
+    admConfirm({
+      title: 'Déjà en révision chez ' + qui,
+      message: esc('« ' + t.titre + ' » attend sa réponse' + (env ? ' depuis le ' + ckpDateLongue(env).replace(/^le /, '') : '') + (t.dernierEnvoi ? ' (' + t.dernierEnvoi + ')' : '') + '. Pas encore de retour de sa part. Tu veux vraiment renvoyer quelque chose ?'),
+      yes: 'Oui, renvoyer', no: 'Non'
+    }, suite);
+  }
+  function prioSendReview(key, id, cur, ok) {
+    if (!ok) { ckGardeRevision(key, id, function () { prioSendReview(key, id, cur, true); }); return; }
     var ov = document.createElement('div');
     ov.className = 'admconfirm';
     ov.innerHTML = '<div class="admconfirm__box">' +
