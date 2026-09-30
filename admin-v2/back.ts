@@ -1581,6 +1581,8 @@ async function handleTaskPatch(request: Request, env: Env, key: string, data: An
   if (body.status === 'review' || body.status === 'done') t.needsRework = false;
   // Historique des révisions : chaque envoi d'un lien au client est journalisé
   // (tour de révision daté), sans écraser les précédents.
+  const motT = motEnvoi(body.message);
+  motRanger(t, motT);
   if (body.logReview === true && typeof body.reviewLink === 'string' && body.reviewLink.trim()) {
     if (!Array.isArray(t.reviewHistory)) t.reviewHistory = [];
     t.reviewHistory.push({ url: body.reviewLink.trim().slice(0, 2000), at: nowIso() });
@@ -1627,7 +1629,7 @@ async function handleTaskPatch(request: Request, env: Env, key: string, data: An
       `<p>Voici ${quelleVersion} de <strong>${titre}</strong>${avaitRetours ? ', avec tes derniers retours' : ''}.</p>` +
       `<p style="margin:20px 0"><a href="${escHtml(url)}" style="display:inline-block;background:#412F21;color:#F2E5C2;text-decoration:none;padding:12px 22px;border-radius:10px;font-weight:600">Voir la nouvelle version</a></p>` +
       `<p>C'est le même lien qu'avant. Si tout te va, tu la valides depuis <a href="${escHtml(clientDemandeUrl(env, t.id))}" style="color:#412F21">ton espace</a>. S'il reste des ajustements, tu me les envoies au même endroit.</p>` +
-      `<p>Belle journée,<br>Cindy</p>`);
+      motBloc(motT) + `<p>Belle journée,<br>Cindy</p>`);
   }
   // E-mail seulement aux moments clés (terminée, à valider) : les
   // allers-retours de statut intermédiaires ne génèrent plus de mail.
@@ -1644,6 +1646,7 @@ async function handleTaskPatch(request: Request, env: Env, key: string, data: An
         `<p style="margin:18px 0"><a href="${escHtml(url)}" style="display:inline-block;background:#412F21;color:#F2E5C2;text-decoration:none;padding:12px 22px;border-radius:10px;font-weight:600">Vérifier le travail</a></p>` +
         `<p>Le lien et les boutons pour valider sont aussi dans ton espace.</p>` + MAIL_SIGNE;
     }
+    if (motT) bodyHtml = bodyHtml.replace(MAIL_SIGNE, motBloc(motT) + MAIL_SIGNE);
     await notifyClient(env, data, body.status === 'done' ? `C'est terminé : ${t.title || ''}` : `Tu peux vérifier ${t.title || ''} ?`, bodyHtml, key, t.id, body.status === 'review' ? 'Voir et valider' : 'Voir ma demande');
   }
   if (proposedNotify) {
@@ -1652,6 +1655,17 @@ async function handleTaskPatch(request: Request, env: Env, key: string, data: An
       mailBonjour(data) + `<p>Pour <strong>${escHtml(t.title || '')}</strong>, je te propose plutôt le <strong>${escHtml(frd)}</strong>. Tu me dis si ça te va depuis ton espace ?</p>` + MAIL_SIGNE, key, t.id, 'Répondre');
   }
   return json(t);
+}
+/* Le mot que Cindy joint à un envoi (lien de révision, livrable) : rangé
+ * dans les échanges de la tâche, et repris tel quel dans l'e-mail. */
+function motEnvoi(v: unknown): string { return typeof v === 'string' ? v.trim().slice(0, 2000) : ''; }
+function motRanger(task: AnyObj | null | undefined, mot: string): void {
+  if (!task || !mot) return;
+  if (!Array.isArray(task.comments)) task.comments = [];
+  task.comments.push({ id: genId(), author: 'cindy', text: mot, createdAt: nowIso() });
+}
+function motBloc(mot: string): string {
+  return mot ? `<p style="background:#F2E5C2;padding:12px 16px;border-radius:8px;white-space:pre-wrap">${escHtml(mot)}</p>` : '';
 }
 async function handleTaskComment(request: Request, env: Env, key: string, data: AnyObj, taskId: string): Promise<Response> {
   const body = await readJson(request);
@@ -1872,9 +1886,11 @@ async function handleUpload(request: Request, env: Env, key: string, data: AnyOb
       deliverable = { id: genId(), name: fileName, fileKey: r2key, status: 'a_valider', clientComment: '', validatedAt: null, createdAt: nowIso(), taskId: taskId || null, taskTitle: '', reviewLink: '', version: version, creationId: creationId };
       container.livrables.push(deliverable);
       attachDeliverableParent(container, deliverable, taskId || null);
+      const motF = motEnvoi(form.get('message'));
+      if (motF && taskId) { const ft = findTask(getEspace(data), projectId, taskId); motRanger(ft && ft.task, motF); }
       await saveClient(env, key, data);
       if ((form.get('notify') as string) !== 'false') {
-        await notifyClient(env, data, `${fileName} est prêt pour toi`, mailBonjour(data) + `<p>Nouveau livrable dans ton espace : <strong>${escHtml(fileName)}</strong>${deliverable.taskTitle ? ` pour <em>${escHtml(deliverable.taskTitle)}</em>` : ''}. Tu me dis s'il te va, ou ce que tu veux changer ?</p>` + MAIL_SIGNE, key, deliverable.taskId || undefined, 'Voir et valider');
+        await notifyClient(env, data, `${fileName} est prêt pour toi`, mailBonjour(data) + `<p>Nouveau livrable dans ton espace : <strong>${escHtml(fileName)}</strong>${deliverable.taskTitle ? ` pour <em>${escHtml(deliverable.taskTitle)}</em>` : ''}. Tu me dis s'il te va, ou ce que tu veux changer ?</p>` + motBloc(motF) + MAIL_SIGNE, key, deliverable.taskId || undefined, 'Voir et valider');
       }
     }
   }
@@ -1914,9 +1930,11 @@ async function handleDeliverableLink(request: Request, env: Env, key: string, da
   const deliverable: AnyObj = { id: genId(), name, fileKey: '', status: 'a_valider', clientComment: '', validatedAt: null, createdAt: nowIso(), taskId, taskTitle: '', reviewLink: url, version, creationId };
   attachDeliverableParent(container, deliverable, taskId);
   container.livrables.push(deliverable);
+  const motL = motEnvoi(body.message);
+  if (motL && taskId) { const ft = findTask(getEspace(data), (body.projectId || 'partner').toString(), taskId); motRanger(ft && ft.task, motL); }
   await saveClient(env, key, data);
   if (body.notify !== false) {
-    await notifyClient(env, data, `${name} est prêt pour toi`, mailBonjour(data) + `<p>Nouveau livrable dans ton espace : <strong>${escHtml(name)}</strong>${deliverable.taskTitle ? ` pour <em>${escHtml(deliverable.taskTitle)}</em>` : ''}. Tu me dis s'il te va, ou ce que tu veux changer ?</p>` + MAIL_SIGNE, key, deliverable.taskId || undefined, 'Voir et valider');
+    await notifyClient(env, data, `${name} est prêt pour toi`, mailBonjour(data) + `<p>Nouveau livrable dans ton espace : <strong>${escHtml(name)}</strong>${deliverable.taskTitle ? ` pour <em>${escHtml(deliverable.taskTitle)}</em>` : ''}. Tu me dis s'il te va, ou ce que tu veux changer ?</p>` + motBloc(motL) + MAIL_SIGNE, key, deliverable.taskId || undefined, 'Voir et valider');
   }
   return json({ deliverable }, 201);
 }

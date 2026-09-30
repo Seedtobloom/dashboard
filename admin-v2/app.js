@@ -213,14 +213,20 @@
    * Mais pour un geste dont le SEUL but est de prévenir, mettre le silence en
    * avant est un contresens : on croit valider l'envoi et rien ne part.
    * D'où `envoiParDefaut` — la même fenêtre, l'accent inversé. */
+  // Le mot joint au dernier envoi (lien, fichier) : lu par l'appel qui suit.
+  var ENVOI_MOT = '';
   function notifyConfirm(message, cb, envoiParDefaut) {
+    // Un envoi de lien ou de fichier peut porter un petit mot pour le client.
+    var avecMot = /^Envoyer|nouvelle version|Sa version est à jour/.test(message || '');
+    ENVOI_MOT = '';
     var ov = document.createElement('div');
     ov.className = 'admconfirm';
     var fort = 'class="btn btn--sm" style="background:var(--terre);color:#fff;border-color:var(--terre)"';
     var doux = 'class="btn btn--outline btn--sm"';
     ov.innerHTML = '<div class="admconfirm__box">' +
-      '<div class="admconfirm__title">Prévenir la cliente ?</div>' +
+      '<div class="admconfirm__title">Prévenir par e-mail ?</div>' +
       '<div class="admconfirm__msg">' + esc(message || 'Souhaites-tu que la cliente soit prévenue par e-mail ?') + '</div>' +
+      (avecMot ? '<label class="env-mot"><span>Un commentaire <em>(facultatif)</em></span><textarea id="env-mot" class="inp" rows="3" placeholder="Par exemple : j’ai suivi tes retours sur les couleurs, dis-moi si le titre te va."></textarea><small>Il part dans l’e-mail et reste dans les échanges de la tâche.</small></label>' : '') +
       '<div class="admconfirm__row" style="flex-wrap:wrap;gap:8px">' +
         '<button class="btn btn--outline btn--sm" data-cancel>Annuler</button>' +
         '<button ' + (envoiParDefaut ? doux : fort) + ' data-silent>' + (envoiParDefaut ? 'Sans e-mail' : 'Envoyer sans prévenir') + '</button>' +
@@ -229,8 +235,9 @@
     function close() { ov.remove(); }
     ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
     ov.querySelector('[data-cancel]').onclick = close;
-    ov.querySelector('[data-notify]').onclick = function () { close(); cb(true); };
-    ov.querySelector('[data-silent]').onclick = function () { close(); cb(false); };
+    var lireMot = function () { var m = ov.querySelector('#env-mot'); ENVOI_MOT = m ? (m.value || '').trim() : ''; };
+    ov.querySelector('[data-notify]').onclick = function () { lireMot(); close(); cb(true); };
+    ov.querySelector('[data-silent]').onclick = function () { lireMot(); close(); cb(false); };
     document.body.appendChild(ov);
     var s = ov.querySelector(envoiParDefaut ? '[data-notify]' : '[data-silent]'); if (s) s.focus();
   }
@@ -1560,7 +1567,7 @@
       var f = inp.files && inp.files[0]; if (!f) { cleanup(); return; }
       if (admTooBig(f)) { cleanup(); toast(admBigMsg(f)); return; }
       notifyConfirm('Envoyer cette nouvelle version à la cliente et la prévenir par e-mail ?', function (notify) {
-        var fd = new FormData(); fd.append('file', f); fd.append('projectId', project); fd.append('deliverable', '1'); if (cid) fd.append('creationId', cid); if (tid) fd.append('taskId', tid); fd.append('notify', notify ? 'true' : 'false');
+        var fd = new FormData(); fd.append('file', f); fd.append('projectId', project); fd.append('deliverable', '1'); if (cid) fd.append('creationId', cid); if (tid) fd.append('taskId', tid); fd.append('notify', notify ? 'true' : 'false'); if (ENVOI_MOT) fd.append('message', ENVOI_MOT);
         toast('Envoi de la version…');
         api('/api/clients/' + key + '/files', { method: 'POST', body: fd }).then(admUploadResult)
           .then(function (res) { cleanup(); if (res.ok) { toast('Nouvelle version envoyée' + (notify ? ' · cliente prévenue ✓' : ' (sans e-mail)')); inboxResendDone(key, project, oldId); } else toast(admUploadErrMsg(res.status, res.d && res.d.error)); })
@@ -1585,7 +1592,7 @@
       var name = (el('ibx-dl-name').value || '').trim();
       close();
       notifyConfirm('Prévenir la cliente par e-mail de cette nouvelle version ?', function (notify) {
-        jpost('/api/clients/' + key + '/deliverables', { projectId: project, creationId: cid || null, taskId: tid || null, link: url, name: name, notify: notify }).then(admUploadResult)
+        jpost('/api/clients/' + key + '/deliverables', { projectId: project, creationId: cid || null, taskId: tid || null, link: url, name: name, notify: notify, message: ENVOI_MOT }).then(admUploadResult)
           .then(function (res) { if (res.ok) { toast('Nouvelle version envoyée' + (notify ? ' · cliente prévenue ✓' : ' (sans e-mail)')); inboxResendDone(key, project, oldId); } else toast(admUploadErrMsg(res.status, res.d && res.d.error)); })
           .catch(function () { toast('Erreur : version non envoyée, réessaie'); });
       });
@@ -2366,7 +2373,7 @@
     var tour = ((x && x.roundCount) || 0) + 1;
     // Prévenir est TOUT l'intérêt de ce geste : l'envoi est mis en avant.
     notifyConfirm('Sa version est à jour au même lien, et tu as intégré ses retours. Elle en est prévenue par e-mail.', function (notify) {
-      jpost('/api/clients/' + key + '/tasks/' + id, { projectId: 'partner', reviewUpdated: true, notify: notify }, 'PATCH')
+      jpost('/api/clients/' + key + '/tasks/' + id, { projectId: 'partner', reviewUpdated: true, notify: notify, message: ENVOI_MOT }, 'PATCH')
         .then(function (r) {
           if (!r.ok) { toast('Erreur'); return; }
           // Affiché tout de suite : KV répond avec un temps de retard.
@@ -9015,7 +9022,7 @@
       var cd = taskCtx(key, id);
       var cname = cd ? cd.client : 'le client';
       notifyConfirm('Envoyer ce livrable à la cliente et la prévenir par e-mail ?', function (notify) {
-      var fd = new FormData(); fd.append('file', f); fd.append('projectId', rs.pid); fd.append('deliverable', '1'); fd.append('taskId', id); fd.append('notify', notify ? 'true' : 'false');
+      var fd = new FormData(); fd.append('file', f); fd.append('projectId', rs.pid); fd.append('deliverable', '1'); fd.append('taskId', id); fd.append('notify', notify ? 'true' : 'false'); if (ENVOI_MOT) fd.append('message', ENVOI_MOT);
       toast('Envoi du livrable…');
       api('/api/clients/' + key + '/files', { method: 'POST', body: fd }).then(admUploadResult)
         .then(function (res) { cleanup(); if (res.ok) { toast('Livrable envoyé à ' + cname + (notify ? ' · prévenu·e par e-mail' : ' (sans e-mail)')); afterDeliverable(key, id); } else toast(admUploadErrMsg(res.status, res.d && res.d.error)); })
@@ -9048,7 +9055,7 @@
       var mins = Math.max(0, parseInt((el('prio-dl-mins') || {}).value, 10) || 0);
       close();
       notifyConfirm('Envoyer ce livrable (lien) à la cliente et la prévenir par e-mail ?', function (notify) {
-      jpost('/api/clients/' + key + '/deliverables', { projectId: rs.pid, taskId: id, link: url, name: name, notify: notify }).then(admUploadResult)
+      jpost('/api/clients/' + key + '/deliverables', { projectId: rs.pid, taskId: id, link: url, name: name, notify: notify, message: ENVOI_MOT }).then(admUploadResult)
         .then(function (res) {
           if (res.ok) {
             toast((mins ? 'Livrable envoyé · ' + mins + ' min' : 'Livrable envoyé') + (notify ? ' · cliente prévenue ✓' : ' (sans e-mail)'));
@@ -9103,7 +9110,7 @@
       if (!link) { toast('Ajoute un lien'); return; }
       close();
       notifyConfirm('Envoyer ce lien de révision à la cliente et la prévenir par e-mail ?', function (notify) {
-      jpost('/api/clients/' + key + '/tasks/' + id, { projectId: 'partner', reviewLink: link, status: 'review', logReview: true, notify: notify }, 'PATCH')
+      jpost('/api/clients/' + key + '/tasks/' + id, { projectId: 'partner', reviewLink: link, status: 'review', logReview: true, notify: notify, message: ENVOI_MOT }, 'PATCH')
         .then(function (r) {
           if (!r.ok) { toast('Erreur'); return; }
           toast('Lien envoyé' + (notify ? ' · cliente prévenue ✓' : ' (sans e-mail)'));
@@ -10626,7 +10633,7 @@
       var f = inp.files && inp.files[0]; if (!f) { cleanup(); return; }
       if (admTooBig(f)) { cleanup(); toast(admBigMsg(f)); return; }
       notifyConfirm('Envoyer cette version à la cliente et la prévenir par e-mail ?', function (notify) {
-        var fd = new FormData(); fd.append('file', f); fd.append('projectId', 'support-' + pid); fd.append('deliverable', '1'); fd.append('creationId', cid); fd.append('notify', notify ? 'true' : 'false');
+        var fd = new FormData(); fd.append('file', f); fd.append('projectId', 'support-' + pid); fd.append('deliverable', '1'); fd.append('creationId', cid); fd.append('notify', notify ? 'true' : 'false'); if (ENVOI_MOT) fd.append('message', ENVOI_MOT);
         toast('Envoi de la version…');
         api('/api/clients/' + CURKEY + '/files', { method: 'POST', body: fd }).then(admUploadResult)
           .then(function (res) { cleanup(); if (res.ok) { toast('Version envoyée' + (notify ? ' · cliente prévenue ✓' : ' (sans e-mail)')); refreshClient(); } else toast(admUploadErrMsg(res.status, res.d && res.d.error)); })
@@ -10650,7 +10657,7 @@
       var name = (el('cr-dl-name').value || '').trim();
       close();
       notifyConfirm('Prévenir la cliente par e-mail de cette nouvelle version ?', function (notify) {
-        jpost('/api/clients/' + CURKEY + '/deliverables', { projectId: 'support-' + pid, creationId: cid, link: url, name: name, notify: notify }).then(admUploadResult)
+        jpost('/api/clients/' + CURKEY + '/deliverables', { projectId: 'support-' + pid, creationId: cid, link: url, name: name, notify: notify, message: ENVOI_MOT }).then(admUploadResult)
           .then(function (res) { if (res.ok) { toast('Version envoyée' + (notify ? ' · cliente prévenue ✓' : ' (sans e-mail)')); refreshClient(); } else toast(admUploadErrMsg(res.status, res.d && res.d.error)); })
           .catch(function () { toast('Erreur : version non envoyée, réessaie'); });
       });
@@ -11716,7 +11723,7 @@
     var name = (el('tdl-name-' + id).value || '').trim();
     var mins = dlvTimeFor(id);
     notifyConfirm('Envoyer ce livrable (lien) à la cliente et la prévenir par e-mail ?', function (notify) {
-      jpost('/api/clients/' + CURKEY + '/deliverables', { projectId: 'partner', taskId: id, link: url, name: name, notify: notify }).then(admUploadResult)
+      jpost('/api/clients/' + CURKEY + '/deliverables', { projectId: 'partner', taskId: id, link: url, name: name, notify: notify, message: ENVOI_MOT }).then(admUploadResult)
         .then(function (res) { if (res.ok) { dlvApplyTime(id, mins); toast((mins ? 'Livrable envoyé · ' + mins + ' min ajoutées' : 'Livrable envoyé') + (notify ? ' · cliente prévenue ✓' : ' (sans e-mail)')); refreshClient(); } else toast(admUploadErrMsg(res.status, res.d && res.d.error)); })
         .catch(function () { toast('Erreur, livrable non envoyé, réessaie'); });
     });
@@ -11735,7 +11742,7 @@
     var link = (el('trl-' + id).value || '').trim();
     if (!link) { toast('Ajoute d\'abord un lien de révision'); return; }
     notifyConfirm('Envoyer ce lien de révision à la cliente et la prévenir par e-mail ?', function (notify) {
-      jpost('/api/clients/' + CURKEY + '/tasks/' + id, { projectId: 'partner', reviewLink: link, status: 'review', logReview: true, notify: notify }, 'PATCH').then(function (r) {
+      jpost('/api/clients/' + CURKEY + '/tasks/' + id, { projectId: 'partner', reviewLink: link, status: 'review', logReview: true, notify: notify, message: ENVOI_MOT }, 'PATCH').then(function (r) {
         if (r.ok) { toast('Lien envoyé, tâche en « À valider »' + (notify ? ' · cliente prévenue ✓' : ' (sans e-mail)')); loadClient(); } else toast('Erreur');
       });
     });
@@ -11746,7 +11753,7 @@
     var cname = (CUR && CUR.client && (CUR.client.prenom || CUR.client.nom)) || 'le client';
     var mins = dlvTimeFor(id);
     notifyConfirm('Envoyer ce livrable à la cliente et la prévenir par e-mail ?', function (notify) {
-      var fd = new FormData(); fd.append('file', f); fd.append('projectId', 'partner'); fd.append('deliverable', '1'); fd.append('taskId', id); fd.append('notify', notify ? 'true' : 'false');
+      var fd = new FormData(); fd.append('file', f); fd.append('projectId', 'partner'); fd.append('deliverable', '1'); fd.append('taskId', id); fd.append('notify', notify ? 'true' : 'false'); if (ENVOI_MOT) fd.append('message', ENVOI_MOT);
       toast('Envoi du livrable…');
       api('/api/clients/' + CURKEY + '/files', { method: 'POST', body: fd }).then(admUploadResult)
         .then(function (res) { if (res.ok) { dlvApplyTime(id, mins); toast('Livrable envoyé à ' + cname + (mins ? ' · ' + mins + ' min' : '') + (notify ? ' · prévenu·e par e-mail' : ' (sans e-mail)')); refreshClient(); } else toast(admUploadErrMsg(res.status, res.d && res.d.error)); })
