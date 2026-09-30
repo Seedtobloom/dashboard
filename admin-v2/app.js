@@ -9731,7 +9731,7 @@
     // Planning éditorial : sur les supports de com ET les projets site web / identité.
     if (isSupport || d.id === 'website' || d.id === 'branding') s.push(['planning', 'Planning', (d.content.planning || []).length]);
     if (d.id === 'partner') { s.push(['forfait', 'Forfait', 0]); s.push(['taches', 'Tâches', (d.content.taches || []).length]); }
-    if (d.content.suivi !== undefined && !isSupport) s.push(['suivi', 'Étapes', (d.content.suivi || []).length]);
+    if (d.content.suivi !== undefined) s.push(['suivi', 'Étapes', (d.content.suivi || []).length]);
     if (Array.isArray(d.content.livrables) && !isSupport) s.push(['liv', 'Livrables', (d.content.livrables || []).length]);
     s.push(['questionnaire', 'Questionnaire', qn]);
     s.push(['msg', 'Messages', d.unread || 0]);
@@ -12185,8 +12185,8 @@
     var steps = (d.content.suivi || []).slice().sort(function (a, b) { return (a.order || 0) - (b.order || 0); });
     var rows = steps.length ? steps.map(function (s) {
       var opts = STEP_STATUS.map(function (x) { return '<option value="' + x[0] + '"' + (s.status === x[0] ? ' selected' : '') + '>' + x[1] + '</option>'; }).join('');
-      return '<tr><td><strong>' + esc(s.title) + '</strong>' + (s.description ? '<div class="muted" style="font-size:15px">' + esc(s.description) + '</div>' : '') + '</td>' +
-        '<td>' + fmtDate(s.date) + '</td>' +
+      return '<tr><td><strong>' + esc(s.title) + '</strong>' + (s.qui ? ' <span class="muted" style="font-size:15px">· ' + esc(STEP_QUI[s.qui] || '') + '</span>' : '') + (s.description ? '<div class="muted" style="font-size:15px">' + esc(s.description) + '</div>' : '') + '</td>' +
+        '<td>' + (s.quandTexte ? esc(s.quandTexte) : fmtDate(s.date)) + (s.heure ? ', ' + esc(s.heure) : '') + '</td>' +
         '<td><select class="inp" style="width:auto" onchange="ADM.stepStatus(\'' + d.id + '\',\'' + s.id + '\',this.value)">' + opts + '</select></td>' +
         '<td><div class="row" style="gap:5px;flex-wrap:nowrap"><button class="pbtn" onclick="ADM.stepEditOpen(\'' + d.id + '\',\'' + s.id + '\')" title="Modifier l\'étape">Modifier</button>' +
         '<button class="btn btn--danger btn--sm" onclick="ADM.stepDelete(\'' + d.id + '\',\'' + s.id + '\')">Suppr.</button></div></td></tr>';
@@ -12205,15 +12205,16 @@
         '<span class="step__t">' + esc(s.title) + '</span><span class="step__s">' + sub + '</span></div>';
     }).join('');
     var frise = steps.length ? '<div class="steps" style="margin-bottom:22px">' + friseRows + '</div>' : '';
-    return '<div class="card">' + frise + '<h3>Étapes du projet</h3>' +
+    return (/^support-/.test(d.id) ? suiviReglages(d) : '') + '<div class="card">' + frise + '<h3>Étapes du projet</h3>' +
       '<div class="micro mb">Les étapes jalonnent le projet et sont visibles par le client (par exemple « Brief », « Maquettes », « Livraison »).</div>' +
       '<table><thead><tr><th>Étape</th><th>Date</th><th>Statut</th><th></th></tr></thead><tbody>' + rows + '</tbody></table>' +
       '<div style="background:var(--surface);border:none;border-radius:10px;padding:12px 14px;margin-top:14px">' +
       '<div class="micro mb"><strong>Ajouter une étape</strong></div>' +
       '<div class="row" style="gap:8px;align-items:flex-end"><input class="inp" id="st-title-' + d.id + '" placeholder="Intitulé (ex. Maquettes)" style="flex:1;min-width:150px"><input class="inp" type="date" style="width:auto" id="st-date-' + d.id + '">' +
+      '<select class="inp" id="st-qui-' + d.id + '" style="width:auto"><option value="">Qui ?</option>' + Object.keys(STEP_QUI).map(function (k) { return '<option value="' + k + '">' + STEP_QUI[k] + '</option>'; }).join('') + '</select>' +
       '<input class="inp" id="st-action-' + d.id + '" placeholder="Action attendue du client (optionnel)" style="flex:1;min-width:150px"><button class="btn btn--dark btn--sm" onclick="ADM.stepAdd(\'' + d.id + '\')">+ Ajouter l\'étape</button></div></div></div>';
   }
-  function stepAdd(pid) { var t = el('st-title-' + pid).value.trim(); if (!t) return; jpost('/api/clients/' + CURKEY + '/steps', { projectId: pid, title: t, date: el('st-date-' + pid).value || null, clientAction: el('st-action-' + pid).value || '', status: 'upcoming' }).then(function (r) { if (r.ok) { toast('Étape ajoutée'); loadClient(); } }); }
+  function stepAdd(pid) { var t = el('st-title-' + pid).value.trim(); if (!t) return; jpost('/api/clients/' + CURKEY + '/steps', { projectId: pid, title: t, date: el('st-date-' + pid).value || null, clientAction: el('st-action-' + pid).value || '', qui: el('st-qui-' + pid).value || '', status: 'upcoming' }).then(function (r) { if (r.ok) { toast('Étape ajoutée'); loadClient(); } }); }
   function stepEditOpen(pid, id) {
     var d = findDomain(pid); if (!d) return;
     var st = (d.content.suivi || []).filter(function (x) { return x.id === id; })[0]; if (!st) return;
@@ -12226,6 +12227,11 @@
         '<div class="field"><label>Date</label><input class="inp" id="ste-date" type="date" value="' + esc((st.date || '').slice(0, 10)) + '" style="width:auto"></div>' +
         '<div class="field"><label>Description (visible par le client)</label><textarea class="inp" id="ste-desc" style="min-height:64px;resize:vertical">' + esc(st.description || '') + '</textarea></div>' +
         '<div class="field"><label>Action attendue du client</label><input class="inp" id="ste-action" value="' + esc(st.clientAction || '') + '"></div>' +
+        '<div class="row" style="gap:10px;flex-wrap:wrap">' +
+          '<div class="field"><label>Qui la fait</label><select class="inp" id="ste-qui" style="width:auto"><option value="">Personne en particulier</option>' + Object.keys(STEP_QUI).map(function (k) { return '<option value="' + k + '"' + (st.qui === k ? ' selected' : '') + '>' + STEP_QUI[k] + '</option>'; }).join('') + '</select></div>' +
+          '<div class="field"><label>Heure (rendez-vous)</label><input class="inp" id="ste-heure" placeholder="9 h 30" value="' + esc(st.heure || '') + '" style="width:120px"></div>' +
+          '<div class="field" style="flex:1;min-width:180px"><label>Date en toutes lettres (facultatif)</label><input class="inp" id="ste-quand" placeholder="vers le 7 déc., fin décembre" value="' + esc(st.quandTexte || '') + '"></div>' +
+        '</div>' +
       '</div>' +
       '<div class="admconfirm__row"><button class="btn btn--outline btn--sm" data-no>Annuler</button>' +
         '<button class="btn btn--sm" data-yes style="background:var(--terre);color:#fff;border-color:var(--terre)">Enregistrer</button></div></div>';
@@ -12234,13 +12240,40 @@
     ov.querySelector('[data-no]').onclick = close;
     ov.querySelector('[data-yes]').onclick = function () {
       var title = (el('ste-title').value || '').trim(); if (!title) { toast('Intitulé requis'); return; }
-      jpost('/api/clients/' + CURKEY + '/steps/' + id, { projectId: pid, title: title, date: el('ste-date').value || null, description: (el('ste-desc').value || '').trim(), clientAction: (el('ste-action').value || '').trim() }, 'PATCH')
+      jpost('/api/clients/' + CURKEY + '/steps/' + id, { projectId: pid, title: title, date: el('ste-date').value || null, description: (el('ste-desc').value || '').trim(), clientAction: (el('ste-action').value || '').trim(), qui: el('ste-qui').value || '', heure: (el('ste-heure').value || '').trim(), quandTexte: (el('ste-quand').value || '').trim() }, 'PATCH')
         .then(function (r) { if (r.ok) { close(); toast('Étape modifiée'); loadClient(); } else toast('Erreur'); });
     };
     document.body.appendChild(ov);
     var f = el('ste-title'); if (f) f.focus();
   }
-  function stepStatus(pid, id, st) { jpost('/api/clients/' + CURKEY + '/steps/' + id, { projectId: pid, status: st }, 'PATCH').then(function (r) { if (r.ok) { toast('Statut mis à jour'); loadClient(); } }); }
+  function stepStatus(pid, id, st) {
+    var go = function (notify) { jpost('/api/clients/' + CURKEY + '/steps/' + id, { projectId: pid, status: st, notify: notify }, 'PATCH').then(function (r) { if (r.ok) { toast('Statut mis à jour'); loadClient(); } }); };
+    // « Action client » et « Terminé » envoient un e-mail : on demande d'abord.
+    if (st === 'waiting_client' || st === 'done') notifyConfirm(st === 'done' ? 'Lui dire par e-mail que cette étape est faite ?' : 'Lui dire par e-mail que cette étape l’attend ?', go);
+    else go(false);
+  }
+  var STEP_QUI = { toi: 'La cliente', cindy: 'Cindy', ensemble: 'Ensemble' };
+  // Page de suivi (support mené par étapes) : ce que la cliente voit en plus des étapes.
+  function suiviReglages(d) {
+    var c = d.content || {}, pid = d.id.replace(/^support-/, '');
+    var liv = (c.livrablesPrevus || []).map(function (l) { return l.nom + (l.quand ? ' | ' + l.quand : ''); }).join('\n');
+    return '<div class="card"><h3>Sa page de suivi</h3>' +
+      '<div class="micro mb" style="text-transform:none;letter-spacing:0">Quand ce projet a des étapes et aucune création, la cliente voit une page de suivi : ce qui l’attend, les étapes et qui les fait, le prochain rendez-vous, ce qu’elle va recevoir, ses allers-retours, le questionnaire, vos échanges et les documents partagés.</div>' +
+      '<div style="display:flex;flex-direction:column;gap:10px">' +
+        '<div class="field"><label>Sous-titre</label><input class="inp" id="sv-sous-' + pid + '" placeholder="Mise en page du livret A5, 20 pages · de septembre à fin décembre" value="' + esc(c.sousTitre || '') + '"></div>' +
+        '<div class="field"><label>Ce qu’elle va recevoir (une ligne par livrable, puis « | » et quand)</label><textarea class="inp" id="sv-liv-' + pid + '" rows="4" placeholder="PDF HD pour l’impression | fin déc.">' + esc(liv) + '</textarea></div>' +
+        '<div class="row" style="gap:10px;flex-wrap:wrap">' +
+          '<div class="field"><label>Allers-retours prévus</label><input class="inp" type="number" min="0" max="10" id="sv-ret-' + pid + '" value="' + esc(String(c.retoursPrevus || 0)) + '" style="width:90px"></div>' +
+          '<div class="field" style="flex:1;min-width:180px"><label>Outil pour ses retours</label><input class="inp" id="sv-outil-' + pid + '" placeholder="Adobe Review" value="' + esc(c.retoursOutil || '') + '"></div>' +
+        '</div>' +
+        '<div><button class="btn btn--dark btn--sm" onclick="ADM.suiviReglagesSave(\'' + pid + '\')">Enregistrer</button></div>' +
+      '</div></div>';
+  }
+  function suiviReglagesSave(pid) {
+    var liv = (el('sv-liv-' + pid).value || '').split('\n').map(function (l) { var p = l.split('|'); return { nom: (p[0] || '').trim(), quand: (p.slice(1).join('|') || '').trim() }; }).filter(function (l) { return l.nom; });
+    jpost('/api/clients/' + CURKEY + '/support/' + pid, { sousTitre: (el('sv-sous-' + pid).value || '').trim(), livrablesPrevus: liv, retoursPrevus: parseInt(el('sv-ret-' + pid).value, 10) || 0, retoursOutil: (el('sv-outil-' + pid).value || '').trim() }, 'PATCH')
+      .then(function (r) { if (r.ok) { toast('Enregistré'); loadClient(); } else toast('Erreur'); });
+  }
   function stepDelete(pid, id) {
     admConfirm({ title: 'Supprimer cette étape ?', yes: 'Oui, supprimer', no: 'Non', danger: true }, function () {
       api('/api/clients/' + CURKEY + '/steps/' + id + '?projectId=' + pid, { method: 'DELETE' }).then(function (r) { if (r.ok) { toast('Supprimé'); loadClient(); } else toast('Erreur'); });
@@ -14152,7 +14185,7 @@
     myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, myTaskArchive: myTaskArchive, mtStart: mtStart, mtPause: mtPause, mtQuickAdd: mtQuickAdd, mtQuickDue: mtQuickDue, mtSubAdd: mtSubAdd, mtSubToggle: mtSubToggle, mtSubDel: mtSubDel, mtGoTask: mtGoTask, mtEditNote: mtEditNote, mtSaveNote: mtSaveNote, mtNoteRestore: mtNoteRestore, mtEditOpen: mtEditOpen, mtToggleRow: mtToggleRow,
     visTab: visTab, trameOpen: trameOpen, trameEditLib: trameEditLib, trameBackLib: trameBackLib, trameQToggle: trameQToggle, trameQNote: trameQNote, callNoteNew: callNoteNew, callNoteSel: callNoteSel, callNoteDel: callNoteDel, callNoteSet: callNoteSet, callRight: callRight, trameNew: trameNew, trameSel: trameSel, trameDel: trameDel, trameSet: trameSet, trameEditToggle: trameEditToggle, trameEdField: trameEdField, trameEdQ: trameEdQ, trameEdQAdd: trameEdQAdd, trameEdQDel: trameEdQDel, trameEdSecAdd: trameEdSecAdd, trameEdSecDel: trameEdSecDel, trameEdSecMove: trameEdSecMove, visAdd: visAdd, visSet: visSet, visSetClient: visSetClient, visOpen: visOpen, visCloseDrawer: visCloseDrawer, visPresent: visPresent, visPushICloud: visPushICloud, visSetTypeFilter: visSetTypeFilter, visNoteSave: visNoteSave, visDel: visDel, visStepAdd: visStepAdd, visStepSet: visStepSet, visStepDel: visStepDel, visStepMove: visStepMove, visSaveEditor: visSaveEditor, visQAdd: visQAdd, visQToggle: visQToggle, visQSet: visQSet, visQDel: visQDel, visApplyTpl: visApplyTpl, visTplAdd: visTplAdd, visTplSet: visTplSet, visTplDel: visTplDel, visTplStepAdd: visTplStepAdd, visTplStepSet: visTplStepSet, visTplStepDel: visTplStepDel, visTplStepMove: visTplStepMove, visTplQAdd: visTplQAdd, visTplQSet: visTplQSet, visTplQDel: visTplQDel, visFmt: visFmt, visEdActive: visEdActive,
     msSaveCap: msSaveCap,
-    stepAdd: stepAdd, stepStatus: stepStatus, stepDelete: stepDelete, stepEditOpen: stepEditOpen,
+    stepAdd: stepAdd, stepStatus: stepStatus, stepDelete: stepDelete, stepEditOpen: stepEditOpen, suiviReglagesSave: suiviReglagesSave,
     qnAdd: qnAdd, qnSet: qnSet, qnDel: qnDel, qnMove: qnMove, qnBulk: qnBulk, qnSetOptions: qnSetOptions, qnSetTitle: qnSetTitle, qnSetReady: qnSetReady, qnPreview: qnPreview,
     planGo: planGo, planSetFilter: planSetFilter, planTick: planTick,
     tiroirFermer: ptFermer, ptOuvrir: ptOuvrir,

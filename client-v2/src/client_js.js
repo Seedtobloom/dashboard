@@ -2340,9 +2340,131 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
   // Page Support de com (refonte 2026) : ce qui attend le client en noir, puis chaque
   // création avec son planning en tuiles (paille à toi, noir chez Cindy, crème fait)
   // et ses séries de retours ; versions, fichiers et commentaires dans un volet.
+  // Page de suivi (Support de com mené par étapes, sans créations : une mise
+  // en page, un livret). Tout ce qu'il faut savoir sur une page : ce qui
+  // l'attend, les étapes et qui les fait, le prochain rendez-vous, ce qu'elle
+  // va recevoir, ses allers-retours, le questionnaire, les échanges, les
+  // documents que les deux déposent.
+  function cpsDateCourte(iso) { return iso ? fmtShort(String(iso).slice(0, 10) + 'T12:00:00') : ''; }
+  function cpsQuand(s) {
+    if (s.quandTexte) return s.quandTexte;
+    return [cpsDateCourte(s.dueDate), s.heure].filter(Boolean).join(', ');
+  }
+  // Le texte d'un message, retours à la ligne gardés.
+  function cpsTexte(html) {
+    var src = String(html || '');
+    if (src.indexOf('<') === -1 && src.indexOf('&') === -1) return src.trim();
+    try {
+      var doc = new DOMParser().parseFromString('<body>' + src.replace(/<(br)[^>]*>/gi, '\n').replace(/<\/(p|div|li)[^>]*>/gi, '$&\n') + '</body>', 'text/html');
+      return (doc.body.textContent || '').replace(/\n{3,}/g, '\n\n').trim();
+    } catch (e) { return src.replace(/<[^>]*>/g, ' ').trim(); }
+  }
+  function cpsSuiviPage(pd) {
+    var p = pd.project, pid = p.id;
+    var steps = (p.steps || []).slice().sort(function (a, b) { return (a.order || 0) - (b.order || 0); });
+    var nb = steps.length, fait = steps.filter(function (x) { return x.status === 'done'; }).length;
+    var courante = steps.filter(function (x) { return x.status !== 'done'; })[0] || null;
+    var dlv = (p.deliverables || []).filter(function (d) { return d.fileKey || d.reviewLink; });
+    var aValider = dlv.filter(function (d) { return (d.status || 'a_valider') === 'a_valider'; })[0];
+    var etapeToi = steps.filter(function (x) { return x.status === 'waiting_client'; })[0] ||
+      steps.filter(function (x) { return x.status === 'in_progress' && x.qui === 'toi'; })[0];
+    var ICK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M5 12l4 4 10-10"/></svg>';
+    var hero;
+    if (aValider) {
+      var lienV = aValider.reviewLink ? (/^https?:\/\//i.test(aValider.reviewLink) ? aValider.reviewLink : 'https://' + aValider.reviewLink) : (API_BASE + '/files/' + encodeURIComponent(aValider.fileKey) + '/download');
+      hero = '<section class="cps-hero"><div class="cps-hero__txt"><span class="cps-hero__k">À toi, une nouvelle version t’attend</span><div class="cps-hero__t">' + esc(aValider.name || 'La nouvelle version') + '</div>' +
+        '<p>Envoyée le ' + esc(fmtDate(aValider.createdAt)) + '. Annote directement sur les pages, puis dis-moi quand c’est fait.</p></div>' +
+        '<div class="cps-hero__a"><a class="cps-btn cps-btn--ghost" href="' + esc(lienV) + '" target="_blank" rel="noopener">Ouvrir la version</a>' +
+        '<button class="cps-btn cps-btn--ghost" onclick="window.stbValidate(\'' + esc(pid) + '\',\'' + esc(aValider.id) + '\',\'valide\')">C’est validé</button>' +
+        '<button class="cps-btn" onclick="window.stbValidate(\'' + esc(pid) + '\',\'' + esc(aValider.id) + '\',\'refuse\')">J’ai fait mes retours</button></div></section>';
+    } else if (etapeToi) {
+      var pour = etapeToi.quandTexte || (etapeToi.dueDate ? new Date(String(etapeToi.dueDate).slice(0, 10) + 'T12:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' }) : '');
+      hero = '<section class="cps-hero"><div class="cps-hero__txt"><span class="cps-hero__k">À toi' + (pour ? ', pour le ' + esc(pour.replace(/^(le |vers le |au plus tard le )/, '')) : '') + '</span>' +
+        '<div class="cps-hero__t">' + esc(etapeToi.clientAction || etapeToi.title || '') + '</div>' +
+        (etapeToi.description ? '<p>' + esc(etapeToi.description) + '</p>' : '') + '</div>' +
+        '<div class="cps-hero__a"><button class="cps-btn" onclick="cpsDeposer(\'' + esc(pid) + '\')">Déposer des fichiers</button></div></section>';
+    } else {
+      hero = '<section class="cps-calme"><b>Rien n’attend ta réponse.</b> ' + (courante ? 'Je travaille sur « ' + esc(courante.title) + ' ».' : (nb ? 'Toutes les étapes sont faites.' : 'Je prépare la suite.')) + '</section>';
+    }
+    var QUI = { toi: 'Toi', cindy: 'Cindy', ensemble: 'Ensemble' };
+    var lignes = steps.map(function (x, i) {
+      var ok = x.status === 'done', cur = x === courante;
+      var etat = ok ? 'Fait' : (x.status === 'in_progress' || x.status === 'waiting_client' || x.status === 'review' ? 'En cours' : 'À venir');
+      var sous = [cpsQuand(x), x.description].filter(Boolean).join(' · ');
+      return '<div class="cps-et' + (cur ? ' cps-et--cur' : '') + (ok ? ' cps-et--ok' : '') + '">' +
+        '<span class="cps-et__n">' + (ok ? ICK : (i + 1)) + '</span>' +
+        '<div><div class="cps-et__t">' + esc(x.title || '') + '</div>' + (sous ? '<div class="cps-et__s">' + esc(sous) + '</div>' : '') + '</div>' +
+        '<div class="cps-et__d">' + (x.qui ? '<span class="cps-qui cps-qui--' + x.qui + '">' + QUI[x.qui] + '</span>' : '') + '<span class="cps-et__e">' + etat + '</span></div></div>';
+    }).join('');
+    var etapes = '<section class="cps-carte"><div class="cps-h"><h3>Les étapes</h3><span>' + fait + ' sur ' + nb + ' faite' + (fait > 1 ? 's' : '') + '</span></div>' + lignes + '</section>';
+    // Prochain rendez-vous : la prochaine étape « Ensemble » pas encore faite.
+    var auj = new Date().toISOString().slice(0, 10);
+    var rdv = steps.filter(function (x) { return x.qui === 'ensemble' && x.status !== 'done' && (!x.dueDate || String(x.dueDate).slice(0, 10) >= auj); })[0];
+    var visio = p.meetingLink ? (/^https?:\/\//i.test(p.meetingLink) ? p.meetingLink : 'https://' + p.meetingLink) : '';
+    var cRdv = '';
+    if (rdv) {
+      var jour = rdv.dueDate ? new Date(String(rdv.dueDate).slice(0, 10) + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }) : (rdv.quandTexte || '');
+      jour = jour.charAt(0).toUpperCase() + jour.slice(1) + (rdv.heure ? ', ' + rdv.heure : '');
+      cRdv = '<section class="cps-carte"><h3>Prochain rendez-vous</h3><div class="cps-grand">' + esc(jour) + '</div><p>' + esc(rdv.title || '') + '.</p>' +
+        (visio ? '<div><a class="cps-btn" href="' + esc(visio) + '" target="_blank" rel="noopener">Rejoindre la visio</a></div>' : '') + '</section>';
+    }
+    var prevus = p.livrablesPrevus || [];
+    var cRecevoir = prevus.length ? '<section class="cps-carte"><h3>Ce que tu vas recevoir</h3>' + prevus.map(function (l) {
+      return '<div class="cps-li"><span>' + esc(l.nom) + '</span>' + (l.quand ? '<span>' + esc(l.quand) + '</span>' : '') + '</div>';
+    }).join('') + '</section>' : '';
+    var nbR = p.retoursPrevus || 0;
+    var utilises = dlv.filter(function (d) { return d.status === 'refuse' || d.status === 'revision' || d.status === 'valide' || d.status === 'validated'; }).length;
+    var cRetours = '';
+    if (nbR) {
+      var barres = ''; for (var k = 0; k < nbR; k++) barres += '<i class="' + (k < utilises ? 'plein' : '') + '"></i>';
+      cRetours = '<section class="cps-carte"><h3>Tes retours</h3><div class="cps-ret"><div class="cps-barres">' + barres + '</div><span><b>' + nbR + ' aller' + (nbR > 1 ? 's' : '') + '-retour' + (nbR > 1 ? 's' : '') + '</b> prévu' + (nbR > 1 ? 's' : '') + ', ' + (utilises ? utilises + ' utilisé' + (utilises > 1 ? 's' : '') : 'aucun utilisé') + '</span></div>' +
+        '<p>À chaque version, je t’envoie ' + (p.retoursOutil ? 'un lien ' + esc(p.retoursOutil) : 'un lien') + '. Tu annotes directement sur les pages, puis tu cliques sur « J’ai fait mes retours ».</p></section>';
+    }
+    var qs = appData.questionnaires || [];
+    var cQnr = '<section class="cps-carte"><h3>Questionnaire de cadrage</h3>' + (qs.length ? qs.map(function (q) {
+      if (q.status === 'completed') return '<p>« ' + esc(q.name) + ' » : complété' + (q.completedAt ? ' le ' + esc(fmtDate(q.completedAt)) : '') + '. Merci !</p>';
+      var verb = q.status === 'in_progress' ? 'Continuer' : (q.status === 'to_review' ? 'Revoir' : 'Remplir');
+      return '<p>« ' + esc(q.name) + ' »' + (q.dueDate ? ', pour le ' + esc(fmtDate(q.dueDate)) : '') + '</p><div><button class="cps-btn" onclick="cpQnrFill(\'' + esc(q.id) + '\')">' + verb + ' le questionnaire</button></div>';
+    }).join('') : '<p>Il arrive bientôt. Je te préviens dès qu’il est prêt.</p>') + '</section>';
+    var msgs = (pd.messages || []).filter(function (m) { return !m.topic; }).slice(-4);
+    var cEch = '<section class="cps-carte"><div class="cps-h"><h3>Nos échanges</h3><a href="#" onclick="window._stbInboxPid=\'' + esc(pid) + '\';cpOpenMessages();return false">Tout voir</a></div>' +
+      (msgs.length ? '<div class="cps-bulles">' + msgs.map(function (m) { var c = m.author === 'cindy';
+        return '<div class="cps-bulle' + (c ? ' cps-bulle--cindy' : '') + '"><p>' + esc(cpsTexte(m.content)) + '</p><span>' + (c ? 'Cindy' : 'Toi') + ' · ' + esc(fmtShort(m.createdAt)) + '</span></div>'; }).join('') + '</div>' : '<p>Pas encore de message sur ce projet.</p>') +
+      '<div class="cps-ecrire"><textarea id="cpe-msg-' + esc(pid) + '" rows="2" placeholder="Écrire à Cindy" onkeydown="if(event.key===\'Enter\'&&(event.metaKey||event.ctrlKey)){event.preventDefault();cpProjEnvoyer(\'' + esc(pid) + '\');}"></textarea>' +
+      '<button class="cps-btn" onclick="cpProjEnvoyer(\'' + esc(pid) + '\')">Envoyer</button></div></section>';
+    var docs = (pd.files || []).slice().sort(function (a, b) { return String(b.uploadedAt || '').localeCompare(String(a.uploadedAt || '')); });
+    var cDocs = '<section class="cps-carte" id="cps-docs" ondragover="event.preventDefault();this.classList.add(\'cps-sur\')" ondragleave="this.classList.remove(\'cps-sur\')" ondrop="event.preventDefault();this.classList.remove(\'cps-sur\');cpsEnvoyerFichiers(\'' + esc(pid) + '\',event.dataTransfer.files)">' +
+      '<div class="cps-h"><h3>Documents partagés</h3><button class="cps-btn cps-btn--ligne" onclick="cpsDeposer(\'' + esc(pid) + '\')">Ajouter un document</button></div>' +
+      '<p class="cps-doux">Toi comme Cindy pouvez y déposer des fichiers : textes, charte, photos, versions.</p>' +
+      docs.map(function (f) {
+        return '<div class="cps-doc"><span class="cps-doc__v"></span><div><div class="cps-doc__n">' + esc(f.name) + '</div><div class="cps-doux">Déposé par ' + (f.source === 'client' ? 'toi' : 'Cindy') + (f.uploadedAt ? ', le ' + esc(fmtShort(f.uploadedAt)) : '') + '</div></div>' +
+          '<a href="' + esc(API_BASE + '/files/' + encodeURIComponent(f.key) + '/download') + '" target="_blank" rel="noopener">Télécharger</a></div>';
+      }).join('') +
+      '<div class="cps-glisse" onclick="cpsDeposer(\'' + esc(pid) + '\')">Glisse tes fichiers ici</div>' +
+      '<input type="file" id="cps-fichier" multiple hidden onchange="cpsEnvoyerFichiers(\'' + esc(pid) + '\',this.files);this.value=\'\'"></section>';
+    return '<div class="cp-home cpb cps"><div class="cpb__in fade-up">' +
+      '<header>' + cpRetourAccueil() + '<h1 class="cpb-h1">' + esc(p.projectTitle || 'Projet') + '</h1>' + (p.sousTitre ? '<p class="cpb-lead">' + esc(p.sousTitre) + '</p>' : '') + '</header>' +
+      hero +
+      '<div class="cps-grille">' + etapes + '<div class="cps-col">' + cRdv + cRecevoir + cRetours + cQnr + '</div></div>' +
+      '<div class="cps-grille">' + cEch + cDocs + '</div>' +
+    '</div></div>';
+  }
+  window.cpsDeposer = function () { var i = document.getElementById('cps-fichier'); if (i) i.click(); };
+  window.cpsEnvoyerFichiers = function (pid, liste) {
+    var arr = Array.prototype.slice.call(liste || []); if (!arr.length) return;
+    var trop = cliAnyTooBig(arr); if (trop) { toast(cliBigMsg(trop), true); return; }
+    toast('Envoi en cours…');
+    Promise.all(arr.map(function (f) { return cliUploadFile(f, pid); })).then(function (res) {
+      var pd = getPD(pid);
+      if (pd) { if (!Array.isArray(pd.files)) pd.files = []; res.forEach(function (r) { if (r && r.key) pd.files.push({ key: r.key, name: r.name, source: 'client', uploadedAt: new Date().toISOString() }); }); }
+      toast(arr.length > 1 ? 'Fichiers déposés, Cindy est prévenue' : 'Fichier déposé, Cindy est prévenue'); renderShell();
+    }).catch(function () { toast('Erreur, réessaie.', true); });
+  };
   function cpSupportPage(pd) {
     var p = pd.project, pid = p.id, supPid = (pid || '').replace(/^support-/, '');
     var crs = (p.creations || []).filter(function (c) { return c.status !== 'archive'; });
+    // Mené par étapes, sans créations : la page de suivi.
+    if (!crs.length && (p.steps || []).length) return cpsSuiviPage(pd);
     var dlv = p.deliverables || [];
     var CR_TY = { print: 'print', digital: 'digital', reseaux: 'réseaux sociaux', evenementiel: 'événementiel', autre: '' };
     var today = new Date(); today.setHours(0, 0, 0, 0);

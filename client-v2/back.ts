@@ -707,12 +707,21 @@ async function buildAppData(env: Env, masterKey: string, data: AnyObj): Promise<
         status: s.status || 'upcoming',
         dueDate: s.date || s.dueDate || null,
         clientAction: s.clientAction || '',
+        // Page de suivi : qui fait l'étape, l'heure d'un rendez-vous, une date
+        // écrite en toutes lettres (« vers le 7 déc. », « fin décembre »).
+        qui: ['toi', 'cindy', 'ensemble'].indexOf(s.qui) !== -1 ? s.qui : '',
+        heure: String(s.heure || ''),
+        quandTexte: String(s.quandTexte || ''),
         pageBlocks: Array.isArray(s.pageBlocks) ? s.pageBlocks : [],
         order: s.order != null ? s.order : i,
       }));
       projects.push({
         project: {
           id: 'support-' + pid,
+          sousTitre: String(obj.sousTitre || ''),
+          livrablesPrevus: Array.isArray(obj.livrablesPrevus) ? obj.livrablesPrevus.map((l: AnyObj) => ({ nom: String((l && l.nom) || ''), quand: String((l && l.quand) || '') })).filter((l: AnyObj) => l.nom) : [],
+          retoursPrevus: typeof obj.retoursPrevus === 'number' ? obj.retoursPrevus : 0,
+          retoursOutil: String(obj.retoursOutil || ''),
           type: 'support',
           clotureAt: obj.clotureAt || null,
           projectTitle: (obj.name && obj.name.trim()) || ((parseInt(pid, 10) || 1) > 1 ? 'Support de com ' + (parseInt(pid, 10) || 1) : 'Support de com'),

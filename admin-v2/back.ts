@@ -1018,6 +1018,13 @@ async function handleClientApi(
     if ('name' in body) o.name = (body.name == null ? '' : String(body.name)).slice(0, 80).trim();
     // Date de départ (T0) du planning éditorial (optionnelle : sinon dates relatives).
     if ('planningStart' in body) o.planningStart = body.planningStart ? String(body.planningStart).slice(0, 10) : null;
+    // Page de suivi (projet à étapes, sans créations) : sous-titre, ce que la
+    // cliente va recevoir, le nombre d'allers-retours et l'outil de retours.
+    if ('sousTitre' in body) o.sousTitre = String(body.sousTitre || '').slice(0, 200).trim();
+    if ('livrablesPrevus' in body) o.livrablesPrevus = (Array.isArray(body.livrablesPrevus) ? body.livrablesPrevus : []).slice(0, 12)
+      .map((l: AnyObj) => ({ nom: String((l && l.nom) || '').slice(0, 120).trim(), quand: String((l && l.quand) || '').slice(0, 40).trim() })).filter((l: AnyObj) => l.nom);
+    if ('retoursPrevus' in body) o.retoursPrevus = Math.max(0, Math.min(10, parseInt(body.retoursPrevus, 10) || 0));
+    if ('retoursOutil' in body) o.retoursOutil = String(body.retoursOutil || '').slice(0, 60).trim();
     if ('cloture' in body) {
       // On n'écrase pas une date de clôture déjà posée : c'est un repère daté.
       if (body.cloture) { if (!o.clotureAt) o.clotureAt = nowIso(); }
@@ -1684,6 +1691,14 @@ async function handleTaskComment(request: Request, env: Env, key: string, data: 
 }
 
 /* ── suivi / étapes ── */
+// Champs de la page de suivi : qui fait l'étape, l'heure, une date en toutes lettres.
+function stepExtras(body: AnyObj): AnyObj {
+  const o: AnyObj = {};
+  if ('qui' in body) o.qui = ['toi', 'cindy', 'ensemble'].indexOf(body.qui) !== -1 ? body.qui : '';
+  if ('heure' in body) o.heure = String(body.heure || '').slice(0, 20).trim();
+  if ('quandTexte' in body) o.quandTexte = String(body.quandTexte || '').slice(0, 60).trim();
+  return o;
+}
 function stepsArr(container: AnyObj): AnyObj[] { if (!Array.isArray(container.suivi)) container.suivi = []; return container.suivi; }
 async function handleStepCreate(request: Request, env: Env, key: string, data: AnyObj): Promise<Response> {
   const body = await readJson(request);
@@ -1691,7 +1706,7 @@ async function handleStepCreate(request: Request, env: Env, key: string, data: A
   if (!container) return json({ error: 'Projet introuvable' }, 404);
   if (!body.title) return json({ error: 'title requis' }, 400);
   const arr = stepsArr(container);
-  const step = { id: genId(), title: (body.title || '').toString().slice(0, 300), description: (body.description || '').toString().slice(0, 2000), status: body.status || 'upcoming', date: body.date || null, clientAction: (body.clientAction || '').toString().slice(0, 1000), order: arr.length };
+  const step = { id: genId(), title: (body.title || '').toString().slice(0, 300), description: (body.description || '').toString().slice(0, 2000), status: body.status || 'upcoming', date: body.date || null, clientAction: (body.clientAction || '').toString().slice(0, 1000), order: arr.length, ...stepExtras(body) };
   arr.push(step);
   await saveClient(env, key, data);
   return json(step, 201);
@@ -1708,10 +1723,12 @@ async function handleStepPatch(request: Request, env: Env, key: string, data: An
   if ('description' in body) body.description = (body.description || '').toString().slice(0, 2000);
   if ('clientAction' in body) body.clientAction = (body.clientAction || '').toString().slice(0, 1000);
   ['title', 'description', 'status', 'date', 'clientAction', 'order'].forEach((k) => { if (k in body) step[k] = body[k]; });
+  Object.assign(step, stepExtras(body));
   if (body.status === 'done' && !step.completedAt) step.completedAt = nowIso();
   if (body.status && body.status !== 'done') step.completedAt = null;
   await saveClient(env, key, data);
-  if (body.status && body.status !== prev) {
+  // notify: false = changer le statut sans mail (Cindy prépare l'espace).
+  if (body.status && body.status !== prev && body.notify !== false) {
     if (body.status === 'done') await notifyClient(env, data, `C'est validé : ${step.title || ''}`, mailBonjour(data) + `<p><strong>${escHtml(step.title || '')}</strong> est validée. Le projet avance bien.</p>` + MAIL_SIGNE, key);
     else if (body.status === 'waiting_client') await notifyClient(env, data, `À toi de jouer : ${step.title || ''}`, mailBonjour(data) + `<p>Une étape t'attend : <strong>${escHtml(step.title || '')}</strong>.</p>` + (step.clientAction ? `<p>${escHtml(step.clientAction)}</p>` : '') + MAIL_SIGNE, key);
   }
