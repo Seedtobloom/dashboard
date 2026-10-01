@@ -3023,6 +3023,12 @@ const EMAIL_TPL_DEFAULTS: Record<string, { label: string; vars: string[]; subjec
     subject: 'Tu as pu jeter un œil à {titre} ?',
     body: 'Bonjour {prenom},\n\n{titre} t\'attend dans ton espace. Rien d\'urgent, je voulais juste être sûre qu\'il ne s\'était pas perdu dans ta boîte mail.\n\nSi ça te va, tu valides. Si un truc te chiffonne, dis-le-moi, on ajuste.\n\nÀ bientôt,\nCindy',
   },
+  qnr_ready: {
+    label: 'Questionnaire prêt',
+    vars: ['prenom', 'questionnaire', 'echeance'],
+    subject: 'Ton questionnaire est prêt',
+    body: 'Bonjour {prenom},\n\nTon questionnaire « {questionnaire} » t\'attend dans ton espace.\n\nTes réponses m\'aident à bien préparer la suite, alors prends le temps qu\'il te faut. Tout s\'enregistre au fur et à mesure, tu peux t\'arrêter et y revenir quand tu veux.\n\n{echeance}\n\nMerci d\'avance, et à très vite,\nCindy',
+  },
   remind_action: {
     label: 'Relance · action en attente',
     vars: ['prenom', 'titre', 'projet'],
@@ -3050,7 +3056,7 @@ function renderEmailTpl(tpl: { subject: string; body: string }, vars: Record<str
     body = body.split('{' + k + '}').join(escHtml(v));
     subject = subject.split('{' + k + '}').join(v);
   }
-  const html = body.split(/\n\n+/).map((p) => `<p>${p.replace(/\n/g, '<br>')}</p>`).join('');
+  const html = body.split(/\n\n+/).filter((p) => p.trim()).map((p) => `<p>${p.replace(/\n/g, '<br>')}</p>`).join('');
   return { subject, html };
 }
 async function handleEmailTemplatesGet(env: Env): Promise<Response> {
@@ -3303,14 +3309,15 @@ async function handleQnrAssign(request: Request, env: Env, key: string, data: An
 // « Ton questionnaire est prêt » : à l'envoi, ou plus tard quand Cindy le
 // décide (questionnaire ajouté sans prévenir, puis « Prévenir »).
 async function qnrMailDispo(env: Env, data: AnyObj, key: string, inst: AnyObj): Promise<void> {
-  const prenom = getClient(data).prenom || '';
-  const dueStr = inst.dueDate ? String(inst.dueDate).split('-').reverse().join('/') : '';
-  const deadlineLine = dueStr
-    ? `Si tu peux le remplir avant le <strong>${escHtml(dueStr)}</strong>, on garde le bon rythme.`
-    : '';
-  await notifyClient(env, data, 'Ton questionnaire est prêt',
-    `<p>Bonjour${prenom ? ' ' + escHtml(prenom) : ''},</p>` +
-    `<p>Ton questionnaire${inst.name ? ' <strong>' + escHtml(inst.name) + '</strong>' : ''} est prêt. Il est dans ton espace, onglet Questionnaires. ${deadlineLine}</p>` + MAIL_SIGNE, key);
+  const tpls = await getEmailTemplates(env);
+  const tpl = tpls.qnr_ready || EMAIL_TPL_DEFAULTS.qnr_ready;
+  const dueStr = inst.dueDate ? new Date(String(inst.dueDate).slice(0, 10) + 'T12:00:00Z').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', timeZone: 'UTC' }) : '';
+  const r = renderEmailTpl(tpl, {
+    prenom: getClient(data).prenom || '',
+    questionnaire: inst.name || 'Questionnaire',
+    echeance: dueStr ? `Pour garder le bon rythme, j'aurais besoin de tes réponses avant le ${dueStr}.` : '',
+  });
+  await notifyClient(env, data, r.subject, r.html, true, undefined, 'Remplir le questionnaire');
 }
 
 /* ── Modèles de projets (« moteur de projet ») : scénarios réutilisables ──
