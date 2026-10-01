@@ -9469,8 +9469,8 @@
   // l'envoi, avec son e-mail, son code et le lien pour se connecter.
   var ACCES_SUJET = 'Bienvenue dans ton espace Seed to Bloom';
   var ACCES_TEXTE = 'Bonjour {prenom},\n\nÇa y est, ton espace est prêt et je suis ravie de te l’ouvrir !\n\n' +
-    'C’est notre point de rendez-vous pour tout le projet : tu y retrouves les étapes et ce qui t’attend, les versions à relire, nos échanges et les documents à partager. Tout est au même endroit, et tu peux y revenir quand tu veux.\n\n' +
-    'Pour te connecter :\nLe lien : {lien}\nTon e-mail : {email}\nTon code d’accès : {code}\n\n' +
+    'C’est notre point de rendez-vous pour tout le projet. Tu y retrouves les étapes et ce qui t’attend, les versions à relire, nos échanges et les documents à partager. Tout est au même endroit, et tu peux y revenir quand tu veux.\n\n' +
+    'Pour te connecter, voici tes accès.\nLe lien : {lien}\nTon e-mail : {email}\nTon code d’accès : {code}\n\n' +
     'Garde bien ce code, il te servira à chaque connexion. Et si tu as la moindre question, écris-moi directement depuis ton espace.\n\nÀ très vite,\nCindy';
   function accesOuvrir() {
     var cl = (CUR && CUR.client) || {};
