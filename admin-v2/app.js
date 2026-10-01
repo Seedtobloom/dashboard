@@ -5012,7 +5012,9 @@
       reel: Math.round((Number(t.timeSpentSeconds) || 0) / 60) || Math.round(Number(t.timeSpentMinutes) || 0),
       restant: (typeof t.restMinutes === 'number') ? t.restMinutes : null,
       // La part du temps passé tombée ce mois-ci (bilan du mois, forfait).
-      ceMois: admTaskMinByMonth(t)[ckpMoisCourant()] || 0,
+      ceMois: (Array.isArray(t.entries) && t.entries.length)
+        ? t.entries.filter(function (e) { return e.month === ckpMoisCourant(); }).reduce(function (s0, e) { return s0 + (e.minutes || 0); }, 0)
+        : (admTaskMinByMonth(t)[ckpMoisCourant()] || 0),
       debloque: t.unblocks || '',
       slots: Array.isArray(t.slots) ? t.slots : [],
       // Ce que la tâche PORTE : le brief de la cliente, ses échanges, ses
@@ -5570,7 +5572,7 @@
       'onkeydown="event.stopPropagation();if(event.key===\'Enter\'){event.preventDefault();ADM.ckpAjoutPasse(' + a + ');}">' +
       '<label class="ck-passe__date" onclick="event.stopPropagation()">fait le <input class="inp" type="date" id="ck-pd-' + zone + '-' + esc(t.id) + '" value="' + ckpAujourdhui() + '" max="' + ckpAujourdhui() + '"></label>' +
       '<button class="btn btn--sm ck-bfin" onclick="event.stopPropagation();ADM.ckpAjoutPasse(' + a + ')">Ajouter</button></div>' +
-      '<span class="ck-passe__n">Compté dans le mois du jour où tu l’as fait. La tâche reste ouverte.</span></div>';
+      '<span class="ck-passe__n">Compté dans le mois du jour où tu l’as fait. La tâche reste ouverte. <button class="ck-passe__c" onclick="event.stopPropagation();ADM.ckpCorrigerPasse(\'' + esc(t.id) + '\')">Corriger</button></span></div>';
   }
   function ckpAjoutPasse(id, zone) {
     var t = ckpToutes().filter(function (x) { return x.id === id; })[0];
@@ -5597,6 +5599,49 @@
       }
       else toast('Erreur');
     }).catch(function () { toast('Erreur'); });
+  }
+  // Corriger le temps passé : chaque saisie, avec son jour et sa durée,
+  // se modifie ou se supprime. Le total et le forfait suivent.
+  function ckpCorrigerPasse(id) {
+    var t = ckpToutes().filter(function (x) { return x.id === id; })[0]; if (!t) return;
+    var pid = t.src === 'client' ? (t.projet || 'partner') : (t.src === 'ticket' ? 'maintenance' : '');
+    var envoyer = function (extra) {
+      var body = Object.assign({}, extra); if (pid) body.projectId = pid;
+      return jpost(ckpUrl(t), body, 'PATCH').then(function (r) { return r.json ? r.json() : r; });
+    };
+    var ov = document.createElement('div'); ov.className = 'admconfirm';
+    ov.innerHTML = '<div class="admconfirm__box" style="max-width:560px;text-align:left"><div class="admconfirm__title">Corriger le temps passé</div>' +
+      '<div class="admconfirm__msg">« ' + esc((t.titre || 'Tâche').slice(0, 60)) + ' ». Change la durée ou le jour d’une saisie, ou supprime-la. Le forfait se met à jour.</div>' +
+      '<div id="ckc-liste" style="margin-top:12px">Chargement…</div>' +
+      '<div class="admconfirm__row" style="margin-top:14px"><button class="btn btn--sm" data-no style="background:var(--terre);color:#fff;border-color:var(--terre)">Fermer</button></div></div>';
+    function close() { ov.remove(); ckpApres(id); }
+    ov.addEventListener('click', function (e) { if (e.target === ov && ADM_DOWN === ov) close(); });
+    ov.querySelector('[data-no]').onclick = close;
+    document.body.appendChild(ov);
+    function dessiner(task) {
+      var ss = ((task && task.sessions) || []).filter(function (x) { var m = typeof x.minutes === 'number' ? x.minutes : (Date.parse(x.end) - Date.parse(x.start)) / 60000; return m > 0; })
+        .sort(function (a, b) { return String(b.start).localeCompare(String(a.start)); });
+      var box = ov.querySelector('#ckc-liste');
+      if (!ss.length) { box.innerHTML = '<p class="micro" style="text-transform:none;letter-spacing:0">Aucun temps noté sur cette tâche.</p>'; return; }
+      box.innerHTML = ss.map(function (x) {
+        var m = typeof x.minutes === 'number' ? x.minutes : Math.round((Date.parse(x.end) - Date.parse(x.start)) / 60000);
+        return '<div class="ckc-l" data-id="' + esc(x.id) + '"><input class="inp" type="date" value="' + esc(String(x.start || '').slice(0, 10)) + '" max="' + ckpAujourdhui() + '">' +
+          '<input class="inp ckc-d" value="' + esc(ckpDuree(Math.round(m))) + '" aria-label="Durée">' +
+          '<button class="btn btn--dark btn--sm" data-act="ok">Enregistrer</button><button class="pjc-lien" data-act="del">Supprimer</button></div>';
+      }).join('') + '<p class="micro" style="text-transform:none;letter-spacing:0;margin-top:8px">Total : ' + esc(ckpDuree(Math.round(ss.reduce(function (s, x) { return s + (typeof x.minutes === 'number' ? x.minutes : (Date.parse(x.end) - Date.parse(x.start)) / 60000); }, 0)))) + '</p>';
+      Array.prototype.forEach.call(box.querySelectorAll('.ckc-l'), function (row) {
+        var sid = row.getAttribute('data-id');
+        row.querySelector('[data-act="ok"]').onclick = function () {
+          var min = ckpParseDuree(row.querySelector('.ckc-d').value);
+          if (!(min > 0)) { toast('Écris par exemple 45 min, 1h30 ou 1,5'); return; }
+          envoyer({ editTimeEntry: { id: sid, minutes: min, date: row.querySelector('[type="date"]').value } }).then(function (d) { toast('Saisie corrigée'); dessiner(d); }).catch(function () { toast('Erreur'); });
+        };
+        row.querySelector('[data-act="del"]').onclick = function () {
+          envoyer({ editTimeEntry: { id: sid, minutes: 0 } }).then(function (d) { toast('Saisie supprimée'); dessiner(d); }).catch(function () { toast('Erreur'); });
+        };
+      });
+    }
+    envoyer({ normalizeTime: true }).then(dessiner).catch(function () { ov.querySelector('#ckc-liste').textContent = 'Erreur de chargement.'; });
   }
   function ckpUrl(t) {
     if (t.src === 'perso') return '/api/admin/tasks/' + t.id;
@@ -14397,7 +14442,7 @@
 
   // API publique pour les onclick
   window.ADM = {
-    nav: nav, login: login, logout: logout, scan: scan, createClient: createClient, copy: copy, editToken: editToken, cliApercu: cliApercu, ffReglages: ffReglages, ffAutoMail: ffAutoMail, accesOuvrir: accesOuvrir, navClientTab: navClientTab,
+    nav: nav, login: login, logout: logout, scan: scan, createClient: createClient, copy: copy, editToken: editToken, cliApercu: cliApercu, ckpCorrigerPasse: ckpCorrigerPasse, ffReglages: ffReglages, ffAutoMail: ffAutoMail, accesOuvrir: accesOuvrir, navClientTab: navClientTab,
     msWeek: msWeek, msFilter: msFilter, msToggleCap: msToggleCap, msMode: msMode, msDaySel: msDaySel, msPlace: msPlace, msDone: msDone, msDelete: msDelete, msNoteOpen: msNoteOpen, msPlanOver: msPlanOver, msPlanLeave: msPlanLeave, msPlanDrop: msPlanDrop, msPlanUnplace: msPlanUnplace, msAutoPlan: msAutoPlan, msOrganizeWeek: msOrganizeWeek, msOrganizeDay: msOrganizeDay, msUnplace: msUnplace, msDragStart: msDragStart, msDragEnd: msDragEnd, msDayOver: msDayOver, msDayLeave: msDayLeave, msDrop: msDrop, msSlotOver: msSlotOver, msDropSlot: msDropSlot, msNewBlock: msNewBlock, msSaveBlock: msSaveBlock, msDeleteBlock: msDeleteBlock, msEst: msEst, msEstH: msEstH, msAddTop: msAddTop, msAddDay: msAddDay,
     openClient: openClient, tab: tab, subtab: subtab, ffShow: ffShow, saveInfos: saveInfos, saveForfait: saveForfait, forfaitOverrideAdd: forfaitOverrideAdd, forfaitOverrideDel: forfaitOverrideDel, testEmail: testEmail, toggleOffer: toggleOffer, addOffer: addOffer, setBanner: setBanner, setMaintenance: setMaintenance, renameSupport: renameSupport, cloturerProjet: cloturerProjet, rouvrirProjet: rouvrirProjet, addSupportQuick: addSupportQuick, delSupport: delSupport, crAdd: crAdd, crSet: crSet, crCloturer: crCloturer, crRouvrir: crRouvrir, cgToggle: cgToggle, cgNeuve: cgNeuve, pjEdit: pjEdit, crReply: crReply, crDel: crDel, crAddVersion: crAddVersion, crAddVersionLink: crAddVersionLink, crDelVersion: crDelVersion, pjAdd: pjAdd, pjSet: pjSet, pjMove: pjMove, pjDel: pjDel, pjStart: pjStart, pjNotify: pjNotify, pjNeuf: pjNeuf, pjPatch: pjPatch, pjDuree: pjDuree, pjDateOuvrir: pjDateOuvrir, pjDateFermer: pjDateFermer, pjDate: pjDate, pjToggle: pjToggle, deleteClient: deleteClient,
     toggleTicketsSpace: toggleTicketsSpace, ticketStatus: ticketStatus, ticketDue: ticketDue, ticketTime: ticketTime, ticketDelete: ticketDelete, ticketForfait: ticketForfait, ticketProposeDate: ticketProposeDate,

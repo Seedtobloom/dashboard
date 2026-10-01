@@ -3680,3 +3680,6 @@ a.ckr-b{text-decoration:none;display:inline-block}
 .ffreg{background:var(--card,#fff);border-radius:16px;padding:14px 18px}
 .ffreg>summary{cursor:pointer;font-weight:600;font-size:16px}
 @media (max-width:1100px){.ffrs{grid-template-columns:repeat(2,minmax(0,1fr))}.ffc__g{grid-template-columns:1fr}.fft{overflow-x:auto}.fft__h,.ffm summary{min-width:760px}}
+.ck-passe__c{border:0;background:none;padding:0;font:inherit;color:#5A2A11;text-decoration:underline;cursor:pointer}
+.ckc-l{display:grid;grid-template-columns:150px 110px auto auto;gap:8px;align-items:center;padding:8px 0;border-top:1px solid rgba(17,7,4,.08)}
+.ckc-l .inp{width:100%}

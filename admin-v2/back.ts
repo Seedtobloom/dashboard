@@ -1494,8 +1494,39 @@ function applyWork(t: AnyObj, b: AnyObj): boolean {
  * ticket de maintenance, tâche perso. Elle n'existait que sur les tâches
  * perso : la même saisie faite sur une tâche cliente répondait « ajouté ✓ »
  * et ne s'enregistrait nulle part. */
+// Toutes les heures connues deviennent des saisies datées, chacune avec un
+// identifiant : c'est ce qui permet de les corriger une par une.
+function normaliserTemps(t: AnyObj): void {
+  if (!Array.isArray(t.sessions)) t.sessions = [];
+  t.sessions.forEach((x: AnyObj) => { if (x && !x.id) x.id = genId(); });
+  const avant = stbTaskMinByMonth(t) as Record<string, number>;
+  const parMois: Record<string, number> = {};
+  t.sessions.forEach((x: AnyObj) => { const ym = String((x && x.start) || '').slice(0, 7); if (ym) parMois[ym] = (parMois[ym] || 0) + stbSessionMin(x); });
+  Object.keys(avant).forEach((ym) => {
+    const manque = Math.round((avant[ym] || 0) - (parMois[ym] || 0));
+    if (manque > 0) t.sessions.push({ id: genId(), start: ym + '-15T12:00:00.000Z', minutes: manque, manual: true, at: nowIso() });
+  });
+}
 function applyTimeEntry(t: AnyObj, b: AnyObj): boolean {
   let touched = false;
+  // Corriger une saisie : sa durée et le jour où le travail a été fait.
+  if (b.normalizeTime === true || (b.editTimeEntry && typeof b.editTimeEntry === 'object')) {
+    normaliserTemps(t);
+    touched = true;
+    const e = b.editTimeEntry;
+    if (e && typeof e === 'object') {
+      const s0 = t.sessions.find((x: AnyObj) => String(x && x.id) === String(e.id || ''));
+      if (s0) {
+        const mins = Math.max(0, Math.min(24 * 60, Math.round(Number(e.minutes) || 0)));
+        if (mins <= 0) t.sessions = t.sessions.filter((x: AnyObj) => x !== s0);
+        else {
+          s0.minutes = mins; delete s0.end; s0.manual = true;
+          const dt = String(e.date || '');
+          if (/^\d{4}-\d{2}-\d{2}$/.test(dt)) s0.start = dt + 'T12:00:00.000Z';
+        }
+      }
+    }
+  }
   if (b.timeEntry && typeof b.timeEntry === 'object') {
     const mth = String(b.timeEntry.month || '');
     const mins = Math.max(0, Math.min(100000, Math.round(Number(b.timeEntry.minutes) || 0)));
