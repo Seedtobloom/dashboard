@@ -3164,7 +3164,7 @@ const EMAIL_TPL_DEFAULTS: Record<string, { label: string; vars: string[]; subjec
     label: 'Automatique · il reste des heures ce mois-ci',
     vars: ['prenom', 'reste', 'mois'],
     subject: 'Il te reste {reste} ce mois-ci',
-    body: 'Bonjour {prenom},\n\nIl te reste {reste} sur ton forfait de {mois}. Si tu as des demandes en tête (visuels, posts, petites retouches), c\'est le bon moment pour me les envoyer depuis ton espace, je pourrai les caler avant la fin du mois.\n\nÀ très vite,\nCindy',
+    body: 'Bonjour {prenom},\n\nIl te reste {reste} sur ton forfait ce mois-ci. Si tu as des demandes en tête (visuels, posts, petites retouches), c\'est le bon moment pour me les envoyer depuis ton espace, je pourrai les caler avant la fin du mois.\n\nÀ très vite,\nCindy',
   },
   auto_attente: {
     label: 'Automatique · des tâches attendent sa réponse',
@@ -3175,7 +3175,7 @@ const EMAIL_TPL_DEFAULTS: Record<string, { label: string; vars: string[]; subjec
   auto_bilan: {
     label: 'Automatique · ton mois en bref',
     vars: ['prenom', 'mois', 'travaille', 'report', 'disponible'],
-    subject: 'Ton mois de {mois} en bref',
+    subject: 'Ton bilan de fin de mois',
     body: 'Bonjour {prenom},\n\nEn {mois}, j\'ai passé {travaille} sur tes demandes. {report}Tu as {disponible} ce mois-ci.\n\nÀ très vite,\nCindy',
   },
   remind_action: {

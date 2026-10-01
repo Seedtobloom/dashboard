@@ -11183,17 +11183,25 @@
   }
   function ffReglages() { var r = el('ff-reglages'); if (r) { r.open = true; r.scrollIntoView({ behavior: 'smooth', block: 'start' }); } }
   // Les e-mails automatiques, à activer pour cette cliente.
-  var FF_TPLS = null;
+  var FF_TPLS = null, FF_TPLS_EN_COURS = false;
   function forfaitAutoMails(d, f) {
     var am = (d.content && d.content.autoMails) || {}, log = (d.content && d.content.autoMailsLog) || {};
-    if (!FF_TPLS) api('/api/email-templates').then(function (r) { return r.json(); }).then(function (x) { FF_TPLS = (x && x.templates) || []; if (TAB === 'partner' || VIEW === 'client') { var b = el('ff-mails'); if (b) b.outerHTML = forfaitAutoMails(d, f); } }).catch(function () {});
+    // Une fois les textes arrivés, on redessine le bloc là où il est affiché
+    // (fiche cliente ou page projet) : avant, il restait sur « Chargement ».
+    var redessiner = function () { var b = el('ff-mails'); if (b) b.outerHTML = forfaitAutoMails(d, f); };
+    if (!FF_TPLS && !FF_TPLS_EN_COURS) {
+      FF_TPLS_EN_COURS = true;
+      api('/api/email-templates').then(function (r) { if (!r.ok) throw new Error(); return r.json(); })
+        .then(function (x) { FF_TPLS = (x && x.templates) || []; FF_TPLS_EN_COURS = false; redessiner(); })
+        .catch(function () { FF_TPLS = []; FF_TPLS_EN_COURS = false; redessiner(); });
+    }
     var pr = (CUR && CUR.client && CUR.client.prenom) || '';
     var tpl = function (k) { return (FF_TPLS || []).filter(function (x) { return x.key === k; })[0] || null; };
     var fill = function (t, v) { return String(t || '').replace(/\{(\w+)\}/g, function (m, k) { return v[k] != null ? v[k] : m; }); };
     var mois = new Date().toLocaleDateString('fr-FR', { month: 'long' });
     var prev = (f.history || []).filter(function (m) { return !m.current; }).pop() || {};
     var ligne = function (k, type, titre, quand, vars) {
-      var t = tpl(k), apercu = t ? fill(t.body, vars) : 'Chargement du message…';
+      var t = tpl(k), apercu = t ? fill(t.body, vars) : (FF_TPLS ? 'Le message n’a pas pu être chargé. Tu peux le voir dans « Modifier le message ».' : 'Chargement du message…');
       var dernier = log[type] ? 'Dernier envoi le ' + fmtDate(log[type]) : 'Jamais envoyé';
       return '<div class="ffam"><div><b>' + titre + '</b><span>' + quand + '</span><div class="ffam__ap">' + esc(apercu) + '</div>' +
         '<em>' + dernier + ' · <a href="#" onclick="ADM.reglOuvrir(\'emails\');return false">Modifier le message</a></em></div>' +
