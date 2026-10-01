@@ -979,8 +979,12 @@ async function handleClientApi(
     // Réouvrir pour correction : on repasse en cours et on prévient la cliente
     let reopenNotify = false;
     if (body.reopen === true) { inst.status = 'to_review'; inst.completedAt = null; reopenNotify = body.notify !== false; }
+    // « Prévenir qu'il est disponible » : le mail part maintenant.
+    const prevenir = body.prevenir === true;
+    if (prevenir) inst.notifiedAt = nowIso();
     inst.updatedAt = nowIso();
     await saveClient(env, key, data);
+    if (prevenir) await qnrMailDispo(env, data, key, inst);
     if (reopenNotify) {
       await notifyClient(env, data, 'Tu peux revoir tes réponses ?',
         mailBonjour(data) + `<p>J'aurais besoin que tu complètes quelques réponses au questionnaire <strong>${escHtml(inst.name || '')}</strong>. Tout est dans ton espace.</p>` + MAIL_SIGNE, key);
@@ -3232,19 +3236,23 @@ async function handleQnrAssign(request: Request, env: Env, key: string, data: An
     dueDate: (body.dueDate || '').toString().slice(0, 10),
     estMinutes: typeof body.estMinutes === 'number' ? body.estMinutes : 0,
   };
+  if (body.notify !== false) inst.notifiedAt = nowIso(); else inst.sansMail = true;
   esp.questionnaires.unshift(inst);
   await saveClient(env, key, data);
-  if (body.notify !== false) {
-    const prenom = getClient(data).prenom || '';
-    const dueStr = inst.dueDate ? String(inst.dueDate).split('-').reverse().join('/') : '';
-    const deadlineLine = dueStr
-      ? `Si tu peux le remplir avant le <strong>${escHtml(dueStr)}</strong>, on garde le bon rythme.`
-      : '';
-    await notifyClient(env, data, 'Ton questionnaire est prêt',
-      `<p>Bonjour${prenom ? ' ' + escHtml(prenom) : ''},</p>` +
-      `<p>Ton questionnaire${tpl.name ? ' <strong>' + escHtml(tpl.name) + '</strong>' : ''} est prêt. Il est dans ton espace, onglet Questionnaires. ${deadlineLine}</p>` + MAIL_SIGNE, key);
-  }
+  if (body.notify !== false) await qnrMailDispo(env, data, key, inst);
   return json(inst, 201);
+}
+// « Ton questionnaire est prêt » : à l'envoi, ou plus tard quand Cindy le
+// décide (questionnaire ajouté sans prévenir, puis « Prévenir »).
+async function qnrMailDispo(env: Env, data: AnyObj, key: string, inst: AnyObj): Promise<void> {
+  const prenom = getClient(data).prenom || '';
+  const dueStr = inst.dueDate ? String(inst.dueDate).split('-').reverse().join('/') : '';
+  const deadlineLine = dueStr
+    ? `Si tu peux le remplir avant le <strong>${escHtml(dueStr)}</strong>, on garde le bon rythme.`
+    : '';
+  await notifyClient(env, data, 'Ton questionnaire est prêt',
+    `<p>Bonjour${prenom ? ' ' + escHtml(prenom) : ''},</p>` +
+    `<p>Ton questionnaire${inst.name ? ' <strong>' + escHtml(inst.name) + '</strong>' : ''} est prêt. Il est dans ton espace, onglet Questionnaires. ${deadlineLine}</p>` + MAIL_SIGNE, key);
 }
 
 /* ── Modèles de projets (« moteur de projet ») : scénarios réutilisables ──

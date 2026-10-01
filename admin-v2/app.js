@@ -11846,9 +11846,35 @@
     }).join('');
     return rows || '<div class="empty">Ce questionnaire ne contient pas de question.</div>';
   }
+  // Ajouter un questionnaire depuis la fiche, sans e-mail : on prévient
+  // ensuite, quand tout est prêt, avec « Prévenir qu'il est disponible ».
+  function qnrAjoutCarte() {
+    if (!QNR_LOADED) { mdlCharger(); setTimeout(function () { if (TAB === 'qnranswers' && QNR_LOADED) renderClient(); }, 900); }
+    var tpls = (QNR || []).filter(function (t) { return !t.archived && t.name; });
+    return '<div class="card infocard qnr-ajout" style="background:var(--card);max-width:760px"><h3>Ajouter un questionnaire</h3>' +
+      (tpls.length ? '<div class="row" style="gap:10px;flex-wrap:wrap;align-items:center"><select class="inp" id="qnr-ajout-tpl" style="flex:1;min-width:220px">' +
+        tpls.map(function (t) { return '<option value="' + esc(t.id) + '">' + esc(t.name) + '</option>'; }).join('') + '</select>' +
+        '<button class="btn btn--dark btn--sm" onclick="ADM.qnrAjouter()">Ajouter à son espace</button></div>' +
+        '<p class="micro" style="text-transform:none;letter-spacing:0;margin:8px 0 0">Aucun e-mail ne part. Tu préviens ensuite, quand tu veux.</p>'
+        : '<div class="empty">Crée d’abord un questionnaire dans Modèles, onglet Questionnaires.</div>') + '</div>';
+  }
+  function qnrAjouter() {
+    var sel = el('qnr-ajout-tpl'); var t = sel ? qnrTpl(sel.value) : null; if (!t) return;
+    jpost('/api/clients/' + CURKEY + '/questionnaires', { template: t, notify: false }, 'POST').then(function (r) {
+      if (r.ok) { toast('Questionnaire ajouté, sans e-mail'); loadClient(); } else toast('Erreur');
+    }).catch(function () { toast('Erreur'); });
+  }
+  function qnrPrevenir(id) {
+    notifyConfirm('Lui envoyer un e-mail pour dire que son questionnaire est disponible ?', function (notify) {
+      if (!notify) return;
+      jpost('/api/clients/' + CURKEY + '/questionnaires/' + id, { prevenir: true }, 'PATCH').then(function (r) {
+        if (r.ok) { toast('E-mail envoyé'); loadClient(); } else toast('Erreur');
+      }).catch(function () { toast('Erreur'); });
+    }, true);
+  }
   function qnrAnswersTab() {
     var list = CUR.questionnaires || [];
-    if (!list.length) return '<div class="card infocard" style="background:var(--card)"><h3>Questionnaires</h3><div class="empty">Aucun questionnaire envoyé à cette cliente. Envoie-en un depuis « Questionnaires » (menu de gauche).</div></div>';
+    if (!list.length) return qnrAjoutCarte();
     var pending = list.filter(function (q) { return q.status !== 'completed'; }).length;
     var doneN = list.filter(function (q) { return q.status === 'completed'; }).length;
     var summary = '<div class="card infocard" style="background:var(--card);max-width:760px;padding:14px 18px"><span class="micro" style="text-transform:none;letter-spacing:0;color:var(--terre-600);font-weight:600">' +
@@ -11860,12 +11886,15 @@
       var pill = qnrStPill(inst, when);
       var del = '<button class="btn btn--danger btn--sm" title="Supprimer ce questionnaire" onclick="ADM.qnrDelete(\'' + inst.id + '\',\'' + esc((inst.name || '').replace(/'/g, "\\'")) + '\')">Suppr.</button>';
       var pdf = '<button class="btn btn--outline btn--sm" title="Télécharger en PDF (via Imprimer)" onclick="ADM.qnrExportPdf(\'' + inst.id + '\')">PDF</button>';
+      var prev = inst.status === 'completed' ? '' : (inst.notifiedAt
+        ? '<p class="micro" style="text-transform:none;letter-spacing:0;margin:6px 0 10px">E-mail envoyé le ' + esc(fmtDate(inst.notifiedAt)) + '.</p>'
+        : !inst.sansMail ? '' : '<div class="qnr-prev"><span>Il est dans son espace, mais aucun e-mail n’est encore parti.</span><button class="btn btn--dark btn--sm" onclick="ADM.qnrPrevenir(\'' + inst.id + '\')">Prévenir qu’il est disponible</button></div>');
       return '<div class="card infocard" style="background:var(--card);max-width:760px">' +
         '<div class="between" style="align-items:flex-start;gap:10px"><h3 style="margin:0">' + esc(inst.name || 'Questionnaire') + '</h3>' +
         '<div style="display:flex;align-items:center;gap:8px;flex-shrink:0">' + pill + pdf + del + '</div></div>' +
-        body + '</div>';
+        prev + body + '</div>';
     }).join('');
-    return summary + cards;
+    return qnrAjoutCarte() + summary + cards;
   }
   // Export PDF d'un questionnaire (questions + réponses de la cliente) : on ouvre
   // une vue imprimable propre et on déclenche l'impression → « Enregistrer en PDF ».
@@ -14185,7 +14214,7 @@
     myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, myTaskArchive: myTaskArchive, mtStart: mtStart, mtPause: mtPause, mtQuickAdd: mtQuickAdd, mtQuickDue: mtQuickDue, mtSubAdd: mtSubAdd, mtSubToggle: mtSubToggle, mtSubDel: mtSubDel, mtGoTask: mtGoTask, mtEditNote: mtEditNote, mtSaveNote: mtSaveNote, mtNoteRestore: mtNoteRestore, mtEditOpen: mtEditOpen, mtToggleRow: mtToggleRow,
     visTab: visTab, trameOpen: trameOpen, trameEditLib: trameEditLib, trameBackLib: trameBackLib, trameQToggle: trameQToggle, trameQNote: trameQNote, callNoteNew: callNoteNew, callNoteSel: callNoteSel, callNoteDel: callNoteDel, callNoteSet: callNoteSet, callRight: callRight, trameNew: trameNew, trameSel: trameSel, trameDel: trameDel, trameSet: trameSet, trameEditToggle: trameEditToggle, trameEdField: trameEdField, trameEdQ: trameEdQ, trameEdQAdd: trameEdQAdd, trameEdQDel: trameEdQDel, trameEdSecAdd: trameEdSecAdd, trameEdSecDel: trameEdSecDel, trameEdSecMove: trameEdSecMove, visAdd: visAdd, visSet: visSet, visSetClient: visSetClient, visOpen: visOpen, visCloseDrawer: visCloseDrawer, visPresent: visPresent, visPushICloud: visPushICloud, visSetTypeFilter: visSetTypeFilter, visNoteSave: visNoteSave, visDel: visDel, visStepAdd: visStepAdd, visStepSet: visStepSet, visStepDel: visStepDel, visStepMove: visStepMove, visSaveEditor: visSaveEditor, visQAdd: visQAdd, visQToggle: visQToggle, visQSet: visQSet, visQDel: visQDel, visApplyTpl: visApplyTpl, visTplAdd: visTplAdd, visTplSet: visTplSet, visTplDel: visTplDel, visTplStepAdd: visTplStepAdd, visTplStepSet: visTplStepSet, visTplStepDel: visTplStepDel, visTplStepMove: visTplStepMove, visTplQAdd: visTplQAdd, visTplQSet: visTplQSet, visTplQDel: visTplQDel, visFmt: visFmt, visEdActive: visEdActive,
     msSaveCap: msSaveCap,
-    stepAdd: stepAdd, stepStatus: stepStatus, stepDelete: stepDelete, stepEditOpen: stepEditOpen, suiviReglagesSave: suiviReglagesSave,
+    qnrAjouter: qnrAjouter, qnrPrevenir: qnrPrevenir, stepAdd: stepAdd, stepStatus: stepStatus, stepDelete: stepDelete, stepEditOpen: stepEditOpen, suiviReglagesSave: suiviReglagesSave,
     qnAdd: qnAdd, qnSet: qnSet, qnDel: qnDel, qnMove: qnMove, qnBulk: qnBulk, qnSetOptions: qnSetOptions, qnSetTitle: qnSetTitle, qnSetReady: qnSetReady, qnPreview: qnPreview,
     planGo: planGo, planSetFilter: planSetFilter, planTick: planTick,
     tiroirFermer: ptFermer, ptOuvrir: ptOuvrir,
