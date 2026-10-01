@@ -6492,7 +6492,7 @@
        Si j'accepte       une simulation. Elle ne dit jamais oui ni non.
      ════════════════════════════════════════════════════════════════════════ */
 
-  var CKL = { off: 0, choisie: null, simH: 12, simHz: 'semaine', reg: null, occupe: false };
+  var CKL = { vue: 'jour', off: 0, choisie: null, simH: 12, simHz: 'semaine', reg: null, occupe: false };
   var CKL_HAUT = 1.05; // pixels par minute
 
   function ckLJours() { return ckpJoursSemaine(CKL.off); }
@@ -6534,7 +6534,7 @@
       .sort(function (a, b) { return b.sc - a.sc; })
       .map(function (x) { return x.t; });
   }
-  function ckLChoisir(id) { CKL.choisie = CKL.choisie === id ? null : id; renderCockpitPlanningBody(); }
+  function ckLChoisir(id) { CKL.choisie = CKL.choisie === id ? null : id; if (CKL.choisie) CKL.vue = 'semaine'; renderCockpitPlanningBody(); }
   function ckLSemaine(n) { CKL.off = Math.max(0, Math.min(8, CKL.off + n)); renderCockpitPlanningBody(); }
 
   // Poser, retirer : une seule écriture, au même endroit, pour les trois
@@ -6578,8 +6578,29 @@
 
   /* ── La grille ───────────────────────────────────────────────────────── */
 
-  function ckLGrille() {
-    var deb = ckLDeb(), fin = ckLFin(), haut = CKL_HAUT, hauteur = Math.max(120, (fin - deb) * haut);
+  // Ce qui tombe en même temps se range côte à côte (voies), au lieu de
+  // se recouvrir : chaque bloc reçoit sa voie et le nombre de voies du groupe.
+  function ckLVoies(items) {
+    var groupe = [], finGroupe = -1, out = [];
+    function clore() {
+      var voies = [];
+      groupe.forEach(function (x) {
+        var v = 0; while (voies[v] != null && voies[v] > x.h) v++;
+        voies[v] = x.fin; x.voie = v;
+      });
+      groupe.forEach(function (x) { x.nv = voies.length; });
+      out = out.concat(groupe); groupe = [];
+    }
+    items.slice().sort(function (a, b) { return a.h - b.h || b.fin - a.fin; }).forEach(function (x) {
+      if (groupe.length && x.h >= finGroupe) clore();
+      groupe.push(x); finGroupe = Math.max(finGroupe, x.fin);
+    });
+    if (groupe.length) clore();
+    return out;
+  }
+  function ckLHeures(a, b) { return ckpHM(a).replace(' h ', 'h').replace(' h', 'h') + ' – ' + ckpHM(b).replace(' h ', 'h').replace(' h', 'h'); }
+  function ckLGrille(jours, large) {
+    var deb = ckLDeb(), fin = ckLFin(), haut = large ? 1.25 : CKL_HAUT, hauteur = Math.max(120, (fin - deb) * haut);
     // Le début réel de la journée porte son heure : sans elle, le haut des
     // colonnes ne correspond à rien de lisible quand on commence à 9h30.
     var rail = '<div class="ckl-h ckl-h--d" style="top:0">' + ckpHM(deb) + '</div>';
@@ -6588,7 +6609,7 @@
     }
     var pause = ckLPause();
     var auj = ckpAuj();
-    var cols = ckLJours().map(function (d) {
+    var cols = (jours || ckLJours()).map(function (d) {
       var bandePause = (pause && pause[1] > deb && pause[0] < fin)
         ? '<div class="ckl-pause" style="top:' + ((Math.max(pause[0], deb) - deb) * haut) + 'px;height:' +
           ((Math.min(pause[1], fin) - Math.max(pause[0], deb)) * haut) + 'px"></div>' : '';
@@ -6603,30 +6624,62 @@
           ' : clique à l’heure où tu veux commencer">' +
           (ht > 26 ? '<span class="ckl-troul">Poser ici</span>' : '') + '</button>';
       }).join('') : '';
-      var blocs = ckpProgramme(d).map(function (x) {
-        var y = (x.h - deb) * haut, ht = Math.max(14, (x.fin - x.h) * haut - 2);
-        var titre = x.type === 'tache' ? x.t.titre : (x.type === 'rdv' ? (x.e.title || x.e.summary || 'Rendez-vous') : 'Messages & mails');
-        var sous = x.type === 'tache' ? x.t.qui : (x.type === 'rdv' ? 'Rendez-vous fixe' : ckpDuree(x.fin - x.h));
+      var blocs = ckLVoies(ckpProgramme(d)).map(function (x) {
+        var y = (x.h - deb) * haut, ht = Math.max(16, (x.fin - x.h) * haut - 3);
+        var titre = x.type === 'tache' ? x.t.titre : (x.type === 'rdv' ? (x.e.title || x.e.summary || 'Rendez-vous') : (x.nv > 1 && !large ? 'Mails' : 'Messages et mails'));
+        var heures = ckLHeures(x.h, x.fin);
+        var sous = large ? (x.type === 'tache' ? (x.t.qui || '') : (x.type === 'rdv' ? 'Rendez-vous' : ckpDuree(x.fin - x.h))) : heures;
+        var pos = 'left:calc(' + (100 * x.voie / x.nv).toFixed(2) + '% + 3px);width:calc(' + (100 / x.nv).toFixed(2) + '% - 6px);';
         var clic = x.type === 'tache'
           ? ' onclick="ADM.ckLRetirer(\'' + esc(x.t.id) + '\',\'' + esc(x.cr.id || '') + '\')" title="' + esc(titre) + ' : cliquer pour retirer ce créneau"'
           : ' title="' + esc(titre) + '"';
-        return '<div class="ckl-bl ckl-bl--' + x.type + '" style="top:' + y.toFixed(1) + 'px;height:' + ht.toFixed(1) + 'px"' + clic + '>' +
-          '<div class="ckl-blt">' + esc(titre) + '</div>' +
-          (ht > 38 ? '<div class="ckl-bls">' + esc(sous) + '</div>' : '') + '</div>';
+        return '<div class="ckl-bl ckl-bl--' + x.type + (large ? ' ckl-bl--l' : '') + '" style="top:' + y.toFixed(1) + 'px;height:' + ht.toFixed(1) + 'px;' + pos + '"' + clic + '>' +
+          (large ? '<div class="ckl-bll"><div class="ckl-blt">' + esc(titre) + '</div>' + (ht > 40 && sous ? '<div class="ckl-bls">' + esc(sous) + '</div>' : '') + '</div><div class="ckl-blh">' + esc(heures) + '</div>'
+            : '<div class="ckl-blt">' + esc(titre) + '</div>' + (ht > 38 ? '<div class="ckl-bls">' + esc(sous) + '</div>' : '')) + '</div>';
       }).join('');
       var c = ckpCapaciteDu(d);
       // « Plein » et « terminée » ne sont pas la même chose : une journée sans
       // capacité restante parce qu'elle est derrière nous n'est pas surchargée.
       var pied = d < auj ? 'Passé'
-        : (c.depassement ? ckpDuree(c.depassement) + ' au-delà'
+        : (c.depassement ? ckpDuree(c.depassement) + ' de trop'
           : (c.libre ? ckpDuree(c.libre) + ' libre'
-            : (d === auj && c.certaine <= 0 ? 'Terminée' : 'Plein')));
+            : (d === auj && c.certaine <= 0 ? 'Journée finie' : 'Plein')));
       return '<div class="ckl-c' + (d === auj ? ' ckl-c--auj' : '') + (d < auj ? ' ckl-c--p' : '') + '">' +
         '<div class="ckl-n">' + esc(ckpJourCourt(d)) + (d === auj ? ' · auj.' : '') + '</div>' +
-        '<div class="ckl-b" style="height:' + hauteur.toFixed(0) + 'px">' + bandePause + trous + blocs + '</div>' +
+        '<div class="ckl-b" style="height:' + hauteur.toFixed(0) + 'px">' + bandePause + trous + blocs + ckLMaintenant(d, deb, fin, haut) + '</div>' +
         '<div class="ckl-f' + (c.depassement && d >= auj ? ' ckl-f--d' : '') + '">' + esc(pied) + '</div></div>';
     }).join('');
-    return '<div class="ckl-gr" tabindex="0" role="region" aria-label="Grille de la semaine"><div class="ckl-r" style="height:' + hauteur.toFixed(0) + 'px">' + rail + '</div>' + cols + '</div>';
+    return '<div class="ckl-gr' + (large ? ' ckl-gr--j' : '') + '" tabindex="0" role="region" aria-label="' + (large ? 'Grille de la journée' : 'Grille de la semaine') + '"><div class="ckl-r" style="height:' + hauteur.toFixed(0) + 'px">' + rail + '</div>' + cols + '</div>';
+  }
+  function ckLMaintenant(d, deb, fin, haut) {
+    if (d !== ckpAuj()) return '';
+    var n = new Date(), m = n.getHours() * 60 + n.getMinutes();
+    if (m <= deb || m >= fin) return '';
+    var y = ((m - deb) * haut).toFixed(1);
+    return '<div class="ckl-now" style="top:' + y + 'px"><span>' + esc(ckpHM(m).replace(' h ', 'h')) + '</span></div>';
+  }
+  function ckLLegende() {
+    return '<div class="ckl-leg"><span><i class="ckl-leg--rdv"></i>Rendez-vous</span><span><i class="ckl-leg--tache"></i>Tâche posée</span><span><i class="ckl-leg--msg"></i>Messages et mails</span><span><i class="ckl-leg--pause"></i>Pause</span></div>';
+  }
+  function ckLVue(v) { CKL.vue = v === 'semaine' ? 'semaine' : 'jour'; renderCockpitPlanningBody(); }
+  // La journée seule, et à côté ce qu'il y a à faire dans l'ordre.
+  function ckLAFaire() {
+    var auj = ckpAuj(), n = new Date(), mn = n.getHours() * 60 + n.getMinutes();
+    var l = ckpProgramme(auj);
+    var reste = l.filter(function (x) { return x.type === 'tache' && x.fin > mn; }).reduce(function (a, x) { return a + (x.fin - Math.max(x.h, mn)); }, 0);
+    var lignes = l.map(function (x) {
+      var fait = x.fin <= mn;
+      var titre = x.type === 'tache' ? x.t.titre : (x.type === 'rdv' ? (x.e.title || x.e.summary || 'Rendez-vous') : 'Répondre aux messages');
+      var sous = x.type === 'tache' ? [x.t.qui, ckpDuree(x.fin - x.h) + ' posées'].filter(Boolean).join(' · ') : (x.type === 'rdv' ? 'Rendez-vous' : ckpDuree(x.fin - x.h));
+      var geste = x.type === 'tache' ? ' onclick="' + ckpOuvrirArg(x.t) + '" role="button" tabindex="0"' : '';
+      return '<div class="ckl-af' + (fait ? ' ckl-af--fait' : '') + (geste ? ' ckl-af--clic' : '') + '"' + geste + '><i></i><div><div class="ckl-aft">' + esc(titre) + '</div><div class="ckl-afs">' + esc(sous) + '</div></div><span>' + esc(ckpHM(x.h).replace(' h ', 'h')) + '</span></div>';
+    }).join('');
+    var sp = ckLSansPlace();
+    var spHtml = sp.length ? '<div class="ckl-afsp"><b>Pas encore placé cette semaine</b><div>' + esc(sp.slice(0, 4).map(function (t) { return t.titre + ', ' + ckpDuree(ckpAPlanifier(t)); }).join(' · ')) + '</div>' +
+      '<button class="ckl-afl" onclick="ADM.ckLVue(\'semaine\')">Les placer dans la semaine</button></div>' : '';
+    return '<section class="ckl-afc"><h2 class="ckl-afh">Ce que tu as à faire</h2>' +
+      '<p class="ckl-afp">' + (l.length ? 'Dans l’ordre de ta journée.' + (reste > 0 ? ' Il te reste ' + esc(ckpDuree(reste)) + ' de travail posé.' : '') : 'Rien de posé aujourd’hui.') + '</p>' +
+      lignes + spHtml + '</section>';
   }
 
   function ckLBarreSansPlace() {
@@ -6827,10 +6880,12 @@
   function ckLTete() {
     var lundi = ckLJours()[0] || ckpAuj();
     var nom = CKL.off === 0 ? 'Cette semaine' : (CKL.off === 1 ? 'La semaine prochaine' : 'Semaine du ' + ckpJourCourt(lundi));
-    return '<div class="cl-h"><h1 class="pg-h1">Planning</h1><div class="cl-fis" role="group" aria-label="Semaine affichée">' +
+    var bascule = '<div class="cl-fis" role="group" aria-label="Vue"><button class="cl-fi' + (CKL.vue === 'jour' ? ' on' : '') + '" aria-pressed="' + (CKL.vue === 'jour') + '" onclick="ADM.ckLVue(\'jour\')">Aujourd’hui</button><button class="cl-fi' + (CKL.vue === 'semaine' ? ' on' : '') + '" aria-pressed="' + (CKL.vue === 'semaine') + '" onclick="ADM.ckLVue(\'semaine\')">La semaine</button></div>';
+    if (CKL.vue === 'jour') return '<div class="cl-h"><h1 class="pg-h1">Planning</h1>' + bascule + '</div>';
+    return '<div class="cl-h"><h1 class="pg-h1">Planning</h1><div class="ckl-tete">' + bascule + '<div class="cl-fis" role="group" aria-label="Semaine affichée">' +
       '<button class="cl-fi" onclick="ADM.ckLSemaine(-1)"' + (CKL.off ? '' : ' disabled') + '>Semaine précédente</button>' +
       '<span class="cl-fi on" aria-current="true">' + esc(nom) + '</span>' +
-      '<button class="cl-fi" onclick="ADM.ckLSemaine(1)">Semaine suivante</button></div></div>';
+      '<button class="cl-fi" onclick="ADM.ckLSemaine(1)">Semaine suivante</button></div></div></div>';
   }
   function ckLAcaser() {
     var l = ckLSansPlace();
@@ -6869,13 +6924,18 @@
     var j = ckLJours();
     var d1 = j.length ? ckpD(j[j.length - 1]) : null;
     var titre = d1 ? 'Du ' + ckpD(j[0]).getDate() + ' au ' + d1.getDate() + ' ' + CKP_MOIS[d1.getMonth()] : 'La semaine';
-    setMain('<div class="wrap tps pj-page ck ckl-page">' + ckLTete() + ckLAcaser() + ckLChiffres(s) +
-      '<section class="ckl-grc"><h2 class="ckl-h2">' + esc(titre) + '</h2>' + ckLGrille() + '</section>' +
-      ckLReglages() + ckLProjection(s) + '</div>');
+    var corps;
+    if (CKL.vue === 'jour') {
+      var auj = ckpAuj(), da = ckpD(auj);
+      corps = '<div class="ckl-jour"><section class="ckl-grc"><div class="ckl-gh"><h2 class="ckl-h2">' + esc(CKP_JOURS[da.getDay()].charAt(0).toUpperCase() + CKP_JOURS[da.getDay()].slice(1) + ' ' + (da.getDate() === 1 ? '1er' : da.getDate()) + ' ' + CKP_MOIS[da.getMonth()]) + '</h2>' + ckLLegende() + '</div>' + ckLGrille([auj], true) + '</section>' + ckLAFaire() + '</div>';
+    } else {
+      corps = ckLChiffres(s) + '<section class="ckl-grc"><div class="ckl-gh"><h2 class="ckl-h2">' + esc(titre) + '</h2>' + ckLLegende() + '</div>' + ckLGrille() + '</section>' + ckLReglages() + ckLProjection(s);
+    }
+    setMain('<div class="wrap tps pj-page ck ckl-page">' + ckLTete() + ckLAcaser() + corps + '</div>');
   }
   // Arriver ici avec une tâche déjà en main : le bouton « Planifier » de
   // l'Accueil et de l'écran Tâches n'a alors plus rien à réexpliquer.
-  function ckLDepuis(id) { CKL.choisie = id; CKL.off = 0; nav('ckplanning'); }
+  function ckLDepuis(id) { CKL.choisie = id; CKL.off = 0; CKL.vue = 'semaine'; nav('ckplanning'); }
 
   /* ════════════════════════════════════════════════════════════════════════
      PROJETS — une structure interne unique.
@@ -14686,7 +14746,7 @@
     ckTSetTri: ckTSetTri, ckTSetFiltre: ckTSetFiltre, ckTOuvrir: ckTOuvrir, ckTGrand: ckTGrand, ckMenu: ckMenu,
     ckTRepondre: ckTRepondre, ckTCloturer: ckTCloturer, ckTSupprimer: ckTSupprimer, ckTCreerStb: ckTCreerStb, inbSetOnglet: inbSetOnglet, inbChoisir: inbChoisir, inbRefuser: inbRefuser, inbToutVu: inbToutVu, ckTSetCote: ckTSetCote, ckTVoir: ckTVoir, ckTEtape: ckTEtape,
     ckTAEstimer: ckTAEstimer,
-    ckLChoisir: ckLChoisir, ckLSemaine: ckLSemaine, ckLPoser: ckLPoser, ckLRetirer: ckLRetirer,
+    ckLChoisir: ckLChoisir, ckLSemaine: ckLSemaine, ckLVue: ckLVue, ckLPoser: ckLPoser, ckLRetirer: ckLRetirer,
     ckLRegSet: ckLRegSet, ckLRegEnregistrer: ckLRegEnregistrer, ckLRegAnnuler: ckLRegAnnuler,
     ckLSetSimH: ckLSetSimH, ckLSetSimHz: ckLSetSimHz, ckLDepuis: ckLDepuis,
     ckJSetFiltre: ckJSetFiltre, ckJSetClient: ckJSetClient, ckJEstimOuvrir: ckJEstimOuvrir, ckJCrOuvrir: ckJCrOuvrir, ckJCrNouvelle: ckJCrNouvelle, cliSetFiltre: cliSetFiltre, cliOuvrirOffre: cliOuvrirOffre, cliNouveauProjet: cliNouveauProjet, cliEcrire: cliEcrire, visPassees: visPassees, chatSetFiltre: chatSetFiltre, ckJRevRouvrir: ckJRevRouvrir, ckJRevClasser: ckJRevClasser, ckJEstimChoix: ckJEstimChoix, ckJEstimer: ckJEstimer, ckJOuvrir: ckJOuvrir, ckJFermer: ckJFermer, ckJOnglet: ckJOnglet,
