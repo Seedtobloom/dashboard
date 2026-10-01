@@ -635,6 +635,12 @@ async function handleClientApi(
       const fsv = String(body.forfaitStart || '').slice(0, 7);
       container.forfaitStart = /^\d{4}-\d{2}$/.test(fsv) ? fsv : '';
     }
+    // Mode de l'accompagnement : forfait d'heures (par défaut) ou demandes
+    // illimitées traitées une à une. Changer de mode ne perd rien.
+    if (body.mode === 'forfait' || body.mode === 'illimite') {
+      container.mode = body.mode;
+      if (body.mode === 'illimite') fileRenumeroterA(container);
+    }
     // E-mails automatiques du forfait, à activer cliente par cliente.
     if (body.autoMails && typeof body.autoMails === 'object') {
       const am = body.autoMails;
@@ -1440,7 +1446,7 @@ function findTask(esp: AnyObj, projectId: string, taskId: string): { task: AnyOb
 }
 // `studioNote` : la note que le studio prend pour lui. Elle est retirée du
 // paquet envoyé à l'espace client (voir stripStudio, côté client).
-const ADMIN_TASK_FIELDS = ['status', 'briefStatus', 'content', 'title', 'urgency', 'dueDate', 'startDate', 'doDate', 'pole', 'livrableUrl', 'deliverableFileKey', 'archived', 'pinned', 'reviewLink', 'v1Date', 'v2Date', 'clientNotif', 'needsRework', 'clientCommentNotif', 'notes', 'studioNote', 'slot', 'retoursTraitesAvant'];
+const ADMIN_TASK_FIELDS = ['status', 'briefStatus', 'content', 'title', 'urgency', 'dueDate', 'startDate', 'doDate', 'pole', 'livrableUrl', 'deliverableFileKey', 'archived', 'pinned', 'reviewLink', 'v1Date', 'v2Date', 'v3Date', 'classee', 'fileRang', 'clientNotif', 'needsRework', 'clientCommentNotif', 'notes', 'studioNote', 'slot', 'retoursTraitesAvant'];
 
 /* ── Le travail d'une tâche : les trois temps, et ses créneaux ─────────────
  * Une seule implémentation pour les tâches clientes, les tickets et les tâches
@@ -1577,12 +1583,35 @@ function applyTimeEntry(t: AnyObj, b: AnyObj): boolean {
   t.workMonth = '';
   return true;
 }
+// ── File d'attente (demandes illimitées) : mêmes règles que côté cliente ──
+function fileAttenteA(pc: AnyObj): AnyObj[] {
+  const l = (Array.isArray(pc.taches) ? pc.taches : []).filter((t: AnyObj) =>
+    t && t.status === 'todo' && !t.archived && !t.classee && t.stage !== 'refused' && t.stage !== 'out_of_scope');
+  return l.sort((a: AnyObj, b: AnyObj) => {
+    const ra = typeof a.fileRang === 'number' ? a.fileRang : 1e9, rb = typeof b.fileRang === 'number' ? b.fileRang : 1e9;
+    return ra - rb || String(a.createdAt || '').localeCompare(String(b.createdAt || ''));
+  });
+}
+function fileRenumeroterA(pc: AnyObj): void { fileAttenteA(pc).forEach((t: AnyObj, i: number) => { t.fileRang = i + 1; }); }
+// Quand plus rien n'est en cours, la première demande acceptée de la file démarre.
+function fileDemarrerSuivante(pc: AnyObj): AnyObj | null {
+  const taches = Array.isArray(pc.taches) ? pc.taches : [];
+  if (taches.some((t: AnyObj) => t && t.status === 'in_progress' && !t.archived && !t.classee)) return null;
+  const n = fileAttenteA(pc).filter((t: AnyObj) => t.stage === 'task' || !t.stage)[0];
+  if (!n) return null;
+  n.status = 'in_progress'; n.startedAt = n.startedAt || nowIso(); n.fileRang = null; n.clientNotif = false;
+  fileRenumeroterA(pc);
+  return n;
+}
+
 async function handleTaskPatch(request: Request, env: Env, key: string, data: AnyObj, taskId: string): Promise<Response> {
   const body = await readJson(request);
   const found = findTask(getEspace(data), (body.projectId || 'partner').toString(), taskId);
   if (!found) return json({ error: 'Tâche introuvable' }, 404);
   const t = found.task;
   const prevStatus = t.status;
+  const prevDates: AnyObj = { v1Date: t.v1Date || '', v2Date: t.v2Date || '', v3Date: t.v3Date || '' };
+  const prevClassee = !!t.classee;
   // « Il te manque une info, ou un point n'est pas clair ? » : la question
   // s'accroche à la tâche, part par mail et s'affiche en haut chez la cliente.
   let askInfoTache = '';
@@ -1719,7 +1748,36 @@ async function handleTaskPatch(request: Request, env: Env, key: string, data: An
     t.needsRework = false;      // les retours précédents sont intégrés
     t.clientNotif = false;
   }
+  // File d'attente (demandes illimitées) : une seule demande en cours, la
+  // validation ne bloque pas la file, la suivante démarre toute seule.
+  const illim = (body.projectId || 'partner') === 'partner' && found.container && found.container.mode === 'illimite';
+  if (t.status !== prevStatus) {
+    if (t.status === 'review') t.validationAt = nowIso();
+    else t.validationAt = null;
+    if (t.status === 'in_progress') { if (!t.startedAt) t.startedAt = nowIso(); t.fileRang = null; }
+  }
+  if (t.classee && !prevClassee) t.classeeAt = nowIso();
+  if (!t.classee && prevClassee) t.classeeAt = null;
+  let demarree: AnyObj | null = null;
+  if (illim) {
+    fileRenumeroterA(found.container);
+    const libre = t.status !== prevStatus && (t.status === 'review' || t.status === 'done' || !!t.classee);
+    if (libre) demarree = fileDemarrerSuivante(found.container);
+  }
   await saveClient(env, key, data);
+  // Dates de version (V1, V2, V3) : la cliente est prévenue quand une date est
+  // fixée ou change. Seulement en demandes illimitées, où elles font foi.
+  if (illim && body.notify !== false) {
+    const chg = ['v1Date', 'v2Date', 'v3Date'].filter((k) => (t[k] || '') && (t[k] || '') !== prevDates[k]);
+    if (chg.length) {
+      const k = chg[chg.length - 1], v = k.charAt(1);
+      const tpls = await getEmailTemplates(env);
+      const tpl = tpls.version_date || EMAIL_TPL_DEFAULTS.version_date;
+      const fr = new Date(String(t[k]) + 'T12:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
+      const r = renderEmailTpl(tpl, { prenom: (getClient(data).prenom || '').toString(), demande: t.title || 'ta demande', version: 'V' + v, date: fr, changement: prevDates[k] ? 'La date a changé. ' : '' });
+      await notifyClient(env, data, r.subject, r.html, key, t.id, 'Voir ma demande');
+    }
+  }
   if (revMaj && body.notify !== false) {
     const url = /^https?:\/\//i.test(lienDejaLa) ? lienDejaLa : 'https://' + lienDejaLa;
     const tour = Array.isArray(t.reviewHistory) ? t.reviewHistory.length : 1;
@@ -3161,6 +3219,12 @@ const EMAIL_TPL_DEFAULTS: Record<string, { label: string; vars: string[]; subjec
     vars: ['prenom', 'titre', 'projet'],
     subject: 'Tu as pu jeter un œil à {titre} ?',
     body: 'Bonjour {prenom},\n\n{titre} t\'attend dans ton espace. Rien d\'urgent, je voulais juste être sûre qu\'il ne s\'était pas perdu dans ta boîte mail.\n\nSi ça te va, tu valides. Si un truc te chiffonne, dis-le-moi, on ajuste.\n\nÀ bientôt,\nCindy',
+  },
+  version_date: {
+    label: 'Date de version fixée ou changée',
+    vars: ['prenom', 'demande', 'version', 'date', 'changement'],
+    subject: '{demande} : la {version} est prévue le {date}',
+    body: 'Bonjour {prenom},\n\n{changement}Pour « {demande} », la {version} est prévue le {date}. Tu la retrouves dans ton espace dès qu\'elle est prête.\n\nÀ très vite,\nCindy',
   },
   qnr_ready: {
     label: 'Questionnaire prêt',

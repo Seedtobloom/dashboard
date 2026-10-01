@@ -778,3 +778,104 @@
       '<span class="cpa-puce__m">' + esc(e.l + (ty ? ' · ' + ty : '')) + '</span>' +
       ((quand || tps) ? '<span class="cpa-puce__b"><span>' + esc(quand) + '</span><span>' + esc(tps) + '</span></span>' : '');
   }
+
+  /* ── Demandes illimitées : la file de la cliente ──────────────────────────
+   * Une demande en cours chez Cindy, les suivantes dans l'ordre choisi par la
+   * cliente (flèches ou glisser), ce qui attend sa validation avec les dates de
+   * versions, et les terminées ou classées (réouvrables, en fin de file). */
+  function cpFileDate(iso) { if (!iso) return ''; var d = new Date(String(iso).slice(0, 10) + 'T12:00:00'); return d.getDate() === 1 ? '1er ' + d.toLocaleDateString('fr-FR', { month: 'long' }) : d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' }); }
+  function cpFileAttente(p) {
+    return (p.tasks || []).filter(function (t) { return t && t.status === 'todo' && !t.archived && !t.classee && t.stage !== 'refused' && t.stage !== 'out_of_scope'; })
+      .sort(function (a, b) {
+        var ra = typeof a.fileRang === 'number' ? a.fileRang : 1e9, rb = typeof b.fileRang === 'number' ? b.fileRang : 1e9;
+        return ra - rb || String(a.createdAt || '').localeCompare(String(b.createdAt || ''));
+      });
+  }
+  function cpFileVersions(pd, t) {
+    var dl = cpAccDlv(pd, t), out = [];
+    ['v1Date', 'v2Date', 'v3Date'].forEach(function (k, i) {
+      var envoi = dl[i];
+      if (envoi && (envoi.createdAt || envoi.date)) out.push('V' + (i + 1) + ' envoyée le ' + cpFileDate(envoi.createdAt || envoi.date));
+      else if (t[k]) out.push('V' + (i + 1) + ' prévue le ' + cpFileDate(t[k]));
+    });
+    return out;
+  }
+  function cpFilePuces(l) { return l.length ? '<div class="cpf-dates">' + l.map(function (x) { return '<span>' + esc(x) + '</span>'; }).join('') + '</div>' : ''; }
+  function cpFilePage(pd) {
+    var p = pd.project, pid = p.id;
+    var vives = (p.tasks || []).filter(function (t) { return t && !t.archived && !t.classee; });
+    var cours = vives.filter(function (t) { return t.status === 'in_progress'; });
+    var valid = vives.filter(function (t) { return t.status === 'review'; });
+    var file = cpFileAttente(p);
+    var fini = (p.tasks || []).filter(function (t) { return t && !t.archived && (t.classee || t.status === 'done'); })
+      .sort(function (a, b) { return String(b.classeeAt || b.completedAt || '').localeCompare(String(a.classeeAt || a.completedAt || '')); }).slice(0, 8);
+    var ouvrir = function (t) { return 'cliOpenTaskDrawer(\'' + pid + '\',\'' + t.id + '\')'; };
+    var hero = cours.length ? cours.map(function (t) {
+      var v = cpFileVersions(pd, t);
+      return '<section class="cpf-hero"><span class="cpf-k">En cours chez Cindy</span><button class="cpf-t" onclick="' + ouvrir(t) + '">' + esc(t.title || 'Demande') + '</button>' +
+        (v.length ? '<div class="cpf-dates cpf-dates--n">' + v.map(function (x) { return '<span>' + esc(x) + '</span>'; }).join('') + '</div>' : '<p>La date de la première version arrive bientôt.</p>') +
+        '<p>Tu reçois un e-mail dès qu’une date est fixée ou change.</p></section>';
+    }).join('') : '<section class="cpf-hero"><span class="cpf-k">Chez Cindy</span><div class="cpf-t">' + (file.length ? 'Ta prochaine demande démarre bientôt' : 'Rien en cours pour le moment') + '</div>' +
+      '<p>' + (file.length ? 'Cindy prend la première de ta file.' : 'Envoie une nouvelle demande quand tu veux.') + '</p></section>';
+    var fl = file.length ? file.map(function (t, i) {
+      var sous = [t.stage === 'inbox' ? 'reçue, Cindy la regarde' : '', t.createdAt ? 'demandée le ' + cpFileDate(t.createdAt) : '', t.dueDate ? 'pour le ' + cpFileDate(t.dueDate) : '', t.needsRework ? 'tes retours, en tête de file' : ''].filter(Boolean).join(' · ');
+      return '<div class="cpf-l" draggable="true" data-id="' + esc(t.id) + '" ondragstart="cpFileDrag(event)" ondragover="cpFileOver(event)" ondragleave="this.classList.remove(\'cpf-l--sur\')" ondrop="cpFileDrop(event,\'' + pid + '\',' + i + ')">' +
+        '<span class="cpf-n">' + (i + 1) + '</span><button class="cpf-lt" onclick="' + ouvrir(t) + '"><b>' + esc(t.title || 'Demande') + '</b><em>' + esc(sous) + '</em></button>' +
+        '<span class="cpf-fl"><button aria-label="Monter" ' + (i ? '' : 'disabled ') + 'onclick="cpFileBouger(\'' + pid + '\',\'' + t.id + '\',\'up\')"><i class="cpf-up"></i></button>' +
+        '<button aria-label="Descendre" ' + (i < file.length - 1 ? '' : 'disabled ') + 'onclick="cpFileBouger(\'' + pid + '\',\'' + t.id + '\',\'down\')"><i class="cpf-dn"></i></button></span></div>';
+    }).join('') : '<p class="cpf-vide">Ta file est vide.</p>';
+    var col1 = hero + '<section class="cpb-carte cpf-c"><div class="cpf-h"><h3>Ta file d’attente</h3>' + (file.length > 1 ? '<span>réordonne avec les flèches ou en glissant</span>' : '') + '</div>' + fl +
+      '<p class="cpf-vide">Cindy prend la suivante dès que la demande en cours part en validation.</p></section>';
+    var vl = valid.length ? valid.map(function (t) {
+      var v = cpFileVersions(pd, t), n = cpAccDlv(pd, t).length;
+      return '<div class="cpf-v"><div class="cpf-vh"><b>' + esc(t.title || 'Demande') + '</b><span class="cpf-p cpf-p--p">' + (n ? 'V' + n + ' à relire' : 'À relire') + '</span></div>' + cpFilePuces(v) +
+        '<button class="cpl-lien" onclick="' + ouvrir(t) + '">Voir et faire mes retours</button></div>';
+    }).join('') : '<p class="cpf-vide">Rien à valider pour le moment.</p>';
+    var retours = file.filter(function (t) { return t.needsRework; }).map(function (t) {
+      return '<div class="cpf-v"><div class="cpf-vh"><b>' + esc(t.title || 'Demande') + '</b><span class="cpf-p">Retours envoyés</span></div>' + cpFilePuces(cpFileVersions(pd, t)) + '<span class="cpf-vide">Elle repasse en tête de file chez Cindy.</span></div>';
+    }).join('');
+    var fn = fini.length ? fini.map(function (t) {
+      return '<div class="cpf-f"><button class="cpf-lt" onclick="' + ouvrir(t) + '">' + esc(t.title || 'Demande') + '</button><span class="cpf-fd">' +
+        (t.classee ? '<span class="cpf-p">Classée</span><button class="cpl-lien" onclick="cpFileRouvrir(\'' + pid + '\',\'' + t.id + '\')">Réouvrir</button>' : '<span class="cpf-p">Terminée</span>') + '</span></div>';
+    }).join('') + (fini.some(function (t) { return t.classee; }) ? '<p class="cpf-vide">Une demande réouverte revient en fin de file.</p>' : '') : '<p class="cpf-vide">Rien de terminé pour l’instant.</p>';
+    var col2 = '<section class="cpb-carte cpf-c"><h3>À toi de valider</h3>' + vl + retours + '</section>' +
+      '<section class="cpb-carte cpf-c"><h3>Terminées et classées</h3>' + fn + '</section>';
+    return '<div class="cpf"><div class="cpf-col">' + col1 + '</div><div class="cpf-col">' + col2 + '</div></div>';
+  }
+  function cpFileEnvoyer(pid, id, corps) {
+    return fetch(API_BASE + '/tasks/' + id + '/file', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corps) })
+      .then(function (r) { if (!r.ok) throw new Error(); return r.json(); })
+      .then(function (d) {
+        var pd = getPD(pid); if (!pd || !d || !Array.isArray(d.file)) return;
+        d.file.forEach(function (tid, i) { var t = cpAccT(pid, tid); if (t) t.fileRang = i + 1; });
+        renderShell();
+      })
+      .catch(function () { toast('Le nouvel ordre n’a pas pu être enregistré', true); });
+  }
+  window.cpFileBouger = function (pid, id, dir) {
+    var pd = getPD(pid); if (!pd) return;
+    var l = cpFileAttente(pd.project), i = l.findIndex(function (t) { return t.id === id; }), j = dir === 'up' ? i - 1 : i + 1;
+    if (i < 0 || j < 0 || j >= l.length) return;
+    var m = l.splice(i, 1)[0]; l.splice(j, 0, m); l.forEach(function (t, k) { t.fileRang = k + 1; });
+    renderShell();
+    cpFileEnvoyer(pid, id, { dir: dir });
+  };
+  var cpFileGlisse = null;
+  window.cpFileDrag = function (e) { cpFileGlisse = e.currentTarget.getAttribute('data-id'); try { e.dataTransfer.setData('text/plain', cpFileGlisse); e.dataTransfer.effectAllowed = 'move'; } catch (x) {} };
+  window.cpFileOver = function (e) { if (!cpFileGlisse) return; e.preventDefault(); e.currentTarget.classList.add('cpf-l--sur'); };
+  window.cpFileDrop = function (e, pid, to) {
+    e.preventDefault(); e.currentTarget.classList.remove('cpf-l--sur');
+    var id = cpFileGlisse; cpFileGlisse = null; if (!id) return;
+    var pd = getPD(pid); if (!pd) return;
+    var l = cpFileAttente(pd.project), i = l.findIndex(function (t) { return t.id === id; });
+    if (i < 0 || i === to) return;
+    var m = l.splice(i, 1)[0]; l.splice(to, 0, m); l.forEach(function (t, k) { t.fileRang = k + 1; });
+    renderShell();
+    cpFileEnvoyer(pid, id, { to: to });
+  };
+  window.cpFileRouvrir = function (pid, id) {
+    fetch(API_BASE + '/tasks/' + id + '/rouvrir', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })
+      .then(function (r) { if (!r.ok) throw new Error(); return r.json(); })
+      .then(function (t) { var x = cpAccT(pid, id); if (x && t) Object.assign(x, t); var pd = getPD(pid); if (pd) cpFileAttente(pd.project).forEach(function (y, k) { y.fileRang = k + 1; }); toast('Demande réouverte, en fin de file'); renderShell(); })
+      .catch(function () { toast('La demande n’a pas pu être réouverte', true); });
+  };

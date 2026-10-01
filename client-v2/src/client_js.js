@@ -2743,8 +2743,8 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
   window.cpAccRepFermer = function () { if (cpAccRep) { cpAccRep = null; renderShell(); } };
   function cpAccompPage(pd) {
     var route = cpAccRoute(pd); if (route) return route;
-    var p = pd.project, pid = p.id, tab = cpAccTab[pid] || 'cal';
-    var nums = cpForfaitNums(p);
+    var p = pd.project, pid = p.id, illim = p.mode === 'illimite', tab = cpAccTab[pid] || (illim ? 'file' : 'cal');
+    var nums = illim ? null : cpForfaitNums(p);
     var forf = '';
     if (nums) { var used = nums.doneMin + nums.wipMin, rest = nums.availMin - used, tot = Math.max(1, Math.round(nums.availMin / 60));
       forf = '<div class="cpa-forf"><div><span>Forfait de ' + esc(new Date().toLocaleDateString('fr-FR', { month: 'long' })) + '</span><b>' + (rest < 0 ? '−' : '') + esc(cpbMin(Math.abs(rest))) + ' <em>' + (rest < 0 ? 'au-delà' : 'restantes sur ' + esc(cpbMin(nums.availMin))) + '</em></b></div><div class="cpa-forf__bar">' + cpbSeg(Math.min(tot, Math.round(used / 60)), tot, false) + '</div></div>'; }
@@ -2758,12 +2758,12 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     // Le corps d'abord : Tableau et Terminées posent leurs outils (recherche, filtres) à droite des onglets.
     cpAccOutils = '';
     var voir = tab === 'cal' && cpAccVoir[pid] && !(cpAccDup && cpAccDup.pid === pid) ? cpAccApercu(pd, cpAccVoir[pid]) : '';
-    var corps = tab === 'tableau' ? cpAccTableau2(pd) : (tab === 'fini' ? cpAccFinies2(pd) : (tab === 'notes' ? cpAccNotes(pd) : (voir ? '<div class="cpa-calv">' + cpAccCal(pd) + voir + '</div>' : cpAccCal(pd))));
-    var droite = tab === 'cal'
+    var corps = tab === 'file' && illim ? cpFilePage(pd) : tab === 'tableau' ? cpAccTableau2(pd) : (tab === 'fini' ? cpAccFinies2(pd) : (tab === 'notes' ? cpAccNotes(pd) : (voir ? '<div class="cpa-calv">' + cpAccCal(pd) + voir + '</div>' : cpAccCal(pd))));
+    var droite = tab === 'file' ? '' : tab === 'cal'
       ? ((p.brouillons || []).length ? '<button class="cpl-lien" onclick="cpAccSetTab(\'' + pid + '\',\'tableau\')">Tes brouillons · ' + p.brouillons.length + '</button>' : '') +
         (seul ? '<button class="cpb-btn" style="background:#110704;color:#F8F6F2;margin-left:auto" onclick="cliNewDemande(\'' + pid + '\')">Nouvelle demande</button>' : '<span class="cpa-leg">en paille : à toi · en noir : chez Cindy · en crème : livré</span>')
       : cpAccOutils;
-    var onglets = '<div class="cpa-ongs"><div class="cpl-ongs">' + o('cal', 'Calendrier') + o('tableau', 'Tableau') + o('fini', 'Terminées' + (nFin ? ' · ' + nFin : '')) + o('notes', 'Notes') + '</div>' + droite + '</div>';
+    var onglets = '<div class="cpa-ongs"><div class="cpl-ongs">' + (illim ? o('file', 'Ma file') : '') + o('cal', 'Calendrier') + o('tableau', 'Tableau') + o('fini', 'Terminées' + (nFin ? ' · ' + nFin : '')) + o('notes', 'Notes') + '</div>' + droite + '</div>';
     var dupBande = '';
     if (cpAccDup && cpAccDup.pid === pid) {
       var src = (p.tasks || []).filter(function (x) { return x.id === cpAccDup.id; })[0], n = cpAccDup.dates.length;
@@ -2774,7 +2774,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     if (seul) return '<div class="cp-home cpb"><div class="cpb__in cpa cpa--seul fade-up">' + cpSeulTete(pd) + (dupBande || onglets) + corps + '</div></div>';
     return '<div class="cp-home cpb"><div class="cpb__in cpa fade-up">' +
       '<header class="cpa-tete"><div><a href="#" class="cpe-retour" onclick="cpGoHome();return false">Accueil</a><h1 class="cpb-h1">' + esc(p.projectTitle || 'Accompagnement créatif') + '</h1>' +
-        '<p class="cpb-lead">Tes demandes du mois. Glisse une demande pour changer sa date, clique sur un jour pour en ajouter une.</p></div>' +
+        '<p class="cpb-lead">' + (illim && tab === 'file' ? 'Tes demandes sont traitées une par une, dans l’ordre de ta file.' : 'Tes demandes du mois. Glisse une demande pour changer sa date, clique sur un jour pour en ajouter une.') + '</p></div>' +
         '<button class="cpb-btn" style="background:#110704;color:#F8F6F2" onclick="cliNewDemande(\'' + pid + '\')">Nouvelle demande</button></header>' +
       (tab === 'cal' ? bande : '') + (dupBande || onglets) + corps +
     '</div></div>';

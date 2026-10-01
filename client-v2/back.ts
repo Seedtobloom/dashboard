@@ -261,6 +261,10 @@ async function handleClientApi(
   if (t && method === 'POST') return handleTaskComplete(request, env, masterKey, data, t[1]);
   t = sub.match(/^\/tasks\/([a-f0-9]+)\/feedback$/);
   if (t && method === 'POST') return handleTaskFeedback(request, env, masterKey, data, t[1]);
+  t = sub.match(/^\/tasks\/([a-f0-9]+)\/file$/);
+  if (t && method === 'POST') return handleTaskFile(request, env, masterKey, data, t[1]);
+  t = sub.match(/^\/tasks\/([a-f0-9]+)\/rouvrir$/);
+  if (t && method === 'POST') return handleTaskRouvrir(request, env, masterKey, data, t[1]);
   t = sub.match(/^\/tasks\/([a-f0-9]+)\/valider$/);
   if (t && method === 'POST') return handleTaskValider(request, env, masterKey, data, t[1]);
   t = sub.match(/^\/tasks\/([a-f0-9]+)\/propose-date$/);
@@ -647,6 +651,7 @@ async function buildAppData(env: Env, masterKey: string, data: AnyObj): Promise<
         tasks: stripStudio(pc.taches),
         propertySchema: withMissionTypes(Array.isArray(pc.propertySchema) && pc.propertySchema.length ? pc.propertySchema : DEFAULT_PARTNER_SCHEMA),
         monthlyHours: pc.monthlyHours || 0,
+        mode: pc.mode === 'illimite' ? 'illimite' : 'forfait',
         workSlots: Array.isArray(pc.workSlots) ? pc.workSlots : [],
         // Demandes commencées puis laissées pour plus tard : jamais visibles du studio.
         brouillons: Array.isArray(pc.brouillons) ? pc.brouillons : [],
@@ -979,7 +984,7 @@ async function handleDeliverable(request: Request, env: Env, masterKey: string, 
     const tk = container.taches.find((t: AnyObj) => t.id === liv.taskId);
     if (tk) {
       if (decision === 'valide') { tk.status = 'done'; tk.completedAt = nowIso(); }
-      else { tk.status = 'in_progress'; tk.completedAt = null; }
+      else { retourVersCindy(data, tk); tk.completedAt = null; }
     }
   }
   await save(env, masterKey, data);
@@ -1215,6 +1220,9 @@ async function handleTaskCreate(request: Request, env: Env, masterKey: string, d
     clientNotif: true,
   };
   tasksOf(container).push(task);
+  // Demandes illimitées : une nouvelle demande prend sa place en fin de file.
+  const pcF = getDomainObj(getEspace(data), 'partenaireCreative');
+  if (pcF === container && pcIllimite(pcF)) fileEnFin(pcF, task);
   await save(env, masterKey, data);
   // Auto-indexation : si la cliente n'est pas encore dans l'index admin, on l'y
   // ajoute pour que sa demande remonte bien dans l'Inbox / le tableau de bord
@@ -1368,14 +1376,68 @@ async function handleTaskComplete(_request: Request, env: Env, masterKey: string
 
 // Le client signale qu'il a fait ses retours de révision : la tâche repasse
 // « en cours » (la balle revient à Cindy) et Cindy est prévenue par e-mail.
+
+// ── File d'attente (Partenaire créative en « demandes illimitées ») ──────────
+// Une seule demande en cours ; les autres attendent dans l'ordre choisi par la
+// cliente (fileRang). Une demande en validation ne bloque pas la file. Des
+// retours la remettent en tête ; une demande classée puis réouverte va en fin.
+function pcIllimite(pc: AnyObj | null): boolean { return !!(pc && pc.mode === 'illimite'); }
+function fileAttente(pc: AnyObj): AnyObj[] {
+  const l = (Array.isArray(pc.taches) ? pc.taches : []).filter((t: AnyObj) =>
+    t && t.status === 'todo' && !t.archived && !t.classee && t.stage !== 'refused' && t.stage !== 'out_of_scope');
+  return l.sort((a: AnyObj, b: AnyObj) => {
+    const ra = typeof a.fileRang === 'number' ? a.fileRang : 1e9, rb = typeof b.fileRang === 'number' ? b.fileRang : 1e9;
+    return ra - rb || String(a.createdAt || '').localeCompare(String(b.createdAt || ''));
+  });
+}
+function fileRenumeroter(pc: AnyObj): void { fileAttente(pc).forEach((t: AnyObj, i: number) => { t.fileRang = i + 1; }); }
+function fileEnTete(pc: AnyObj, task: AnyObj): void { task.fileRang = -1; fileRenumeroter(pc); }
+function fileEnFin(pc: AnyObj, task: AnyObj): void { task.fileRang = 1e8; fileRenumeroter(pc); }
+// Retours de la cliente : la demande revient à Cindy. En illimité elle repasse
+// en tête de file (« En attente ») ; sinon, comme avant, « en cours ».
+function retourVersCindy(data: AnyObj, task: AnyObj): void {
+  const pc = getDomainObj(getEspace(data), 'partenaireCreative');
+  const chezPc = pc && Array.isArray(pc.taches) && pc.taches.indexOf(task) >= 0;
+  task.clientFeedbackAt = nowIso();
+  task.needsRework = true;
+  task.retours = (Number(task.retours) || 0) + 1;
+  if (chezPc && pcIllimite(pc)) { task.status = 'todo'; task.validationAt = null; fileEnTete(pc, task); }
+  else task.status = 'in_progress';
+}
+async function handleTaskFile(request: Request, env: Env, masterKey: string, data: AnyObj, taskId: string): Promise<Response> {
+  const body = await readJson(request);
+  const pc = getDomainObj(getEspace(data), 'partenaireCreative');
+  if (!pc || !pcIllimite(pc)) return json({ error: 'File non active' }, 400);
+  const l = fileAttente(pc);
+  const i = l.findIndex((t: AnyObj) => t.id === taskId);
+  if (i < 0) return json({ error: 'Demande hors de la file' }, 404);
+  const j = body.dir === 'up' ? i - 1 : body.dir === 'down' ? i + 1 : (typeof body.to === 'number' ? Math.max(0, Math.min(l.length - 1, Math.floor(body.to))) : i);
+  if (j < 0 || j >= l.length || j === i) return json({ ok: true, file: l.map((t: AnyObj) => t.id) });
+  const [m] = l.splice(i, 1); l.splice(j, 0, m);
+  l.forEach((t: AnyObj, k: number) => { t.fileRang = k + 1; });
+  await save(env, masterKey, data);
+  return json({ ok: true, file: l.map((t: AnyObj) => t.id) });
+}
+async function handleTaskRouvrir(_request: Request, env: Env, masterKey: string, data: AnyObj, taskId: string): Promise<Response> {
+  const pc = getDomainObj(getEspace(data), 'partenaireCreative');
+  const task = pc && Array.isArray(pc.taches) ? pc.taches.find((t: AnyObj) => t.id === taskId) : null;
+  if (!task) return json({ error: 'Task not found' }, 404);
+  if (!task.classee) return json({ error: 'Demande non classée' }, 400);
+  task.classee = false; task.classeeAt = null; task.status = 'todo'; task.completedAt = null; task.validationAt = null;
+  task.reouverteAt = nowIso();
+  fileEnFin(pc as AnyObj, task);
+  await save(env, masterKey, data);
+  await notifyAdmin(env, `Demande réouverte · ${clientFullName(data)}`,
+    `<p><strong>${escHtml(clientFullName(data))}</strong> a réouvert la demande <strong>${escHtml(task.title || '')}</strong>. Elle est en fin de file.</p>`);
+  return json(task);
+}
+
 async function handleTaskFeedback(_request: Request, env: Env, masterKey: string, data: AnyObj, taskId: string): Promise<Response> {
   const found = findTask(getEspace(data), taskId, '');
   if (!found) return json({ error: 'Task not found' }, 404);
-  found.task.status = 'in_progress';
-  found.task.clientFeedbackAt = nowIso();
   // Marqueur persistant côté admin : « retours reçus, à retravailler ». Reste
   // vrai tant que Cindy ne l'a pas traité (renvoi en révision, terminé, ou « Vu »).
-  found.task.needsRework = true;
+  retourVersCindy(data, found.task);
   await save(env, masterKey, data);
   await notifyAdmin(env, `Retours faits · ${clientFullName(data)}`,
     `<p><strong>${escHtml(clientFullName(data))}</strong> a fait ses retours sur la tâche <strong>${escHtml(found.task.title || '')}</strong>. La balle est dans votre camp.</p>`);
@@ -1432,11 +1494,7 @@ async function handleTaskComment(request: Request, env: Env, masterKey: string, 
   // répond par un commentaire au lieu de cliquer « J'ai fait mes retours ».
   // Le commentaire vaut réponse : la tâche revient à Cindy, marquée à traiter.
   const wasReview = found.task.status === 'review';
-  if (wasReview) {
-    found.task.status = 'in_progress';
-    found.task.clientFeedbackAt = nowIso();
-    found.task.needsRework = true;
-  }
+  if (wasReview) retourVersCindy(data, found.task);
   await save(env, masterKey, data);
   await notifyAdmin(env, `Commentaire · ${clientFullName(data)}`,
     `<p><strong>${escHtml(clientFullName(data))}</strong> a commenté la tâche <strong>${escHtml(found.task.title || '')}</strong>` +

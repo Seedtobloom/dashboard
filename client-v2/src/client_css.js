@@ -1684,4 +1684,42 @@ button.cpnd-j:hover { box-shadow: inset 0 0 0 1px #110704; }
 .cps-q{font-family:'Alegreya',Georgia,serif;font-size:30px;line-height:1.25;white-space:pre-wrap}
 .cps-q--long{font-family:inherit;font-size:18px;line-height:1.6;background:rgba(255,255,255,.55);border-radius:12px;padding:16px 18px}
 .mn-question{white-space:pre-wrap}
+/* Demandes illimitées : la file de la cliente */
+.cpf{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:24px;align-items:start}
+.cpf-col{display:flex;flex-direction:column;gap:22px}
+.cpf-hero{background:#110704;color:#F8F6F2;border-radius:18px;padding:26px 30px;display:flex;flex-direction:column;gap:10px}
+.cpf-hero p{margin:0;font-size:15px;opacity:.82}
+.cpf-k{font-size:16px;font-weight:600;color:#E6E5B2}
+.cpf-t{font-family:'Alegreya',Georgia,serif;font-weight:400;font-size:34px;line-height:1.15;color:inherit;background:none;border:none;padding:0;text-align:left;cursor:pointer}
+.cpf-dates{display:flex;gap:8px;flex-wrap:wrap}
+.cpf-dates span{font-size:15px;padding:4px 10px;border-radius:8px;background:#F8F6F2;color:#110704}
+.cpf-dates--n span{background:rgba(248,246,242,.14);color:#F8F6F2;font-weight:600;font-size:16px}
+.cpf-c{display:flex;flex-direction:column;gap:12px}
+.cpf-c h3{margin:0;font-size:22px;font-weight:600}
+.cpf-h{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
+.cpf-h span{font-size:15px;color:#6B5A50}
+.cpf-l{display:grid;grid-template-columns:28px 1fr auto;gap:14px;align-items:center;padding:14px 0;border-top:1px solid rgba(17,7,4,.08);cursor:grab}
+.cpf-l--sur{box-shadow:inset 0 2px 0 #CD8F6E}
+.cpf-n{width:28px;height:28px;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(17,7,4,.3);display:grid;place-items:center;font-size:14px;font-weight:600}
+.cpf-lt{display:flex;flex-direction:column;gap:2px;background:none;border:none;padding:0;text-align:left;font:inherit;color:#110704;cursor:pointer;min-width:0}
+.cpf-lt b{font-size:17px;font-weight:600}
+.cpf-lt em{font-style:normal;font-size:15px;color:#6B5A50}
+.cpf-fl{display:flex;flex-direction:column;gap:3px}
+.cpf-fl button{width:32px;height:26px;border-radius:7px;border:none;background:#fff;box-shadow:inset 0 0 0 1px rgba(17,7,4,.2);display:grid;place-items:center;cursor:pointer;padding:0}
+.cpf-fl button:disabled{opacity:.3;cursor:default}
+.cpf-fl button:hover:not(:disabled){background:#F8F6F2}
+.cpf-up,.cpf-dn{width:7px;height:7px;display:block;transform:rotate(45deg)}
+.cpf-up{border-left:1.5px solid #110704;border-top:1.5px solid #110704;margin-top:3px}
+.cpf-dn{border-right:1.5px solid #110704;border-bottom:1.5px solid #110704;margin-top:-3px}
+.cpf-vide{margin:0;font-size:15px;color:#6B5A50}
+.cpf-v{padding:12px 0;border-top:1px solid rgba(17,7,4,.08);display:flex;flex-direction:column;gap:8px;align-items:flex-start}
+.cpf-vh{display:flex;justify-content:space-between;gap:10px;width:100%;align-items:center}
+.cpf-vh b{font-size:17px}
+.cpf-p{padding:4px 12px;border-radius:999px;font-size:14px;font-weight:600;background:#F8F6F2;white-space:nowrap}
+.cpf-p--p{background:#E6E5B2}
+.cpf-f{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-top:1px solid rgba(17,7,4,.08)}
+.cpf-f .cpf-lt{font-size:16px}
+.cpf-fd{display:flex;gap:10px;align-items:center}
+@media (max-width:1000px){.cpf{grid-template-columns:1fr}}
+@media (max-width:640px){.cpf-hero{padding:22px 20px}.cpf-t{font-size:28px}.cpf-l{grid-template-columns:24px 1fr auto;gap:10px}}
 `;

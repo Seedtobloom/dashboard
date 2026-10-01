@@ -11377,12 +11377,94 @@
     '</div>';
     // Une seule page : les repères, le tableau des mois, mon conseil, les
     // e-mails automatiques, puis les réglages repliés. Plus de sous-onglets.
-    return '<div class="ffpage">' + forfaitReperes(d, f) + forfaitTableau(d, f, monthTaskLines, fcRow) +
+    return '<div class="ffpage">' + forfaitMode(d) + forfaitReperes(d, f) + forfaitTableau(d, f, monthTaskLines, fcRow) +
       forfaitConseil(d, f) + checkBlock + forfaitAutoMails(d, f) +
       '<details class="ffreg" id="ff-reglages"><summary>Réglages du forfait</summary>' + setup + excBlock + workSlotsSection() + completeness + '</details>' +
     '</div>';
   }
   function ffH(h) { return fmtHrs(Math.abs(h || 0)); }
+  /* ── Demandes illimitées : mode, file d'attente, dates de version ─────── */
+  function forfaitMode(d) {
+    var m = d.content.mode === 'illimite' ? 'illimite' : 'forfait';
+    var b = function (v, l) { return '<button class="cl-fi' + (m === v ? ' on' : '') + '" aria-pressed="' + (m === v) + '" onclick="ADM.ffMode(\'' + v + '\')">' + l + '</button>'; };
+    return '<section class="card ffmode"><div><h3>Mode de l’accompagnement</h3><p>' + (m === 'illimite'
+      ? 'Demandes illimitées : une demande à la fois, dans l’ordre de sa file. Le temps continue d’être compté pour ton bilan.'
+      : 'Forfait d’heures : les heures du mois sont décomptées. Tu pourras passer en demandes illimitées sans rien perdre.') + '</p></div>' +
+      '<div class="cl-fis" role="group" aria-label="Mode">' + b('forfait', 'Forfait d’heures') + b('illimite', 'Demandes illimitées') + '</div></section>';
+  }
+  function ffMode(v) {
+    var go = function () {
+      jpost('/api/clients/' + CURKEY + '/forfait', { projectId: 'partner', mode: v }, 'PATCH').then(function (r) {
+        if (r.ok) { toast(v === 'illimite' ? 'Passée en demandes illimitées' : 'Revenue au forfait d’heures'); loadClient(); } else toast('Erreur');
+      }).catch(function () { toast('Erreur'); });
+    };
+    admConfirm({ title: v === 'illimite' ? 'Passer en demandes illimitées ?' : 'Revenir au forfait d’heures ?',
+      message: v === 'illimite' ? 'Sa file d’attente apparaît dans son espace, avec les dates de version. Les heures restent comptées, rien n’est perdu.' : 'Sa file d’attente disparaît de son espace. Les demandes et leurs dates restent.',
+      yes: 'Oui, changer', no: 'Annuler' }, go);
+  }
+  function ffJours(iso) { if (!iso) return 0; return Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 86400000)); }
+  function ffFile(d) {
+    var l = (d.content.taches || []).filter(function (t) { return t && !t.archived && !t.classee && t.status === 'todo' && t.stage !== 'refused' && t.stage !== 'out_of_scope'; });
+    return l.sort(function (a, b) {
+      var ra = typeof a.fileRang === 'number' ? a.fileRang : 1e9, rb = typeof b.fileRang === 'number' ? b.fileRang : 1e9;
+      return ra - rb || String(a.createdAt || '').localeCompare(String(b.createdAt || ''));
+    });
+  }
+  function ffFileBloc(d) {
+    var tt = (d.content.taches || []).filter(function (t) { return t && !t.archived && !t.classee; });
+    var cours = tt.filter(function (t) { return t.status === 'in_progress'; });
+    var valid = tt.filter(function (t) { return t.status === 'review'; });
+    var file = ffFile(d);
+    var pr = (CUR && CUR.client && CUR.client.prenom) || 'ta cliente';
+    var ligne = function (t, sous, etat, cls) {
+      return '<button class="fff-l' + (cls ? ' ' + cls : '') + '" onclick="ADM.ptOuvrir(\'' + esc(t.id) + '\')"><span><b>' + esc(t.title || 'Demande') + '</b><em>' + sous + '</em></span><span class="fff-p">' + esc(etat) + '</span></button>';
+    };
+    var dateV = function (t) { var k = t.v3Date ? 'v3Date' : (t.v2Date ? 'v2Date' : (t.v1Date ? 'v1Date' : '')); return k ? 'V' + k.charAt(1) + ' prévue le ' + esc(fmtDate(t[k])) : 'date de V1 à fixer'; };
+    var h = '<section class="card fff"><div class="fff-h"><h3>File de ' + esc(pr) + '</h3><span>demandes illimitées</span></div>';
+    h += '<div class="fff-k">En cours, une seule à la fois</div>' + (cours.length ? cours.map(function (t) { return ligne(t, dateV(t) + (t.startedAt ? ' · depuis le ' + esc(fmtDate(t.startedAt)) : ''), 'En cours', 'fff-l--c'); }).join('') : '<div class="fff-v">Rien en cours.' + (file.length ? ' La suivante démarrera dès que tu passes une demande en cours.' : '') + '</div>');
+    if (cours.length > 1) h += '<div class="fff-a">' + cours.length + ' demandes sont en cours en même temps. La règle, c’est une seule.</div>';
+    h += '<div class="fff-k">File d’attente, dans l’ordre de ' + esc(pr) + '</div>' + (file.length ? file.map(function (t, i) {
+      return ligne(t, (t.needsRework ? 'retours reçus, repassée en tête · ' : '') + (t.stage === 'inbox' ? 'à accepter · ' : '') + (t.dueDate ? 'pour le ' + esc(fmtDate(t.dueDate)) : 'sans échéance'), (i + 1) + '. En attente', t.needsRework ? 'fff-l--r' : '');
+    }).join('') : '<div class="fff-v">La file est vide.</div>');
+    h += '<div class="fff-k">En validation chez ' + esc(pr) + '</div>' + (valid.length ? valid.map(function (t) {
+      var j = ffJours(t.validationAt); return ligne(t, (t.validationAt ? 'envoyée il y a ' + j + ' jour' + (j > 1 ? 's' : '') : 'en validation') + (t.retours ? ' · ' + t.retours + ' série' + (t.retours > 1 ? 's' : '') + ' de retours' : ''), 'En validation', '');
+    }).join('') : '<div class="fff-v">Rien en validation.</div>');
+    if (valid.length >= 3) h += '<div class="fff-a">' + valid.length + ' demandes attendent sa validation en même temps.</div>';
+    return h + '</section>';
+  }
+  function ffIllimBloc(d, t) {
+    var cl = !!t.classee, st = t.status || 'todo';
+    var pr = (CUR && CUR.client && CUR.client.prenom) || 'ta cliente';
+    var etats = [['todo', 'En attente'], ['in_progress', 'En cours'], ['review', 'En validation'], ['done', 'Terminée']];
+    var pills = etats.map(function (e) { var on = !cl && st === e[0]; return '<button class="ffi-s' + (on ? ' on' : '') + '" aria-pressed="' + on + '" onclick="ADM.ffStatut(\'' + esc(t.id) + '\',\'' + e[0] + '\')">' + e[1] + '</button>'; }).join('') +
+      '<button class="ffi-s' + (cl ? ' on' : '') + '" aria-pressed="' + cl + '" onclick="ADM.ffClasser(\'' + esc(t.id) + '\',' + (!cl) + ')">Classée</button>';
+    var dt = function (k, l, aide) { return '<label class="ffi-d"><span>' + l + '</span><input class="inp" type="date" value="' + esc(t[k] || '') + '" onchange="ADM.taskMilestone(\'' + esc(t.id) + '\',\'' + k + '\',this.value)">' + (aide && !t[k] ? '<em>' + aide + '</em>' : '') + '</label>'; };
+    var depuis = st === 'review' && t.validationAt ? ffJours(t.validationAt) + ' j' : (st === 'in_progress' && t.startedAt ? fmtDate(t.startedAt) : '');
+    var depuisL = st === 'review' ? 'en validation' : (st === 'in_progress' ? 'en cours depuis' : (st === 'todo' ? 'dans la file' : ''));
+    if (st === 'todo') { var f = ffFile(d), i = f.indexOf(t); depuis = i >= 0 ? (i + 1) + (i ? 'e' : 're') : ''; }
+    return '<div class="ffi"><div class="ffi-k">Statut</div><div class="ffi-ss">' + pills + '</div>' +
+      '<div class="ffi-v"><div class="ffi-k">Dates de version, visibles par ' + esc(pr) + '</div>' +
+        dt('v1Date', 'V1 prévue le', 'à fixer en prenant la demande') + dt('v2Date', 'V2 prévue le', 'après ses retours') + dt('v3Date', 'V3 prévue le', '') +
+        '<p>Un e-mail part à ' + esc(pr) + ' quand une date est fixée ou changée.</p></div>' +
+      '<div class="ffi-k">Pour toi seulement</div><div class="ffi-c"><div><b>' + (Number(t.retours) || 0) + '</b><span>série' + ((Number(t.retours) || 0) > 1 ? 's' : '') + ' de retours</span></div>' +
+        (depuisL ? '<div><b>' + esc(depuis || '·') + '</b><span>' + esc(depuisL) + '</span></div>' : '') + '</div></div>';
+  }
+  function ffStatut(id, st) {
+    var t = ptFindTask(id);
+    if (t && t.classee) { jpost('/api/clients/' + CURKEY + '/tasks/' + id, { projectId: 'partner', classee: false }, 'PATCH').then(function () { taskStatus(id, st); }); return; }
+    var d = (CUR.domains || []).filter(function (x) { return x.id === 'partner'; })[0];
+    var autres = d ? (d.content.taches || []).filter(function (x) { return x.id !== id && x.status === 'in_progress' && !x.archived && !x.classee; }) : [];
+    if (st === 'in_progress' && autres.length) {
+      admConfirm({ title: 'Une autre demande est déjà en cours', message: '« ' + (autres[0].title || 'Demande') + ' » est en cours. La règle, c’est une seule à la fois. La passer quand même ?', yes: 'Oui, quand même', no: 'Annuler' }, function () { taskStatus(id, st); });
+      return;
+    }
+    taskStatus(id, st);
+  }
+  function ffClasser(id, oui) {
+    jpost('/api/clients/' + CURKEY + '/tasks/' + id, { projectId: 'partner', classee: !!oui }, 'PATCH').then(function (r) {
+      if (r.ok) { toast(oui ? 'Demande classée' : 'Demande sortie du classement'); loadClient(); } else toast('Erreur');
+    });
+  }
   function forfaitReperes(d, f) {
     var hist = f.history || [], cur = hist[hist.length - 1] || {};
     var total = hist.reduce(function (s, m) { return s + (m.used || 0); }, 0);
@@ -12056,6 +12138,7 @@
         '<div class="micro" style="text-transform:none;letter-spacing:0;color:#456039">C\'est à toi de retravailler la tâche' + (t.clientFeedbackAt ? ' · reçu le ' + fmtDate(t.clientFeedbackAt) : '') + '.</div></div>' +
         '<button class="btn btn--outline btn--sm" onclick="ADM.taskClearRework(\'' + t.id + '\')">Marquer traité</button>' +
         '</div>' : '';
+      if (d.content.mode === 'illimite') reworkBanner = reworkBanner + ffIllimBloc(d, t);
       // Contenu du brief : on affiche l'éditeur par blocs (complet) s'il existe,
       // sinon l'ancien champ texte. Plus jamais tronqué côté admin.
       var _bf = taskBrief(t);
@@ -12074,6 +12157,7 @@
             '<span class="micro">Jalons proposés</span>' +
             '<label class="micro" style="display:flex;align-items:center;gap:5px;text-transform:none;letter-spacing:0">V1 <input class="inp" type="date" style="width:auto;padding:5px 8px" value="' + esc(t.v1Date || '') + '" onchange="ADM.taskMilestone(\'' + t.id + '\',\'v1Date\',this.value)"></label>' +
             '<label class="micro" style="display:flex;align-items:center;gap:5px;text-transform:none;letter-spacing:0">V2 <input class="inp" type="date" style="width:auto;padding:5px 8px" value="' + esc(t.v2Date || '') + '" onchange="ADM.taskMilestone(\'' + t.id + '\',\'v2Date\',this.value)"></label>' +
+            '<label class="micro" style="display:flex;align-items:center;gap:5px;text-transform:none;letter-spacing:0">V3 <input class="inp" type="date" style="width:auto;padding:5px 8px" value="' + esc(t.v3Date || '') + '" onchange="ADM.taskMilestone(\'' + t.id + '\',\'v3Date\',this.value)"></label>' +
           '</div>' +
         '</details>' +
         '</div>';
@@ -12095,7 +12179,7 @@
       }).join('');
     }
     var archHtml = archived.length ? '<details style="margin-top:18px"><summary style="cursor:pointer;font-family:var(--font-micro);font-size:13px;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);padding:6px 0">Tâches archivées · ' + archived.length + '</summary><div class="pjc-grid" style="margin-top:12px">' + archived.map(function (t) { return ptCarte(t, d); }).join('') + '</div></details>' : '';
-    return inboxBanner + grid + archHtml;
+    return (d.content.mode === 'illimite' ? ffFileBloc(d) : '') + inboxBanner + grid + archHtml;
   }
   /* La card d'une tâche : ce qu'on a besoin de savoir sans l'ouvrir. Même
    * composant que les projets et les créations, donc la même façon de lire. */
@@ -14746,7 +14830,7 @@
     ckTSetTri: ckTSetTri, ckTSetFiltre: ckTSetFiltre, ckTOuvrir: ckTOuvrir, ckTGrand: ckTGrand, ckMenu: ckMenu,
     ckTRepondre: ckTRepondre, ckTCloturer: ckTCloturer, ckTSupprimer: ckTSupprimer, ckTCreerStb: ckTCreerStb, inbSetOnglet: inbSetOnglet, inbChoisir: inbChoisir, inbRefuser: inbRefuser, inbToutVu: inbToutVu, ckTSetCote: ckTSetCote, ckTVoir: ckTVoir, ckTEtape: ckTEtape,
     ckTAEstimer: ckTAEstimer,
-    ckLChoisir: ckLChoisir, ckLSemaine: ckLSemaine, ckLVue: ckLVue, ckLPoser: ckLPoser, ckLRetirer: ckLRetirer,
+    ckLChoisir: ckLChoisir, ckLSemaine: ckLSemaine, ckLVue: ckLVue, ffMode: ffMode, ffStatut: ffStatut, ffClasser: ffClasser, ckLPoser: ckLPoser, ckLRetirer: ckLRetirer,
     ckLRegSet: ckLRegSet, ckLRegEnregistrer: ckLRegEnregistrer, ckLRegAnnuler: ckLRegAnnuler,
     ckLSetSimH: ckLSetSimH, ckLSetSimHz: ckLSetSimHz, ckLDepuis: ckLDepuis,
     ckJSetFiltre: ckJSetFiltre, ckJSetClient: ckJSetClient, ckJEstimOuvrir: ckJEstimOuvrir, ckJCrOuvrir: ckJCrOuvrir, ckJCrNouvelle: ckJCrNouvelle, cliSetFiltre: cliSetFiltre, cliOuvrirOffre: cliOuvrirOffre, cliNouveauProjet: cliNouveauProjet, cliEcrire: cliEcrire, visPassees: visPassees, chatSetFiltre: chatSetFiltre, ckJRevRouvrir: ckJRevRouvrir, ckJRevClasser: ckJRevClasser, ckJEstimChoix: ckJEstimChoix, ckJEstimer: ckJEstimer, ckJOuvrir: ckJOuvrir, ckJFermer: ckJFermer, ckJOnglet: ckJOnglet,
