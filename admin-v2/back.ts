@@ -1001,6 +1001,28 @@ async function handleClientApi(
 
   // Bilan de fin de collaboration : inviter le client à le remplir
   if (method === 'POST' && sub === '/bilan/request') return handleBilanRequest(env, key, data);
+  // Envoyer ses accès : le message relu par Cindy, avec l'e-mail, le code et
+  // le lien de connexion. Les {…} sont remplacés ici, au moment de l'envoi.
+  if (method === 'POST' && sub === '/send-access') {
+    const body = await readJson(request);
+    const cl = getClient(data);
+    if (!cl.email) return json({ error: 'Pas d’e-mail pour cette cliente' }, 400);
+    const vars: AnyObj = { prenom: cl.prenom || '', email: cl.email, code: key, lien: clientSpaceUrl(env) };
+    const fill = (t: string) => String(t || '').replace(/\{(prenom|email|code|lien)\}/g, (_m: string, k: string) => String(vars[k] || ''));
+    const subject = fill((body.subject || '').toString()).slice(0, 200) || 'Ton espace Seed to Bloom est prêt';
+    const texte = fill((body.body || '').toString()).slice(0, 6000);
+    if (!texte.trim()) return json({ error: 'Message vide' }, 400);
+    const html = texte.split('\n').map((l) => {
+      const e = escHtml(l);
+      if (!l.trim()) return '<p style="margin:0">&nbsp;</p>';
+      if (l.indexOf(key) !== -1 || l.indexOf(cl.email) !== -1) return `<p style="margin:0;font-size:16px"><strong>${e}</strong></p>`;
+      return `<p style="margin:0">${e.replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" style="color:#5A2A11">$1</a>')}</p>`;
+    }).join('');
+    cl.accesEnvoyeLe = nowIso();
+    await saveClient(env, key, data);
+    await notifyClient(env, data, subject, html, true, undefined, 'Me connecter à mon espace');
+    return json({ ok: true, accesEnvoyeLe: cl.accesEnvoyeLe });
+  }
   // Aperçu de l'espace (lecture seule) : un lien à usage unique, 5 minutes.
   if (method === 'POST' && sub === '/apercu-token') {
     const vtk = genId() + genId();
@@ -1250,6 +1272,8 @@ function buildClientDetail(_env: Env, key: string, data: AnyObj): AnyObj {
     domains,
     supports,
     questionnaires: Array.isArray(esp.questionnaires) ? esp.questionnaires : [],
+    spaceUrl: clientSpaceUrl(_env),
+    accesEnvoyeLe: getClient(data).accesEnvoyeLe || '',
   };
 }
 

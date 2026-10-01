@@ -9465,6 +9465,39 @@
       if (w) w.location.href = d.url; else window.open(d.url, '_blank');
     }).catch(function () { if (w) w.close(); toast('Erreur'); });
   }
+  // Envoyer ses accès : un message chaleureux, relu et modifiable avant
+  // l'envoi, avec son e-mail, son code et le lien pour se connecter.
+  var ACCES_SUJET = 'Bienvenue dans ton espace Seed to Bloom';
+  var ACCES_TEXTE = 'Bonjour {prenom},\n\nÇa y est, ton espace est prêt et je suis ravie de te l’ouvrir !\n\n' +
+    'C’est notre point de rendez-vous pour tout le projet : tu y retrouves les étapes et ce qui t’attend, les versions à relire, nos échanges et les documents à partager. Tout est au même endroit, et tu peux y revenir quand tu veux.\n\n' +
+    'Pour te connecter :\nLe lien : {lien}\nTon e-mail : {email}\nTon code d’accès : {code}\n\n' +
+    'Garde bien ce code, il te servira à chaque connexion. Et si tu as la moindre question, écris-moi directement depuis ton espace.\n\nÀ très vite,\nCindy';
+  function accesOuvrir() {
+    var cl = (CUR && CUR.client) || {};
+    if (!cl.email) { toast('Ajoute d’abord son e-mail dans Réglages'); return; }
+    var vars = { prenom: cl.prenom || '', email: cl.email, code: CURKEY, lien: CUR.spaceUrl || '' };
+    var fill = function (t) { return t.replace(/\{(prenom|email|code|lien)\}/g, function (m, k) { return vars[k] || ''; }); };
+    var ov = document.createElement('div'); ov.className = 'admconfirm';
+    ov.innerHTML = '<div class="admconfirm__box" style="max-width:640px;text-align:left">' +
+      '<div class="admconfirm__title">Envoyer ses accès à ' + esc(((cl.prenom || '') + ' ' + (cl.nom || '')).trim() || cl.email) + '</div>' +
+      '<div class="admconfirm__msg">Relis et modifie le message si tu veux. Il part à <b>' + esc(cl.email) + '</b>, avec un bouton pour se connecter.' + (CUR.accesEnvoyeLe ? ' Déjà envoyé le ' + esc(fmtDate(CUR.accesEnvoyeLe)) + '.' : '') + '</div>' +
+      '<div class="field" style="margin-top:12px"><label>Objet</label><input class="inp" id="acc-sujet" value="' + esc(ACCES_SUJET) + '"></div>' +
+      '<div class="field" style="margin-top:10px"><label>Message</label><textarea class="inp" id="acc-texte" rows="16" style="width:100%;box-sizing:border-box;resize:vertical;line-height:1.5"></textarea></div>' +
+      '<div class="admconfirm__row" style="margin-top:14px"><button class="btn btn--outline btn--sm" data-no>Annuler</button>' +
+      '<button class="btn btn--sm" data-yes style="background:var(--terre);color:#fff;border-color:var(--terre)">Envoyer l’e-mail</button></div></div>';
+    ov.querySelector('#acc-texte').value = fill(ACCES_TEXTE);
+    function close() { ov.remove(); }
+    ov.addEventListener('click', function (e) { if (e.target === ov && ADM_DOWN === ov) close(); });
+    ov.querySelector('[data-no]').onclick = close;
+    ov.querySelector('[data-yes]').onclick = function () {
+      var sujet = (el('acc-sujet').value || '').trim(), texte = el('acc-texte').value || '';
+      if (!texte.trim()) { toast('Message vide'); return; }
+      jpost('/api/clients/' + CURKEY + '/send-access', { subject: sujet, body: texte }, 'POST').then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+        .then(function (x) { if (x.ok) { close(); CUR.accesEnvoyeLe = x.d.accesEnvoyeLe; toast('Accès envoyés à ' + cl.email); } else toast(x.d.error || 'Erreur'); })
+        .catch(function () { toast('Erreur'); });
+    };
+    document.body.appendChild(ov);
+  }
   function editToken() {
     jpost('/api/clients/' + CURKEY + '/edit-token', {}).then(function (r) { return r.json(); }).then(function (d) {
       if (!d.etk) { toast('Erreur'); return; }
@@ -9523,7 +9556,7 @@
         : '<span>' + esc(nm) + '</span>') + '</nav>';
     var _ent = (CUR.entreprise && CUR.entreprise.nom) || '';
     var _pren = (_cl.prenom || nm.split(' ')[0] || '').trim();
-    var _menu = [['Réglages et coordonnées', 'ADM.tab(\'forfait\')'], ['Tout son historique', 'ADM.tab(\'echanges\')']];
+    var _menu = [['Envoyer ses accès', 'ADM.accesOuvrir()'], ['Réglages et coordonnées', 'ADM.tab(\'forfait\')'], ['Tout son historique', 'ADM.tab(\'echanges\')']];
     if (ml) _menu.unshift(['Rejoindre la visio', 'window.open(\'' + esc(ml.indexOf('http') === 0 ? ml : 'https://' + ml) + '\',\'_blank\',\'noopener\')']);
     var cdhead = '<div class="cf-h"><div class="cf-h__id"><span class="cf-av" aria-hidden="true">' + esc(_cdInit) + '</span>' +
       '<div><h1 class="pg-h1">' + esc(nm) + '</h1><p class="cf-sous">' + esc([_ent, _cdPr.label.charAt(0).toLowerCase() + _cdPr.label.slice(1)].filter(Boolean).join(' · ')) + '</p></div></div>' +
@@ -14258,7 +14291,7 @@
 
   // API publique pour les onclick
   window.ADM = {
-    nav: nav, login: login, logout: logout, scan: scan, createClient: createClient, copy: copy, editToken: editToken, cliApercu: cliApercu, navClientTab: navClientTab,
+    nav: nav, login: login, logout: logout, scan: scan, createClient: createClient, copy: copy, editToken: editToken, cliApercu: cliApercu, accesOuvrir: accesOuvrir, navClientTab: navClientTab,
     msWeek: msWeek, msFilter: msFilter, msToggleCap: msToggleCap, msMode: msMode, msDaySel: msDaySel, msPlace: msPlace, msDone: msDone, msDelete: msDelete, msNoteOpen: msNoteOpen, msPlanOver: msPlanOver, msPlanLeave: msPlanLeave, msPlanDrop: msPlanDrop, msPlanUnplace: msPlanUnplace, msAutoPlan: msAutoPlan, msOrganizeWeek: msOrganizeWeek, msOrganizeDay: msOrganizeDay, msUnplace: msUnplace, msDragStart: msDragStart, msDragEnd: msDragEnd, msDayOver: msDayOver, msDayLeave: msDayLeave, msDrop: msDrop, msSlotOver: msSlotOver, msDropSlot: msDropSlot, msNewBlock: msNewBlock, msSaveBlock: msSaveBlock, msDeleteBlock: msDeleteBlock, msEst: msEst, msEstH: msEstH, msAddTop: msAddTop, msAddDay: msAddDay,
     openClient: openClient, tab: tab, subtab: subtab, ffShow: ffShow, saveInfos: saveInfos, saveForfait: saveForfait, forfaitOverrideAdd: forfaitOverrideAdd, forfaitOverrideDel: forfaitOverrideDel, testEmail: testEmail, toggleOffer: toggleOffer, addOffer: addOffer, setBanner: setBanner, setMaintenance: setMaintenance, renameSupport: renameSupport, cloturerProjet: cloturerProjet, rouvrirProjet: rouvrirProjet, addSupportQuick: addSupportQuick, delSupport: delSupport, crAdd: crAdd, crSet: crSet, crCloturer: crCloturer, crRouvrir: crRouvrir, cgToggle: cgToggle, cgNeuve: cgNeuve, pjEdit: pjEdit, crReply: crReply, crDel: crDel, crAddVersion: crAddVersion, crAddVersionLink: crAddVersionLink, crDelVersion: crDelVersion, pjAdd: pjAdd, pjSet: pjSet, pjMove: pjMove, pjDel: pjDel, pjStart: pjStart, pjNotify: pjNotify, pjNeuf: pjNeuf, pjPatch: pjPatch, pjDuree: pjDuree, pjDateOuvrir: pjDateOuvrir, pjDateFermer: pjDateFermer, pjDate: pjDate, pjToggle: pjToggle, deleteClient: deleteClient,
     toggleTicketsSpace: toggleTicketsSpace, ticketStatus: ticketStatus, ticketDue: ticketDue, ticketTime: ticketTime, ticketDelete: ticketDelete, ticketForfait: ticketForfait, ticketProposeDate: ticketProposeDate,
