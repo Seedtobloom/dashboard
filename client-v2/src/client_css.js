@@ -1656,4 +1656,7 @@ button.cpnd-j:hover { box-shadow: inset 0 0 0 1px #110704; }
 .cps-sur .cps-glisse{background:#F8F6F2}
 @media (max-width:1100px){.cps-grille{grid-template-columns:1fr}.cps-hero{flex-direction:column;align-items:flex-start}}
 @media (max-width:640px){.cps-hero,.cps-carte{padding:22px 20px}.cps-hero__t{font-size:30px}.cps-et{grid-template-columns:34px 1fr;padding:14px 10px}.cps-et__d{grid-column:2}.cps-ecrire{flex-direction:column;align-items:stretch}}
+#cp-apercu{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:9998;display:flex;align-items:center;gap:16px;background:#E6E5B2;color:#110704;border-radius:999px;padding:10px 12px 10px 22px;font-size:15px;box-shadow:0 6px 24px -10px rgba(17,7,4,.35);max-width:calc(100vw - 32px);box-sizing:border-box}
+#cp-apercu button{border:0;border-radius:999px;background:#110704;color:#F8F6F2;font:inherit;font-weight:600;padding:8px 16px;cursor:pointer;white-space:nowrap}
+@media (max-width:640px){#cp-apercu{border-radius:16px;flex-direction:column;align-items:stretch;text-align:center}}
 `;

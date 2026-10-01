@@ -9455,6 +9455,15 @@
     }).catch(function () { toast('Erreur réseau'); btn.disabled = false; });
   }
   function copy(t) { try { navigator.clipboard.writeText(t); toast('Copié'); } catch (e) { toast('Copie impossible'); } }
+  // Voir l'espace de la cliente tel qu'elle le voit, sans son code : un lien à
+  // usage unique ouvre une session en lecture seule (rien n'est modifié).
+  function cliApercu(key) {
+    var w = window.open('about:blank', '_blank');
+    jpost('/api/clients/' + key + '/apercu-token', {}).then(function (r) { return r.json(); }).then(function (d) {
+      if (!d || !d.url) { if (w) w.close(); toast('Erreur'); return; }
+      if (w) w.location.href = d.url; else window.open(d.url, '_blank');
+    }).catch(function () { if (w) w.close(); toast('Erreur'); });
+  }
   function editToken() {
     jpost('/api/clients/' + CURKEY + '/edit-token', {}).then(function (r) { return r.json(); }).then(function (d) {
       if (!d.etk) { toast('Erreur'); return; }
@@ -9517,7 +9526,7 @@
     if (ml) _menu.unshift(['Rejoindre la visio', 'window.open(\'' + esc(ml.indexOf('http') === 0 ? ml : 'https://' + ml) + '\',\'_blank\',\'noopener\')']);
     var cdhead = '<div class="cf-h"><div class="cf-h__id"><span class="cf-av" aria-hidden="true">' + esc(_cdInit) + '</span>' +
       '<div><h1 class="pg-h1">' + esc(nm) + '</h1><p class="cf-sous">' + esc([_ent, _cdPr.label.charAt(0).toLowerCase() + _cdPr.label.slice(1)].filter(Boolean).join(' · ')) + '</p></div></div>' +
-      '<div class="cf-h__a"><button class="tps-lien" onclick="ADM.cliEcrire(\'' + esc(CUR.key) + '\')">Écrire à ' + esc(_pren) + '</button>' + ckMenuHtml(_menu) + '</div></div>';
+      '<div class="cf-h__a"><button class="tps-lien" onclick="ADM.cliApercu(\'' + esc(CUR.key) + '\')">Voir son espace</button><button class="tps-lien" onclick="ADM.cliEcrire(\'' + esc(CUR.key) + '\')">Écrire à ' + esc(_pren) + '</button>' + ckMenuHtml(_menu) + '</div></div>';
     setMain('<div class="wrap tps pj-page cf-page">' + fil + cdhead + '<div class="pj-ongs" role="tablist" aria-label="' + esc(nm) + '">' + tabsHtml + '</div><div id="tabbody"></div></div>');
     renderTab();
   }
@@ -14186,7 +14195,7 @@
 
   // API publique pour les onclick
   window.ADM = {
-    nav: nav, login: login, logout: logout, scan: scan, createClient: createClient, copy: copy, editToken: editToken, navClientTab: navClientTab,
+    nav: nav, login: login, logout: logout, scan: scan, createClient: createClient, copy: copy, editToken: editToken, cliApercu: cliApercu, navClientTab: navClientTab,
     msWeek: msWeek, msFilter: msFilter, msToggleCap: msToggleCap, msMode: msMode, msDaySel: msDaySel, msPlace: msPlace, msDone: msDone, msDelete: msDelete, msNoteOpen: msNoteOpen, msPlanOver: msPlanOver, msPlanLeave: msPlanLeave, msPlanDrop: msPlanDrop, msPlanUnplace: msPlanUnplace, msAutoPlan: msAutoPlan, msOrganizeWeek: msOrganizeWeek, msOrganizeDay: msOrganizeDay, msUnplace: msUnplace, msDragStart: msDragStart, msDragEnd: msDragEnd, msDayOver: msDayOver, msDayLeave: msDayLeave, msDrop: msDrop, msSlotOver: msSlotOver, msDropSlot: msDropSlot, msNewBlock: msNewBlock, msSaveBlock: msSaveBlock, msDeleteBlock: msDeleteBlock, msEst: msEst, msEstH: msEstH, msAddTop: msAddTop, msAddDay: msAddDay,
     openClient: openClient, tab: tab, subtab: subtab, ffShow: ffShow, saveInfos: saveInfos, saveForfait: saveForfait, forfaitOverrideAdd: forfaitOverrideAdd, forfaitOverrideDel: forfaitOverrideDel, testEmail: testEmail, toggleOffer: toggleOffer, addOffer: addOffer, setBanner: setBanner, setMaintenance: setMaintenance, renameSupport: renameSupport, cloturerProjet: cloturerProjet, rouvrirProjet: rouvrirProjet, addSupportQuick: addSupportQuick, delSupport: delSupport, crAdd: crAdd, crSet: crSet, crCloturer: crCloturer, crRouvrir: crRouvrir, cgToggle: cgToggle, cgNeuve: cgNeuve, pjEdit: pjEdit, crReply: crReply, crDel: crDel, crAddVersion: crAddVersion, crAddVersionLink: crAddVersionLink, crDelVersion: crDelVersion, pjAdd: pjAdd, pjSet: pjSet, pjMove: pjMove, pjDel: pjDel, pjStart: pjStart, pjNotify: pjNotify, pjNeuf: pjNeuf, pjPatch: pjPatch, pjDuree: pjDuree, pjDateOuvrir: pjDateOuvrir, pjDateFermer: pjDateFermer, pjDate: pjDate, pjToggle: pjToggle, deleteClient: deleteClient,
     toggleTicketsSpace: toggleTicketsSpace, ticketStatus: ticketStatus, ticketDue: ticketDue, ticketTime: ticketTime, ticketDelete: ticketDelete, ticketForfait: ticketForfait, ticketProposeDate: ticketProposeDate,

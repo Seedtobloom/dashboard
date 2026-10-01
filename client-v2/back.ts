@@ -119,6 +119,8 @@ export default {
       // ── Auth (login / logout) ──
       if (method === 'POST' && pathname === '/api/login') return handleLogin(request, env);
       if (method === 'POST' && pathname === '/api/logout') return handleLogout(request, env);
+      // Aperçu depuis l'admin : Cindy voit l'espace sans le code de la cliente.
+      if (method === 'GET' && pathname === '/api/apercu') return handleApercu(url, env);
 
       // ── Routes client V1 : /api/client/<token>/... ──
       const m = pathname.match(/^\/api\/client\/([a-f0-9]{64})(\/.*)?$/);
@@ -147,6 +149,10 @@ export default {
         return json({ error: 'Code d’édition invalide ou expiré' }, 403);
       }
 
+      // Aperçu (Cindy depuis l'admin) : lecture seule, rien n'est modifié,
+      // ni lu, ni marqué « en ligne ».
+      if (auth.apercu && method !== 'GET') return json({ error: 'Aperçu : rien n’est modifié dans son espace.' }, 403);
+      if (auth.apercu && method === 'GET' && (sub === '' || sub === '/')) return json({ ...(await buildAppData(env, masterKey, data)), apercu: true });
       return handleClientApi(request, env, url, method, masterKey, data, sub, auth.editor === true);
     } catch (err) {
       console.error('back error:', err);
@@ -447,6 +453,21 @@ async function handleLogin(request: Request, env: Env): Promise<Response> {
   return json({ success: true }, 200, { 'Set-Cookie': cookie });
 }
 
+// Jeton d'aperçu (5 min, à usage unique) créé par l'admin : ouvre une session
+// de deux heures en lecture seule, puis renvoie sur l'espace.
+async function handleApercu(url: URL, env: Env): Promise<Response> {
+  const vtk = (url.searchParams.get('vtk') || '').trim();
+  if (!/^[a-f0-9]{16,64}$/.test(vtk)) return json({ error: 'Lien d’aperçu invalide' }, 400);
+  const key = await env.KV_CLIENT.get('apercutoken:' + vtk);
+  if (!key) return json({ error: 'Lien d’aperçu expiré, relance-le depuis l’admin' }, 403);
+  await env.KV_CLIENT.delete('apercutoken:' + vtk);
+  const data = (await env.KV_CLIENT.get(key, { type: 'json' })) as AnyObj | null;
+  if (!data) return json({ error: 'Compte introuvable' }, 404);
+  const token = genToken();
+  await env.KV_CLIENT.put(SESSION_PREFIX + token, JSON.stringify({ masterKey: key, email: getClient(data).email, editor: false, apercu: true }), { expirationTtl: 7200 });
+  return new Response(null, { status: 302, headers: { Location: '/', 'Set-Cookie': `bloom_token=${token}; Secure; SameSite=Lax; Path=/; Max-Age=7200` } });
+}
+
 async function handleLogout(request: Request, env: Env): Promise<Response> {
   const token = getCookie(request, 'bloom_token');
   if (token) await env.KV_CLIENT.delete(SESSION_PREFIX + token);
@@ -455,7 +476,7 @@ async function handleLogout(request: Request, env: Env): Promise<Response> {
   });
 }
 
-interface AuthResult { valid: boolean; reason?: string; masterKey?: string; data?: AnyObj; editor?: boolean; }
+interface AuthResult { valid: boolean; reason?: string; masterKey?: string; data?: AnyObj; editor?: boolean; apercu?: boolean; }
 async function authenticate(token: string, env: Env): Promise<AuthResult> {
   const session = (await env.KV_CLIENT.get(SESSION_PREFIX + token, { type: 'json' })) as AnyObj | null;
   if (!session || !session.masterKey) return { valid: false, reason: 'Session expirée' };
@@ -466,7 +487,7 @@ async function authenticate(token: string, env: Env): Promise<AuthResult> {
     return { valid: false, reason: 'Session invalide' };
   }
   if (getEspace(data).isActive !== true) return { valid: false, reason: 'Espace désactivé' };
-  return { valid: true, masterKey: session.masterKey, data, editor: session.editor === true };
+  return { valid: true, masterKey: session.masterKey, data, editor: session.editor === true, apercu: session.apercu === true };
 }
 
 /* ──────────────────────────────────────────────────────────────────────────

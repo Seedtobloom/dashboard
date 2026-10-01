@@ -2386,6 +2386,16 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     } else {
       hero = '<section class="cps-calme"><b>Rien n’attend ta réponse.</b> ' + (courante ? 'Je travaille sur « ' + esc(courante.title) + ' ».' : (nb ? 'Toutes les étapes sont faites.' : 'Je prépare la suite.')) + '</section>';
     }
+    // Un questionnaire à remplir : il s'annonce en haut, comme le reste de ce
+    // qui l'attend (seul s'il n'y a rien d'autre, sinon juste en dessous).
+    var qAFaire = (appData.questionnaires || []).filter(function (q) { return q.status !== 'completed'; })[0];
+    if (qAFaire) {
+      var qVerbe = qAFaire.status === 'in_progress' ? 'Continuer' : (qAFaire.status === 'to_review' ? 'Revoir' : 'Remplir');
+      var bandeQ = '<section class="cps-hero"><div class="cps-hero__txt"><span class="cps-hero__k">' + (aValider || etapeToi ? 'À toi aussi' : 'À toi') + (qAFaire.dueDate ? ', pour le ' + esc(new Date(String(qAFaire.dueDate).slice(0, 10) + 'T12:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })) : '') + '</span>' +
+        '<div class="cps-hero__t">' + qVerbe + ' le questionnaire</div><p>« ' + esc(qAFaire.name || 'Questionnaire') + ' » : tes réponses m’aident à préparer la suite.</p></div>' +
+        '<div class="cps-hero__a"><button class="cps-btn" onclick="cpQnrFill(\'' + esc(qAFaire.id) + '\')">' + qVerbe + ' le questionnaire</button></div></section>';
+      hero = (aValider || etapeToi) ? hero + bandeQ : bandeQ;
+    }
     var QUI = { toi: 'Toi', cindy: 'Cindy', ensemble: 'Ensemble' };
     var lignes = steps.map(function (x, i) {
       var ok = x.status === 'done', cur = x === courante;
@@ -7407,6 +7417,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     return a.length === 1 ? a[0] : null;
   }
   function cpRetourAccueil() { return cpSeul() ? '' : '<a href="#" class="cpe-retour" onclick="cpGoHome();return false">Accueil</a>'; }
+  window.cpApercuFin = function () { fetch('/api/logout', { method: 'POST' }).then(function () { window.close(); location.href = '/'; }); };
   function cpPortail() { return !!appData && (appData.type === 'client' || appData.type === 'project'); }
   function normalizeAppData(data) {
     if (!data) return null;
@@ -7422,6 +7433,12 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
   function renderApp(data) {
     appData = normalizeAppData(data);
     if (!appData) return;
+    // Aperçu depuis l'admin : un bandeau dit que c'est Cindy qui regarde.
+    if (data.apercu && !document.getElementById('cp-apercu')) {
+      var ap = document.createElement('div'); ap.id = 'cp-apercu';
+      ap.innerHTML = '<span>Aperçu de l’espace de ' + esc(appData.clientName || 'la cliente') + ', tel qu’il s’affiche de son côté. Rien n’est modifié.</span><button onclick="cpApercuFin()">Fermer l’aperçu</button>';
+      document.body.appendChild(ap); document.body.classList.add('cp-en-apercu');
+    }
     // Personnalisation d'accueil (serveur) — partagée par espace client, visible par la cliente.
     var h = data.home || {};
     appData.home = { intro: (typeof h.intro === 'string' ? h.intro : null), blocks: Array.isArray(h.blocks) ? h.blocks : [], hidden: (h.hidden && typeof h.hidden === 'object') ? h.hidden : {}, banner: (h.banner && typeof h.banner === 'object') ? h.banner : {} };

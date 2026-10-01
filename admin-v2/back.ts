@@ -1001,6 +1001,12 @@ async function handleClientApi(
 
   // Bilan de fin de collaboration : inviter le client à le remplir
   if (method === 'POST' && sub === '/bilan/request') return handleBilanRequest(env, key, data);
+  // Aperçu de l'espace (lecture seule) : un lien à usage unique, 5 minutes.
+  if (method === 'POST' && sub === '/apercu-token') {
+    const vtk = genId() + genId();
+    await env.KV_CLIENT.put('apercutoken:' + vtk, key, { expirationTtl: 300 });
+    return json({ url: clientSpaceUrl(env) + 'api/apercu?vtk=' + vtk });
+  }
   // Jeton du mode édition de l'espace client (24 h) : à ajouter à l'URL (?edit=1&etk=…)
   if (method === 'POST' && sub === '/edit-token') {
     const etk = genId() + genId();
