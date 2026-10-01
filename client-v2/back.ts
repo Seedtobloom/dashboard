@@ -26,6 +26,8 @@
  *   partenaireCreative / siteWeb / identiteVisuelle / supportsDeCom/<00X>
  */
 
+import { getReviewDoc, putReviewDoc, publicReview, originAllowed, buildComment, buildReply, setStatus, REVIEW_MAIL_GAP_MS } from '../shared/review';
+
 export interface Env {
   KV_CLIENT: KVNamespace;
   R2_FILES: R2Bucket;
@@ -121,6 +123,12 @@ export default {
       if (method === 'POST' && pathname === '/api/logout') return handleLogout(request, env);
       // Aperçu depuis l'admin : Cindy voit l'espace sans le code de la cliente.
       if (method === 'GET' && pathname === '/api/apercu') return handleApercu(url, env);
+
+      // ── Retours site : widget public posé sur le site de la cliente ──
+      // Pas de session ici : la clé de retours du lien suffit, et elle n'ouvre
+      // QUE les retours (jamais l'espace). Voir shared/review.ts.
+      const rv = pathname.match(/^\/api\/review\/([a-f0-9]{32})(\/comments(?:\/([a-f0-9]{32})(\/replies)?)?)?$/);
+      if (rv) return handleReviewPublic(request, env, method, rv[1], !!rv[2] && !rv[3], rv[3], !!rv[4]);
 
       // ── Routes client V1 : /api/client/<token>/... ──
       const m = pathname.match(/^\/api\/client\/([a-f0-9]{64})(\/.*)?$/);
@@ -1988,4 +1996,56 @@ async function notifyAdmin(env: Env, subject: string, bodyHtml: string): Promise
   } finally {
     clearTimeout(timer);
   }
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+ * Retours site (widget /review.js) : API publique, une lecture KV par page
+ * ────────────────────────────────────────────────────────────────────────── */
+async function handleReviewPublic(
+  request: Request, env: Env, method: string, reviewKey: string, isCommentsRoot: boolean, commentId: string | undefined, isReplies: boolean
+): Promise<Response> {
+  const doc = await getReviewDoc(env.KV_CLIENT, reviewKey);
+  if (!doc || !doc.enabled) return json({ error: 'Ce lien de retours n’est plus actif.' }, 403);
+
+  if (method === 'GET' && !isCommentsRoot && !commentId) return json(publicReview(doc));
+  if (!originAllowed(doc, request.headers.get('Origin'))) return json({ error: 'Ce site n’est pas autorisé à envoyer des retours.' }, 403);
+
+  const body = await readJson(request);
+  if (method === 'POST' && isCommentsRoot) {
+    const c = buildComment(doc, body);
+    if (typeof c === 'string') return json({ error: c }, 400);
+    doc.comments.push(c);
+    const mail = Date.now() - (doc.lastAdminMail || 0) > REVIEW_MAIL_GAP_MS;
+    if (mail) doc.lastAdminMail = Date.now();
+    await putReviewDoc(env.KV_CLIENT, doc);
+    if (mail) await notifyReview(env, doc, c.author, c.text, c.path, 'un nouveau retour');
+    return json(c, 201);
+  }
+
+  const c = commentId ? doc.comments.find((x) => x.id === commentId) : undefined;
+  if (!c) return json({ error: 'Retour introuvable' }, 404);
+
+  if (method === 'POST' && isReplies) {
+    const r = buildReply(c, body.text, body.author, 'client');
+    if (typeof r === 'string') return json({ error: r }, 400);
+    c.replies.push(r);
+    const mail = Date.now() - (doc.lastAdminMail || 0) > REVIEW_MAIL_GAP_MS;
+    if (mail) doc.lastAdminMail = Date.now();
+    await putReviewDoc(env.KV_CLIENT, doc);
+    if (mail) await notifyReview(env, doc, r.author, r.text, c.path, 'une réponse sur le retour n° ' + c.number);
+    return json(c, 201);
+  }
+  if (method === 'PATCH' && !isReplies) {
+    setStatus(c, body.status);
+    await putReviewDoc(env.KV_CLIENT, doc);
+    return json(c);
+  }
+  return json({ error: 'Method not allowed' }, 405);
+}
+
+async function notifyReview(env: Env, doc: { label: string }, who: string, text: string, path: string, what: string): Promise<void> {
+  await notifyAdmin(env, `Retour sur le site · ${doc.label}`,
+    `<p><strong>${escHtml(who)}</strong> a laissé ${escHtml(what)} sur le site (page ${escHtml(path)}) :</p>` +
+    `<p style="background:#F2E5C2;border-radius:8px;padding:14px 16px;color:#412F21">${escHtml(text.slice(0, 400))}</p>` +
+    `<p style="color:#412F21">Les retours suivants de l’heure à venir sont regroupés dans l’onglet Retours site du projet.</p>`);
 }

@@ -17,6 +17,8 @@
 
 import { stbTaskMinByMonth, stbForfaitState, stbSessionMin } from '../shared/forfait-model.js';
 import { stbMissionDetail } from '../shared/mission-types.js';
+import { getReviewDoc, putReviewDoc, computeOrigins, originOf, buildReply, setStatus, reviewHex, clip, REVIEW_PREFIX, REVIEWOF_PREFIX, REVIEW_MAIL_GAP_MS } from '../shared/review';
+import type { ReviewDoc } from '../shared/review';
 
 export interface Env {
   KV_CLIENT: KVNamespace;
@@ -517,6 +519,9 @@ async function handleClientApi(
   if (method === 'DELETE' && (sub === '' || sub === '/')) {
     return handleClientDelete(env, key);
   }
+
+  // Retours site (commentaires laissés par la cliente sur son site)
+  if (sub === '/review' || sub.startsWith('/review/')) return handleReviewAdmin(request, env, method, key, data, sub);
 
   // Chat (admin répond en tant que cindy)
   if (method === 'POST' && sub === '/message') {
@@ -1321,6 +1326,9 @@ async function handleClientDelete(env: Env, key: string): Promise<Response> {
     cursor = listed.truncated ? listed.cursor : undefined;
   } while (cursor);
   await env.KV_CLIENT.delete(key);
+  // Retours site de cette cliente : le lien cesse de fonctionner avec elle.
+  const rk = await env.KV_CLIENT.get(REVIEWOF_PREFIX + key);
+  if (rk) { await env.KV_CLIENT.delete(REVIEW_PREFIX + rk); await env.KV_CLIENT.delete(REVIEWOF_PREFIX + key); }
   const idx = await getIndex(env);
   await saveIndex(env, idx.filter((x) => x.key !== key));
   return json({ ok: true });
@@ -4025,4 +4033,97 @@ async function handleCalEventDelete(request: Request, env: Env): Promise<Respons
   } catch (e: any) {
     return json({ error: (e && e.message) || 'Suppression impossible.' }, 502);
   }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * Retours site : la cliente commente sur son site via le widget de l'espace
+ * client (dashboard…/review.js). Le doc vit dans KV_CLIENT (shared/review.ts).
+ * ═══════════════════════════════════════════════════════════════════════════ */
+function reviewView(env: Env, doc: ReviewDoc | null): AnyObj {
+  return {
+    spaceUrl: clientSpaceUrl(env),
+    config: doc ? { key: doc.key, enabled: doc.enabled, siteUrl: doc.siteUrl, origins: doc.origins, createdAt: doc.createdAt } : null,
+    comments: doc ? doc.comments : [],
+  };
+}
+async function handleReviewAdmin(request: Request, env: Env, method: string, key: string, data: AnyObj, sub: string): Promise<Response> {
+  const rk = await env.KV_CLIENT.get(REVIEWOF_PREFIX + key);
+  const doc = rk ? await getReviewDoc(env.KV_CLIENT, rk) : null;
+
+  if (sub === '/review' && method === 'GET') return json(reviewView(env, doc));
+
+  if (sub === '/review' && method === 'PUT') {
+    const body = await readJson(request);
+    const siteUrl = clip(body.siteUrl, 500);
+    if (siteUrl && !originOf(siteUrl)) return json({ error: 'Adresse du site invalide : elle doit commencer par https://' }, 400);
+    if (!doc) {
+      if (!siteUrl) return json({ error: 'Indique l’adresse du site' }, 400);
+      const c = getClient(data);
+      const nd: ReviewDoc = {
+        key: reviewHex(16), masterKey: key, label: getEntreprise(c).nom || clientName(data),
+        enabled: true, siteUrl, origins: computeOrigins(siteUrl, body.extraOrigins),
+        createdAt: nowIso(), comments: [],
+      };
+      await putReviewDoc(env.KV_CLIENT, nd);
+      await env.KV_CLIENT.put(REVIEWOF_PREFIX + key, nd.key);
+      return json(reviewView(env, nd));
+    }
+    if (body.siteUrl !== undefined || body.extraOrigins !== undefined) {
+      if (body.siteUrl !== undefined) doc.siteUrl = siteUrl;
+      doc.origins = computeOrigins(doc.siteUrl, body.extraOrigins !== undefined ? body.extraOrigins : doc.origins);
+    }
+    if (typeof body.enabled === 'boolean') doc.enabled = body.enabled;
+    await putReviewDoc(env.KV_CLIENT, doc);
+    return json(reviewView(env, doc));
+  }
+
+  if (!doc) return json({ error: 'Retours non activés pour cette cliente' }, 404);
+
+  // Nouveau lien : l'ancien cesse de fonctionner, les retours sont gardés.
+  if (sub === '/review/rotate' && method === 'POST') {
+    const old = doc.key;
+    doc.key = reviewHex(16);
+    await putReviewDoc(env.KV_CLIENT, doc);
+    await env.KV_CLIENT.put(REVIEWOF_PREFIX + key, doc.key);
+    await env.KV_CLIENT.delete(REVIEW_PREFIX + old);
+    return json(reviewView(env, doc));
+  }
+
+  const m = sub.match(/^\/review\/comments\/([a-f0-9]{32})(\/replies)?$/);
+  if (!m) return json({ error: 'Not found' }, 404);
+  const idx = doc.comments.findIndex((c) => c.id === m[1]);
+  if (idx === -1) return json({ error: 'Retour introuvable' }, 404);
+  const c = doc.comments[idx];
+
+  if (method === 'DELETE' && !m[2]) {
+    doc.comments.splice(idx, 1);
+    await putReviewDoc(env.KV_CLIENT, doc);
+    return json({ ok: true });
+  }
+  if (method === 'PATCH' && !m[2]) {
+    const body = await readJson(request);
+    setStatus(c, body.status);
+    await putReviewDoc(env.KV_CLIENT, doc);
+    return json(c);
+  }
+  if (method === 'POST' && m[2]) {
+    const body = await readJson(request);
+    const r = buildReply(c, body.text, 'Cindy', 'cindy');
+    if (typeof r === 'string') return json({ error: r }, 400);
+    c.replies.push(r);
+    if (body.resolve === true) setStatus(c, 'resolved');
+    // La cliente est prévenue, au plus une fois par heure.
+    const mail = Date.now() - (doc.lastClientMail || 0) > REVIEW_MAIL_GAP_MS;
+    if (mail) doc.lastClientMail = Date.now();
+    await putReviewDoc(env.KV_CLIENT, doc);
+    if (mail) {
+      let link = '';
+      try { const u = new URL(c.pageUrl || doc.siteUrl); u.searchParams.set('stb_review', doc.key); u.searchParams.set('stb_comment', c.id); link = u.toString(); } catch { link = ''; }
+      const btn = link ? `<div style="text-align:center;margin:24px 0 6px"><a href="${escHtml(link)}" style="display:inline-block;background:#1C1205;color:#F2E5C2;text-decoration:none;padding:13px 30px;border-radius:10px;font-size:15px;font-weight:600">Voir sur le site</a></div>` : '';
+      await notifyClient(env, data, 'Réponse à ton retour sur le site',
+        mailBonjour(data) + `<p>J’ai répondu à ton retour n° ${c.number} sur le site. Tu peux lire ma réponse directement sur la page concernée.</p>` + btn + MAIL_SIGNE);
+    }
+    return json(c, 201);
+  }
+  return json({ error: 'Method not allowed' }, 405);
 }

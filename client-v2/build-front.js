@@ -292,10 +292,27 @@ Object.keys(bannerVer).forEach(function (k) {
   js = js.split('/assets/banner-' + k + '.png').join('/assets/banner-' + k + '.png?v=' + bannerVer[k]);
 });
 
+// Retours site : le widget posé sur le site de la cliente (servi tel quel,
+// en dehors du SPA ; il appelle /api/review/* en CORS depuis son domaine).
+const reviewWidget = read('review-widget.js');
+
 const handler = [
   'export default {',
   '  async fetch(request, env) {',
   '    const url = new URL(request.url);',
+  "    if (url.pathname === '/review.js') return new Response(REVIEW_WIDGET, { headers: { 'Content-Type': 'application/javascript; charset=utf-8', 'Cache-Control': 'public, max-age=3600', 'Access-Control-Allow-Origin': '*', 'X-Content-Type-Options': 'nosniff' } });",
+  "    if (url.pathname.startsWith('/api/review/')) {",
+  "      const cors = { 'Access-Control-Allow-Origin': request.headers.get('Origin') || '*', 'Access-Control-Allow-Methods': 'GET, POST, PATCH, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type', 'Access-Control-Max-Age': '86400', 'Vary': 'Origin' };",
+  "      if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });",
+  '      const headers = new Headers(request.headers);',
+  "      headers.set('X-Internal-Auth', env.INTERNAL_SECRET || '');",
+  '      let res;',
+  '      try { res = await env.SERVICE_BACK.fetch(new Request(request, { headers })); }',
+  "      catch (e) { res = new Response('{\"error\":\"Service indisponible\"}', { status: 502, headers: { 'Content-Type': 'application/json' } }); }",
+  '      const out = new Response(res.body, res);',
+  '      Object.keys(cors).forEach(function (k) { out.headers.set(k, cors[k]); });',
+  '      return out;',
+  '    }',
   "    if (url.pathname.startsWith('/api/')) {",
   '      const headers = new Headers(request.headers);',
   "      headers.set('X-Internal-Auth', env.INTERNAL_SECRET || '');",
@@ -315,7 +332,8 @@ const handler = [
 
 const favConst = 'const CLIENT_FAVICON = ' + JSON.stringify(favicon) + ';\n';
 const bannersConst = 'const CLIENT_BANNERS = ' + JSON.stringify(bannerB64) + ';\n';
-const out = handler + favConst + bannersConst + css + '\n\n' + js + '\n\n' + html + '\n';
+const reviewConst = 'const REVIEW_WIDGET = ' + JSON.stringify(reviewWidget) + ';\n';
+const out = handler + favConst + bannersConst + reviewConst + css + '\n\n' + js + '\n\n' + html + '\n';
 fs.writeFileSync(path.join(ROOT, 'front.js'), out);
 console.log('front.js écrit (' + out.length + ' octets)');
 

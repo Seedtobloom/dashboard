@@ -9813,7 +9813,208 @@
     if (cur === 'suivi') return suiviCard(d);
     if (cur === 'liv') return livrablesCard(d);
     if (cur === 'versions') return versionsCard(d);
+    if (cur === 'retours') return reviewTab(d);
     return chatCard(d);
+  }
+  // ── Retours site : la cliente commente directement sur son site ─────────
+  // Widget servi par l'espace client (…/review.js), données dans KV_CLIENT
+  // (shared/review.ts). Un onglet par projet site / maintenance.
+  var RV = { key: null, data: null, loading: false, filtre: 'open', err: '' };
+  function rvCharger(force) {
+    if (RV.loading) return;
+    if (!force && RV.key === CURKEY && (RV.data || RV.err)) return;
+    var k = CURKEY;
+    RV.loading = true; RV.key = k;
+    api('/api/clients/' + k + '/review')
+      .then(function (r) { return r.json().catch(function () { return {}; }).then(function (d) { return { ok: r.ok, d: d }; }); })
+      .then(function (x) {
+        RV.loading = false;
+        if (k !== CURKEY) return;
+        if (x.ok) { RV.data = x.d; RV.err = ''; } else { RV.data = null; RV.err = x.d.error || 'Erreur de chargement'; }
+        renderTab();
+      })
+      .catch(function () { RV.loading = false; RV.err = 'Impossible de charger les retours.'; renderTab(); });
+  }
+  function rvOuverts() {
+    if (RV.key !== CURKEY || !RV.data) return 0;
+    return (RV.data.comments || []).filter(function (c) { return c.status === 'open'; }).length;
+  }
+  function rvLoader() {
+    var src = (RV.data && RV.data.spaceUrl ? RV.data.spaceUrl : '/').replace(/\/+$/, '') + '/review.js';
+    return '(function(){try{var q=location.search;if(q.indexOf("stb_review=")<0&&!localStorage.getItem("stb_review_key"))return;var s=document.createElement("script");s.src="' + src + '";s.defer=true;document.body.appendChild(s);}catch(e){}})();';
+  }
+  function rvPhp() {
+    return "// Seed to Bloom · retours sur le site\n" +
+      "// Ne charge rien pour les visiteurs : l'outil ne s'active qu'avec le lien de retours.\n" +
+      "add_action('wp_footer', function () {\n" +
+      "  if (is_admin()) return;\n" +
+      "  echo '<script>" + rvLoader() + "<\/script>';\n" +
+      "}, 99);";
+  }
+  function rvHtml() { return '<script>' + rvLoader() + '<\/script>'; }
+  function rvLienClient(cfg) {
+    try { var u = new URL(cfg.siteUrl); u.searchParams.set('stb_review', cfg.key); return u.toString(); } catch (e) { return ''; }
+  }
+  function rvLienRetour(cfg, c) {
+    try { var u = new URL(c.pageUrl || (cfg.siteUrl.replace(/\/+$/, '') + c.path)); u.searchParams.set('stb_review', cfg.key); u.searchParams.set('stb_comment', c.id); return u.toString(); } catch (e) { return ''; }
+  }
+  function rvDate(iso) {
+    if (!iso) return '';
+    var d = new Date(iso);
+    return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) + ', ' + d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+  }
+  function rvChamp(label, id, valeur, lignes) {
+    var st = 'width:100%;box-sizing:border-box;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;background:var(--card);resize:vertical';
+    return '<div style="margin-bottom:14px">' +
+      '<div class="between" style="margin-bottom:5px"><label for="' + id + '" style="font-size:14px;font-weight:600">' + label + '</label>' +
+      '<button class="btn btn--outline btn--sm" onclick="ADM.rvCopier(\'' + id + '\')">Copier</button></div>' +
+      (lignes ? '<textarea class="inp" id="' + id + '" readonly rows="' + lignes + '" style="' + st + '">' + esc(valeur) + '</textarea>'
+              : '<input class="inp" id="' + id + '" readonly value="' + esc(valeur) + '" style="' + st + '">') +
+    '</div>';
+  }
+  function reviewTab(d) {
+    if (RV.key !== CURKEY || (!RV.data && !RV.err)) { rvCharger(); return '<div class="empty"><div class="spin" style="margin:20px auto"></div></div>'; }
+    if (RV.err && !RV.data) return '<div class="card" style="background:var(--card);padding:18px 20px">' + esc(RV.err) + ' <button class="btn btn--outline btn--sm" onclick="ADM.rvActualiser()">Réessayer</button></div>';
+    var cfg = RV.data.config;
+    var tous = RV.data.comments || [];
+    if (!cfg) {
+      return '<div class="card" style="background:var(--card);padding:22px 24px;max-width:720px">' +
+        '<h3 style="margin:0 0 8px"><span class="infocard__dot" style="background:#2c4a72"></span>Retours sur le site</h3>' +
+        '<p style="color:var(--muted);margin:0 0 16px">La cliente clique directement sur son site pour laisser un commentaire, et tout arrive ici, page par page. Indique l’adresse du site (préprod ou en ligne) pour générer son lien de retours.</p>' +
+        '<label for="rv-site" class="micro" style="display:block;margin-bottom:4px">Adresse du site</label>' +
+        '<div class="row" style="gap:8px;flex-wrap:wrap"><input class="inp" id="rv-site" type="url" placeholder="https://preprod.exemple.fr" style="flex:1;min-width:240px">' +
+        '<button class="btn btn--dark btn--sm" onclick="ADM.rvActiver()">Activer les retours</button></div>' +
+      '</div>';
+    }
+    var lien = rvLienClient(cfg);
+    var autres = (cfg.origins || []).filter(function (o) { try { return o !== new URL(cfg.siteUrl).origin; } catch (e) { return true; } }).join(', ');
+    var install = '<details class="card" style="background:var(--card);padding:0;margin-bottom:14px"' + (tous.length ? '' : ' open') + '>' +
+      '<summary style="cursor:pointer;padding:16px 20px;list-style:none" class="between"><span><b>Installation et lien client</b>' +
+        '<span style="display:block;color:var(--muted);font-size:14px">' + esc(cfg.siteUrl || '') + ' · ' + (cfg.enabled ? 'actif' : 'en pause') + '</span></span>' +
+        '<span class="micro" style="text-transform:none;letter-spacing:0">Afficher / masquer</span></summary>' +
+      '<div style="padding:4px 20px 20px">' +
+        '<p style="color:var(--muted);margin:0 0 14px">1. Sur WordPress, ajoute ce code dans Code Snippets (type PHP, exécuté partout). Il pèse quelques octets et ne charge l’outil que pour les personnes qui ont le lien. 2. Envoie le lien à la cliente. 3. Ses retours arrivent ici.</p>' +
+        rvChamp('Code Snippets (WordPress)', 'rv-php', rvPhp(), 7) +
+        rvChamp('Autre site, à coller avant &lt;/body&gt;', 'rv-html', rvHtml(), 3) +
+        (lien ? rvChamp('Lien à envoyer à la cliente', 'rv-lien', lien, 0) : '') +
+        (lien ? '<p style="margin:0 0 16px"><a class="btn btn--dark btn--sm" href="' + esc(lien) + '" target="_blank" rel="noopener">Ouvrir le site en mode retours</a></p>' : '') +
+        '<div class="row" style="gap:12px;flex-wrap:wrap;align-items:flex-end;margin-bottom:10px">' +
+          '<div style="flex:1;min-width:220px"><label for="rv-site" class="micro" style="display:block;margin-bottom:4px">Adresse du site</label><input class="inp" id="rv-site" type="url" value="' + esc(cfg.siteUrl || '') + '" style="width:100%"></div>' +
+          '<div style="flex:1;min-width:220px"><label for="rv-autres" class="micro" style="display:block;margin-bottom:4px">Autres adresses autorisées (facultatif)</label><input class="inp" id="rv-autres" value="' + esc(autres) + '" placeholder="https://www.exemple.fr" style="width:100%"></div>' +
+        '</div>' +
+        '<div class="row" style="gap:14px;flex-wrap:wrap">' +
+          '<button class="btn btn--dark btn--sm" onclick="ADM.rvEnregistrer()">Enregistrer</button>' +
+          '<button class="btn btn--outline btn--sm" onclick="ADM.rvPause()">' + (cfg.enabled ? 'Mettre en pause' : 'Réactiver') + '</button>' +
+          '<button class="btn btn--danger btn--sm" onclick="ADM.rvNouveauLien()">Changer le lien</button>' +
+        '</div>' +
+        '<p style="color:var(--muted);font-size:14px;margin:8px 0 0">« Changer le lien » coupe l’accès des anciens liens. Le code d’installation, lui, ne change pas.</p>' +
+      '</div></details>';
+
+    var f = RV.filtre;
+    var nOuv = rvOuverts();
+    var liste = tous.filter(function (c) { return f === 'all' ? true : c.status === f; })
+      .slice().sort(function (a, b) { return (a.path || '').localeCompare(b.path || '') || a.number - b.number; });
+    function puce(id, label, n) {
+      var on = f === id;
+      return '<button class="chip" onclick="ADM.rvFiltre(\'' + id + '\')" style="cursor:pointer;padding:6px 13px;border-radius:999px;border:1px solid ' + (on ? 'var(--terre)' : 'var(--border)') + ';background:' + (on ? 'var(--terre)' : '#fff') + ';color:' + (on ? 'var(--paille)' : 'var(--muted)') + ';font-weight:600;font-size:14px">' + label + ' ' + n + '</button>';
+    }
+    var groupes = {}, ordre = [];
+    liste.forEach(function (c) { var k = c.path || '/'; if (!groupes[k]) { groupes[k] = []; ordre.push(k); } groupes[k].push(c); });
+    var corps = liste.length ? ordre.map(function (p) {
+      var g = groupes[p];
+      return '<div style="margin-bottom:22px"><div style="display:flex;align-items:baseline;gap:10px;border-bottom:1px solid var(--border);padding-bottom:6px;margin-bottom:10px">' +
+        '<span style="font-family:var(--font-display);font-size:20px">' + esc(g[0].pageTitle || p) + '</span><span style="color:var(--muted);font-size:14px">' + esc(p) + '</span></div>' +
+        g.map(function (c) { return rvCarte(cfg, c); }).join('') + '</div>';
+    }).join('') : '<div class="empty">' + (tous.length ? 'Rien dans cette catégorie.' : 'Aucun retour pour l’instant. Dès que la cliente commente son site, ses retours apparaissent ici.') + '</div>';
+
+    return install +
+      '<div class="card" style="background:var(--card);padding:18px 20px">' +
+        '<div class="between" style="flex-wrap:wrap;gap:10px;margin-bottom:16px"><div class="row" style="gap:6px;flex-wrap:wrap">' +
+          puce('open', 'À traiter', nOuv) + puce('resolved', 'Traités', tous.length - nOuv) + puce('all', 'Tous', tous.length) +
+        '</div><button class="btn btn--outline btn--sm" onclick="ADM.rvActualiser()">Actualiser</button></div>' +
+        corps +
+      '</div>';
+  }
+  function rvCarte(cfg, c) {
+    var fait = c.status === 'resolved';
+    var lien = rvLienRetour(cfg, c);
+    var rep = (c.replies || []).map(function (r) {
+      var moi = r.role === 'cindy';
+      return '<div style="margin-top:8px;padding:8px 12px;border-radius:10px;background:' + (moi ? 'var(--glycine-50)' : '#fff') + ';border:1px solid ' + (moi ? 'var(--glycine)' : 'var(--border)') + '">' +
+        '<div style="font-size:13px;color:var(--muted)"><b style="color:var(--terre)">' + esc(r.author) + '</b> · ' + esc(rvDate(r.createdAt)) + '</div>' +
+        '<div style="white-space:pre-wrap">' + esc(r.text) + '</div></div>';
+    }).join('');
+    return '<div style="background:#fff;border:1px solid var(--border);border-radius:14px;padding:14px 16px;margin-bottom:10px' + (fait ? ';opacity:.8' : '') + '">' +
+      '<div style="display:flex;gap:12px;align-items:flex-start">' +
+        '<span style="flex:none;width:30px;height:30px;border-radius:50% 50% 50% 4px;background:' + (fait ? 'var(--bone-d)' : 'var(--terre)') + ';color:' + (fait ? 'var(--muted)' : 'var(--paille)') + ';display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:14px">' + c.number + '</span>' +
+        '<div style="flex:1;min-width:0">' +
+          '<div style="font-size:14px;color:var(--muted)"><b style="color:var(--terre)">' + esc(c.author) + '</b> · ' + esc(rvDate(c.createdAt)) + (c.device ? ' · ' + esc(c.device) : '') + (fait ? ' · traité' : '') + '</div>' +
+          (c.elementText ? '<div style="font-size:13px;color:var(--muted);margin-top:2px">Sur « ' + esc(c.elementText) + ' »</div>' : '') +
+          '<div style="white-space:pre-wrap;margin-top:6px;font-size:16px">' + esc(c.text) + '</div>' + rep +
+          '<textarea class="inp" id="rv-r-' + c.id + '" rows="2" placeholder="Répondre à ' + esc(c.author) + '…" aria-label="Réponse au retour ' + c.number + '" style="width:100%;box-sizing:border-box;margin-top:10px;resize:vertical"></textarea>' +
+          '<div class="row" style="gap:14px;flex-wrap:wrap;margin-top:8px;align-items:center">' +
+            '<button class="btn btn--dark btn--sm" onclick="ADM.rvRepondre(\'' + c.id + '\',false)">Répondre</button>' +
+            (fait ? '' : '<button class="btn btn--sm" onclick="ADM.rvRepondre(\'' + c.id + '\',true)">Répondre et marquer traité</button>') +
+            '<button class="btn btn--outline btn--sm" onclick="ADM.rvStatut(\'' + c.id + '\',\'' + (fait ? 'open' : 'resolved') + '\')">' + (fait ? 'Rouvrir' : 'Marquer traité') + '</button>' +
+            (lien ? '<a class="btn btn--outline btn--sm" href="' + esc(lien) + '" target="_blank" rel="noopener">Voir sur le site</a>' : '') +
+            '<button class="btn btn--danger btn--sm" onclick="ADM.rvSupprimer(\'' + c.id + '\')">Supprimer</button>' +
+          '</div>' +
+        '</div>' +
+      '</div></div>';
+  }
+  function rvEcrire(chemin, corps, methode, msgOk) {
+    return api('/api/clients/' + CURKEY + '/review' + chemin, { method: methode, headers: { 'Content-Type': 'application/json' }, body: corps ? JSON.stringify(corps) : undefined })
+      .then(function (r) { return r.json().catch(function () { return {}; }).then(function (d) { return { ok: r.ok, d: d }; }); })
+      .then(function (x) {
+        if (!x.ok) { toast(x.d.error || 'Erreur'); return null; }
+        if (msgOk) toast(msgOk);
+        return x.d;
+      })
+      .catch(function () { toast('Erreur réseau'); return null; });
+  }
+  function rvMajRetour(c) {
+    if (!c || !RV.data) return;
+    var l = RV.data.comments || [];
+    for (var i = 0; i < l.length; i++) if (l[i].id === c.id) { l[i] = c; break; }
+    renderTab();
+  }
+  function rvActiver() {
+    var v = ((el('rv-site') || {}).value || '').trim();
+    if (!/^https?:\/\//i.test(v)) { toast('Indique une adresse complète, avec https://'); return; }
+    rvEcrire('', { siteUrl: v }, 'PUT', 'Retours activés').then(function (d) { if (d) { RV.data = d; renderTab(); } });
+  }
+  function rvEnregistrer() {
+    var v = ((el('rv-site') || {}).value || '').trim();
+    var autres = ((el('rv-autres') || {}).value || '').split(/[\s,]+/).filter(Boolean);
+    rvEcrire('', { siteUrl: v, extraOrigins: autres }, 'PUT', 'Enregistré').then(function (d) { if (d) { RV.data = d; renderTab(); } });
+  }
+  function rvPause() {
+    var cfg = RV.data && RV.data.config; if (!cfg) return;
+    rvEcrire('', { enabled: !cfg.enabled }, 'PUT', cfg.enabled ? 'Retours en pause' : 'Retours réactivés').then(function (d) { if (d) { RV.data = d; renderTab(); } });
+  }
+  function rvNouveauLien() {
+    admConfirm({ title: 'Changer le lien de retours ?', message: 'Le lien actuel ne fonctionnera plus, il faudra envoyer le nouveau à la cliente. Les retours déjà laissés sont gardés.', yes: 'Changer le lien', danger: true }, function () {
+      rvEcrire('/rotate', {}, 'POST', 'Nouveau lien prêt').then(function (d) { if (d) { RV.data = d; renderTab(); } });
+    });
+  }
+  function rvFiltre(f) { RV.filtre = f; renderTab(); }
+  function rvActualiser() { RV.data = null; RV.err = ''; rvCharger(true); }
+  function rvCopier(id) { var e = el(id); if (e) copy(e.value); }
+  function rvRepondre(id, traiter) {
+    var ta = el('rv-r-' + id);
+    var t = ta ? ta.value.trim() : '';
+    if (!t) { if (traiter) return rvStatut(id, 'resolved'); toast('La réponse est vide'); if (ta) ta.focus(); return; }
+    rvEcrire('/comments/' + id + '/replies', { text: t, resolve: !!traiter }, 'POST', traiter ? 'Réponse envoyée, retour traité' : 'Réponse envoyée').then(rvMajRetour);
+  }
+  function rvStatut(id, st) { rvEcrire('/comments/' + id, { status: st }, 'PATCH').then(rvMajRetour); }
+  function rvSupprimer(id) {
+    admConfirm({ title: 'Supprimer ce retour ?', message: 'Le retour et ses réponses seront supprimés définitivement.', yes: 'Supprimer', danger: true }, function () {
+      rvEcrire('/comments/' + id, null, 'DELETE', 'Retour supprimé').then(function (d) {
+        if (!d || !RV.data) return;
+        RV.data.comments = (RV.data.comments || []).filter(function (c) { return c.id !== id; });
+        renderTab();
+      });
+    });
   }
   function sectionEffets(d, cur) {
     if (cur === 'taches') ptTiroir(d); else if (PT_OPEN) ptFermer();
@@ -9832,6 +10033,7 @@
       var unseen = tks.filter(function (t) { return t.seenByAdmin === false; }).length;
       s.push(['tickets', 'Tickets', unseen]);
       s.push(['questionnaire', 'Questionnaire', qn]);
+      s.push(['retours', 'Retours site', rvOuverts()]);
       s.push(['msg', 'Messages', d.unread || 0]);
       return s;
     }
@@ -9842,6 +10044,7 @@
     if (isSupport) s.push(['creations', 'Créations', (d.content.creations || []).length]);
     // Planning éditorial : sur les supports de com ET les projets site web / identité.
     if (isSupport || d.id === 'website' || d.id === 'branding') s.push(['planning', 'Planning', (d.content.planning || []).length]);
+    if (d.id === 'website') s.push(['retours', 'Retours site', rvOuverts()]);
     if (d.id === 'partner') { s.push(['forfait', 'Forfait', 0]); s.push(['taches', 'Tâches', (d.content.taches || []).length]); }
     if (d.content.suivi !== undefined) s.push(['suivi', 'Étapes', (d.content.suivi || []).length]);
     if (Array.isArray(d.content.livrables) && !isSupport) s.push(['liv', 'Livrables', (d.content.livrables || []).length]);
@@ -9856,6 +10059,7 @@
   function subtab(domId, key) { navPas(function () { subtab_(domId, key); }); }
   function subtab_(domId, key) {
     SUBTAB[domId] = key;
+    if (key === 'retours') { RV.data = null; RV.err = ''; } // retours toujours frais à l'ouverture de l'onglet
     // Les boutons internes aux blocs (« voir les livrables », « répondre »…)
     // passent par ici : depuis l'écran Projets, ils changent SON onglet.
     if (VIEW === 'ckprojets' && CKJ.ouvert) { CKJ.onglet = key; renderCockpitProjetsBody(); return; }
@@ -14475,6 +14679,7 @@
   window.ADM = {
     nav: nav, login: login, logout: logout, scan: scan, createClient: createClient, copy: copy, editToken: editToken, cliApercu: cliApercu, ckpCorrigerPasse: ckpCorrigerPasse, ffReglages: ffReglages, ffAutoMail: ffAutoMail, accesOuvrir: accesOuvrir, navClientTab: navClientTab,
     msWeek: msWeek, msFilter: msFilter, msToggleCap: msToggleCap, msMode: msMode, msDaySel: msDaySel, msPlace: msPlace, msDone: msDone, msDelete: msDelete, msNoteOpen: msNoteOpen, msPlanOver: msPlanOver, msPlanLeave: msPlanLeave, msPlanDrop: msPlanDrop, msPlanUnplace: msPlanUnplace, msAutoPlan: msAutoPlan, msOrganizeWeek: msOrganizeWeek, msOrganizeDay: msOrganizeDay, msUnplace: msUnplace, msDragStart: msDragStart, msDragEnd: msDragEnd, msDayOver: msDayOver, msDayLeave: msDayLeave, msDrop: msDrop, msSlotOver: msSlotOver, msDropSlot: msDropSlot, msNewBlock: msNewBlock, msSaveBlock: msSaveBlock, msDeleteBlock: msDeleteBlock, msEst: msEst, msEstH: msEstH, msAddTop: msAddTop, msAddDay: msAddDay,
+    rvActiver: rvActiver, rvEnregistrer: rvEnregistrer, rvPause: rvPause, rvNouveauLien: rvNouveauLien, rvFiltre: rvFiltre, rvActualiser: rvActualiser, rvCopier: rvCopier, rvRepondre: rvRepondre, rvStatut: rvStatut, rvSupprimer: rvSupprimer,
     openClient: openClient, tab: tab, subtab: subtab, ffShow: ffShow, saveInfos: saveInfos, saveForfait: saveForfait, forfaitOverrideAdd: forfaitOverrideAdd, forfaitOverrideDel: forfaitOverrideDel, testEmail: testEmail, toggleOffer: toggleOffer, addOffer: addOffer, setBanner: setBanner, setMaintenance: setMaintenance, renameSupport: renameSupport, cloturerProjet: cloturerProjet, rouvrirProjet: rouvrirProjet, addSupportQuick: addSupportQuick, delSupport: delSupport, crAdd: crAdd, crSet: crSet, crCloturer: crCloturer, crRouvrir: crRouvrir, cgToggle: cgToggle, cgNeuve: cgNeuve, pjEdit: pjEdit, crReply: crReply, crDel: crDel, crAddVersion: crAddVersion, crAddVersionLink: crAddVersionLink, crDelVersion: crDelVersion, pjAdd: pjAdd, pjSet: pjSet, pjMove: pjMove, pjDel: pjDel, pjStart: pjStart, pjNotify: pjNotify, pjNeuf: pjNeuf, pjPatch: pjPatch, pjDuree: pjDuree, pjDateOuvrir: pjDateOuvrir, pjDateFermer: pjDateFermer, pjDate: pjDate, pjToggle: pjToggle, deleteClient: deleteClient,
     toggleTicketsSpace: toggleTicketsSpace, ticketStatus: ticketStatus, ticketDue: ticketDue, ticketTime: ticketTime, ticketDelete: ticketDelete, ticketForfait: ticketForfait, ticketProposeDate: ticketProposeDate,
     ckpReste: ckpReste, ckpEstim: ckpEstim, ckpAjoutPasse: ckpAjoutPasse, ckTRelancer: ckTRelancer, ckTDemander: ckTDemander, callLarge: callLarge, callPuces: callPuces, mplCreer: mplCreer, mplPatch: mplPatch, mplEtape: mplEtape, ckTTraiter: ckTTraiter, ckpFinir: ckpFinir, ckpPasMaintenant: ckpPasMaintenant, ckpOrdreSysteme: ckpOrdreSysteme,
