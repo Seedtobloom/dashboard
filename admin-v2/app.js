@@ -6070,7 +6070,7 @@
     }).join('') + '</div>';
   }
   function ckTInfo(t) {
-    if (t.src !== 'ticket' || t.statut === 'done') return '';
+    if ((t.src !== 'ticket' && t.src !== 'client') || t.statut === 'done') return '';
     var qui = ckTPrenom(t);
     var faites = (t.infos || []).map(function (x) {
       return '<div class="ckr-q"><p class="ckr-qq">Ta question : « ' + esc(x.q) + ' »</p>' +
@@ -6079,9 +6079,9 @@
     }).join('');
     var attend = (t.infos || []).some(function (x) { return !x.r; });
     return '<div class="ckr-info">' + faites +
-      (attend ? '' : '<h3>Il te manque une info ?</h3>' +
+      (attend ? '' : '<h3>' + (t.src === 'client' ? 'Il te manque une info, ou un point n’est pas clair dans ses retours ?' : 'Il te manque une info ?') + '</h3>' +
         '<textarea id="ckt-info-' + esc(t.id) + '" class="inp" rows="2" aria-label="Ta question pour ' + esc(qui) + '" placeholder="Ta question pour ' + esc(qui) + '"></textarea>' +
-        '<div class="ckr-info-a"><span>Un mail part à ' + esc(qui) + ', la demande passe de son côté.</span>' +
+        '<div class="ckr-info-a"><span>' + (t.src === 'client' ? 'Un mail part, la question s’affiche en haut de son espace.' : 'Un mail part à ' + esc(qui) + ', la demande passe de son côté.') + '</span>' +
         '<button class="ckr-b" onclick="ADM.ckTDemander(\'' + esc(t.id) + '\')">Lui demander</button></div>') +
       '</div>';
   }
@@ -6090,7 +6090,8 @@
     var el = document.getElementById('ckt-info-' + id);
     var q = el ? el.value.trim() : '';
     if (!t || !q) { if (el) el.focus(); return; }
-    jpost('/api/clients/' + t.key + '/tickets/' + t.id, { projectId: 'maintenance', askInfo: q }, 'PATCH').then(function (r) {
+    var url = t.src === 'client' ? '/api/clients/' + t.key + '/tasks/' + t.id : '/api/clients/' + t.key + '/tickets/' + t.id;
+    jpost(url, { projectId: t.src === 'client' ? (t.projet || 'partner') : 'maintenance', askInfo: q }, 'PATCH').then(function (r) {
       if (r && r.ok) {
         toast('Question envoyée à ' + ckTPrenom(t));
         ckpApres(id, function (b) { if (!Array.isArray(b.infos)) b.infos = []; b.infos.push({ q: q, askedAt: new Date().toISOString(), r: '' }); });
@@ -6115,12 +6116,12 @@
         '<div><dt>Encore à faire</dt><dd><b>' + esc(f.reste.v) + '</b>' + (f.reste.s ? '<span>' + esc(f.reste.s) + '</span>' : '') + ckTCorriger(t) + '</dd></div>' +
         '<div class="ckp-f__passe"><dt>Déjà passé</dt><dd><b>' + esc(f.passe.v) + '</b>' + (f.passe.s ? '<span>' + esc(f.passe.s) + '</span>' : '') + ckpChampPasse(t, 'pan') + '</dd></div>' +
       '</dl>' +
-      ckTRelance(t) + ckTRetours(t) +
+      ckTRelance(t) + ckTRetours(t) + (t.src === 'client' ? ckTInfo(t) : '') +
       (brief || lignes ? '<div class="ckp-b"><h3>Son brief</h3>' + (brief ? '<div class="ckp-bt">' + brief + '</div>' : '') +
         (lignes ? '<p class="ckp-tab">Avec un tableau de ' + lignes + ' ligne' + (lignes > 1 ? 's' : '') + '. ' +
           ckTPetitLien('Le voir en grand', 'ADM.ckTGrand(1)') + '</p>' : '') + '</div>' : '') +
       (t.src === 'ticket' && t.liens.length ? '<div class="ckp-b"><h3>Ses liens</h3>' + ckTLiens(t) + '</div>' : '') +
-      ckTInfo(t) +
+      (t.src !== 'client' ? ckTInfo(t) : '') +
       '<div class="ckp-a">' + ckTBoutonFini(t) +
         (t.src === 'client' ? '<button class="pjc-lien" onclick="ADM.prioAddDlv(\'' + esc(t.key) + '\',\'' + esc(t.id) + '\',\'' + esc(t.projet || 'partner') + '\')">Ajouter un livrable</button>' : '') +
         '<span class="ck-esp"></span>' + ckTMenu(t, 'haut') + '</div>' +
@@ -9710,6 +9711,7 @@
     if (cur === 'bilan') return bilanCard(d);
     if (cur === 'suivi') return suiviCard(d);
     if (cur === 'liv') return livrablesCard(d);
+    if (cur === 'versions') return versionsCard(d);
     return chatCard(d);
   }
   function sectionEffets(d, cur) {
@@ -9742,6 +9744,8 @@
     if (d.id === 'partner') { s.push(['forfait', 'Forfait', 0]); s.push(['taches', 'Tâches', (d.content.taches || []).length]); }
     if (d.content.suivi !== undefined) s.push(['suivi', 'Étapes', (d.content.suivi || []).length]);
     if (Array.isArray(d.content.livrables) && !isSupport) s.push(['liv', 'Livrables', (d.content.livrables || []).length]);
+    // Support mené par étapes (sans créations) : ses versions et ses retours.
+    if (isSupport && !(d.content.creations || []).length && (d.content.suivi || []).length) s.push(['versions', 'Versions', versionsSuivi(d).filter(function (l) { return l.status === 'refuse' && !l.revisionResolved; }).length]);
     s.push(['questionnaire', 'Questionnaire', qn]);
     s.push(['msg', 'Messages', d.unread || 0]);
     // Aperçu (console de synthèse) en tête : projets à étapes + Partenaire créative.
@@ -12333,6 +12337,51 @@
   }
 
   /* livrables */
+  /* Versions d'un support mené par étapes (le livret du Cerdd) : envoyer une
+   * version, voir ses retours, et lui poser une question si un point n'est
+   * pas clair, avant de modifier. */
+  function versionsSuivi(d) { return (d.content.livrables || []).filter(function (l) { return !l.taskId && !l.creationId; }); }
+  function versionsCard(d) {
+    var vs = versionsSuivi(d).slice().sort(function (a, b) { return String(b.createdAt || '').localeCompare(String(a.createdAt || '')); });
+    var pid = d.id, n = vs.length;
+    var envoi = '<div class="card"><h3>Envoyer une version</h3>' +
+      '<div class="row" style="gap:10px;flex-wrap:wrap;align-items:flex-end">' +
+        '<div class="field"><label>Nom</label><input class="inp" id="vs-nom-' + pid + '" value="V' + (n + 1) + '" style="width:110px"></div>' +
+        '<div class="field" style="flex:1;min-width:240px"><label>Lien (Adobe Review, Drive…)</label><input class="inp" id="vs-lien-' + pid + '" placeholder="https://…"></div>' +
+        '<button class="btn btn--dark btn--sm" onclick="ADM.versionEnvoyer(\'' + pid + '\')">Envoyer cette version</button></div>' +
+      '<p class="micro" style="text-transform:none;letter-spacing:0;margin:8px 0 0">Elle s’affiche en haut de son espace avec les trois étapes pour faire ses retours.</p></div>';
+    var ST = { a_valider: 'À relire', refuse: 'Retours reçus', valide: 'Validée' };
+    var liste = vs.map(function (l) {
+      var url = l.reviewLink ? (/^https?:\/\//i.test(l.reviewLink) ? l.reviewLink : 'https://' + l.reviewLink) : (l.fileKey ? '/api/clients/' + CURKEY + '/files/' + encodeURIComponent(l.fileKey) + '/download' : '');
+      var infos = Array.isArray(l.infos) ? l.infos : [], attend = infos.some(function (x) { return !x.r; });
+      var qr = infos.map(function (x) {
+        return '<div class="ckr-q"><p class="ckr-qq">Ta question : « ' + esc(x.q) + ' »</p>' + (x.r ? '<p class="ckr-qr"><b>Sa réponse</b>' + esc(x.r) + '</p>' : '<p class="ckr-qa">Envoyée le ' + esc(fmtDate(x.askedAt)) + ', en attente de sa réponse.</p>') + '</div>';
+      }).join('');
+      var demander = (l.status === 'refuse' && !attend) ? '<div class="ckr-info"><h3>Un point pas clair dans ses retours ?</h3>' +
+        '<textarea id="vs-q-' + esc(l.id) + '" class="inp" rows="2" placeholder="Ta question"></textarea>' +
+        '<div class="ckr-info-a"><span>Un mail part, la question s’affiche en haut de son espace.</span><button class="ckr-b" onclick="ADM.versionDemander(\'' + pid + '\',\'' + esc(l.id) + '\')">Lui demander</button></div></div>' : '';
+      return '<div class="card"><div class="between" style="align-items:center;gap:10px"><h3 style="margin:0">' + esc(l.name || 'Version') + '</h3>' +
+          '<span class="ck-rev" style="flex-shrink:0">' + esc(ST[l.status] || l.status || '') + '</span></div>' +
+        '<p class="micro" style="text-transform:none;letter-spacing:0;margin:6px 0 10px">Envoyée le ' + esc(fmtDate(l.createdAt)) + (url ? ' · <a href="' + esc(url) + '" target="_blank" rel="noopener">Ouvrir</a>' : '') + '</p>' +
+        (l.clientComment ? '<div class="ckp-bt" style="background:var(--card);border-radius:12px;padding:12px 14px">« ' + esc(l.clientComment) + ' »</div>' : (l.status === 'refuse' ? '<p class="micro" style="text-transform:none;letter-spacing:0">Ses annotations sont sur le lien.</p>' : '')) +
+        qr + demander + '</div>';
+    }).join('');
+    return envoi + (liste || '<div class="card"><div class="empty">Aucune version envoyée pour l’instant.</div></div>');
+  }
+  function versionEnvoyer(pid) {
+    var lien = (el('vs-lien-' + pid).value || '').trim(), nom = (el('vs-nom-' + pid).value || '').trim();
+    if (!lien) { toast('Colle d’abord le lien'); return; }
+    notifyConfirm('Envoyer ' + (nom || 'cette version') + ' dans son espace ?', function (notify) {
+      jpost('/api/clients/' + CURKEY + '/deliverables', { projectId: pid, link: lien, name: nom || 'Version', suivi: true, notify: notify, message: ENVOI_MOT }, 'POST')
+        .then(function (r) { if (r.ok) { toast('Version envoyée'); loadClient(); } else toast('Erreur'); }).catch(function () { toast('Erreur'); });
+    }, true);
+  }
+  function versionDemander(pid, id) {
+    var t = el('vs-q-' + id), q = t ? t.value.trim() : '';
+    if (!q) { if (t) t.focus(); return; }
+    jpost('/api/clients/' + CURKEY + '/deliverables/' + id, { projectId: pid, askInfo: q }, 'PATCH')
+      .then(function (r) { if (r.ok) { toast('Question envoyée'); loadClient(); } else toast('Erreur'); }).catch(function () { toast('Erreur'); });
+  }
   function livrablesCard(d) {
     var ls = d.content.livrables || [];
     var rows = ls.length ? ls.map(function (l) {
@@ -14237,7 +14286,7 @@
     myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, myTaskArchive: myTaskArchive, mtStart: mtStart, mtPause: mtPause, mtQuickAdd: mtQuickAdd, mtQuickDue: mtQuickDue, mtSubAdd: mtSubAdd, mtSubToggle: mtSubToggle, mtSubDel: mtSubDel, mtGoTask: mtGoTask, mtEditNote: mtEditNote, mtSaveNote: mtSaveNote, mtNoteRestore: mtNoteRestore, mtEditOpen: mtEditOpen, mtToggleRow: mtToggleRow,
     visTab: visTab, trameOpen: trameOpen, trameEditLib: trameEditLib, trameBackLib: trameBackLib, trameQToggle: trameQToggle, trameQNote: trameQNote, callNoteNew: callNoteNew, callNoteSel: callNoteSel, callNoteDel: callNoteDel, callNoteSet: callNoteSet, callRight: callRight, trameNew: trameNew, trameSel: trameSel, trameDel: trameDel, trameSet: trameSet, trameEditToggle: trameEditToggle, trameEdField: trameEdField, trameEdQ: trameEdQ, trameEdQAdd: trameEdQAdd, trameEdQDel: trameEdQDel, trameEdSecAdd: trameEdSecAdd, trameEdSecDel: trameEdSecDel, trameEdSecMove: trameEdSecMove, visAdd: visAdd, visSet: visSet, visSetClient: visSetClient, visOpen: visOpen, visCloseDrawer: visCloseDrawer, visPresent: visPresent, visPushICloud: visPushICloud, visSetTypeFilter: visSetTypeFilter, visNoteSave: visNoteSave, visDel: visDel, visStepAdd: visStepAdd, visStepSet: visStepSet, visStepDel: visStepDel, visStepMove: visStepMove, visSaveEditor: visSaveEditor, visQAdd: visQAdd, visQToggle: visQToggle, visQSet: visQSet, visQDel: visQDel, visApplyTpl: visApplyTpl, visTplAdd: visTplAdd, visTplSet: visTplSet, visTplDel: visTplDel, visTplStepAdd: visTplStepAdd, visTplStepSet: visTplStepSet, visTplStepDel: visTplStepDel, visTplStepMove: visTplStepMove, visTplQAdd: visTplQAdd, visTplQSet: visTplQSet, visTplQDel: visTplQDel, visFmt: visFmt, visEdActive: visEdActive,
     msSaveCap: msSaveCap,
-    qnrAjouter: qnrAjouter, qnrPrevenir: qnrPrevenir, stepAdd: stepAdd, stepStatus: stepStatus, stepDelete: stepDelete, stepEditOpen: stepEditOpen, suiviReglagesSave: suiviReglagesSave,
+    versionEnvoyer: versionEnvoyer, versionDemander: versionDemander, qnrAjouter: qnrAjouter, qnrPrevenir: qnrPrevenir, stepAdd: stepAdd, stepStatus: stepStatus, stepDelete: stepDelete, stepEditOpen: stepEditOpen, suiviReglagesSave: suiviReglagesSave,
     qnAdd: qnAdd, qnSet: qnSet, qnDel: qnDel, qnMove: qnMove, qnBulk: qnBulk, qnSetOptions: qnSetOptions, qnSetTitle: qnSetTitle, qnSetReady: qnSetReady, qnPreview: qnPreview,
     planGo: planGo, planSetFilter: planSetFilter, planTick: planTick,
     tiroirFermer: ptFermer, ptOuvrir: ptOuvrir,

@@ -195,11 +195,30 @@
       '<label>Choisir une date<input type="date" min="' + _todayStr() + '" onchange="cpAccReporter(\'' + pid + '\',\'' + t.id + '\',\'date\',this.value)"></label></div>' +
       '<p class="cpnd-note">Cindy est prévenue. Les jours de congés ne sont pas proposés.</p></section>';
   }
+  // « Cindy a une question avant d'avancer » : en haut de la demande, avec un
+  // champ pour répondre directement. La réponse part dans les échanges.
+  function cpAccQuestionCindy(pd, t) {
+    var q = (t.infos || []).filter(function (x) { return !x.r; }).pop();
+    if (!q) return '';
+    return '<section class="cps-hero cps-hero--col"><span class="cps-hero__k">Cindy a une question avant d’avancer</span>' +
+      '<div class="cps-hero__t">' + esc(q.q || '') + '</div>' +
+      '<textarea id="cpa-rep-' + esc(t.id) + '" class="cps-rep" rows="3" placeholder="Ta réponse"></textarea>' +
+      '<div class="cps-hero__pied"><span>Posée le ' + esc(fmtDate(q.askedAt)) + '. Cindy reprend dès ta réponse.</span>' +
+      '<button class="cps-btn" onclick="cpAccRepondre(\'' + pd.project.id + '\',\'' + esc(t.id) + '\')">Envoyer ma réponse</button></div></section>';
+  }
+  window.cpAccRepondre = function (pid, id) {
+    var ta = document.getElementById('cpa-rep-' + id), v = ta ? ta.value.trim() : '';
+    if (!v) { if (ta) ta.focus(); return; }
+    fetch(API_BASE + '/tasks/' + id + '/answer', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ projectId: pid, text: v }) })
+      .then(function (r) { if (!r.ok) throw new Error(); return r.json(); })
+      .then(function (tk) { var t = cpAccT(pid, id); if (t) { t.infos = tk.infos || t.infos; t.comments = tk.comments || t.comments; } toast('Réponse envoyée à Cindy'); renderShell(); })
+      .catch(function () { toast('Erreur, réessaie.', true); });
+  };
   function cpAccDemandePage(pd, t) {
     var pid = pd.project.id;
     return '<div class="cp-home cpb"><div class="cpb__in cpd fade-up">' +
       '<div class="cpd-fil"><a href="#" class="cpe-retour" onclick="cpAccRetour(\'' + pid + '\');return false">Accompagnement créatif · ' + ({ tableau: 'Tableau', fini: 'Terminées', notes: 'Notes' }[cpAccTab[pid]] || 'Calendrier') + '</a><span>Enregistré au fur et à mesure</span></div>' +
-      '<div class="cpd-grille"><div class="cpd-g">' + cpAccEntete(pd, t) + cpAccBrief(pd, t) + cpAccFichiers(pd, t) + '</div>' +
+      '<div class="cpd-grille"><div class="cpd-g">' + cpAccQuestionCindy(pd, t) + cpAccEntete(pd, t) + cpAccBrief(pd, t) + cpAccFichiers(pd, t) + '</div>' +
       '<div class="cpd-d">' + (cpAccRepOuvert[pid] ? cpAccReporterCarte(pd, t) : '') + cpAccVersions(pd, t) + cpAccEchanges(pd, t) + '</div></div></div></div>';
   }
 

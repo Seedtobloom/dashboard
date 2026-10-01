@@ -279,6 +279,10 @@ async function handleClientApi(
   if (method === 'POST' && sub === '/tickets') return handleTicketCreate(request, env, masterKey, data);
   t = sub.match(/^\/tickets\/([a-f0-9]+)\/propose-date$/);
   if (t && method === 'POST') return handleTicketProposeDate(request, env, masterKey, data, t[1]);
+  t = sub.match(/^\/tasks\/([a-f0-9]+)\/answer$/);
+  if (t && method === 'POST') return handleTaskAnswer(request, env, masterKey, data, t[1]);
+  t = sub.match(/^\/deliverables\/([a-zA-Z0-9_-]+)\/answer$/);
+  if (t && method === 'POST') return handleDeliverableAnswer(request, env, masterKey, data, t[1]);
   t = sub.match(/^\/tickets\/([a-f0-9]+)\/answer$/);
   if (t && method === 'POST') return handleTicketAnswer(request, env, masterKey, data, t[1]);
   t = sub.match(/^\/tickets\/([a-f0-9]+)$/);
@@ -501,6 +505,7 @@ function mapDeliverables(livrables: any[]): AnyObj[] {
     fileKey: l.fileKey || null,
     status: l.status || 'a_valider',
     clientComment: l.clientComment || '',
+    infos: Array.isArray(l.infos) ? l.infos : [],
     clientAttachments: Array.isArray(l.clientAttachments) ? l.clientAttachments : [],
     clientLink: l.clientLink || '',
     clientWishDate: l.clientWishDate || '',
@@ -1784,6 +1789,51 @@ async function handleTicketAnswer(request: Request, env: Env, masterKey: string,
     `<p style="color:#412F21">Ta question : ${escHtml(q.q || '')}</p>` +
     `<p style="background:#F2E5C2;padding:12px 16px;border-radius:8px">${escHtml(text)}</p>`);
   return json(tk);
+}
+
+// Réponse à une question de Cindy sur une tâche : elle s'accroche à la
+// question, part dans les échanges de la tâche et revient dans son Inbox.
+async function handleTaskAnswer(request: Request, env: Env, masterKey: string, data: AnyObj, taskId: string): Promise<Response> {
+  const body = await readJson(request);
+  const found = findTask(getEspace(data), taskId, (body.projectId || '').toString());
+  if (!found) return json({ error: 'Task not found' }, 404);
+  const text = (body.text || '').toString().trim().slice(0, 4000);
+  if (!text) return json({ error: 'text is required' }, 400);
+  const tk = found.task;
+  const q = (Array.isArray(tk.infos) ? tk.infos : []).filter((x: AnyObj) => !x.r).pop();
+  if (!q) return json({ error: 'Aucune question en attente' }, 400);
+  q.r = text; q.answeredAt = nowIso();
+  if (!Array.isArray(tk.comments)) tk.comments = [];
+  tk.comments.push({ id: genId(), author: 'client', text: 'Ta question : « ' + (q.q || '') + ' »\n\nMa réponse : ' + text, createdAt: nowIso() });
+  tk.clientCommentNotif = true;
+  await save(env, masterKey, data);
+  await notifyAdmin(env, `Réponse reçue · ${clientFullName(data)}`,
+    `<p><strong>${escHtml(clientFullName(data))}</strong> a répondu à ta question sur <strong>${escHtml(tk.title || '')}</strong>.</p>` +
+    `<p style="color:#412F21">Ta question : ${escHtml(q.q || '')}</p>` +
+    `<p style="background:#F2E5C2;padding:12px 16px;border-radius:8px">${escHtml(text)}</p>`);
+  return json(tk);
+}
+// Réponse à une question sur ses retours (une version envoyée) : elle arrive
+// aussi dans la discussion du projet, non lue, pour que Cindy la voie.
+async function handleDeliverableAnswer(request: Request, env: Env, masterKey: string, data: AnyObj, livId: string): Promise<Response> {
+  const body = await readJson(request);
+  const { container } = resolveProject(getEspace(data), (body.projectId || '').toString());
+  if (!container || !Array.isArray(container.livrables)) return json({ error: 'Project not found' }, 404);
+  const liv = container.livrables.find((l: AnyObj) => l.id === livId);
+  if (!liv) return json({ error: 'Livrable introuvable' }, 404);
+  const text = (body.text || '').toString().trim().slice(0, 4000);
+  if (!text) return json({ error: 'text is required' }, 400);
+  const q = (Array.isArray(liv.infos) ? liv.infos : []).filter((x: AnyObj) => !x.r).pop();
+  if (!q) return json({ error: 'Aucune question en attente' }, 400);
+  q.r = text; q.answeredAt = nowIso();
+  if (!Array.isArray(container.chat)) container.chat = [];
+  container.chat.push({ id: genId(), from: 'client', message: 'Ta question sur mes retours (' + (liv.name || 'la version') + ') : « ' + (q.q || '') + ' »\n\nMa réponse : ' + text, attachments: [], date: nowIso(), readByClient: true, readByAdmin: false });
+  await save(env, masterKey, data);
+  await notifyAdmin(env, `Réponse reçue · ${clientFullName(data)}`,
+    `<p><strong>${escHtml(clientFullName(data))}</strong> a répondu à ta question sur ses retours (${escHtml(liv.name || '')}).</p>` +
+    `<p style="color:#412F21">Ta question : ${escHtml(q.q || '')}</p>` +
+    `<p style="background:#F2E5C2;padding:12px 16px;border-radius:8px">${escHtml(text)}</p>`);
+  return json(liv);
 }
 
 async function handleTicketUpdate(request: Request, env: Env, masterKey: string, data: AnyObj, ticketId: string): Promise<Response> {

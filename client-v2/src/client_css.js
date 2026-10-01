@@ -1633,7 +1633,8 @@ button.cpnd-j:hover { box-shadow: inset 0 0 0 1px #110704; }
 .cps-qui--toi{background:#E6E5B2;box-shadow:none}
 .cps-qui--cindy{background:#110704;color:#F8F6F2;box-shadow:none}
 .cps-grand{font-family:'Alegreya',Georgia,serif;font-size:34px;line-height:1.1}
-.cps-li{display:flex;justify-content:space-between;gap:12px;font-size:17px;padding:8px 0;border-top:1px solid rgba(17,7,4,.08)}
+.cps-li{display:flex;justify-content:space-between;align-items:center;gap:12px;font-size:17px;padding:8px 0;border-top:1px solid rgba(17,7,4,.08)}
+.cps-li .cps-pil{flex-shrink:0}
 .cps-li span+span{color:#6B5A50;white-space:nowrap}
 .cps-ret{display:flex;align-items:center;gap:14px;flex-wrap:wrap;font-size:17px}
 .cps-barres{display:flex;gap:6px}
@@ -1667,4 +1668,17 @@ button.cpnd-j:hover { box-shadow: inset 0 0 0 1px #110704; }
 .cp-rt-zone:empty:before{content:attr(data-ph);color:#8a7a70}
 .cp-rt-zone ul,.cp-rt-lu ul{margin:4px 0;padding-left:24px}
 .cp-rt-zone li,.cp-rt-lu li{margin:2px 0}
+.cps-hero--col{flex-direction:column;align-items:stretch;gap:16px}
+.cps-hero__haut{display:flex;justify-content:space-between;align-items:flex-start;gap:24px}
+.cps-pas3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:22px;padding-top:18px;border-top:1px solid rgba(17,7,4,.12)}
+.cps-pas{display:grid;grid-template-columns:34px 1fr;gap:14px;align-items:start}
+.cps-pas>span{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-size:16px;font-weight:600;background:#fff}
+.cps-pas b{font-size:18px}.cps-hero .cps-pas p{font-size:16px;color:#3b2a20;margin-top:2px}
+.cps-hero--col .cps-hero__a{flex-shrink:1}
+.cps-cite{background:rgba(255,255,255,.55);border-radius:12px;padding:12px 16px;font-size:16px;color:#3b2a20}
+.cps-rep{min-height:84px;border-radius:14px;background:#fff;border:0;padding:14px 18px;font:inherit;font-size:17px;color:#110704;resize:vertical;box-sizing:border-box;width:100%}
+.cps-hero__pied{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;font-size:16px;color:#3b2a20}
+.cps-pil{padding:4px 12px;border-radius:999px;font-size:15px;font-weight:600;background:#F8F6F2;white-space:nowrap}
+.cps-pil--toi{background:#E6E5B2}
+@media (max-width:900px){.cps-pas3{grid-template-columns:1fr}.cps-hero__haut{flex-direction:column}}
 `;

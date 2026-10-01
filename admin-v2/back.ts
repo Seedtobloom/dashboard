@@ -1503,6 +1503,14 @@ async function handleTaskPatch(request: Request, env: Env, key: string, data: An
   if (!found) return json({ error: 'Tâche introuvable' }, 404);
   const t = found.task;
   const prevStatus = t.status;
+  // « Il te manque une info, ou un point n'est pas clair ? » : la question
+  // s'accroche à la tâche, part par mail et s'affiche en haut chez la cliente.
+  let askInfoTache = '';
+  if (typeof body.askInfo === 'string' && body.askInfo.trim()) {
+    askInfoTache = body.askInfo.trim().slice(0, 2000);
+    if (!Array.isArray(t.infos)) t.infos = [];
+    t.infos.push({ id: genId(), q: askInfoTache, askedAt: nowIso(), r: '', answeredAt: '' });
+  }
   // Tri d'une demande depuis la boîte de réception : accepter (→ vraie tâche),
   // hors forfait, ou refuser. Chaque décision peut prévenir la cliente.
   if ('triage' in body) {
@@ -1666,6 +1674,7 @@ async function handleTaskPatch(request: Request, env: Env, key: string, data: An
     if (motT) bodyHtml = bodyHtml.replace(MAIL_SIGNE, motBloc(motT) + MAIL_SIGNE);
     await notifyClient(env, data, body.status === 'done' ? `C'est terminé : ${t.title || ''}` : `Tu peux vérifier ${t.title || ''} ?`, bodyHtml, key, t.id, body.status === 'review' ? 'Voir et valider' : 'Voir ma demande');
   }
+  if (askInfoTache) await mailQuestion(env, data, key, t.title || 'ta demande', askInfoTache, t.id);
   if (proposedNotify) {
     const frd = (t.proposedDueDate || '').split('-').reverse().join('/');
     await notifyClient(env, data, `Une autre date pour ${t.title || ''} ?`,
@@ -1952,8 +1961,9 @@ async function handleDeliverableLink(request: Request, env: Env, key: string, da
   const name = (body.name || '').toString().trim().slice(0, 200) || 'Lien du livrable';
   const taskId = (body.taskId || '').toString() || null;
   if (!Array.isArray(container.livrables)) container.livrables = [];
-  const version = taskId ? (container.livrables.filter((l: AnyObj) => l.taskId === taskId).length + 1) : 0;
   const creationId = (body.creationId || '').toString() || null;
+  const version = taskId ? (container.livrables.filter((l: AnyObj) => l.taskId === taskId).length + 1)
+    : (!creationId && body.suivi === true ? container.livrables.filter((l: AnyObj) => !l.taskId && !l.creationId).length + 1 : 0);
   const deliverable: AnyObj = { id: genId(), name, fileKey: '', status: 'a_valider', clientComment: '', validatedAt: null, createdAt: nowIso(), taskId, taskTitle: '', reviewLink: url, version, creationId };
   attachDeliverableParent(container, deliverable, taskId);
   container.livrables.push(deliverable);
@@ -1998,8 +2008,24 @@ async function handleDeliverablePatch(request: Request, env: Env, key: string, d
   // Révision traitée (nouvelle version renvoyée, ou classée à la main) : on la
   // sort des révisions actives pour éviter les doublons dans « Cette semaine ».
   if (body.resolved === true) { liv.revisionResolved = true; liv.seenByAdmin = true; }
+  // Un point pas clair dans ses retours : la question s'accroche à la version.
+  let askInfoLiv = '';
+  if (typeof body.askInfo === 'string' && body.askInfo.trim()) {
+    askInfoLiv = body.askInfo.trim().slice(0, 2000);
+    if (!Array.isArray(liv.infos)) liv.infos = [];
+    liv.infos.push({ id: genId(), q: askInfoLiv, askedAt: nowIso(), r: '', answeredAt: '' });
+  }
   await saveClient(env, key, data);
+  if (askInfoLiv) await mailQuestion(env, data, key, 'tes retours' + (liv.name ? ' sur ' + liv.name : ''), askInfoLiv);
   return json(liv);
+}
+// Le mail d'une question de Cindy (tâche ou retours) : la question en clair,
+// un bouton vers l'espace où la cliente répond directement.
+async function mailQuestion(env: Env, data: AnyObj, key: string, sujet: string, q: string, taskId?: string): Promise<void> {
+  await notifyClient(env, data, `Une petite question sur ${sujet}`,
+    mailBonjour(data) + `<p>Pour avancer sur <strong>${escHtml(sujet)}</strong>, j'ai une question :</p>` +
+    `<p style="background:#E6E5B2;padding:14px 18px;border-radius:10px;font-size:16px">${escHtml(q)}</p>` +
+    `<p>Tu peux me répondre directement dans ton espace.</p>` + MAIL_SIGNE, key, taskId, 'Répondre');
 }
 async function handleDeliverableDelete(request: Request, env: Env, key: string, data: AnyObj, id: string): Promise<Response> {
   const body = (await readJson(request).catch(() => ({}))) as AnyObj;
@@ -2264,6 +2290,8 @@ async function handleDashboard(env: Env): Promise<Response> {
             slots: Array.isArray(t.slots) ? t.slots : [],
             needsRework: !!t.needsRework,
             clientFeedbackAt: t.clientFeedbackAt || '',
+            // Les questions posées à la cliente sur cette tâche, et ses réponses.
+            infos: Array.isArray(t.infos) ? t.infos : [],
             // État des envois de retours : combien de versions envoyées, où en
             // est la dernière, et depuis quand elle attend.
             sentCount: livs.length,

@@ -619,6 +619,13 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       (p.tickets || []).forEach(function(t) {
         if (t.proposedDueDate) acts.push({ pid: p.id, pname: p.projectTitle, pr: 1, label: 'Confirmer la date proposée pour ton ticket « ' + (t.title || '') + ' »', cta: 'Répondre', onclick: "cpOpenInterventions()" });
       });
+      // Une question de Cindy (sur une demande, ou sur des retours) : en premier.
+      (p.tasks || []).forEach(function(t) {
+        if ((t.infos || []).some(function(x){ return !x.r; })) acts.push({ pid: p.id, pname: p.projectTitle, pr: 0, label: 'Répondre à la question de Cindy sur « ' + (t.title || 'ta demande') + ' »', cta: 'Répondre', onclick: "cpSel('" + p.id + "');cliOpenTaskDrawer('" + p.id + "','" + t.id + "')" });
+      });
+      (p.deliverables || []).forEach(function(dv) {
+        if ((dv.infos || []).some(function(x){ return !x.r; })) acts.push({ pid: p.id, pname: p.projectTitle, pr: 0, label: 'Répondre à la question de Cindy sur tes retours' + (dv.name ? ' (' + dv.name + ')' : ''), cta: 'Répondre', onclick: "cpSel('" + p.id + "')" });
+      });
       // Étapes en attente d'une action cliente
       (p.steps || []).forEach(function(s) {
         if (s.status === 'waiting_client') acts.push({ pid: p.id, pname: p.projectTitle, pr: 3, label: s.clientAction ? s.clientAction : ('Ton retour est attendu sur l’étape « ' + s.title + ' »'), cta: 'Voir', onclick: "cpSel('" + p.id + "')" });
@@ -2359,6 +2366,23 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       return (doc.body.textContent || '').replace(/\n{3,}/g, '\n\n').trim();
     } catch (e) { return src.replace(/<[^>]*>/g, ' ').trim(); }
   }
+  // Où en est chaque version : à relire, retours envoyés, une question pour toi, validée.
+  function cpsVersionsLignes(dlv) {
+    return dlv.slice().sort(function (a, b) { return String(a.createdAt || '').localeCompare(String(b.createdAt || '')); }).map(function (d) {
+      var q = (d.infos || []).some(function (x) { return !x.r; });
+      var st = q ? ['Une question pour toi', 'toi'] : (d.status === 'a_valider' ? ['À relire', 'toi'] : (d.status === 'valide' || d.status === 'validated' ? ['Validée', ''] : ['Retours envoyés', '']));
+      var quand = d.status === 'a_valider' ? 'envoyée le ' + fmtShort(d.createdAt) : (d.validatedAt ? (st[0] === 'Validée' ? 'validée le ' : 'retours le ') + fmtShort(d.validatedAt) : 'envoyée le ' + fmtShort(d.createdAt));
+      return '<div class="cps-li"><span><b>' + esc(d.name || 'Version') + '</b>, ' + esc(quand) + '</span><span class="cps-pil' + (st[1] ? ' cps-pil--toi' : '') + '">' + st[0] + '</span></div>';
+    }).join('');
+  }
+  window.cpsRepondre = function (pid, livId) {
+    var ta = document.getElementById('cps-rep-' + livId), v = ta ? ta.value.trim() : '';
+    if (!v) { if (ta) ta.focus(); return; }
+    fetch(API_BASE + '/deliverables/' + livId + '/answer', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ projectId: pid, text: v }) })
+      .then(function (r) { if (!r.ok) throw new Error(); return r.json(); })
+      .then(function (liv) { var pd = getPD(pid); if (pd) { (pd.project.deliverables || []).forEach(function (d) { if (d.id === livId) d.infos = liv.infos || d.infos; }); } toast('Réponse envoyée à Cindy'); renderShell(); })
+      .catch(function () { toast('Erreur, réessaie.', true); });
+  };
   function cpsSuiviPage(pd) {
     var p = pd.project, pid = p.id;
     var steps = (p.steps || []).slice().sort(function (a, b) { return (a.order || 0) - (b.order || 0); });
@@ -2370,13 +2394,33 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       steps.filter(function (x) { return x.status === 'in_progress' && x.qui === 'toi'; })[0];
     var ICK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M5 12l4 4 10-10"/></svg>';
     var hero;
-    if (aValider) {
+    // Une question de Cindy sur ses retours passe avant tout le reste.
+    var livQ = dlv.filter(function (d) { return (d.infos || []).some(function (x) { return !x.r; }); })[0];
+    if (livQ) {
+      var qq = (livQ.infos || []).filter(function (x) { return !x.r; }).pop();
+      hero = '<section class="cps-hero cps-hero--col"><span class="cps-hero__k">Cindy a une question sur tes retours' + (livQ.name ? ' de la ' + esc(livQ.name) : '') + '</span>' +
+        (livQ.clientComment ? '<div class="cps-cite">Ton retour : « ' + esc(livQ.clientComment) + ' »</div>' : '') +
+        '<div class="cps-hero__t">' + esc(qq.q || '') + '</div>' +
+        '<textarea id="cps-rep-' + esc(livQ.id) + '" class="cps-rep" rows="3" placeholder="Ta réponse"></textarea>' +
+        '<div class="cps-hero__pied"><span>Posée le ' + esc(fmtDate(qq.askedAt)) + '. Ta réponse ne compte pas comme un aller-retour.</span>' +
+        '<button class="cps-btn" onclick="cpsRepondre(\'' + esc(pid) + '\',\'' + esc(livQ.id) + '\')">Envoyer ma réponse</button></div></section>';
+    } else if (aValider) {
       var lienV = aValider.reviewLink ? (/^https?:\/\//i.test(aValider.reviewLink) ? aValider.reviewLink : 'https://' + aValider.reviewLink) : (API_BASE + '/files/' + encodeURIComponent(aValider.fileKey) + '/download');
-      hero = '<section class="cps-hero"><div class="cps-hero__txt"><span class="cps-hero__k">À toi, une nouvelle version t’attend</span><div class="cps-hero__t">' + esc(aValider.name || 'La nouvelle version') + '</div>' +
-        '<p>Envoyée le ' + esc(fmtDate(aValider.createdAt)) + '. Annote directement sur les pages, puis dis-moi quand c’est fait.</p></div>' +
-        '<div class="cps-hero__a"><a class="cps-btn cps-btn--ghost" href="' + esc(lienV) + '" target="_blank" rel="noopener">Ouvrir la version</a>' +
-        '<button class="cps-btn cps-btn--ghost" onclick="window.stbValidate(\'' + esc(pid) + '\',\'' + esc(aValider.id) + '\',\'valide\')">C’est validé</button>' +
-        '<button class="cps-btn" onclick="window.stbValidate(\'' + esc(pid) + '\',\'' + esc(aValider.id) + '\',\'refuse\')">J’ai fait mes retours</button></div></section>';
+      var nomV = aValider.name || 'la nouvelle version';
+      var rangV = dlv.filter(function (d) { return String(d.createdAt || '') <= String(aValider.createdAt || ''); }).length;
+      var ORD = ['premier', 'deuxième', 'troisième', 'quatrième', 'cinquième'];
+      var etapeV = function (n, t, x) { return '<div class="cps-pas"><span>' + n + '</span><div><b>' + t + '</b><p>' + x + '</p></div></div>'; };
+      var limite = (steps.filter(function (x) { return x.status !== 'done' && x.qui === 'toi'; })[0] || {});
+      var avant = limite.quandTexte || (limite.dueDate ? 'avant le ' + new Date(String(limite.dueDate).slice(0, 10) + 'T12:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' }) : '');
+      hero = '<section class="cps-hero cps-hero--col"><div class="cps-hero__haut"><div class="cps-hero__txt"><span class="cps-hero__k">À toi' + (avant ? ', ' + esc(avant) : '') + '</span>' +
+        '<div class="cps-hero__t">' + esc(nomV) + ' est prête : à toi de la relire</div>' +
+        '<p>Envoyée le ' + esc(fmtDate(aValider.createdAt)) + '.' + (p.retoursPrevus ? ' C’est ton ' + (ORD[rangV - 1] || rangV + 'e') + ' aller-retour sur les ' + p.retoursPrevus + ' prévus.' : '') + '</p></div>' +
+        '<a class="cps-btn" href="' + esc(lienV) + '" target="_blank" rel="noopener">Ouvrir ' + esc(nomV) + '</a></div>' +
+        '<div class="cps-pas3">' + etapeV(1, 'Ouvre ' + esc(nomV), aValider.reviewLink ? (p.retoursOutil ? 'Elle s’ouvre dans ' + esc(p.retoursOutil) + ', dans un nouvel onglet.' : 'Elle s’ouvre dans un nouvel onglet.') : 'Elle se télécharge sur ton ordinateur.') +
+          etapeV(2, 'Annote sur les pages', 'Clique à l’endroit voulu et écris ton commentaire. Tes collègues peuvent annoter aussi.') +
+          etapeV(3, 'Dis-moi que c’est fait', 'Reviens ici et clique sur « J’ai fait mes retours ».') + '</div>' +
+        '<div class="cps-hero__a"><button class="cps-btn" onclick="window.stbValidate(\'' + esc(pid) + '\',\'' + esc(aValider.id) + '\',\'refuse\')">J’ai fait mes retours</button>' +
+        '<button class="cps-btn cps-btn--ghost" onclick="window.stbValidate(\'' + esc(pid) + '\',\'' + esc(aValider.id) + '\',\'valide\')">Tout me va, c’est validé</button></div></section>';
     } else if (etapeToi) {
       var pour = etapeToi.quandTexte || (etapeToi.dueDate ? new Date(String(etapeToi.dueDate).slice(0, 10) + 'T12:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' }) : '');
       hero = '<section class="cps-hero"><div class="cps-hero__txt"><span class="cps-hero__k">À toi' + (pour ? ', pour le ' + esc(pour.replace(/^(le |vers le |au plus tard le )/, '')) : '') + '</span>' +
@@ -2391,10 +2435,11 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var qAFaire = (appData.questionnaires || []).filter(function (q) { return q.status !== 'completed'; })[0];
     if (qAFaire) {
       var qVerbe = qAFaire.status === 'in_progress' ? 'Continuer' : (qAFaire.status === 'to_review' ? 'Revoir' : 'Remplir');
-      var bandeQ = '<section class="cps-hero"><div class="cps-hero__txt"><span class="cps-hero__k">' + (aValider || etapeToi ? 'À toi aussi' : 'À toi') + (qAFaire.dueDate ? ', pour le ' + esc(new Date(String(qAFaire.dueDate).slice(0, 10) + 'T12:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })) : '') + '</span>' +
+      var heroActif = !!(livQ || aValider || etapeToi);
+      var bandeQ = '<section class="cps-hero"><div class="cps-hero__txt"><span class="cps-hero__k">' + (heroActif ? 'À toi aussi' : 'À toi') + (qAFaire.dueDate ? ', pour le ' + esc(new Date(String(qAFaire.dueDate).slice(0, 10) + 'T12:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })) : '') + '</span>' +
         '<div class="cps-hero__t">' + qVerbe + ' le questionnaire</div><p>« ' + esc(qAFaire.name || 'Questionnaire') + ' » : tes réponses m’aident à préparer la suite.</p></div>' +
         '<div class="cps-hero__a"><button class="cps-btn" onclick="cpQnrFill(\'' + esc(qAFaire.id) + '\')">' + qVerbe + ' le questionnaire</button></div></section>';
-      hero = (aValider || etapeToi) ? hero + bandeQ : bandeQ;
+      hero = heroActif ? hero + bandeQ : bandeQ;
     }
     var QUI = { toi: 'Toi', cindy: 'Cindy', ensemble: 'Ensemble' };
     var lignes = steps.map(function (x, i) {
@@ -2428,7 +2473,10 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     if (nbR) {
       var barres = ''; for (var k = 0; k < nbR; k++) barres += '<i class="' + (k < utilises ? 'plein' : '') + '"></i>';
       cRetours = '<section class="cps-carte"><h3>Tes retours</h3><div class="cps-ret"><div class="cps-barres">' + barres + '</div><span><b>' + nbR + ' aller' + (nbR > 1 ? 's' : '') + '-retour' + (nbR > 1 ? 's' : '') + '</b> prévu' + (nbR > 1 ? 's' : '') + ', ' + (utilises ? utilises + ' utilisé' + (utilises > 1 ? 's' : '') : 'aucun utilisé') + '</span></div>' +
+        cpsVersionsLignes(dlv) +
         '<p>À chaque version, je t’envoie ' + (p.retoursOutil ? 'un lien ' + esc(p.retoursOutil) : 'un lien') + '. Tu annotes directement sur les pages, puis tu cliques sur « J’ai fait mes retours ».</p></section>';
+    } else if (dlv.length) {
+      cRetours = '<section class="cps-carte"><h3>Tes retours</h3>' + cpsVersionsLignes(dlv) + '</section>';
     }
     var qs = appData.questionnaires || [];
     var cQnr = '<section class="cps-carte"><h3>Questionnaire de cadrage</h3>' + (qs.length ? qs.map(function (q) {
