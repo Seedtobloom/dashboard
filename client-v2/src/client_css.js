@@ -1659,4 +1659,12 @@ button.cpnd-j:hover { box-shadow: inset 0 0 0 1px #110704; }
 #cp-apercu{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:9998;display:flex;align-items:center;gap:16px;background:#E6E5B2;color:#110704;border-radius:999px;padding:10px 12px 10px 22px;font-size:15px;box-shadow:0 6px 24px -10px rgba(17,7,4,.35);max-width:calc(100vw - 32px);box-sizing:border-box}
 #cp-apercu button{border:0;border-radius:999px;background:#110704;color:#F8F6F2;font:inherit;font-weight:600;padding:8px 16px;cursor:pointer;white-space:nowrap}
 @media (max-width:640px){#cp-apercu{border-radius:16px;flex-direction:column;align-items:stretch;text-align:center}}
+.cp-rt-barre{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.cp-rt-b{border:0;border-radius:999px;background:#fff;box-shadow:inset 0 0 0 1px rgba(17,7,4,.2);color:#110704;font:inherit;font-size:15px;padding:7px 14px;cursor:pointer}
+.cp-rt-b:hover{background:#F8F6F2}
+.cp-rt-zone{min-height:140px;line-height:1.6;outline:none;overflow-wrap:anywhere}
+.cp-rt-zone:focus{box-shadow:0 0 0 3px rgba(197,222,255,.9)!important}
+.cp-rt-zone:empty:before{content:attr(data-ph);color:#8a7a70}
+.cp-rt-zone ul,.cp-rt-lu ul{margin:4px 0;padding-left:24px}
+.cp-rt-zone li,.cp-rt-lu li{margin:2px 0}
 `;

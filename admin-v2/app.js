@@ -11818,6 +11818,20 @@
   /* bilan de fin de collaboration + suivi des bénéfices */
   function bilanStars(n) { var h = ''; for (var i = 1; i <= 5; i++) { h += '<span style="font-size:20px;color:' + ((n >= i) ? '#d8a93a' : '#d9cfbe') + '">' + ((n >= i) ? '★' : '☆') + '</span>'; } return h; }
   // ── Réponses aux questionnaires envoyés à cette cliente (lecture) ──
+  // Réponse longue mise en forme par la cliente : **gras**, __souligné__,
+  // « - » pour une puce. Échappée d'abord, donc rien d'autre ne passe.
+  function qnrRtHtml(txt) {
+    var inl = function (t) { return esc(t).replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>').replace(/__([^_]+)__/g, '<u>$1</u>'); };
+    var out = '', inList = false;
+    String(txt == null ? '' : txt).split('\n').forEach(function (l) {
+      var m = l.match(/^\s*[-•]\s+(.*)$/);
+      if (m) { if (!inList) { out += '<ul style="margin:4px 0;padding-left:22px">'; inList = true; } out += '<li>' + inl(m[1]) + '</li>'; return; }
+      if (inList) { out += '</ul>'; inList = false; }
+      out += '<div>' + (l ? inl(l) : '<br>') + '</div>';
+    });
+    if (inList) out += '</ul>';
+    return out;
+  }
   function qnrFmtAnswer(a) {
     if (a == null || a === '') return 'Sans réponse';
     if (Array.isArray(a)) return a.length ? a.join(', ') : 'Sans réponse';
@@ -11849,7 +11863,7 @@
       var qs = blocks.map(function (b) {
         var disp = qnrFmtAnswer(ans[b.id]);
         return '<div style="margin-bottom:12px"><div style="font-weight:600;font-size:15px;color:var(--terre)">' + esc(b.label || '') + '</div>' +
-          '<div style="font-size:15px;color:' + (disp === 'Sans réponse' ? 'var(--muted)' : 'var(--terre-600)') + ';white-space:pre-wrap;margin-top:2px">' + esc(disp) + '</div></div>';
+          '<div style="font-size:15px;color:' + (disp === 'Sans réponse' ? 'var(--muted)' : 'var(--terre-600)') + ';margin-top:2px">' + (typeof ans[b.id] === 'string' ? qnrRtHtml(disp) : esc(disp)) + '</div></div>';
       }).join('');
       return '<div style="margin-top:16px"><div class="micro" style="text-transform:none;letter-spacing:0.04em;color:var(--muted);margin-bottom:8px;font-weight:700">' + esc(s.title || '') + '</div>' + qs + '</div>';
     }).join('');
@@ -11923,7 +11937,7 @@
         if (b.type === 'title') return '<h3 class="qt">' + esc(b.label || '') + '</h3>';
         if (b.type === 'paragraph') return '<p class="qp">' + esc(b.label || '') + '</p>';
         var disp = qnrFmtAnswer(ans[b.id]);
-        return '<div class="q"><div class="ql">' + esc(b.label || '') + '</div><div class="qa' + (disp === '—' ? ' empty' : '') + '">' + esc(disp) + '</div></div>';
+        return '<div class="q"><div class="ql">' + esc(b.label || '') + '</div><div class="qa' + (disp === '—' ? ' empty' : '') + '">' + (typeof ans[b.id] === 'string' ? qnrRtHtml(disp) : esc(disp)) + '</div></div>';
       }).join('');
       return '<section><div class="sh">' + esc(s.title || '') + '</div>' + inner + '</section>';
     }).join('');
@@ -11932,7 +11946,7 @@
       '.meta{font-size:15px;color:#5e4a2e;letter-spacing:0.04em;text-transform:uppercase;margin-bottom:26px}' +
       'section{margin-bottom:22px}' +
       '.sh{font-size:15px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#6a4a0b;border-bottom:1px solid #e8ddc9;padding-bottom:5px;margin:22px 0 12px}' +
-      '.q{margin-bottom:14px}.ql{font-weight:700;font-size:15px;color:#412F21}.qa{font-size:15px;color:#40352a;white-space:pre-wrap;margin-top:2px}' +
+      '.q{margin-bottom:14px}.ql{font-weight:700;font-size:15px;color:#412F21}.qa{font-size:15px;color:#40352a;margin-top:2px}' +
       '.qa.empty{color:#5e4a2e;font-style:italic}.qt{font-size:17px;font-style:italic;color:#412F21;margin:18px 0 4px}.qp{font-size:15px;color:#5e4a2e;margin:0 0 8px}' +
       'footer{margin-top:34px;padding-top:14px;border-top:1px solid #e8ddc9;font-size:15px;color:#5e4a2e;text-align:center}' +
       '@media print{body{padding:0}@page{margin:16mm}}';

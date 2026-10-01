@@ -6913,6 +6913,46 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
   }
 
   // Rendu d'un bloc dans le remplisseur.
+  // Réponses mises en forme (gras, souligné, listes à puces). On enregistre un
+  // texte simple avec des repères (**gras**, __souligné__, « - » en début de
+  // ligne pour une puce) : rien d'autre ne peut s'y glisser, et une réponse
+  // ancienne en texte brut s'affiche telle quelle.
+  function cpRtInline(t) { return esc(t).replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>').replace(/__([^_]+)__/g, '<u>$1</u>'); }
+  function cpRtHtml(txt) {
+    var lines = String(txt == null ? '' : txt).split('\n'), out = '', inList = false;
+    lines.forEach(function (l) {
+      var m = l.match(/^\s*[-•]\s+(.*)$/);
+      if (m) { if (!inList) { out += '<ul>'; inList = true; } out += '<li>' + cpRtInline(m[1]) + '</li>'; return; }
+      if (inList) { out += '</ul>'; inList = false; }
+      out += '<div>' + (l ? cpRtInline(l) : '<br>') + '</div>';
+    });
+    if (inList) out += '</ul>';
+    return out;
+  }
+  function cpRtTexte(el) {
+    var lignes = [], cur = '';
+    function fin() { lignes.push(cur); cur = ''; }
+    function walk(n, deco) {
+      if (n.nodeType === 3) { cur += n.nodeValue.replace(/\n/g, ' '); return; }
+      if (n.nodeType !== 1) return;
+      var tag = n.tagName, st = n.getAttribute('style') || '';
+      if (tag === 'BR') { fin(); return; }
+      var bloc = /^(DIV|P|LI|UL|OL|H[1-6])$/.test(tag);
+      if (bloc && cur) fin();
+      var gras = (tag === 'B' || tag === 'STRONG' || /font-weight:\s*(bold|[6-9]00)/.test(st)) && deco.indexOf('b') === -1;
+      var soul = (tag === 'U' || /underline/.test(st)) && deco.indexOf('u') === -1;
+      if (tag === 'LI') cur += '- ';
+      if (gras) cur += '**'; if (soul) cur += '__';
+      var d2 = deco + (gras ? 'b' : '') + (soul ? 'u' : '');
+      for (var i = 0; i < n.childNodes.length; i++) walk(n.childNodes[i], d2);
+      if (soul) cur += '__'; if (gras) cur += '**';
+      if (bloc && cur) fin();
+    }
+    for (var i = 0; i < el.childNodes.length; i++) walk(el.childNodes[i], '');
+    if (cur) fin();
+    return lignes.join('\n').replace(/\*\*\*\*|____/g, '').replace(/\n{3,}/g, '\n\n').trim();
+  }
+  window.cpRtCmd = function (cmd) { document.execCommand(cmd, false, null); if (window.cpQnrTouch) cpQnrTouch(); };
   function cpQnrField(b, ans, qnum) {
     var col = 'var(--nuit)';
     // Titres et paragraphes = intertitres de section, hors carte.
@@ -6930,7 +6970,11 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     var wellShadow = 'box-shadow:none';
     var box = 'width:100%;padding:14px 16px;border:1.5px solid ' + bd + ';border-radius:12px;font-size:16.5px;font-family:inherit;box-sizing:border-box;background:#fff;color:var(--nuit);' + wellShadow;
     var input;
-    if (b.type === 'long' || b.type === 'address') {
+    if (b.type === 'long') {
+      var rtB = function (cmd, lab, tit) { return '<button type="button" class="cp-rt-b" title="' + tit + '" onmousedown="event.preventDefault()" onclick="cpRtCmd(\'' + cmd + '\')">' + lab + '</button>'; };
+      input = '<div class="cp-rt"><div class="cp-rt-barre">' + rtB('bold', '<b>Gras</b>', 'Gras') + rtB('underline', '<u>Souligné</u>', 'Souligné') + rtB('insertUnorderedList', 'Liste à puces', 'Liste à puces') + '</div>' +
+        '<div class="cp-rt-zone" contenteditable="true" role="textbox" aria-multiline="true" data-qid="' + b.id + '" data-rt="1" data-ph="' + esc(b.placeholder || 'Ta réponse') + '" style="' + box + '">' + (typeof ans === 'string' && ans ? cpRtHtml(ans) : '') + '</div></div>';
+    } else if (b.type === 'address') {
       input = '<textarea data-qid="' + b.id + '" rows="' + (b.type === 'address' ? 3 : 4) + '" style="' + box + ';resize:vertical" placeholder="' + esc(b.placeholder || '') + '">' + esc(typeof ans === 'string' ? ans : '') + '</textarea>';
     } else if (b.type === 'single' || b.type === 'dropdown') {
       // Valeur « Autre » = réponse enregistrée hors options.
@@ -7022,7 +7066,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
           if (Array.isArray(a)) disp = a.join(', ');
           else if (a && typeof a === 'object') { disp = Object.keys(a).map(function(k){ return k + ' : ' + a[k]; }).sort(function(x,y){ return (parseInt(x.split(' : ')[1],10)||99) - (parseInt(y.split(' : ')[1],10)||99); }).join(' · '); if (!disp) disp = 'Sans réponse'; }
           else disp = (a == null || a === '' ? 'Sans réponse' : String(a));
-          return '<div style="margin-bottom:15px"><div style="font-size:15px;font-weight:600;color:var(--nuit)">' + esc(b.label || '') + '</div><div style="font-size:16px;color:' + (disp === 'Sans réponse' ? 'var(--muted)' : 'var(--terre-600,#5A2A11)') + ';white-space:pre-wrap;margin-top:2px">' + esc(disp) + '</div></div>';
+          return '<div style="margin-bottom:15px"><div style="font-size:15px;font-weight:600;color:var(--nuit)">' + esc(b.label || '') + '</div><div style="font-size:16px;color:' + (disp === 'Sans réponse' ? 'var(--muted)' : 'var(--terre-600,#5A2A11)') + ';margin-top:2px" class="cp-rt-lu">' + (typeof a === 'string' && a ? cpRtHtml(a) : esc(disp)) + '</div></div>';
         }).join('');
         return '<div style="background:#fff;border-radius:14px;box-shadow:none;padding:18px 20px;margin-bottom:14px">' +
           '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><h3 style="margin:0;font-family:var(--font-display);font-size:19px">' + esc(s.title || ('Étape ' + (si+1))) + '</h3>' +
@@ -7081,7 +7125,8 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     root.querySelectorAll('[data-qid]').forEach(function(el){
       var id = el.getAttribute('data-qid');
       var v = el.value;
-      if (el.type === 'range') { cpQnrAnswers[id] = parseInt(v, 10) || 0; }
+      if (el.getAttribute('data-rt')) { cpQnrAnswers[id] = cpRtTexte(el); }
+      else if (el.type === 'range') { cpQnrAnswers[id] = parseInt(v, 10) || 0; }
       else if (el.tagName === 'SELECT' && v === '__other__') {
         var wrap = root.querySelector('[data-otherwrap="' + id + '"]');
         var ot = wrap ? wrap.querySelector('[data-other]') : null;
