@@ -5426,7 +5426,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
             '<button class="btn btn--primary btn--sm" type="button" onclick="arvReply(\'' + c.id + '\', false)">Répondre</button>' +
             (done ? '' : '<button class="btn btn--sage btn--sm" type="button" onclick="arvReply(\'' + c.id + '\', true)">Répondre et marquer traité</button>') +
             '<button class="btn btn--outline btn--sm" type="button" onclick="arvStatus(\'' + c.id + '\', \'' + (done ? 'open' : 'resolved') + '\')">' + (done ? 'Rouvrir' : 'Marquer traité') + '</button>' +
-            (link ? '<a class="btn btn--ghost btn--sm" href="' + esc(link) + '" target="_blank" rel="noopener">Voir sur le site</a>' : '') +
+            (link ? '<a class="btn btn--outline btn--sm" href="' + esc(link) + '" target="_blank" rel="noopener">Voir sur le site</a>' : '') +
             '<button class="btn btn--ghost-danger btn--sm" type="button" onclick="arvDelete(\'' + c.id + '\')">Supprimer</button>' +
           '</div>' +
         '</div>' +

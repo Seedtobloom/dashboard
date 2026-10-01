@@ -418,7 +418,7 @@
           h('div', { class: 'pop__title', text: 'Nouveau retour' }),
           d.payload.elementText ? h('div', { class: 'pop__meta', text: 'Sur « ' + d.payload.elementText.slice(0, 60) + ' »' }) : null
         ]),
-        h('button', { class: 'pop__close', type: 'button', 'aria-label': 'Annuler', onclick: cancelDraft }, ['×'])
+        h('button', { class: 'pop__close', type: 'button', 'aria-label': 'Fermer sans envoyer', onclick: cancelDraft }, ['×'])
       ]),
       nameBlock,
       h('label', { for: 'stb-text', text: 'Votre retour' }),
