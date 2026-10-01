@@ -381,3 +381,89 @@ export async function getEmailHistory(_request: Request, env: Env, url: URL): Pr
   const logs = await getEmailLogs(env, match[1]);
   return jsonResponse(logs);
 }
+
+// --- Retours site (widget de commentaires) ---
+
+function escHtml(s: string): string {
+  return String(s ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+interface ReviewCommentLike {
+  id: string;
+  number: number;
+  path: string;
+  pageUrl: string;
+  author: string;
+  text: string;
+}
+
+// Prévient Cindy d'un nouveau retour (ou d'une réponse du client), une fois par heure et par projet au plus.
+export async function sendReviewAdminNotification(
+  env: Env,
+  project: Project,
+  comment: ReviewCommentLike,
+  reply?: { author: string; text: string }
+): Promise<void> {
+  const adminEmail = await getAdminNotifyEmail(env);
+  if (!adminEmail) return;
+  const template = `admin_review_${project.id}`;
+  if (!(await canSendEmail(env, project.id, template))) return;
+
+  const baseUrl = env.PORTAL_BASE_URL ?? 'https://dashboard.seedtobloom.workers.dev';
+  const portalUrl = `${baseUrl}/admin#project-${project.id}`;
+  const who = escHtml(reply ? reply.author : comment.author);
+  const excerpt = escHtml((reply ? reply.text : comment.text).slice(0, 280));
+  const body = `
+    <p>Bonjour Cindy,</p>
+    <p><strong>${who}</strong> a laissé ${reply ? 'une réponse sur le retour n° ' + comment.number : 'un nouveau retour'} sur le site de <em>${escHtml(project.projectTitle)}</em> (page ${escHtml(comment.path)}).</p>
+    <p style="border-left:3px solid #c8b29a;padding-left:12px;color:#5c4633">${excerpt}</p>
+    <p>Les retours suivants de l'heure qui vient seront regroupés dans l'onglet Retours site du projet.</p>
+  `;
+  await sendEmail(
+    env,
+    project.id,
+    adminEmail,
+    `Nouveau retour sur le site — ${project.projectTitle}`,
+    emailWrapper('Nouveau retour sur le site', body, portalUrl),
+    template
+  );
+}
+
+// Prévient le client que Cindy a répondu à un retour, une fois par heure au plus.
+export async function sendReviewClientNotification(
+  env: Env,
+  project: Project,
+  comment: ReviewCommentLike,
+  config: { key: string }
+): Promise<void> {
+  if (!project.clientEmail) return;
+  const template = 'review_reply';
+  if (!(await canSendEmail(env, project.id, template))) return;
+
+  let link = comment.pageUrl;
+  try {
+    const u = new URL(comment.pageUrl);
+    u.searchParams.set('stb_review', config.key);
+    u.searchParams.set('stb_comment', comment.id);
+    link = u.toString();
+  } catch {
+    return;
+  }
+  const body = `
+    <p>Bonjour ${escHtml(project.clientName)},</p>
+    <p>J'ai répondu à votre retour n° ${comment.number} sur le site <em>${escHtml(project.projectTitle)}</em>. Vous pouvez lire ma réponse directement sur la page concernée.</p>
+    <p>À très vite,<br>Cindy</p>
+  `;
+  await sendEmail(
+    env,
+    project.id,
+    project.clientEmail,
+    `Réponse à votre retour — ${project.projectTitle}`,
+    emailWrapper('Cindy a répondu à votre retour', body, link).replace('Accéder à votre espace →', 'Voir sur le site →'),
+    template
+  );
+}

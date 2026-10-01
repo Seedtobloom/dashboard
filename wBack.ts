@@ -7,6 +7,7 @@ import { handleTokens } from './lib/api/tokens';
 import { handleFiles } from './lib/api/files';
 import { handleNotifications, getEmailHistory } from './lib/api/notifications';
 import { handleClientApi } from './lib/api/client';
+import { handleReviewPublic, handleReviewAdmin } from './lib/api/review';
 import { errorResponse } from './lib/utils';
 
 export default {
@@ -26,6 +27,16 @@ export default {
       // Client API (public, token-based auth handled inside handler)
       if (pathname.match(/^\/api\/client\//)) {
         return handleClientApi(request, env, url);
+      }
+
+      // Retours site : API publique du widget (clé de retours, pas de session)
+      if (pathname.match(/^\/api\/review\//)) {
+        return handleReviewPublic(request, env, url);
+      }
+
+      // Retours site : API admin
+      if (pathname.match(/^\/api\/projects\/[a-f0-9]{32}\/review/)) {
+        return handleReviewAdmin(request, env, url);
       }
 
       // Projects

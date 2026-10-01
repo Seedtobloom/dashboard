@@ -1,4 +1,5 @@
 // v2 - redesign portail client + multi-projets + pin admin
+import REVIEW_WIDGET_JS from './public/stb-review.widget.js';
 const COOKIE_NAME = 'bloom_sid';
 const SESSION_TTL = 7 * 24 * 3600;
 
@@ -2603,6 +2604,8 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     var tabs = [['apercu','Apercu'],['planning','Planning']];
     if (isPartenaire) tabs.push(['missions','Calendrier & missions']);
     if (isMaint) tabs.push(['tickets','Tickets maintenance']);
+    var hasReviewTab = project.type !== 'identite';
+    if (hasReviewTab) tabs.push(['retours','Retours site']);
     tabs.push(['couleurs','Couleurs'],['acces','Acces']);
     var tabIds = tabs.map(function(t){ return t[0]; });
     // Fix 19: validate saved tab against available tabs for this project type
@@ -2814,6 +2817,11 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
           /* ===== TAB: TICKETS (maintenance) ===== */
           '<div id="tab-tickets" class="main-inner proj-main" style="padding:36px 48px 80px;max-width:1040px;' + (_adminProjTab==='tickets' ? '' : 'display:none') + '">' +
             (isMaint ? '<div id="amt-section">' + buildMaintenanceSection(project) + '</div>' : '') +
+          '</div>' +
+
+          /* ===== TAB: RETOURS SITE (commentaires du client sur son site) ===== */
+          '<div id="tab-retours" class="main-inner proj-main" style="padding:36px 48px 80px;max-width:1040px;' + (_adminProjTab==='retours' ? '' : 'display:none') + '">' +
+            (hasReviewTab ? arvSection() + (_adminProjTab==='retours' ? (setTimeout(function(){ arvLoad(); }, 0), '') : '') : '') +
           '</div>' +
 
           /* ===== TAB: PLANNING & ECHEANCE ===== */
@@ -3239,10 +3247,11 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
 
   window.adminProjTab = function(tab) {
     _adminProjTab = tab;
-    ['apercu','planning','missions','tickets','couleurs','acces'].forEach(function(t) {
+    ['apercu','planning','missions','tickets','retours','couleurs','acces'].forEach(function(t) {
       var el = document.getElementById('tab-' + t);
       if (el) el.style.display = (t === tab ? '' : 'none');
     });
+    if (tab === 'retours' && window.arvLoad) arvLoad();
     document.querySelectorAll('.proj-tabnav__btn').forEach(function(btn) {
       btn.classList.toggle('active', btn.dataset.tab === tab);
     });
@@ -5221,6 +5230,284 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     } else toast('Erreur', true);
   }
 
+  // ══════════════════════════════════════════════════════════════════════════
+  // RETOURS SITE — commentaires laisses par le client directement sur son site
+  // (widget /review.js). Donnees : GET /api/projects/{id}/review
+  // ══════════════════════════════════════════════════════════════════════════
+  var _arv = { pid: null, data: null, filter: 'open', loading: false };
+  var ARV_T = '#5c4633', ARV_T6 = '#8a6f54', ARV_T2 = '#c8b29a', ARV_BONE = '#FAF8F4', ARV_BD = '#e2d9ce', ARV_PAILLE = '#EFE1B0';
+
+  function arvSection(){
+    return '<div id="arv-section"><div class="card"><div class="card-body" style="padding:28px;color:' + ARV_T6 + '">Chargement des retours…</div></div></div>';
+  }
+
+  window.arvLoad = async function(){
+    var pid = currentProjectId;
+    if (!pid) return;
+    _arv.pid = pid; _arv.loading = true;
+    try {
+      var res = await apiFetch('/api/projects/' + pid + '/review');
+      if (!res.ok) throw new Error('load');
+      _arv.data = await res.json();
+    } catch (e) {
+      _arv.data = null;
+      var box = document.getElementById('arv-section');
+      if (box) box.innerHTML = '<div class="card"><div class="card-body" style="padding:28px;color:#9b3a2e">Impossible de charger les retours.</div></div>';
+      return;
+    } finally { _arv.loading = false; }
+    arvRender();
+  };
+
+  function arvPortalOrigin(){ return window.location.origin; }
+
+  function arvClientLink(cfg){
+    if (!cfg || !cfg.siteUrl) return '';
+    try {
+      var u = new URL(cfg.siteUrl);
+      u.searchParams.set('stb_review', cfg.key);
+      return u.toString();
+    } catch (e) { return ''; }
+  }
+
+  function arvCommentLink(cfg, c){
+    try {
+      var u = new URL(c.pageUrl || (cfg.siteUrl || '') + c.path);
+      u.searchParams.set('stb_review', cfg.key);
+      u.searchParams.set('stb_comment', c.id);
+      return u.toString();
+    } catch (e) { return ''; }
+  }
+
+  function arvLoaderJs(){
+    return '(function(){try{var q=location.search;if(q.indexOf("stb_review=")<0&&!localStorage.getItem("stb_review_key"))return;var s=document.createElement("script");s.src="' + arvPortalOrigin() + '/review.js";s.defer=true;document.body.appendChild(s);}catch(e){}})();';
+  }
+
+  function arvPhpSnippet(){
+    return "// Seed to Bloom · outil de retours sur le site\n" +
+      "// Ne charge rien pour les visiteurs : l'outil ne s'active qu'avec le lien de retours.\n" +
+      "add_action('wp_footer', function () {\n" +
+      "  if (is_admin()) return;\n" +
+      "  echo '<script>" + arvLoaderJs() + "<\/script>';\n" +
+      "}, 99);";
+  }
+
+  function arvHtmlSnippet(){
+    return '<script>' + arvLoaderJs() + '<\/script>';
+  }
+
+  window.arvCopy = function(id){
+    var el = document.getElementById(id);
+    if (!el) return;
+    var v = el.value !== undefined ? el.value : el.textContent;
+    navigator.clipboard.writeText(v).then(function(){ toast('Copié ✓'); }).catch(function(){ el.select && el.select(); toast('Copie impossible, selectionnez le texte', true); });
+  };
+
+  function arvField(label, id, value, rows){
+    var common = 'id="' + id + '" readonly style="width:100%;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;color:' + ARV_T + ';background:' + ARV_BONE + ';border:1px solid ' + ARV_BD + ';border-radius:10px;padding:10px 12px"';
+    return '<div style="margin-bottom:16px">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px">' +
+        '<label for="' + id + '" style="font-size:13px;font-weight:600;color:' + ARV_T + '">' + label + '</label>' +
+        '<button class="btn btn--outline btn--sm" type="button" onclick="arvCopy(\'' + id + '\')">Copier</button>' +
+      '</div>' +
+      (rows ? '<textarea ' + common + ' rows="' + rows + '">' + esc(value) + '</textarea>' : '<input type="text" ' + common + ' value="' + esc(value) + '">') +
+    '</div>';
+  }
+
+  function arvRender(){
+    var box = document.getElementById('arv-section');
+    if (!box || !_arv.data) return;
+    var cfg = _arv.data.config;
+    var comments = Array.isArray(_arv.data.comments) ? _arv.data.comments : [];
+    var openN = comments.filter(function(c){ return c.status === 'open'; }).length;
+
+    var tabBtn = document.querySelector('.proj-tabnav__btn[data-tab="retours"]');
+    if (tabBtn) tabBtn.textContent = 'Retours site' + (openN ? ' (' + openN + ')' : '');
+
+    if (!cfg) {
+      box.innerHTML =
+        '<div class="card"><div class="card-body" style="padding:28px 30px">' +
+          '<h3 style="font-size:24px;color:' + ARV_T + ';margin-bottom:8px">Retours sur le site</h3>' +
+          '<p style="font-size:14px;line-height:1.6;color:' + ARV_T6 + ';max-width:600px;margin-bottom:20px">Votre client clique directement sur le site pour laisser un commentaire, et tout arrive ici, page par page. Indiquez l’adresse du site (préprod ou en ligne) pour générer le lien de retours.</p>' +
+          '<div class="form-field" style="max-width:520px"><label for="arv-site">Adresse du site</label><input id="arv-site" type="url" placeholder="https://preprod.exemple.fr" style="width:100%"></div>' +
+          '<button class="btn btn--primary" type="button" onclick="arvActivate()">Activer les retours</button>' +
+        '</div></div>';
+      return;
+    }
+
+    var link = arvClientLink(cfg);
+    var extra = (cfg.origins || []).filter(function(o){ try { return o !== new URL(cfg.siteUrl).origin; } catch(e){ return true; } }).join(', ');
+
+    var install =
+      '<details class="card" style="margin-bottom:24px"' + (comments.length ? '' : ' open') + '>' +
+        '<summary style="list-style:none;cursor:pointer;padding:20px 26px;display:flex;align-items:center;justify-content:space-between;gap:12px">' +
+          '<span><span style="font-size:15px;font-weight:600;color:' + ARV_T + '">Installation et lien client</span>' +
+          '<span style="display:block;font-size:12px;color:' + ARV_T6 + ';margin-top:2px">' + esc(cfg.siteUrl || 'Adresse du site non renseignee') + ' · ' + (cfg.enabled ? 'actif' : 'en pause') + '</span></span>' +
+          '<span style="font-size:12px;color:' + ARV_T6 + '">Afficher / masquer</span>' +
+        '</summary>' +
+        '<div style="padding:0 26px 24px;border-top:1px solid ' + ARV_BD + '">' +
+          '<p style="font-size:13px;line-height:1.6;color:' + ARV_T6 + ';margin:16px 0">1. Sur WordPress, ajoutez ce code dans Code Snippets (type PHP, « Exécuter partout »). Il pèse quelques octets et ne charge l’outil que pour les personnes qui ont le lien. 2. Envoyez le lien client. 3. Les retours arrivent ici.</p>' +
+          arvField('Code Snippets (WordPress)', 'arv-php', arvPhpSnippet(), 7) +
+          arvField('Autre site (à coller avant &lt;/body&gt;)', 'arv-html', arvHtmlSnippet(), 3) +
+          (link ? arvField('Lien à envoyer au client', 'arv-link', link, 0) : '<p style="color:#9b3a2e;font-size:13px;margin-bottom:16px">Renseignez l’adresse du site pour obtenir le lien client.</p>') +
+          '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:22px">' +
+            (link ? '<a class="btn btn--sage btn--sm" href="' + esc(link) + '" target="_blank" rel="noopener">Ouvrir le site en mode retours</a>' : '') +
+          '</div>' +
+          '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;align-items:end;margin-bottom:14px">' +
+            '<div class="form-field" style="margin:0"><label for="arv-site">Adresse du site</label><input id="arv-site" type="url" value="' + esc(cfg.siteUrl || '') + '" style="width:100%"></div>' +
+            '<div class="form-field" style="margin:0"><label for="arv-extra">Autres adresses autorisées (facultatif)</label><input id="arv-extra" type="text" value="' + esc(extra) + '" placeholder="https://www.exemple.fr, https://exemple.fr" style="width:100%"></div>' +
+          '</div>' +
+          '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
+            '<button class="btn btn--primary btn--sm" type="button" onclick="arvSaveConfig()">Enregistrer</button>' +
+            '<button class="btn btn--outline btn--sm" type="button" onclick="arvToggleEnabled()">' + (cfg.enabled ? 'Mettre en pause' : 'Réactiver') + '</button>' +
+            '<button class="btn btn--ghost-danger btn--sm" type="button" onclick="arvRotate()">Changer le lien</button>' +
+          '</div>' +
+          '<p style="font-size:12px;color:' + ARV_T6 + ';margin-top:10px">« Changer le lien » coupe l’accès des anciens liens. Le code d’installation, lui, reste le même.</p>' +
+        '</div>' +
+      '</details>';
+
+    var f = _arv.filter;
+    var list = comments.filter(function(c){ return f === 'all' ? true : c.status === f; });
+    list.sort(function(a, b){ return (a.path || '').localeCompare(b.path || '') || a.number - b.number; });
+
+    function chip(id, label, n){
+      var act = f === id;
+      return '<button type="button" onclick="arvFilter(\'' + id + '\')" style="padding:7px 14px;border-radius:999px;border:1px solid ' + (act ? ARV_T : ARV_BD) + ';background:' + (act ? ARV_T : '#fff') + ';color:' + (act ? ARV_PAILLE : ARV_T6) + ';font-size:13px;font-weight:600;cursor:pointer">' + label + ' <span style="opacity:.7">' + n + '</span></button>';
+    }
+
+    var groups = {};
+    var order = [];
+    list.forEach(function(c){ var k = c.path || '/'; if (!groups[k]) { groups[k] = []; order.push(k); } groups[k].push(c); });
+
+    var listHtml = list.length ? order.map(function(path){
+      var first = groups[path][0];
+      return '<div style="margin-bottom:26px">' +
+        '<div style="display:flex;align-items:baseline;gap:10px;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid ' + ARV_BD + '">' +
+          '<span style="font-family:\'Cormorant Garamond\',serif;font-size:20px;color:' + ARV_T + '">' + esc(first.pageTitle || path) + '</span>' +
+          '<span style="font-size:12px;color:' + ARV_T6 + '">' + esc(path) + '</span>' +
+        '</div>' +
+        groups[path].map(arvCommentHtml).join('') +
+      '</div>';
+    }).join('') : '<div style="padding:28px;text-align:center;color:' + ARV_T6 + ';font-size:14px">' +
+      (comments.length ? 'Rien dans cette catégorie.' : 'Aucun retour pour l’instant. Dès que votre client commente le site, ses retours apparaissent ici.') + '</div>';
+
+    box.innerHTML = install +
+      '<div class="card"><div class="card-body" style="padding:24px 26px">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:20px">' +
+          '<div style="display:flex;gap:6px;flex-wrap:wrap">' +
+            chip('open', 'À traiter', openN) + chip('resolved', 'Traités', comments.length - openN) + chip('all', 'Tous', comments.length) +
+          '</div>' +
+          '<button class="btn btn--outline btn--sm" type="button" onclick="arvLoad()">Actualiser</button>' +
+        '</div>' +
+        listHtml +
+      '</div></div>';
+  }
+
+  function arvCommentHtml(c){
+    var cfg = _arv.data.config;
+    var link = arvCommentLink(cfg, c);
+    var done = c.status === 'resolved';
+    var replies = (c.replies || []).map(function(r){
+      var mine = r.role === 'cindy';
+      return '<div style="margin-top:8px;padding:9px 12px;border-radius:10px;background:' + (mine ? '#f7efff' : '#fff') + ';border:1px solid ' + (mine ? '#E4D1FE' : ARV_BD) + '">' +
+        '<div style="font-size:12px;font-weight:600;color:' + ARV_T + ';margin-bottom:2px">' + esc(r.author) + ' · <span style="font-weight:400;color:' + ARV_T6 + '">' + esc(arvDate(r.createdAt)) + '</span></div>' +
+        '<div style="font-size:14px;white-space:pre-wrap;color:#2b1a0e">' + esc(r.text) + '</div>' +
+      '</div>';
+    }).join('');
+    return '<div id="arv-c-' + c.id + '" style="border:1px solid ' + ARV_BD + ';border-radius:14px;padding:16px 18px;margin-bottom:12px;background:' + (done ? ARV_BONE : '#fff') + (done ? ';opacity:.85' : '') + '">' +
+      '<div style="display:flex;align-items:flex-start;gap:12px">' +
+        '<span style="flex:none;width:30px;height:30px;border-radius:50% 50% 50% 4px;background:' + (done ? ARV_BD : ARV_T) + ';color:' + (done ? ARV_T6 : ARV_PAILLE) + ';display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:13px">' + c.number + '</span>' +
+        '<div style="flex:1;min-width:0">' +
+          '<div style="font-size:13px;color:' + ARV_T6 + ';margin-bottom:4px"><strong style="color:' + ARV_T + '">' + esc(c.author) + '</strong> · ' + esc(arvDate(c.createdAt)) + (c.device ? ' · ' + esc(c.device) : '') + (done ? ' · <span style="color:' + ARV_T + '">traité</span>' : '') + '</div>' +
+          (c.elementText ? '<div style="font-size:12px;color:' + ARV_T6 + ';margin-bottom:6px">Sur « ' + esc(c.elementText) + ' »</div>' : '') +
+          '<div style="font-size:15px;line-height:1.55;white-space:pre-wrap;color:#2b1a0e">' + esc(c.text) + '</div>' +
+          replies +
+          '<textarea id="arv-r-' + c.id + '" rows="2" placeholder="Répondre à ' + esc(c.author) + '…" aria-label="Réponse au retour ' + c.number + '" style="width:100%;margin-top:12px;border:1px solid ' + ARV_T2 + ';border-radius:10px;padding:8px 10px;font:inherit;font-size:14px"></textarea>' +
+          '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">' +
+            '<button class="btn btn--primary btn--sm" type="button" onclick="arvReply(\'' + c.id + '\', false)">Répondre</button>' +
+            (done ? '' : '<button class="btn btn--sage btn--sm" type="button" onclick="arvReply(\'' + c.id + '\', true)">Répondre et marquer traité</button>') +
+            '<button class="btn btn--outline btn--sm" type="button" onclick="arvStatus(\'' + c.id + '\', \'' + (done ? 'open' : 'resolved') + '\')">' + (done ? 'Rouvrir' : 'Marquer traité') + '</button>' +
+            (link ? '<a class="btn btn--ghost btn--sm" href="' + esc(link) + '" target="_blank" rel="noopener">Voir sur le site</a>' : '') +
+            '<button class="btn btn--ghost-danger btn--sm" type="button" onclick="arvDelete(\'' + c.id + '\')">Supprimer</button>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }
+
+  function arvDate(iso){
+    if (!iso) return '';
+    var d = new Date(iso);
+    return d.toLocaleDateString('fr-FR', { day:'numeric', month:'short' }) + ', ' + d.toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' });
+  }
+
+  function arvFind(id){
+    var list = (_arv.data && _arv.data.comments) || [];
+    for (var i = 0; i < list.length; i++) if (list[i].id === id) return i;
+    return -1;
+  }
+
+  window.arvFilter = function(f){ _arv.filter = f; arvRender(); };
+
+  window.arvActivate = async function(){
+    var site = (document.getElementById('arv-site') || {}).value || '';
+    if (!/^https?:\/\//i.test(site.trim())) { toast('Indiquez une adresse complete, avec https://', true); return; }
+    var res = await apiFetch('/api/projects/' + currentProjectId + '/review', { method:'PUT', body: JSON.stringify({ siteUrl: site.trim() }) });
+    var data = await res.json().catch(function(){ return {}; });
+    if (!res.ok) { toast(data.error || 'Erreur', true); return; }
+    _arv.data = data; arvRender(); toast('Retours activés ✓');
+  };
+
+  window.arvSaveConfig = async function(){
+    var site = (document.getElementById('arv-site') || {}).value || '';
+    var extra = ((document.getElementById('arv-extra') || {}).value || '').split(/[\s,]+/).filter(Boolean);
+    var res = await apiFetch('/api/projects/' + currentProjectId + '/review', { method:'PUT', body: JSON.stringify({ siteUrl: site.trim(), extraOrigins: extra }) });
+    var data = await res.json().catch(function(){ return {}; });
+    if (!res.ok) { toast(data.error || 'Erreur', true); return; }
+    _arv.data = data; arvRender(); toast('Enregistré ✓');
+  };
+
+  window.arvToggleEnabled = async function(){
+    var cfg = _arv.data && _arv.data.config; if (!cfg) return;
+    var res = await apiFetch('/api/projects/' + currentProjectId + '/review', { method:'PUT', body: JSON.stringify({ enabled: !cfg.enabled }) });
+    if (!res.ok) { toast('Erreur', true); return; }
+    _arv.data = await res.json(); arvRender(); toast(_arv.data.config.enabled ? 'Retours réactivés' : 'Retours en pause');
+  };
+
+  window.arvRotate = function(){
+    showConfirm('Le lien actuel ne fonctionnera plus. Il faudra envoyer le nouveau lien au client. Les retours déjà laissés sont conservés.', async function(){
+      var res = await apiFetch('/api/projects/' + currentProjectId + '/review/rotate', { method:'POST', body: '{}' });
+      if (!res.ok) { toast('Erreur', true); return; }
+      _arv.data = await res.json(); arvRender(); toast('Nouveau lien généré ✓');
+    }, { title: 'Changer le lien de retours ?', okLabel: 'Changer le lien' });
+  };
+
+  window.arvReply = async function(id, resolve){
+    var ta = document.getElementById('arv-r-' + id);
+    var text = ta ? ta.value.trim() : '';
+    if (!text) { if (resolve) return arvStatus(id, 'resolved'); toast('La réponse est vide', true); if (ta) ta.focus(); return; }
+    var res = await apiFetch('/api/projects/' + currentProjectId + '/review/comments/' + id + '/replies', { method:'POST', body: JSON.stringify({ text: text, resolve: !!resolve }) });
+    var data = await res.json().catch(function(){ return {}; });
+    if (!res.ok) { toast(data.error || 'Erreur', true); return; }
+    var i = arvFind(id); if (i > -1) _arv.data.comments[i] = data;
+    arvRender(); toast(resolve ? 'Réponse envoyée, retour traité ✓' : 'Réponse envoyée ✓');
+  };
+
+  window.arvStatus = async function(id, status){
+    var res = await apiFetch('/api/projects/' + currentProjectId + '/review/comments/' + id, { method:'PATCH', body: JSON.stringify({ status: status }) });
+    var data = await res.json().catch(function(){ return {}; });
+    if (!res.ok) { toast(data.error || 'Erreur', true); return; }
+    var i = arvFind(id); if (i > -1) _arv.data.comments[i] = data;
+    arvRender();
+  };
+
+  window.arvDelete = function(id){
+    showConfirm('Ce retour et ses réponses seront supprimés définitivement.', async function(){
+      var res = await apiFetch('/api/projects/' + currentProjectId + '/review/comments/' + id, { method:'DELETE' });
+      if (!res.ok) { toast('Erreur', true); return; }
+      var i = arvFind(id); if (i > -1) _arv.data.comments.splice(i, 1);
+      arvRender(); toast('Retour supprimé');
+    }, { title: 'Supprimer ce retour ?', okLabel: 'Supprimer', danger: true });
+  };
   // ─────────────────────────────────────────────────────────────────────────
   // ESPACE MAINTENANCE (terre) — cote studio/admin — tickets sur quota minutes
   // ─────────────────────────────────────────────────────────────────────────
@@ -11103,6 +11390,22 @@ export default {
       // Client HTML (public)
       if (pathname === '/client.html' || pathname === '/client') {
         return new Response(CLIENT_HTML, { headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache', 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'strict-origin-when-cross-origin', 'X-Frame-Options': 'DENY' } });
+      }
+
+      // Retours site : script du widget, chargé sur le site du client
+      if (pathname === '/review.js') {
+        return new Response(REVIEW_WIDGET_JS, { headers: { 'Content-Type': 'application/javascript; charset=utf-8', 'Cache-Control': 'public, max-age=3600', 'Access-Control-Allow-Origin': '*', 'X-Content-Type-Options': 'nosniff' } });
+      }
+
+      // Retours site : API publique du widget (appelée depuis le site du client, en CORS)
+      if (pathname.startsWith('/api/review/')) {
+        const origin = request.headers.get('Origin') || '*';
+        const cors = { 'Access-Control-Allow-Origin': origin, 'Access-Control-Allow-Methods': 'GET, POST, PATCH, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type', 'Access-Control-Max-Age': '86400', 'Vary': 'Origin' };
+        if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
+        const res = await forwardToBack(request, env);
+        const out = new Response(res.body, res);
+        Object.keys(cors).forEach((k) => out.headers.set(k, cors[k]));
+        return out;
       }
 
       // Client API (public, no admin auth needed)
