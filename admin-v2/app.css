@@ -3683,3 +3683,5 @@ a.ckr-b{text-decoration:none;display:inline-block}
 .ck-passe__c{border:0;background:none;padding:0;font:inherit;color:#5A2A11;text-decoration:underline;cursor:pointer}
 .ckc-l{display:grid;grid-template-columns:150px 110px auto auto;gap:8px;align-items:center;padding:8px 0;border-top:1px solid rgba(17,7,4,.08)}
 .ckc-l .inp{width:100%}
+.ckr-qm{font-size:13.5px;color:var(--terre-600);margin:4px 0 0}
+.ckr-qm--ko{color:#5A2A11;font-weight:600}

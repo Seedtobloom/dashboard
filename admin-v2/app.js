@@ -6120,13 +6120,30 @@
       return '<a class="ckr-f" href="' + esc(href) + '" target="_blank" rel="noopener">' + esc(u) + '</a>';
     }).join('') + '</div>';
   }
+  // L'e-mail d'une question : parti ou non, à quelle adresse, et le renvoyer.
+  function qMailEtat(x, renvoyer) {
+    var m = x && x.mail;
+    var etat = !m ? 'E-mail : pas d’information sur l’envoi (question posée avant ce suivi).'
+      : (m.ok ? 'E-mail parti le ' + fmtDate(m.at) + ' à ' + m.to + '. Pense à lui dire de regarder ses indésirables.'
+        : 'L’e-mail n’est pas parti' + (m.to ? ' à ' + m.to : '') + ' : ' + (m.error || 'erreur inconnue') + '.');
+    return '<p class="ckr-qm' + (m && !m.ok ? ' ckr-qm--ko' : '') + '">' + esc(etat) + ' <button class="ck-passe__c" onclick="' + renvoyer + '">Renvoyer l’e-mail</button></p>';
+  }
+  function ckTRenvoyer(id) {
+    var t = ckpToutes().filter(function (x) { return x.id === id; })[0]; if (!t) return;
+    var url = t.src === 'client' ? '/api/clients/' + t.key + '/tasks/' + t.id : '/api/clients/' + t.key + '/tickets/' + t.id;
+    jpost(url, { projectId: t.src === 'client' ? (t.projet || 'partner') : 'maintenance', resendInfo: true }, 'PATCH').then(function (r) { return r.json(); }).then(function (d) {
+      var q = ((d && d.infos) || []).filter(function (x) { return !x.r; }).pop(), m = q && q.mail;
+      toast(m && m.ok ? 'E-mail renvoyé à ' + m.to : 'L’e-mail n’est pas parti : ' + ((m && m.error) || 'erreur'));
+      ckpApres(id, function (b) { if (d && d.infos) b.infos = d.infos; });
+    }).catch(function () { toast('Erreur'); });
+  }
   function ckTInfo(t) {
     if ((t.src !== 'ticket' && t.src !== 'client') || t.statut === 'done') return '';
     var qui = ckTPrenom(t);
     var faites = (t.infos || []).map(function (x) {
       return '<div class="ckr-q"><p class="ckr-qq">Ta question : « ' + esc(x.q) + ' »</p>' +
         (x.r ? '<p class="ckr-qr"><b>Sa réponse</b>' + esc(x.r) + '</p>'
-          : '<p class="ckr-qa">' + (x.askedAt ? 'Envoyée le ' + esc(ckpDateLongue(String(x.askedAt).slice(0, 10))) + ', en attente de sa réponse.' : 'En attente de sa réponse.') + '</p>') + '</div>';
+          : '<p class="ckr-qa">' + (x.askedAt ? 'Envoyée le ' + esc(ckpDateLongue(String(x.askedAt).slice(0, 10))) + ', en attente de sa réponse.' : 'En attente de sa réponse.') + '</p>' + qMailEtat(x, 'ADM.ckTRenvoyer(\'' + esc(t.id) + '\')')) + '</div>';
     }).join('');
     var attend = (t.infos || []).some(function (x) { return !x.r; });
     return '<div class="ckr-info">' + faites +
@@ -12539,7 +12556,7 @@
       var url = l.reviewLink ? (/^https?:\/\//i.test(l.reviewLink) ? l.reviewLink : 'https://' + l.reviewLink) : (l.fileKey ? '/api/clients/' + CURKEY + '/files/' + encodeURIComponent(l.fileKey) + '/download' : '');
       var infos = Array.isArray(l.infos) ? l.infos : [], attend = infos.some(function (x) { return !x.r; });
       var qr = infos.map(function (x) {
-        return '<div class="ckr-q"><p class="ckr-qq">Ta question : « ' + esc(x.q) + ' »</p>' + (x.r ? '<p class="ckr-qr"><b>Sa réponse</b>' + esc(x.r) + '</p>' : '<p class="ckr-qa">Envoyée le ' + esc(fmtDate(x.askedAt)) + ', en attente de sa réponse.</p>') + '</div>';
+        return '<div class="ckr-q"><p class="ckr-qq">Ta question : « ' + esc(x.q) + ' »</p>' + (x.r ? '<p class="ckr-qr"><b>Sa réponse</b>' + esc(x.r) + '</p>' : '<p class="ckr-qa">Envoyée le ' + esc(fmtDate(x.askedAt)) + ', en attente de sa réponse.</p>' + qMailEtat(x, 'ADM.versionRenvoyer(\'' + pid + '\',\'' + esc(l.id) + '\')')) + '</div>';
       }).join('');
       var demander = (l.status === 'refuse' && !attend) ? '<div class="ckr-info"><h3>Un point pas clair dans ses retours ?</h3>' +
         '<textarea id="vs-q-' + esc(l.id) + '" class="inp" rows="5" placeholder="Ta question"></textarea>' +
@@ -12559,6 +12576,12 @@
       jpost('/api/clients/' + CURKEY + '/deliverables', { projectId: pid, link: lien, name: nom || 'Version', suivi: true, notify: notify, message: ENVOI_MOT }, 'POST')
         .then(function (r) { if (r.ok) { toast('Version envoyée'); loadClient(); } else toast('Erreur'); }).catch(function () { toast('Erreur'); });
     }, true);
+  }
+  function versionRenvoyer(pid, id) {
+    jpost('/api/clients/' + CURKEY + '/deliverables/' + id, { projectId: pid, resendInfo: true }, 'PATCH').then(function (r) { return r.json(); }).then(function (d) {
+      var q = ((d && d.infos) || []).filter(function (x) { return !x.r; }).pop(), m = q && q.mail;
+      toast(m && m.ok ? 'E-mail renvoyé à ' + m.to : 'L’e-mail n’est pas parti : ' + ((m && m.error) || 'erreur')); loadClient();
+    }).catch(function () { toast('Erreur'); });
   }
   function versionDemander(pid, id) {
     var t = el('vs-q-' + id), q = t ? t.value.trim() : '';
@@ -14470,7 +14493,7 @@
     myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, myTaskArchive: myTaskArchive, mtStart: mtStart, mtPause: mtPause, mtQuickAdd: mtQuickAdd, mtQuickDue: mtQuickDue, mtSubAdd: mtSubAdd, mtSubToggle: mtSubToggle, mtSubDel: mtSubDel, mtGoTask: mtGoTask, mtEditNote: mtEditNote, mtSaveNote: mtSaveNote, mtNoteRestore: mtNoteRestore, mtEditOpen: mtEditOpen, mtToggleRow: mtToggleRow,
     visTab: visTab, trameOpen: trameOpen, trameEditLib: trameEditLib, trameBackLib: trameBackLib, trameQToggle: trameQToggle, trameQNote: trameQNote, callNoteNew: callNoteNew, callNoteSel: callNoteSel, callNoteDel: callNoteDel, callNoteSet: callNoteSet, callRight: callRight, trameNew: trameNew, trameSel: trameSel, trameDel: trameDel, trameSet: trameSet, trameEditToggle: trameEditToggle, trameEdField: trameEdField, trameEdQ: trameEdQ, trameEdQAdd: trameEdQAdd, trameEdQDel: trameEdQDel, trameEdSecAdd: trameEdSecAdd, trameEdSecDel: trameEdSecDel, trameEdSecMove: trameEdSecMove, visAdd: visAdd, visSet: visSet, visSetClient: visSetClient, visOpen: visOpen, visCloseDrawer: visCloseDrawer, visPresent: visPresent, visPushICloud: visPushICloud, visSetTypeFilter: visSetTypeFilter, visNoteSave: visNoteSave, visDel: visDel, visStepAdd: visStepAdd, visStepSet: visStepSet, visStepDel: visStepDel, visStepMove: visStepMove, visSaveEditor: visSaveEditor, visQAdd: visQAdd, visQToggle: visQToggle, visQSet: visQSet, visQDel: visQDel, visApplyTpl: visApplyTpl, visTplAdd: visTplAdd, visTplSet: visTplSet, visTplDel: visTplDel, visTplStepAdd: visTplStepAdd, visTplStepSet: visTplStepSet, visTplStepDel: visTplStepDel, visTplStepMove: visTplStepMove, visTplQAdd: visTplQAdd, visTplQSet: visTplQSet, visTplQDel: visTplQDel, visFmt: visFmt, visEdActive: visEdActive,
     msSaveCap: msSaveCap,
-    versionEnvoyer: versionEnvoyer, versionDemander: versionDemander, qnrAjouter: qnrAjouter, qnrPrevenir: qnrPrevenir, qnrButoir: qnrButoir, stepAdd: stepAdd, stepStatus: stepStatus, stepDelete: stepDelete, stepEditOpen: stepEditOpen, suiviReglagesSave: suiviReglagesSave,
+    versionEnvoyer: versionEnvoyer, versionDemander: versionDemander, versionRenvoyer: versionRenvoyer, ckTRenvoyer: ckTRenvoyer, qnrAjouter: qnrAjouter, qnrPrevenir: qnrPrevenir, qnrButoir: qnrButoir, stepAdd: stepAdd, stepStatus: stepStatus, stepDelete: stepDelete, stepEditOpen: stepEditOpen, suiviReglagesSave: suiviReglagesSave,
     qnAdd: qnAdd, qnSet: qnSet, qnDel: qnDel, qnMove: qnMove, qnBulk: qnBulk, qnSetOptions: qnSetOptions, qnSetTitle: qnSetTitle, qnSetReady: qnSetReady, qnPreview: qnPreview,
     planGo: planGo, planSetFilter: planSetFilter, planTick: planTick,
     tiroirFermer: ptFermer, ptOuvrir: ptOuvrir,

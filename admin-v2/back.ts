@@ -931,6 +931,11 @@ async function handleClientApi(
     // « Il te manque une info ? » : Cindy pose une question, la demande passe
     // chez la cliente (statut waiting_client) jusqu'à sa réponse.
     let ticketAskNotify = '';
+    // Renvoyer l'e-mail de la question en attente (s'il n'est pas arrivé).
+    if (body.resendInfo === true) {
+      const qr = (Array.isArray(tk.infos) ? tk.infos : []).filter((x: AnyObj) => !x.r).pop();
+      if (qr) ticketAskNotify = qr.q;
+    }
     if (typeof body.askInfo === 'string' && body.askInfo.trim()) {
       const q = body.askInfo.trim().slice(0, 2000);
       if (!Array.isArray(tk.infos)) tk.infos = [];
@@ -950,10 +955,12 @@ async function handleClientApi(
         mailBonjour(data) + `<p>Je viens de commencer <strong>${escHtml(tk.title || '')}</strong>. Je te dis dès que c'est prêt.</p>` + MAIL_SIGNE, key);
     }
     if (ticketAskNotify) {
-      await notifyClient(env, data, `Une petite question sur ${tk.title || 'ta demande'}`,
+      const rq = await notifyClient(env, data, `Une petite question sur ${tk.title || 'ta demande'}`,
         mailBonjour(data) + `<p>Pour avancer sur <strong>${escHtml(tk.title || '')}</strong>, il me manque une info :</p>` +
         `<p style="background:#E6E5B2;padding:14px 18px;border-radius:10px;font-size:16px">${escHtml(ticketAskNotify).replace(/\n/g, '<br>')}</p>` +
         `<p>Tu peux me répondre directement dans ton espace.</p>` + MAIL_SIGNE, true, undefined, 'Répondre');
+      noterMail((tk.infos || []).filter((x: AnyObj) => !x.r).pop(), rq);
+      await saveClient(env, key, data);
     }
     if (ticketProposeNotify) {
       const frd = (tk.proposedDueDate || '').split('-').reverse().join('/');
@@ -1571,6 +1578,10 @@ async function handleTaskPatch(request: Request, env: Env, key: string, data: An
   // « Il te manque une info, ou un point n'est pas clair ? » : la question
   // s'accroche à la tâche, part par mail et s'affiche en haut chez la cliente.
   let askInfoTache = '';
+  if (body.resendInfo === true) {
+    const qr = (Array.isArray(t.infos) ? t.infos : []).filter((x: AnyObj) => !x.r).pop();
+    if (qr) askInfoTache = qr.q;
+  }
   if (typeof body.askInfo === 'string' && body.askInfo.trim()) {
     askInfoTache = body.askInfo.trim().slice(0, 2000);
     if (!Array.isArray(t.infos)) t.infos = [];
@@ -1739,7 +1750,10 @@ async function handleTaskPatch(request: Request, env: Env, key: string, data: An
     if (motT) bodyHtml = bodyHtml.replace(MAIL_SIGNE, motBloc(motT) + MAIL_SIGNE);
     await notifyClient(env, data, body.status === 'done' ? `C'est terminé : ${t.title || ''}` : `Tu peux vérifier ${t.title || ''} ?`, bodyHtml, key, t.id, body.status === 'review' ? 'Voir et valider' : 'Voir ma demande');
   }
-  if (askInfoTache) await mailQuestion(env, data, key, t.title || 'ta demande', askInfoTache, t.id);
+  if (askInfoTache) {
+    noterMail((t.infos || []).filter((x: AnyObj) => !x.r).pop(), await mailQuestion(env, data, key, t.title || 'ta demande', askInfoTache, t.id));
+    await saveClient(env, key, data);
+  }
   if (proposedNotify) {
     const frd = (t.proposedDueDate || '').split('-').reverse().join('/');
     await notifyClient(env, data, `Une autre date pour ${t.title || ''} ?`,
@@ -2075,19 +2089,26 @@ async function handleDeliverablePatch(request: Request, env: Env, key: string, d
   if (body.resolved === true) { liv.revisionResolved = true; liv.seenByAdmin = true; }
   // Un point pas clair dans ses retours : la question s'accroche à la version.
   let askInfoLiv = '';
+  if (body.resendInfo === true) {
+    const qr = (Array.isArray(liv.infos) ? liv.infos : []).filter((x: AnyObj) => !x.r).pop();
+    if (qr) askInfoLiv = qr.q;
+  }
   if (typeof body.askInfo === 'string' && body.askInfo.trim()) {
     askInfoLiv = body.askInfo.trim().slice(0, 2000);
     if (!Array.isArray(liv.infos)) liv.infos = [];
     liv.infos.push({ id: genId(), q: askInfoLiv, askedAt: nowIso(), r: '', answeredAt: '' });
   }
   await saveClient(env, key, data);
-  if (askInfoLiv) await mailQuestion(env, data, key, 'tes retours' + (liv.name ? ' sur ' + liv.name : ''), askInfoLiv);
+  if (askInfoLiv) {
+    noterMail((liv.infos || []).filter((x: AnyObj) => !x.r).pop(), await mailQuestion(env, data, key, 'tes retours' + (liv.name ? ' sur ' + liv.name : ''), askInfoLiv));
+    await saveClient(env, key, data);
+  }
   return json(liv);
 }
 // Le mail d'une question de Cindy (tâche ou retours) : la question en clair,
 // un bouton vers l'espace où la cliente répond directement.
-async function mailQuestion(env: Env, data: AnyObj, key: string, sujet: string, q: string, taskId?: string): Promise<void> {
-  await notifyClient(env, data, `Une petite question sur ${sujet}`,
+async function mailQuestion(env: Env, data: AnyObj, key: string, sujet: string, q: string, taskId?: string): Promise<{ ok: boolean; to: string; error?: string }> {
+  return notifyClient(env, data, `Une petite question sur ${sujet}`,
     mailBonjour(data) + `<p>Pour avancer sur <strong>${escHtml(sujet)}</strong>, j'ai une question :</p>` +
     `<p style="background:#E6E5B2;padding:14px 18px;border-radius:10px;font-size:16px">${escHtml(q).replace(/\n/g, '<br>')}</p>` +
     `<p>Tu peux me répondre directement dans ton espace.</p>` + MAIL_SIGNE, key, taskId, 'Répondre');
@@ -3701,9 +3722,9 @@ function clientDemandeUrl(env: Env, taskId: string): string {
 /* Les e-mails aux clientes : « Bonjour Prénom, » en tête, signés Cindy. Courts, comme on parle. */
 function mailBonjour(data: AnyObj): string { const p = getClient(data).prenom || ''; return `<p>Bonjour${p ? ' ' + escHtml(p) : ''},</p>`; }
 const MAIL_SIGNE = '<p>Cindy</p>';
-async function notifyClient(env: Env, data: AnyObj, subject: string, bodyHtml: string, withLink?: boolean | string, demande?: string, ctaLabel?: string): Promise<void> {
+async function notifyClient(env: Env, data: AnyObj, subject: string, bodyHtml: string, withLink?: boolean | string, demande?: string, ctaLabel?: string): Promise<{ ok: boolean; to: string; error?: string }> {
   const email = getClient(data).email;
-  if (!email) return;
+  if (!email) return { ok: false, to: '', error: 'Pas d’adresse e-mail dans sa fiche' };
   let cta = '';
   if (withLink || demande) {
     const link = demande ? clientDemandeUrl(env, demande) : clientSpaceUrl(env);
@@ -3711,6 +3732,11 @@ async function notifyClient(env: Env, data: AnyObj, subject: string, bodyHtml: s
   }
   const r = await sendEmail(env, email, subject, emailWrapper(subject, bodyHtml + cta));
   if (!r.ok) console.error('resend notifyClient', r.status, r.error);
+  return { ok: r.ok, to: email, error: r.ok ? undefined : (r.error || ('Erreur ' + r.status)) };
+}
+// L'état de l'e-mail d'une question, gardé avec elle : parti ou non, à qui.
+function noterMail(q: AnyObj, r: { ok: boolean; to: string; error?: string }): void {
+  if (q) q.mail = { ok: r.ok, to: r.to, at: nowIso(), error: r.ok ? '' : String(r.error || '').slice(0, 200) };
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
