@@ -5561,14 +5561,16 @@
   function ckpMoisCourant() { var d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); }
   // Noter du temps passé EN COURS de route, sans terminer la tâche. Même saisie
   // datée du mois que « J'ai terminé » : le temps s'ajoute, rien n'est écrasé.
+  function ckpAujourdhui() { var d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
   function ckpChampPasse(t, zone) {
     var a = '\'' + esc(t.id) + '\',\'' + zone + '\'';
     return '<div class="ck-passe"><div class="ck-reste">' +
       '<input class="inp" id="ck-p-' + zone + '-' + esc(t.id) + '" placeholder="45 min" aria-label="Temps passé à ajouter" ' +
       'onclick="event.stopPropagation()" ' +
       'onkeydown="event.stopPropagation();if(event.key===\'Enter\'){event.preventDefault();ADM.ckpAjoutPasse(' + a + ');}">' +
+      '<label class="ck-passe__date" onclick="event.stopPropagation()">fait le <input class="inp" type="date" id="ck-pd-' + zone + '-' + esc(t.id) + '" value="' + ckpAujourdhui() + '" max="' + ckpAujourdhui() + '"></label>' +
       '<button class="btn btn--sm ck-bfin" onclick="event.stopPropagation();ADM.ckpAjoutPasse(' + a + ')">Ajouter</button></div>' +
-      '<span class="ck-passe__n">Ajouté au temps de ce mois. La tâche reste ouverte.</span></div>';
+      '<span class="ck-passe__n">Compté dans le mois du jour où tu l’as fait. La tâche reste ouverte.</span></div>';
   }
   function ckpAjoutPasse(id, zone) {
     var t = ckpToutes().filter(function (x) { return x.id === id; })[0];
@@ -5576,12 +5578,16 @@
     var champ = el('ck-p-' + (zone || 'pan') + '-' + id);
     var min = ckpParseDuree(champ ? champ.value : '');
     if (!(min > 0)) { toast('Écris par exemple 45 min, 1h30 ou 1,5'); if (champ) champ.focus(); return; }
-    var body = { timeEntry: { month: ckpMoisCourant(), minutes: min } };
+    // Le temps compte au mois où il a été fait : une saisie en retard (faite
+    // le 30, notée le 2) reste dans le mois d'avant.
+    var champD = el('ck-pd-' + (zone || 'pan') + '-' + id);
+    var jour = (champD && /^\d{4}-\d{2}-\d{2}$/.test(champD.value)) ? champD.value : ckpAujourdhui();
+    var body = { timeEntry: { month: jour.slice(0, 7), minutes: min } };
     if (t.src === 'client') body.projectId = t.projet || 'partner';
     if (t.src === 'ticket') body.projectId = 'maintenance';
     jpost(ckpUrl(t), body, 'PATCH').then(function (r) {
       if (r && !r.error) {
-        toast('Ajouté : ' + ckpDuree(min));
+        toast('Ajouté : ' + ckpDuree(min) + (jour.slice(0, 7) !== ckpMoisCourant() ? ', compté en ' + new Date(jour + 'T12:00:00').toLocaleDateString('fr-FR', { month: 'long' }) : ''));
         ckpApres(id, function (b) {
           var tot = Math.round((b.timeSpentMinutes || (b.timeSpentSeconds || 0) / 60 || 0) + min);
           b.timeSpentMinutes = tot; b.timeSpentSeconds = tot * 60;

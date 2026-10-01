@@ -3629,3 +3629,6 @@ a.ckr-b{text-decoration:none;display:inline-block}
 .qnr-butoir{display:inline-flex;align-items:center;gap:8px;font-size:15px;margin:10px 0 4px}
 .qnr-butoir .inp{width:auto}
 .ckr-qq,.ckr-qr,.ckr-info .ckp-bt{white-space:pre-wrap}
+.ck-passe__date{display:inline-flex;align-items:center;gap:6px;font-size:14px;color:var(--terre-600);white-space:nowrap}
+.ck-passe__date .inp{width:150px;min-width:150px;padding:6px 8px;font-size:14px}
+.ck-passe__date{flex-wrap:wrap}
