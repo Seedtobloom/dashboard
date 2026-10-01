@@ -92,7 +92,12 @@ function withTally(res: Response, t: KvTally): Response {
 
 export default {
   // Sauvegarde automatique quotidienne (cron défini dans wrangler.admin-back.toml)
-  async scheduled(_event: unknown, env: Env): Promise<void> {
+  async scheduled(event: AnyObj, env: Env): Promise<void> {
+    // Chaque matin : les e-mails automatiques du forfait. Le lundi à 3 h : la sauvegarde.
+    if (event && event.cron === AUTO_MAILS_CRON) {
+      try { await autoMailsRun(env); } catch (e) { console.error('auto mails cron:', e); }
+      return;
+    }
     try { await backupSnapshot(env); } catch (e) { console.error('backup cron:', e); }
   },
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -624,6 +629,11 @@ async function handleClientApi(
     if (body.forfaitStart !== undefined) {
       const fsv = String(body.forfaitStart || '').slice(0, 7);
       container.forfaitStart = /^\d{4}-\d{2}$/.test(fsv) ? fsv : '';
+    }
+    // E-mails automatiques du forfait, à activer cliente par cliente.
+    if (body.autoMails && typeof body.autoMails === 'object') {
+      const am = body.autoMails;
+      container.autoMails = { heures: am.heures === true, attente: am.attente === true, bilan: am.bilan === true };
     }
     // Créneaux réservés : quand Cindy travaille pour ce client (récurrent).
     if (Array.isArray(body.workSlots)) {
@@ -2997,6 +3007,75 @@ async function handleRemind(request: Request, env: Env, _key: string, data: AnyO
   return json({ ok: true });
 }
 
+/* ── E-mails automatiques du forfait Partenaire créative ──────────────────
+ * Chaque matin (jamais le week-end), pour les clientes qui les ont activés :
+ * - le 15, s'il reste plus de la moitié du forfait ; le 25, s'il reste plus de 3 h ;
+ * - le lundi, si des demandes attendent son retour depuis plus de 5 jours ;
+ * - le 1er, le bilan du mois écoulé.
+ * Un journal par cliente empêche tout doublon le même jour ou le même mois. */
+const AUTO_MAILS_CRON = '23 6 * * *';
+function autoHrs(h: number): string {
+  const m = Math.round(h * 60), hh = Math.floor(m / 60), mm = m % 60;
+  return hh ? (mm ? `${hh} h ${String(mm).padStart(2, '0')}` : `${hh} h`) : `${mm} min`;
+}
+async function autoMailsRun(env: Env, onlyKey?: string, now: Date = new Date()): Promise<AnyObj[]> {
+  const sent: AnyObj[] = [];
+  const paris = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Paris' }));
+  const jour = paris.getDate(), semaine = paris.getDay();
+  if (semaine === 0 || semaine === 6) return sent;
+  const ym = paris.getFullYear() + '-' + String(paris.getMonth() + 1).padStart(2, '0');
+  const today = ym + '-' + String(jour).padStart(2, '0');
+  const tpls = await getEmailTemplates(env);
+  const idx = await getIndex(env);
+  for (const ci of idx) {
+    if (onlyKey && ci.key !== onlyKey) continue;
+    const data = (await env.KV_CLIENT.get(ci.key, { type: 'json' })) as AnyObj | null;
+    if (!data) continue;
+    const pc = getDomainObj(getEspace(data), 'partenaireCreative');
+    if (!pc || !pc.autoMails || pc.isActive === false) continue;
+    const am = pc.autoMails, log: AnyObj = (pc.autoMailsLog && typeof pc.autoMailsLog === 'object') ? pc.autoMailsLog : {};
+    const prenom = getClient(data).prenom || '';
+    const f = forfaitState(pc);
+    const moisLbl = paris.toLocaleDateString('fr-FR', { month: 'long', timeZone: 'Europe/Paris' });
+    let touched = false;
+    const envoyer = async (type: string, tpl: AnyObj, vars: Record<string, string>) => {
+      const r = renderEmailTpl(tpl, vars);
+      await notifyClient(env, data, r.subject, r.html, true, undefined, 'Ouvrir mon espace');
+      log[type] = today; touched = true; sent.push({ client: ci.key, type });
+    };
+    // Il reste des heures : le 15 (plus de la moitié), le 25 (plus de 3 h).
+    if (am.heures && f.configured && String(log.heures || '').slice(0, 10) !== today) {
+      const moitie = jour === 15 && f.remaining > f.available / 2;
+      const fin = jour === 25 && f.remaining > 3;
+      if (moitie || fin) await envoyer('heures', tpls.auto_heures || EMAIL_TPL_DEFAULTS.auto_heures, { prenom, reste: autoHrs(f.remaining), mois: moisLbl });
+    }
+    // Des demandes attendent son retour depuis plus de 5 jours : le lundi.
+    if (am.attente && semaine === 1 && String(log.attente || '') !== today) {
+      const limite = Date.now() - 5 * 86400000;
+      const livs: AnyObj[] = Array.isArray(pc.livrables) ? pc.livrables : [];
+      const lignes: string[] = [];
+      (Array.isArray(pc.taches) ? pc.taches : []).forEach((t: AnyObj) => {
+        if (t.archived || t.status === 'done') return;
+        const q = (Array.isArray(t.infos) ? t.infos : []).filter((x: AnyObj) => !x.r).pop();
+        if (q && Date.parse(q.askedAt || '') < limite) { lignes.push(`- ${t.title || 'Ta demande'}, ma question du ${new Date(q.askedAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}`); return; }
+        const l = livs.filter((x: AnyObj) => x.taskId === t.id && (x.status || 'a_valider') === 'a_valider').pop();
+        if (t.status === 'review' && l && Date.parse(l.createdAt || '') < limite) lignes.push(`- ${t.title || 'Ta demande'}, la version envoyée le ${new Date(l.createdAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}`);
+      });
+      if (lignes.length) await envoyer('attente', tpls.auto_attente || EMAIL_TPL_DEFAULTS.auto_attente, { prenom, nombre: lignes.length > 1 ? `${lignes.length} demandes` : '1 demande', liste: lignes.join('\n') });
+    }
+    // Le mois en bref : le 1er (ou le premier jour ouvré qui suit).
+    if (am.bilan && f.configured && jour <= 3 && String(log.bilan || '').slice(0, 7) !== ym) {
+      const prev = (f.history || []).filter((h: AnyObj) => !h.current).pop();
+      if (prev) {
+        const report = prev.remaining > 0 && f.carryIn > 0 ? `${autoHrs(f.carryIn)} ${f.carryIn >= 2 ? 'sont reportées' : 'est reportée'} sur ce mois. ` : '';
+        await envoyer('bilan', tpls.auto_bilan || EMAIL_TPL_DEFAULTS.auto_bilan, { prenom, mois: String(prev.label || '').split(' ')[0], travaille: autoHrs(prev.used || 0), report, disponible: autoHrs(f.available) });
+      }
+    }
+    if (touched) { pc.autoMailsLog = log; await saveClient(env, ci.key, data); }
+  }
+  return sent;
+}
+
 /* ── Modèles d'e-mails éditables (envois volontaires : bilan + relances) ── */
 const EMAIL_TPL_DEFAULTS: Record<string, { label: string; vars: string[]; subject: string; body: string }> = {
   bilan: {
@@ -3028,6 +3107,24 @@ const EMAIL_TPL_DEFAULTS: Record<string, { label: string; vars: string[]; subjec
     vars: ['prenom', 'questionnaire', 'echeance'],
     subject: 'Ton questionnaire est prêt',
     body: 'Bonjour {prenom},\n\nTon questionnaire « {questionnaire} » t\'attend dans ton espace.\n\nTes réponses m\'aident à bien préparer la suite, alors prends le temps qu\'il te faut. Tout s\'enregistre au fur et à mesure, tu peux t\'arrêter et y revenir quand tu veux.\n\n{echeance}\n\nMerci d\'avance, et à très vite,\nCindy',
+  },
+  auto_heures: {
+    label: 'Automatique · il reste des heures ce mois-ci',
+    vars: ['prenom', 'reste', 'mois'],
+    subject: 'Il te reste {reste} ce mois-ci',
+    body: 'Bonjour {prenom},\n\nIl te reste {reste} sur ton forfait de {mois}. Si tu as des demandes en tête (visuels, posts, petites retouches), c\'est le bon moment pour me les envoyer depuis ton espace, je pourrai les caler avant la fin du mois.\n\nÀ très vite,\nCindy',
+  },
+  auto_attente: {
+    label: 'Automatique · des tâches attendent sa réponse',
+    vars: ['prenom', 'nombre', 'liste'],
+    subject: 'Des demandes attendent ton retour',
+    body: 'Bonjour {prenom},\n\n{nombre} attendent ton retour pour avancer :\n{liste}\n\nUn petit retour et je reprends tout de suite.\n\nCindy',
+  },
+  auto_bilan: {
+    label: 'Automatique · ton mois en bref',
+    vars: ['prenom', 'mois', 'travaille', 'report', 'disponible'],
+    subject: 'Ton mois de {mois} en bref',
+    body: 'Bonjour {prenom},\n\nEn {mois}, j\'ai passé {travaille} sur tes demandes. {report}Tu as {disponible} ce mois-ci.\n\nÀ très vite,\nCindy',
   },
   remind_action: {
     label: 'Relance · action en attente',

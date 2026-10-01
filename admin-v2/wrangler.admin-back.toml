@@ -31,6 +31,6 @@ ENVIRONMENT = "production"
 # des données KV vers R2 (_backups/), instantanés de plus de 2 semaines supprimés.
 # NB : Cloudflare exige day-of-week en 1-7 (0 est refusé).
 [triggers]
-crons = ["17 3 * * 1"]
+crons = ["17 3 * * 1", "23 6 * * *"]
 
 # redeploy: relance du déploiement après échec réseau transitoire (2026-07-06)

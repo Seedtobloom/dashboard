@@ -11049,16 +11049,108 @@
       '</div>' +
       (_ovKeys.length ? '<div style="margin-top:14px"><div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-bottom:4px">Reports exceptionnels en cours</div>' + _ovRows + '</div>' : '') +
     '</div>';
-    return '<div class="ffwrap">' +
-      '<div class="ffnav">' +
-        '<button class="on" onclick="ADM.ffShow(this,\'mois\')">Ce mois</button>' +
-        '<button onclick="ADM.ffShow(this,\'hist\')">Historique</button>' +
-        '<button onclick="ADM.ffShow(this,\'reg\')">Réglages</button>' +
-      '</div>' +
-      '<div class="ffv" data-ff="mois">' + breakdown + lossBanner + checkBlock + '</div>' +
-      '<div class="ffv" data-ff="hist" style="display:none">' + histView + completeness + '</div>' +
-      '<div class="ffv" data-ff="reg" style="display:none">' + setup + excBlock + workSlotsSection() + '</div>' +
+    // Une seule page : les repères, le tableau des mois, mon conseil, les
+    // e-mails automatiques, puis les réglages repliés. Plus de sous-onglets.
+    return '<div class="ffpage">' + forfaitReperes(d, f) + forfaitTableau(d, f, monthTaskLines, fcRow) +
+      forfaitConseil(d, f) + checkBlock + forfaitAutoMails(d, f) +
+      '<details class="ffreg" id="ff-reglages"><summary>Réglages du forfait</summary>' + setup + excBlock + workSlotsSection() + completeness + '</details>' +
     '</div>';
+  }
+  function ffH(h) { return fmtHrs(Math.abs(h || 0)); }
+  function forfaitReperes(d, f) {
+    var hist = f.history || [], cur = hist[hist.length - 1] || {};
+    var total = hist.reduce(function (s, m) { return s + (m.used || 0); }, 0);
+    var prevu = hist.reduce(function (s, m) { return s + (m.base || 0); }, 0);
+    var debut = hist.length ? String(hist[0].label || '').split(' ')[0] : '';
+    var moisCur = String(cur.label || '').split(' ')[0];
+    var t = function (l, v, sub, jaune) { return '<div class="ffr' + (jaune ? ' ffr--j' : '') + '"><span>' + l + '</span><b>' + v + '</b><em>' + sub + '</em></div>'; };
+    return '<div class="ffrs">' +
+      t('Forfait', ffH(f.base) + ' par mois', 'report possible jusqu’à ' + ffH(f.cap != null ? f.cap : 2)) +
+      t('Ce mois-ci' + (moisCur ? ', ' + esc(moisCur) : ''), f.remaining < 0 ? ffH(f.remaining) + ' dépassées' : ffH(f.remaining) + ' restantes', ffH(f.used) + ' travaillées sur ' + ffH(f.available) + (f.billedCarry > 0 ? ', dont ' + ffH(f.billedCarry) + ' à facturer' : '')) +
+      t('Depuis ' + esc(debut || 'le début'), ffH(total) + ' travaillées', 'sur ' + ffH(prevu) + ' prévues') +
+      t('Heures perdues', ffH(f.lost3 || 0), 'sur les 3 derniers mois' + (f.lossAlert ? ', le forfait est peut-être trop grand' : ''), !!f.lossAlert) +
+    '</div>';
+  }
+  function forfaitTableau(d, f, monthTaskLines, fcRow) {
+    var hist = (f.history || []).slice().reverse();
+    if (!hist.length) return '<div class="card"><div class="empty">Pas encore d’historique : il se remplit au fil des mois.</div></div>';
+    var cap = f.cap != null ? f.cap : 2;
+    var lignes = hist.map(function (m) {
+      var reporte = m.current ? 'à la fin du mois' : (m.remaining >= 0 ? '+ ' + ffH(Math.max(0, m.remaining - m.lost)) : '− ' + ffH(Math.min(m.overage, m.base)));
+      var perdu = m.current ? '' : (m.lost > 0 ? ffH(m.lost) : (m.billed > 0 ? ffH(m.billed) + ' à facturer' : ''));
+      var reste = m.remaining < 0 ? '− ' + ffH(m.remaining) : ffH(m.remaining);
+      var recu = m.carryIn ? (m.carryIn > 0 ? '+ ' : '− ') + ffH(m.carryIn) + (m.exceptional ? ' *' : '') : '';
+      return '<details class="ffm' + (m.current ? ' ffm--cur' : '') + '"' + (m.current ? ' open' : '') + '><summary>' +
+          '<span class="ffm__m">' + esc(m.label) + (m.current ? ' <em>en cours</em>' : '') + '</span>' +
+          '<span>' + ffH(m.base) + '</span><span>' + recu + '</span><span>' + ffH(m.available) + '</span><span>' + ffH(m.used) + '</span>' +
+          '<span class="ffm__r' + (m.remaining < 0 ? ' ffm__r--neg' : '') + '">' + reste + '</span><span>' + reporte + '</span><span class="ffm__p">' + perdu + '</span></summary>' +
+        '<div class="ffm__d">' + monthTaskLines(m.ym) + '</div></details>';
+    }).join('');
+    return '<section class="card fft"><div class="fft__h"><span class="ffm__m">Mois</span><span>Forfait</span><span>Report reçu</span><span>Disponible</span><span>Travaillé</span><span>Reste</span><span>Reporté</span><span>Perdu</span></div>' + lignes +
+      '<p class="fft__n">Clique sur un mois pour voir les tâches qui l’ont consommé. Le temps compte au mois où il a été fait, pas à la validation. Le report est plafonné à ' + ffH(cap) + (Object.keys(f.overrides || {}).length ? ' ; * report exceptionnel' : '') + '.</p></section>';
+  }
+  // Mon conseil : sur les 3 derniers mois complets, le forfait colle-t-il ?
+  function forfaitConseil(d, f) {
+    var fini = (f.history || []).filter(function (m) { return !m.current; }).slice(-3);
+    var pr = (CUR && CUR.client && CUR.client.prenom) || 'ta cliente';
+    if (fini.length < 2) return '<section class="ffc"><span class="ffc__k">Mon conseil sur son forfait</span><p>Pas encore assez de recul : le conseil arrive après deux mois complets.</p></section>';
+    var moy = fini.reduce(function (s, m) { return s + (m.used || 0); }, 0) / fini.length;
+    var perdu = fini.reduce(function (s, m) { return s + (m.lost || 0); }, 0);
+    var depasse = fini.filter(function (m) { return m.overage > 0; }).length;
+    var plafond = fini.filter(function (m) { return m.lost > 0; }).length;
+    var titre, piste;
+    if (depasse >= 2 || moy > f.base * 1.05) {
+      var plus = Math.ceil(moy);
+      titre = 'Le forfait de ' + ffH(f.base) + ' semble trop petit pour ' + esc(pr);
+      piste = 'Le temps passé dépasse souvent le forfait. Tu pourrais lui proposer un forfait de <b>' + plus + ' h par mois</b>, ou facturer les dépassements à part.';
+    } else if (f.lossAlert || moy < f.base * 0.6) {
+      var moins = Math.max(2, Math.ceil(moy) + 1);
+      titre = 'Le forfait de ' + ffH(f.base) + ' semble trop grand pour ' + esc(pr);
+      piste = 'Deux pistes : proposer un forfait de <b>' + moins + ' h par mois</b>, plus proche de ce qui est vraiment utilisé, ou garder ' + ffH(f.base) + ' et aider à anticiper les demandes, avec le rappel automatique du milieu de mois ci-dessous.';
+    } else {
+      titre = 'Le forfait de ' + ffH(f.base) + ' colle bien';
+      piste = 'Le temps passé suit le forfait, sans grosse perte ni dépassement. Rien à changer pour l’instant.';
+    }
+    var bloc = function (v, l) { return '<div><b>' + v + '</b><span>' + l + '</span></div>'; };
+    return '<section class="ffc"><span class="ffc__k">Mon conseil sur son forfait</span><div class="ffc__t">' + titre + '</div>' +
+      '<div class="ffc__g">' + bloc(ffH(moy), 'travaillées en moyenne par mois, sur les ' + fini.length + ' derniers') +
+        bloc(ffH(perdu), 'perdues sur ces mois, au-delà du report de ' + ffH(f.cap != null ? f.cap : 2)) +
+        bloc(depasse ? depasse + ' mois sur ' + fini.length : plafond + ' mois sur ' + fini.length, depasse ? 'avec un dépassement du forfait' : 'avec le report au maximum : les heures s’accumulent') + '</div>' +
+      '<p>' + piste + '</p><div class="ffc__a"><button class="btn btn--dark btn--sm" onclick="ADM.cliEcrire(\'' + esc(CURKEY) + '\')">Lui en parler</button>' +
+      '<button class="btn btn--outline btn--sm" onclick="ADM.ffReglages()">Changer le forfait</button></div></section>';
+  }
+  function ffReglages() { var r = el('ff-reglages'); if (r) { r.open = true; r.scrollIntoView({ behavior: 'smooth', block: 'start' }); } }
+  // Les e-mails automatiques, à activer pour cette cliente.
+  var FF_TPLS = null;
+  function forfaitAutoMails(d, f) {
+    var am = (d.content && d.content.autoMails) || {}, log = (d.content && d.content.autoMailsLog) || {};
+    if (!FF_TPLS) api('/api/email-templates').then(function (r) { return r.json(); }).then(function (x) { FF_TPLS = (x && x.templates) || []; if (TAB === 'partner' || VIEW === 'client') { var b = el('ff-mails'); if (b) b.outerHTML = forfaitAutoMails(d, f); } }).catch(function () {});
+    var pr = (CUR && CUR.client && CUR.client.prenom) || '';
+    var tpl = function (k) { return (FF_TPLS || []).filter(function (x) { return x.key === k; })[0] || null; };
+    var fill = function (t, v) { return String(t || '').replace(/\{(\w+)\}/g, function (m, k) { return v[k] != null ? v[k] : m; }); };
+    var mois = new Date().toLocaleDateString('fr-FR', { month: 'long' });
+    var prev = (f.history || []).filter(function (m) { return !m.current; }).pop() || {};
+    var ligne = function (k, type, titre, quand, vars) {
+      var t = tpl(k), apercu = t ? fill(t.body, vars) : 'Chargement du message…';
+      var dernier = log[type] ? 'Dernier envoi le ' + fmtDate(log[type]) : 'Jamais envoyé';
+      return '<div class="ffam"><div><b>' + titre + '</b><span>' + quand + '</span><div class="ffam__ap">' + esc(apercu) + '</div>' +
+        '<em>' + dernier + ' · <a href="#" onclick="ADM.reglOuvrir(\'emails\');return false">Modifier le message</a></em></div>' +
+        '<label class="ffam__sw"><input type="checkbox"' + (am[type] ? ' checked' : '') + ' onchange="ADM.ffAutoMail(\'' + type + '\',this.checked)"><i></i><span class="sr">' + titre + '</span></label></div>';
+    };
+    return '<section class="card" id="ff-mails"><div class="ffam__h"><h3>E-mails automatiques pour ' + esc(pr || 'ta cliente') + '</h3><span>envoyés le matin, jamais le week-end</span></div>' +
+      ligne('auto_heures', 'heures', 'Il te reste des heures ce mois-ci', 'Le 15 du mois, s’il reste plus de la moitié du forfait. Puis le 25, s’il reste encore plus de 3 h.', { prenom: pr, reste: ffH(f.remaining), mois: mois }) +
+      ligne('auto_attente', 'attente', 'Des demandes attendent ta réponse', 'Chaque lundi, si une demande attend son retour depuis plus de 5 jours.', { prenom: pr, nombre: '2 demandes', liste: '- Visuels Instagram, la version envoyée le 23 sept.\n- Story promo, ma question du 28 sept.' }) +
+      ligne('auto_bilan', 'bilan', 'Ton mois en bref', 'Le 1er du mois : le temps passé le mois d’avant, le report et ce qui est disponible.', { prenom: pr, mois: String(prev.label || '').split(' ')[0] || 'septembre', travaille: ffH(prev.used || 0), report: f.carryIn > 0 ? ffH(f.carryIn) + ' sont reportées sur ce mois. ' : '', disponible: ffH(f.available) }) +
+    '</section>';
+  }
+  function ffAutoMail(type, on) {
+    var am = Object.assign({}, (CUR && CUR.content && CUR.content.autoMails) || {});
+    var d = (CUR.domains || []).filter(function (x) { return x.id === 'partner'; })[0];
+    if (d && d.content) am = Object.assign({}, d.content.autoMails || {});
+    am[type] = !!on;
+    jpost('/api/clients/' + CURKEY + '/forfait', { projectId: 'partner', autoMails: am }, 'PATCH').then(function (r) {
+      if (r.ok) { if (d && d.content) d.content.autoMails = am; toast(on ? 'E-mail automatique activé' : 'E-mail automatique coupé'); } else toast('Erreur');
+    }).catch(function () { toast('Erreur'); });
   }
   function workSlotsSection() {
     return '<div class="card"><h3>Créneaux réservés</h3>' +
@@ -14305,7 +14397,7 @@
 
   // API publique pour les onclick
   window.ADM = {
-    nav: nav, login: login, logout: logout, scan: scan, createClient: createClient, copy: copy, editToken: editToken, cliApercu: cliApercu, accesOuvrir: accesOuvrir, navClientTab: navClientTab,
+    nav: nav, login: login, logout: logout, scan: scan, createClient: createClient, copy: copy, editToken: editToken, cliApercu: cliApercu, ffReglages: ffReglages, ffAutoMail: ffAutoMail, accesOuvrir: accesOuvrir, navClientTab: navClientTab,
     msWeek: msWeek, msFilter: msFilter, msToggleCap: msToggleCap, msMode: msMode, msDaySel: msDaySel, msPlace: msPlace, msDone: msDone, msDelete: msDelete, msNoteOpen: msNoteOpen, msPlanOver: msPlanOver, msPlanLeave: msPlanLeave, msPlanDrop: msPlanDrop, msPlanUnplace: msPlanUnplace, msAutoPlan: msAutoPlan, msOrganizeWeek: msOrganizeWeek, msOrganizeDay: msOrganizeDay, msUnplace: msUnplace, msDragStart: msDragStart, msDragEnd: msDragEnd, msDayOver: msDayOver, msDayLeave: msDayLeave, msDrop: msDrop, msSlotOver: msSlotOver, msDropSlot: msDropSlot, msNewBlock: msNewBlock, msSaveBlock: msSaveBlock, msDeleteBlock: msDeleteBlock, msEst: msEst, msEstH: msEstH, msAddTop: msAddTop, msAddDay: msAddDay,
     openClient: openClient, tab: tab, subtab: subtab, ffShow: ffShow, saveInfos: saveInfos, saveForfait: saveForfait, forfaitOverrideAdd: forfaitOverrideAdd, forfaitOverrideDel: forfaitOverrideDel, testEmail: testEmail, toggleOffer: toggleOffer, addOffer: addOffer, setBanner: setBanner, setMaintenance: setMaintenance, renameSupport: renameSupport, cloturerProjet: cloturerProjet, rouvrirProjet: rouvrirProjet, addSupportQuick: addSupportQuick, delSupport: delSupport, crAdd: crAdd, crSet: crSet, crCloturer: crCloturer, crRouvrir: crRouvrir, cgToggle: cgToggle, cgNeuve: cgNeuve, pjEdit: pjEdit, crReply: crReply, crDel: crDel, crAddVersion: crAddVersion, crAddVersionLink: crAddVersionLink, crDelVersion: crDelVersion, pjAdd: pjAdd, pjSet: pjSet, pjMove: pjMove, pjDel: pjDel, pjStart: pjStart, pjNotify: pjNotify, pjNeuf: pjNeuf, pjPatch: pjPatch, pjDuree: pjDuree, pjDateOuvrir: pjDateOuvrir, pjDateFermer: pjDateFermer, pjDate: pjDate, pjToggle: pjToggle, deleteClient: deleteClient,
     toggleTicketsSpace: toggleTicketsSpace, ticketStatus: ticketStatus, ticketDue: ticketDue, ticketTime: ticketTime, ticketDelete: ticketDelete, ticketForfait: ticketForfait, ticketProposeDate: ticketProposeDate,
