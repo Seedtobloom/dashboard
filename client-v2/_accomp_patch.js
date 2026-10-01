@@ -201,7 +201,7 @@
     var q = (t.infos || []).filter(function (x) { return !x.r; }).pop();
     if (!q) return '';
     return '<section class="cps-hero cps-hero--col"><span class="cps-hero__k">Cindy a une question avant d’avancer</span>' +
-      '<div class="cps-hero__t">' + esc(q.q || '') + '</div>' +
+      '<div class="cps-q' + (String(q.q || '').length > 140 ? ' cps-q--long' : '') + '">' + esc(q.q || '') + '</div>' +
       '<textarea id="cpa-rep-' + esc(t.id) + '" class="cps-rep" rows="3" placeholder="Ta réponse"></textarea>' +
       '<div class="cps-hero__pied"><span>Posée le ' + esc(fmtDate(q.askedAt)) + '. Cindy reprend dès ta réponse.</span>' +
       '<button class="cps-btn" onclick="cpAccRepondre(\'' + pd.project.id + '\',\'' + esc(t.id) + '\')">Envoyer ma réponse</button></div></section>';

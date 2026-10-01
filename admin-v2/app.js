@@ -6080,7 +6080,7 @@
     var attend = (t.infos || []).some(function (x) { return !x.r; });
     return '<div class="ckr-info">' + faites +
       (attend ? '' : '<h3>' + (t.src === 'client' ? 'Il te manque une info, ou un point n’est pas clair dans ses retours ?' : 'Il te manque une info ?') + '</h3>' +
-        '<textarea id="ckt-info-' + esc(t.id) + '" class="inp" rows="2" aria-label="Ta question pour ' + esc(qui) + '" placeholder="Ta question pour ' + esc(qui) + '"></textarea>' +
+        '<textarea id="ckt-info-' + esc(t.id) + '" class="inp" rows="5" aria-label="Ta question pour ' + esc(qui) + '" placeholder="Ta question pour ' + esc(qui) + '"></textarea>' +
         '<div class="ckr-info-a"><span>' + (t.src === 'client' ? 'Un mail part, la question s’affiche en haut de son espace.' : 'Un mail part à ' + esc(qui) + ', la demande passe de son côté.') + '</span>' +
         '<button class="ckr-b" onclick="ADM.ckTDemander(\'' + esc(t.id) + '\')">Lui demander</button></div>') +
       '</div>';
@@ -12399,7 +12399,7 @@
         return '<div class="ckr-q"><p class="ckr-qq">Ta question : « ' + esc(x.q) + ' »</p>' + (x.r ? '<p class="ckr-qr"><b>Sa réponse</b>' + esc(x.r) + '</p>' : '<p class="ckr-qa">Envoyée le ' + esc(fmtDate(x.askedAt)) + ', en attente de sa réponse.</p>') + '</div>';
       }).join('');
       var demander = (l.status === 'refuse' && !attend) ? '<div class="ckr-info"><h3>Un point pas clair dans ses retours ?</h3>' +
-        '<textarea id="vs-q-' + esc(l.id) + '" class="inp" rows="2" placeholder="Ta question"></textarea>' +
+        '<textarea id="vs-q-' + esc(l.id) + '" class="inp" rows="5" placeholder="Ta question"></textarea>' +
         '<div class="ckr-info-a"><span>Un mail part, la question s’affiche en haut de son espace.</span><button class="ckr-b" onclick="ADM.versionDemander(\'' + pid + '\',\'' + esc(l.id) + '\')">Lui demander</button></div></div>' : '';
       return '<div class="card"><div class="between" style="align-items:center;gap:10px"><h3 style="margin:0">' + esc(l.name || 'Version') + '</h3>' +
           '<span class="ck-rev" style="flex-shrink:0">' + esc(ST[l.status] || l.status || '') + '</span></div>' +

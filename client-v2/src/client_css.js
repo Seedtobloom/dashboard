@@ -1681,4 +1681,7 @@ button.cpnd-j:hover { box-shadow: inset 0 0 0 1px #110704; }
 .cps-pil{padding:4px 12px;border-radius:999px;font-size:15px;font-weight:600;background:#F8F6F2;white-space:nowrap}
 .cps-pil--toi{background:#E6E5B2}
 @media (max-width:900px){.cps-pas3{grid-template-columns:1fr}.cps-hero__haut{flex-direction:column}}
+.cps-q{font-family:'Alegreya',Georgia,serif;font-size:30px;line-height:1.25;white-space:pre-wrap}
+.cps-q--long{font-family:inherit;font-size:18px;line-height:1.6;background:rgba(255,255,255,.55);border-radius:12px;padding:16px 18px}
+.mn-question{white-space:pre-wrap}
 `;

@@ -2400,7 +2400,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       var qq = (livQ.infos || []).filter(function (x) { return !x.r; }).pop();
       hero = '<section class="cps-hero cps-hero--col"><span class="cps-hero__k">Cindy a une question sur tes retours' + (livQ.name ? ' de la ' + esc(livQ.name) : '') + '</span>' +
         (livQ.clientComment ? '<div class="cps-cite">Ton retour : « ' + esc(livQ.clientComment) + ' »</div>' : '') +
-        '<div class="cps-hero__t">' + esc(qq.q || '') + '</div>' +
+        '<div class="cps-q' + (String(qq.q || '').length > 140 ? ' cps-q--long' : '') + '">' + esc(qq.q || '') + '</div>' +
         '<textarea id="cps-rep-' + esc(livQ.id) + '" class="cps-rep" rows="3" placeholder="Ta réponse"></textarea>' +
         '<div class="cps-hero__pied"><span>Posée le ' + esc(fmtDate(qq.askedAt)) + '. Ta réponse ne compte pas comme un aller-retour.</span>' +
         '<button class="cps-btn" onclick="cpsRepondre(\'' + esc(pid) + '\',\'' + esc(livQ.id) + '\')">Envoyer ma réponse</button></div></section>';

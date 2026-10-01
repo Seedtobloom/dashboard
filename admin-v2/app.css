@@ -3628,3 +3628,4 @@ a.ckr-b{text-decoration:none;display:inline-block}
 .qnr-prev{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:#E6E5B2;border-radius:12px;padding:12px 16px;margin:10px 0 14px;font-size:16px}
 .qnr-butoir{display:inline-flex;align-items:center;gap:8px;font-size:15px;margin:10px 0 4px}
 .qnr-butoir .inp{width:auto}
+.ckr-qq,.ckr-qr,.ckr-info .ckp-bt{white-space:pre-wrap}

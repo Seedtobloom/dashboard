@@ -942,7 +942,7 @@ async function handleClientApi(
     if (ticketAskNotify) {
       await notifyClient(env, data, `Une petite question sur ${tk.title || 'ta demande'}`,
         mailBonjour(data) + `<p>Pour avancer sur <strong>${escHtml(tk.title || '')}</strong>, il me manque une info :</p>` +
-        `<p style="background:#E6E5B2;padding:14px 18px;border-radius:10px;font-size:16px">${escHtml(ticketAskNotify)}</p>` +
+        `<p style="background:#E6E5B2;padding:14px 18px;border-radius:10px;font-size:16px">${escHtml(ticketAskNotify).replace(/\n/g, '<br>')}</p>` +
         `<p>Tu peux me répondre directement dans ton espace.</p>` + MAIL_SIGNE, true, undefined, 'Répondre');
     }
     if (ticketProposeNotify) {
@@ -2048,7 +2048,7 @@ async function handleDeliverablePatch(request: Request, env: Env, key: string, d
 async function mailQuestion(env: Env, data: AnyObj, key: string, sujet: string, q: string, taskId?: string): Promise<void> {
   await notifyClient(env, data, `Une petite question sur ${sujet}`,
     mailBonjour(data) + `<p>Pour avancer sur <strong>${escHtml(sujet)}</strong>, j'ai une question :</p>` +
-    `<p style="background:#E6E5B2;padding:14px 18px;border-radius:10px;font-size:16px">${escHtml(q)}</p>` +
+    `<p style="background:#E6E5B2;padding:14px 18px;border-radius:10px;font-size:16px">${escHtml(q).replace(/\n/g, '<br>')}</p>` +
     `<p>Tu peux me répondre directement dans ton espace.</p>` + MAIL_SIGNE, key, taskId, 'Répondre');
 }
 async function handleDeliverableDelete(request: Request, env: Env, key: string, data: AnyObj, id: string): Promise<Response> {
