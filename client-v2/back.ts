@@ -1300,6 +1300,16 @@ async function handleTaskUpdate(request: Request, env: Env, masterKey: string, d
       if (task.contentHistory.length > 30) task.contentHistory = task.contentHistory.slice(-30);
     }
   }
+  // Envoi de blocs arrivé en retard (plus ancien que le dernier enregistré depuis
+  // la même page) : on l'ignore, sinon il effacerait la fin du texte.
+  if ('blocks' in body && body.blocksSeq && typeof body.blocksSeq === 'object') {
+    const sid = String(body.blocksSeq.sid || '').slice(0, 20);
+    const n = Number(body.blocksSeq.n) || 0;
+    const prevSeq = task.blocksSeq as AnyObj | undefined;
+    if (prevSeq && prevSeq.sid === sid && Number(prevSeq.n) >= n) delete body.blocks;
+    else task.blocksSeq = { sid, n };
+  }
+  delete body.blocksSeq;
   // Historique du contenu par blocs (éditeur type Notion). L'autosave se déclenche
   // souvent : on ne garde qu'un point de restauration toutes les ~2 minutes.
   if ('blocks' in body) {

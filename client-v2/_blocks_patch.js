@@ -7,11 +7,17 @@
  * Ni backtick ni séquence dollar-accolade dans ce bloc (template String.raw).
  */
   function stbBid(){ return 'b' + Math.random().toString(36).slice(2, 9); }
+  // Un seul enregistrement à la fois par tâche : si deux envois se croisaient,
+  // le plus ancien pouvait arriver en dernier et effacer la fin du texte.
+  // Chaque envoi porte aussi un numéro (par page ouverte) : le serveur ignore
+  // un envoi plus ancien que celui déjà enregistré.
+  var _stbEnCours = {}, _stbSid = 's' + Math.random().toString(36).slice(2, 10), _stbN = 0;
   function stbBlocksSave(pid, taskId, beacon){
     // Brief d'une nouvelle demande pas encore envoyée : enregistré en brouillon.
     if (String(taskId).indexOf('brouillon-') === 0){ if (window.cpNDSaveDraft) window.cpNDSaveDraft(beacon); return; }
     var t = cliTaskById(pid, taskId); if (!t) return;
-    var body = { projectId: pid, blocks: t.blocks || [] };
+    if (!beacon && _stbEnCours[taskId]){ _stbEnCours[taskId].encore = true; return; }
+    var body = { projectId: pid, blocks: t.blocks || [], blocksSeq: { sid: _stbSid, n: ++_stbN } };
     // On ne vide PLUS le brief d'origine. Avant, dès que le paragraphe avait
     // été repris en bloc, content était effacé côté serveur : si par la suite
     // un enregistrement partait sans ce bloc, le paragraphe n'existait plus
@@ -29,7 +35,9 @@
     fetch(API_BASE + '/tasks/' + taskId, opts)
       .then(function(r){ if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
       .then(function(d){ if (d && Array.isArray(d.blocksHistory)) t.blocksHistory = d.blocksHistory; })
-      .catch(function(){ toast('Erreur d enregistrement', true); });
+      .catch(function(){ toast('Erreur d enregistrement', true); })
+      .then(function(){ var e = _stbEnCours[taskId]; delete _stbEnCours[taskId]; if (e && e.encore) stbBlocksSave(pid, taskId); });
+    if (!beacon) _stbEnCours[taskId] = { encore: false };
   }
   // Autosave anti-perte pendant la frappe : on programme une sauvegarde débouncée.
   var _stbTimer = null, _stbPend = null;
