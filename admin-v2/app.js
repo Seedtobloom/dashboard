@@ -9513,11 +9513,31 @@
           '<button class="btn" onclick="ADM.nav(\'newclient\')">Nouveau client</button></div></div>' +
         '<div class="cl-bar"><div class="cl-fis" role="tablist" aria-label="Quels clients">' + filtre('actifs', 'Actifs') + filtre('archives', 'Archivés') + filtre('tous', 'Tous') + '</div>' +
           '<span class="num">' + nAct + ' client' + (nAct > 1 ? 's' : '') + ' actif' + (nAct > 1 ? 's' : '') + (nMsg ? ', ' + nMsg + ' message' + (nMsg > 1 ? 's' : '') + ' non lu' + (nMsg > 1 ? 's' : '') : '') + '</span></div>' +
+        '<div id="cl-mails"></div>' +
         '<section class="cl-t"><div class="cl-th" aria-hidden="true"><span>Client</span><span>Projets en cours</span><span>Forfait du mois</span><span>Qui a la main</span><span></span></div>' +
           (l.length ? l.map(function (c) { return cliLigne(c, dash, forfByKey[c.key], projByKey[c.key] || []); }).join('') : '<p class="pj-vide" style="padding:18px 12px">Aucun client ici.</p>') +
         '</section></div>');
+      cliMails(tous);
     }).catch(showError);
   }
+  // Les derniers e-mails envoyés à toutes les clientes, et ce qu'ils sont devenus.
+  var CLI_MAILS_TOUT = false;
+  function cliMails(tous) {
+    api('/api/mails').then(function (r) { return r.json(); }).then(function (d) {
+      var box = el('cl-mails'); if (!box) return;
+      var l = (d && d.mails) || [];
+      if (!l.length) { box.innerHTML = ''; return; }
+      var parEmail = {}; (tous || []).forEach(function (c) { if (c.email) parEmail[String(c.email).toLowerCase()] = c; });
+      var vis = CLI_MAILS_TOUT ? l : l.slice(0, 5);
+      box.innerHTML = '<section class="clm"><div class="clm-h"><h2>Derniers e-mails envoyés</h2>' + (l.length > 5 ? '<button class="tps-lien" onclick="ADM.cliMailsTout()">' + (CLI_MAILS_TOUT ? 'Voir moins' : 'Tout voir') + '</button>' : '') + '</div>' +
+        vis.map(function (m) {
+          var c = parEmail[m.email], e = mailEtat(m);
+          var ouvrir = c ? ' onclick="ADM.openClient(\'' + esc(c.key) + '\')"' : '';
+          return '<button class="clm-l"' + ouvrir + '><span class="clm-n">' + esc(m.nom || (c ? clientName(c) : m.email)) + '</span><span class="clm-s">' + esc(m.sujet || 'E-mail') + '</span><span class="clm-d">' + esc(fmtDate(m.at)) + '</span><span class="mle__e ' + e.c + '">' + esc(e.t) + '</span></button>';
+        }).join('') + '</section>';
+    }).catch(function () {});
+  }
+  function cliMailsTout() { CLI_MAILS_TOUT = !CLI_MAILS_TOUT; renderClients(); }
   // Présence : « En ligne » si activité < 5 min (le poll client entretient
   // l'horodatage), sinon dernière connexion en relatif.
   function presence(lastSeen) {
@@ -9687,7 +9707,7 @@
     var _menu = [['Envoyer ses accès', 'ADM.accesOuvrir()'], ['Réglages et coordonnées', 'ADM.tab(\'forfait\')'], ['Tout son historique', 'ADM.tab(\'echanges\')']];
     if (ml) _menu.unshift(['Rejoindre la visio', 'window.open(\'' + esc(ml.indexOf('http') === 0 ? ml : 'https://' + ml) + '\',\'_blank\',\'noopener\')']);
     var cdhead = '<div class="cf-h"><div class="cf-h__id"><span class="cf-av" aria-hidden="true">' + esc(_cdInit) + '</span>' +
-      '<div><h1 class="pg-h1">' + esc(nm) + '</h1><p class="cf-sous">' + esc([_ent, _cdPr.label.charAt(0).toLowerCase() + _cdPr.label.slice(1)].filter(Boolean).join(' · ')) + '</p></div></div>' +
+      '<div><h1 class="pg-h1">' + esc(nm) + '</h1><p class="cf-sous">' + esc([_ent, _cdPr.label.charAt(0).toLowerCase() + _cdPr.label.slice(1)].filter(Boolean).join(' · ')) + '</p>' + cfDernierMail() + '</div></div>' +
       '<div class="cf-h__a"><button class="tps-lien" onclick="ADM.cliApercu(\'' + esc(CUR.key) + '\')">Voir son espace</button><button class="tps-lien" onclick="ADM.cliEcrire(\'' + esc(CUR.key) + '\')">Écrire à ' + esc(_pren) + '</button>' + ckMenuHtml(_menu) + '</div></div>';
     setMain('<div class="wrap tps pj-page cf-page">' + fil + cdhead + '<div class="pj-ongs" role="tablist" aria-label="' + esc(nm) + '">' + tabsHtml + '</div><div id="tabbody"></div></div>');
     renderTab();
@@ -10281,6 +10301,13 @@
     if (m.ouvert) return { t: 'Ouvert le ' + fmtDate(m.ouvert) + ' à ' + new Date(m.ouvert).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }).replace(':', 'h'), c: 'mle--ok' };
     if (m.livre) return { t: 'Arrivé, pas encore ouvert', c: '' };
     return { t: 'Parti, en attente de nouvelles', c: '' };
+  }
+  // En haut de la fiche : où en est le dernier e-mail envoyé, sans aller dans Réglages.
+  function cfDernierMail() {
+    var l = Array.isArray(CUR.mails) ? CUR.mails : [];
+    if (!l.length) return '';
+    var m = l[0], e = mailEtat(m);
+    return '<button class="cf-mail ' + e.c + '" onclick="ADM.tab(\'forfait\')" title="Voir tous les e-mails envoyés"><b>' + esc(m.sujet || 'Dernier e-mail') + '</b><span>' + esc(e.t) + '</span></button>';
   }
   function mailsCard() {
     var l = Array.isArray(CUR.mails) ? CUR.mails : [];
@@ -14846,7 +14873,7 @@
     ckTSetTri: ckTSetTri, ckTSetFiltre: ckTSetFiltre, ckTOuvrir: ckTOuvrir, ckTGrand: ckTGrand, ckMenu: ckMenu,
     ckTRepondre: ckTRepondre, ckTCloturer: ckTCloturer, ckTSupprimer: ckTSupprimer, ckTCreerStb: ckTCreerStb, inbSetOnglet: inbSetOnglet, inbChoisir: inbChoisir, inbRefuser: inbRefuser, inbToutVu: inbToutVu, ckTSetCote: ckTSetCote, ckTVoir: ckTVoir, ckTEtape: ckTEtape,
     ckTAEstimer: ckTAEstimer,
-    ckLChoisir: ckLChoisir, ckLSemaine: ckLSemaine, ckLVue: ckLVue, ffMode: ffMode, ffStatut: ffStatut, ffClasser: ffClasser, ckLPoser: ckLPoser, ckLRetirer: ckLRetirer,
+    ckLChoisir: ckLChoisir, ckLSemaine: ckLSemaine, ckLVue: ckLVue, cliMailsTout: cliMailsTout, ffMode: ffMode, ffStatut: ffStatut, ffClasser: ffClasser, ckLPoser: ckLPoser, ckLRetirer: ckLRetirer,
     ckLRegSet: ckLRegSet, ckLRegEnregistrer: ckLRegEnregistrer, ckLRegAnnuler: ckLRegAnnuler,
     ckLSetSimH: ckLSetSimH, ckLSetSimHz: ckLSetSimHz, ckLDepuis: ckLDepuis,
     ckJSetFiltre: ckJSetFiltre, ckJSetClient: ckJSetClient, ckJEstimOuvrir: ckJEstimOuvrir, ckJCrOuvrir: ckJCrOuvrir, ckJCrNouvelle: ckJCrNouvelle, cliSetFiltre: cliSetFiltre, cliOuvrirOffre: cliOuvrirOffre, cliNouveauProjet: cliNouveauProjet, cliEcrire: cliEcrire, visPassees: visPassees, chatSetFiltre: chatSetFiltre, ckJRevRouvrir: ckJRevRouvrir, ckJRevClasser: ckJRevClasser, ckJEstimChoix: ckJEstimChoix, ckJEstimer: ckJEstimer, ckJOuvrir: ckJOuvrir, ckJFermer: ckJFermer, ckJOnglet: ckJOnglet,

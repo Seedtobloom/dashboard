@@ -126,6 +126,7 @@ export default {
       if (!ok) return json({ error: 'Non authentifié' }, 401);
 
       if (method === 'GET' && pathname === '/api/me') return json({ ok: true });
+      if (method === 'GET' && pathname === '/api/mails') return json({ mails: (((await env.KV_ADMIN.get(MAILS_TOUS, { type: 'json' })) as AnyObj[] | null) || []).slice(0, 40) });
       if (method === 'POST' && pathname === '/api/test-email') return handleTestEmail(request, env);
       if (method === 'GET' && pathname === '/api/dashboard') return handleDashboard(env);
       if (method === 'GET' && pathname === '/api/done') return handleDone(env);
@@ -3812,7 +3813,7 @@ async function notifyClient(env: Env, data: AnyObj, subject: string, bodyHtml: s
   }
   const r = await sendEmail(env, email, subject, emailWrapper(subject, bodyHtml + cta));
   if (!r.ok) console.error('resend notifyClient', r.status, r.error);
-  if (r.ok && r.id) { try { await mailJournal(env, email, subject, r.id); } catch (e) { console.error('mail journal', e); } }
+  if (r.ok && r.id) { try { const c = getClient(data); await mailJournal(env, email, subject, r.id, ((c.prenom || '') + ' ' + (c.nom || '')).trim()); } catch (e) { console.error('mail journal', e); } }
   return { ok: r.ok, to: email, error: r.ok ? undefined : (r.error || ('Erreur ' + r.status)), id: r.id };
 }
 /* ── Suivi des e-mails envoyés aux clientes ────────────────────────────────
@@ -3821,11 +3822,17 @@ async function notifyClient(env: Env, data: AnyObj, subject: string, bodyHtml: s
  * suivi des ouvertures est activé sur le domaine dans Resend ; certaines
  * messageries (Apple Mail) ouvrent l'e-mail toutes seules, c'est un indice. */
 function mailCle(email: string): string { return 'mails:' + String(email || '').trim().toLowerCase(); }
-async function mailJournal(env: Env, email: string, sujet: string, id: string): Promise<void> {
+// Journal commun à toutes les clientes : les derniers e-mails, d'un coup d'œil.
+const MAILS_TOUS = 'mails:tous';
+async function mailJournal(env: Env, email: string, sujet: string, id: string, nom?: string): Promise<void> {
   const k = mailCle(email);
   const l = ((await env.KV_ADMIN.get(k, { type: 'json' })) as AnyObj[] | null) || [];
-  l.unshift({ id, sujet: String(sujet || '').slice(0, 160), at: nowIso(), livre: '', ouvert: '', refus: '' });
+  const entree = { id, sujet: String(sujet || '').slice(0, 160), at: nowIso(), livre: '', ouvert: '', refus: '' };
+  l.unshift(entree);
   await env.KV_ADMIN.put(k, JSON.stringify(l.slice(0, 60)));
+  const tous = ((await env.KV_ADMIN.get(MAILS_TOUS, { type: 'json' })) as AnyObj[] | null) || [];
+  tous.unshift({ ...entree, email: String(email).trim().toLowerCase(), nom: String(nom || '').slice(0, 80) });
+  await env.KV_ADMIN.put(MAILS_TOUS, JSON.stringify(tous.slice(0, 120)));
   await env.KV_ADMIN.put('mailid:' + id, String(email).trim().toLowerCase(), { expirationTtl: 60 * 60 * 24 * 120 });
 }
 async function mailsDe(env: Env, email: string): Promise<AnyObj[]> {
@@ -3858,10 +3865,16 @@ async function handleResendWebhook(request: Request, env: Env): Promise<Response
   const m = l.find((x) => x.id === id);
   if (!m) return json({ ok: true, inconnu: true });
   const quand = String(ev.created_at || nowIso());
-  if (champ === 'refus') m.refus = ev.type === 'email.complained' ? 'signalé comme indésirable' : 'refusé par sa messagerie';
-  else if (!m[champ]) m[champ] = quand;
-  if (champ === 'ouvert' && !m.livre) m.livre = quand;
+  const maj = (x: AnyObj) => {
+    if (champ === 'refus') x.refus = ev.type === 'email.complained' ? 'signalé comme indésirable' : 'refusé par sa messagerie';
+    else if (!x[champ]) x[champ] = quand;
+    if (champ === 'ouvert' && !x.livre) x.livre = quand;
+  };
+  maj(m);
   await env.KV_ADMIN.put(mailCle(email), JSON.stringify(l));
+  const tous = ((await env.KV_ADMIN.get(MAILS_TOUS, { type: 'json' })) as AnyObj[] | null) || [];
+  const t = tous.find((x) => x.id === id);
+  if (t) { maj(t); await env.KV_ADMIN.put(MAILS_TOUS, JSON.stringify(tous)); }
   return json({ ok: true });
 }
 // L'état de l'e-mail d'une question, gardé avec elle : parti ou non, à qui.
