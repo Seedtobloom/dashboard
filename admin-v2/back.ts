@@ -27,7 +27,8 @@ export interface Env {
   RESEND_API_KEY?: string;
   RESEND_FROM_EMAIL?: string;
   RESEND_REPLY_TO?: string;
-  RESEND_WEBHOOK_SECRET?: string; // « Signing secret » du webhook Resend (whsec_…)   // adresse de réponse (optionnelle)
+  RESEND_WEBHOOK_SECRET?: string;
+  RESEND_READ_API_KEY?: string;   // clé Resend « Full access », pour relire l'historique // « Signing secret » du webhook Resend (whsec_…)   // adresse de réponse (optionnelle)
   INTERNAL_SECRET?: string;
   SPACE_URL?: string;
 }
@@ -3856,15 +3857,22 @@ async function resendSignatureOk(env: Env, request: Request, body: string): Prom
 // selon l'abonnement) et les range dans le journal, cliente par cliente.
 // Resend ne donne que le dernier événement, sans heure d'ouverture.
 async function handleMailsImport(env: Env): Promise<Response> {
-  if (!env.RESEND_API_KEY) return json({ error: 'Clé Resend manquante' }, 400);
+  // La clé d'envoi est souvent limitée à « Sending access » : elle ne peut pas
+  // lire l'historique. On prend la clé de lecture si elle existe.
+  const cleLecture = env.RESEND_READ_API_KEY || env.RESEND_API_KEY;
+  if (!cleLecture) return json({ error: 'Clé Resend manquante' }, 400);
   const idx = await getIndex(env);
   const parEmail: Record<string, AnyObj> = {};
   idx.forEach((c) => { if (c.email) parEmail[String(c.email).trim().toLowerCase()] = c; });
   const recus: AnyObj[] = [];
   let apres = '';
   for (let page = 0; page < 5; page++) {
-    const res = await fetch('https://api.resend.com/emails?limit=100' + (apres ? '&after=' + encodeURIComponent(apres) : ''), { headers: { Authorization: `Bearer ${env.RESEND_API_KEY}` } });
-    if (!res.ok) { if (page === 0) return json({ error: 'Resend a répondu ' + res.status }, 502); break; }
+    const res = await fetch('https://api.resend.com/emails?limit=100' + (apres ? '&after=' + encodeURIComponent(apres) : ''), { headers: { Authorization: `Bearer ${cleLecture}` } });
+    if (!res.ok) {
+      if (page > 0) break;
+      if (res.status === 401 || res.status === 403) return json({ error: 'Ta clé Resend ne peut qu’envoyer. Il faut une clé « Full access » enregistrée sous RESEND_READ_API_KEY.' }, 502);
+      return json({ error: 'Resend a répondu ' + res.status }, 502);
+    }
     const d = (await res.json().catch(() => null)) as AnyObj | null;
     const l = d && Array.isArray(d.data) ? d.data : [];
     recus.push(...l);
