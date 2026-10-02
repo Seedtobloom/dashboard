@@ -9526,7 +9526,7 @@
     api('/api/mails').then(function (r) { return r.json(); }).then(function (d) {
       var box = el('cl-mails'); if (!box) return;
       var l = (d && d.mails) || [];
-      if (!l.length) { box.innerHTML = ''; return; }
+      if (!l.length) { box.innerHTML = '<section class="clm"><div class="clm-h"><h2>Derniers e-mails envoyés</h2></div><p class="mle__v">Les e-mails envoyés à tes clientes à partir d’aujourd’hui s’afficheront ici, avec leur ouverture.</p></section>'; return; }
       var parEmail = {}; (tous || []).forEach(function (c) { if (c.email) parEmail[String(c.email).toLowerCase()] = c; });
       var vis = CLI_MAILS_TOUT ? l : l.slice(0, 5);
       box.innerHTML = '<section class="clm"><div class="clm-h"><h2>Derniers e-mails envoyés</h2>' + (l.length > 5 ? '<button class="tps-lien" onclick="ADM.cliMailsTout()">' + (CLI_MAILS_TOUT ? 'Voir moins' : 'Tout voir') + '</button>' : '') + '</div>' +
