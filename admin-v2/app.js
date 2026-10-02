@@ -9526,10 +9526,11 @@
     api('/api/mails').then(function (r) { return r.json(); }).then(function (d) {
       var box = el('cl-mails'); if (!box) return;
       var l = (d && d.mails) || [];
-      if (!l.length) { box.innerHTML = '<section class="clm"><div class="clm-h"><h2>Derniers e-mails envoyés</h2></div><p class="mle__v">Les e-mails envoyés à tes clientes à partir d’aujourd’hui s’afficheront ici, avec leur ouverture.</p></section>'; return; }
+      var recup = '<button class="tps-lien" onclick="ADM.cliMailsImporter(this)">Récupérer les envois récents</button>';
+      if (!l.length) { box.innerHTML = '<section class="clm"><div class="clm-h"><h2>Derniers e-mails envoyés</h2>' + recup + '</div><p class="mle__v">Les e-mails envoyés à tes clientes s’afficheront ici, avec leur ouverture. Les envois des derniers jours peuvent être récupérés chez Resend.</p></section>'; return; }
       var parEmail = {}; (tous || []).forEach(function (c) { if (c.email) parEmail[String(c.email).toLowerCase()] = c; });
       var vis = CLI_MAILS_TOUT ? l : l.slice(0, 5);
-      box.innerHTML = '<section class="clm"><div class="clm-h"><h2>Derniers e-mails envoyés</h2>' + (l.length > 5 ? '<button class="tps-lien" onclick="ADM.cliMailsTout()">' + (CLI_MAILS_TOUT ? 'Voir moins' : 'Tout voir') + '</button>' : '') + '</div>' +
+      box.innerHTML = '<section class="clm"><div class="clm-h"><h2>Derniers e-mails envoyés</h2><span class="clm-a">' + recup + (l.length > 5 ? '<button class="tps-lien" onclick="ADM.cliMailsTout()">' + (CLI_MAILS_TOUT ? 'Voir moins' : 'Tout voir') + '</button>' : '') + '</span></div>' +
         vis.map(function (m) {
           var c = parEmail[m.email], e = mailEtat(m);
           var ouvrir = c ? ' onclick="ADM.openClient(\'' + esc(c.key) + '\')"' : '';
@@ -9538,6 +9539,14 @@
     }).catch(function () {});
   }
   function cliMailsTout() { CLI_MAILS_TOUT = !CLI_MAILS_TOUT; renderClients(); }
+  function cliMailsImporter(b) {
+    if (b) { b.disabled = true; b.textContent = 'Récupération…'; }
+    jpost('/api/mails/importer', {}, 'POST').then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); }).then(function (x) {
+      if (!x.ok) { toast(x.d.error || 'Erreur'); if (b) { b.disabled = false; b.textContent = 'Récupérer les envois récents'; } return; }
+      toast(x.d.ajoutes ? x.d.ajoutes + ' e-mail' + (x.d.ajoutes > 1 ? 's' : '') + ' retrouvé' + (x.d.ajoutes > 1 ? 's' : '') : 'Rien de nouveau chez Resend');
+      renderClients();
+    }).catch(function () { toast('Erreur'); if (b) b.disabled = false; });
+  }
   // Présence : « En ligne » si activité < 5 min (le poll client entretient
   // l'horodatage), sinon dernière connexion en relatif.
   function presence(lastSeen) {
@@ -10299,6 +10308,7 @@
   function mailEtat(m) {
     if (m.refus) return { t: 'Pas arrivé, ' + m.refus, c: 'mle--ko' };
     if (m.ouvert) return { t: 'Ouvert le ' + fmtDate(m.ouvert) + ' à ' + new Date(m.ouvert).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }).replace(':', 'h'), c: 'mle--ok' };
+    if (m.ouvertSansDate) return { t: 'Ouvert', c: 'mle--ok' };
     if (m.livre) return { t: 'Arrivé, pas encore ouvert', c: '' };
     return { t: 'Parti, en attente de nouvelles', c: '' };
   }
@@ -14873,7 +14883,7 @@
     ckTSetTri: ckTSetTri, ckTSetFiltre: ckTSetFiltre, ckTOuvrir: ckTOuvrir, ckTGrand: ckTGrand, ckMenu: ckMenu,
     ckTRepondre: ckTRepondre, ckTCloturer: ckTCloturer, ckTSupprimer: ckTSupprimer, ckTCreerStb: ckTCreerStb, inbSetOnglet: inbSetOnglet, inbChoisir: inbChoisir, inbRefuser: inbRefuser, inbToutVu: inbToutVu, ckTSetCote: ckTSetCote, ckTVoir: ckTVoir, ckTEtape: ckTEtape,
     ckTAEstimer: ckTAEstimer,
-    ckLChoisir: ckLChoisir, ckLSemaine: ckLSemaine, ckLVue: ckLVue, cliMailsTout: cliMailsTout, ffMode: ffMode, ffStatut: ffStatut, ffClasser: ffClasser, ckLPoser: ckLPoser, ckLRetirer: ckLRetirer,
+    ckLChoisir: ckLChoisir, ckLSemaine: ckLSemaine, ckLVue: ckLVue, cliMailsTout: cliMailsTout, cliMailsImporter: cliMailsImporter, ffMode: ffMode, ffStatut: ffStatut, ffClasser: ffClasser, ckLPoser: ckLPoser, ckLRetirer: ckLRetirer,
     ckLRegSet: ckLRegSet, ckLRegEnregistrer: ckLRegEnregistrer, ckLRegAnnuler: ckLRegAnnuler,
     ckLSetSimH: ckLSetSimH, ckLSetSimHz: ckLSetSimHz, ckLDepuis: ckLDepuis,
     ckJSetFiltre: ckJSetFiltre, ckJSetClient: ckJSetClient, ckJEstimOuvrir: ckJEstimOuvrir, ckJCrOuvrir: ckJCrOuvrir, ckJCrNouvelle: ckJCrNouvelle, cliSetFiltre: cliSetFiltre, cliOuvrirOffre: cliOuvrirOffre, cliNouveauProjet: cliNouveauProjet, cliEcrire: cliEcrire, visPassees: visPassees, chatSetFiltre: chatSetFiltre, ckJRevRouvrir: ckJRevRouvrir, ckJRevClasser: ckJRevClasser, ckJEstimChoix: ckJEstimChoix, ckJEstimer: ckJEstimer, ckJOuvrir: ckJOuvrir, ckJFermer: ckJFermer, ckJOnglet: ckJOnglet,

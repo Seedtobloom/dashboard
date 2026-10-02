@@ -126,6 +126,7 @@ export default {
       if (!ok) return json({ error: 'Non authentifié' }, 401);
 
       if (method === 'GET' && pathname === '/api/me') return json({ ok: true });
+      if (method === 'POST' && pathname === '/api/mails/importer') return handleMailsImport(env);
       if (method === 'GET' && pathname === '/api/mails') return json({ mails: (((await env.KV_ADMIN.get(MAILS_TOUS, { type: 'json' })) as AnyObj[] | null) || []).slice(0, 40) });
       if (method === 'POST' && pathname === '/api/test-email') return handleTestEmail(request, env);
       if (method === 'GET' && pathname === '/api/dashboard') return handleDashboard(env);
@@ -3851,6 +3852,56 @@ async function resendSignatureOk(env: Env, request: Request, body: string): Prom
   const mac = bytesToB64(new Uint8Array(await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(id + '.' + ts + '.' + body))));
   return sig.split(' ').some((p) => { const v = p.split(',')[1] || ''; return v.length === mac.length && v === mac; });
 }
+// Récupère chez Resend les e-mails encore dans son historique (quelques jours
+// selon l'abonnement) et les range dans le journal, cliente par cliente.
+// Resend ne donne que le dernier événement, sans heure d'ouverture.
+async function handleMailsImport(env: Env): Promise<Response> {
+  if (!env.RESEND_API_KEY) return json({ error: 'Clé Resend manquante' }, 400);
+  const idx = await getIndex(env);
+  const parEmail: Record<string, AnyObj> = {};
+  idx.forEach((c) => { if (c.email) parEmail[String(c.email).trim().toLowerCase()] = c; });
+  const recus: AnyObj[] = [];
+  let apres = '';
+  for (let page = 0; page < 5; page++) {
+    const res = await fetch('https://api.resend.com/emails?limit=100' + (apres ? '&after=' + encodeURIComponent(apres) : ''), { headers: { Authorization: `Bearer ${env.RESEND_API_KEY}` } });
+    if (!res.ok) { if (page === 0) return json({ error: 'Resend a répondu ' + res.status }, 502); break; }
+    const d = (await res.json().catch(() => null)) as AnyObj | null;
+    const l = d && Array.isArray(d.data) ? d.data : [];
+    recus.push(...l);
+    if (!d || !d.has_more || !l.length) break;
+    apres = l[l.length - 1].id;
+  }
+  const tous = ((await env.KV_ADMIN.get(MAILS_TOUS, { type: 'json' })) as AnyObj[] | null) || [];
+  const connus = new Set(tous.map((x) => x.id));
+  const parCliente: Record<string, AnyObj[]> = {};
+  let n = 0;
+  for (const m of recus) {
+    if (!m || !m.id || connus.has(m.id)) continue;
+    const dest = (Array.isArray(m.to) ? m.to : [m.to]).map((x: unknown) => String(x || '').trim().toLowerCase());
+    const email = dest.find((x: string) => parEmail[x]);
+    if (!email) continue;
+    const ev = String(m.last_event || '');
+    const at = String(m.created_at || '').replace(' ', 'T');
+    const e: AnyObj = { id: m.id, sujet: String(m.subject || '').slice(0, 160), at, livre: '', ouvert: '', refus: '' };
+    if (ev === 'delivered' || ev === 'opened' || ev === 'clicked') e.livre = at;
+    if (ev === 'opened' || ev === 'clicked') e.ouvertSansDate = true;
+    if (ev === 'bounced') e.refus = 'refusé par sa messagerie';
+    if (ev === 'complained') e.refus = 'signalé comme indésirable';
+    const c = parEmail[email];
+    tous.push({ ...e, email, nom: ((c.prenom || '') + ' ' + (c.nom || '')).trim() });
+    (parCliente[email] = parCliente[email] || []).push(e);
+    await env.KV_ADMIN.put('mailid:' + m.id, email, { expirationTtl: 60 * 60 * 24 * 120 });
+    n++;
+  }
+  for (const email of Object.keys(parCliente)) {
+    const l = (await mailsDe(env, email)).concat(parCliente[email]);
+    l.sort((a, b) => String(b.at).localeCompare(String(a.at)));
+    await env.KV_ADMIN.put(mailCle(email), JSON.stringify(l.slice(0, 60)));
+  }
+  tous.sort((a, b) => String(b.at).localeCompare(String(a.at)));
+  await env.KV_ADMIN.put(MAILS_TOUS, JSON.stringify(tous.slice(0, 120)));
+  return json({ ok: true, ajoutes: n, lus: recus.length, mails: tous.slice(0, 40) });
+}
 async function handleResendWebhook(request: Request, env: Env): Promise<Response> {
   const body = await request.text();
   if (!(await resendSignatureOk(env, request, body))) return json({ error: 'Signature invalide' }, 401);
@@ -3867,7 +3918,7 @@ async function handleResendWebhook(request: Request, env: Env): Promise<Response
   const quand = String(ev.created_at || nowIso());
   const maj = (x: AnyObj) => {
     if (champ === 'refus') x.refus = ev.type === 'email.complained' ? 'signalé comme indésirable' : 'refusé par sa messagerie';
-    else if (!x[champ]) x[champ] = quand;
+    else if (!x[champ]) { x[champ] = quand; if (champ === 'ouvert') delete x.ouvertSansDate; }
     if (champ === 'ouvert' && !x.livre) x.livre = quand;
   };
   maj(m);

@@ -3792,3 +3792,4 @@ a.ckr-b{text-decoration:none;display:inline-block}
 .clm-s{font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .clm-d{font-size:14px;color:#7a5540}
 @media(max-width:760px){.clm-l{grid-template-columns:1fr auto}.clm-s,.clm-d{display:none}}
+.clm-a{display:flex;gap:18px;align-items:baseline}
