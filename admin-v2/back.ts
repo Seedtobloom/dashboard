@@ -26,7 +26,8 @@ export interface Env {
   R2_FILES: R2Bucket;
   RESEND_API_KEY?: string;
   RESEND_FROM_EMAIL?: string;
-  RESEND_REPLY_TO?: string;   // adresse de réponse (optionnelle)
+  RESEND_REPLY_TO?: string;
+  RESEND_WEBHOOK_SECRET?: string; // « Signing secret » du webhook Resend (whsec_…)   // adresse de réponse (optionnelle)
   INTERNAL_SECRET?: string;
   SPACE_URL?: string;
 }
@@ -117,6 +118,8 @@ export default {
     try {
       if (method === 'POST' && pathname === '/api/login') return handleLogin(request, env);
       if (method === 'POST' && pathname === '/api/logout') return handleLogout(request, env);
+      // Webhook Resend : appelé par Resend, sans session, mais signé.
+      if (method === 'POST' && pathname === '/api/resend-webhook') return handleResendWebhook(request, env);
 
       // toutes les autres routes exigent une session admin
       const ok = await isAdmin(request, env);
@@ -509,6 +512,7 @@ async function handleClientApi(
     const detail = buildClientDetail(env, key, data);
     const pres = parseInt((await env.KV_CLIENT.get('presence:' + key)) || '0', 10);
     if (pres) detail.lastSeen = pres;
+    detail.mails = (await mailsDe(env, getClient(data).email || '')).slice(0, 15);
     return json(detail);
   }
   // Mise à jour profil / activation
@@ -1046,10 +1050,12 @@ async function handleClientApi(
       if (l.indexOf(key) !== -1 || l.indexOf(cl.email) !== -1) return `<p style="margin:0;font-size:16px"><strong>${e}</strong></p>`;
       return `<p style="margin:0">${e.replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" style="color:#5A2A11">$1</a>')}</p>`;
     }).join('');
+    const ra = await notifyClient(env, data, subject, html, true, undefined, 'Me connecter à mon espace');
+    if (!ra.ok) return json({ error: 'L’e-mail n’est pas parti : ' + (ra.error || 'erreur') }, 502);
     cl.accesEnvoyeLe = nowIso();
+    cl.accesMailId = ra.id || '';
     await saveClient(env, key, data);
-    await notifyClient(env, data, subject, html, true, undefined, 'Me connecter à mon espace');
-    return json({ ok: true, accesEnvoyeLe: cl.accesEnvoyeLe });
+    return json({ ok: true, accesEnvoyeLe: cl.accesEnvoyeLe, accesMailId: cl.accesMailId, mails: (await mailsDe(env, cl.email)).slice(0, 15) });
   }
   // Aperçu de l'espace (lecture seule) : un lien à usage unique, 5 minutes.
   if (method === 'POST' && sub === '/apercu-token') {
@@ -1302,6 +1308,7 @@ function buildClientDetail(_env: Env, key: string, data: AnyObj): AnyObj {
     questionnaires: Array.isArray(esp.questionnaires) ? esp.questionnaires : [],
     spaceUrl: clientSpaceUrl(_env),
     accesEnvoyeLe: getClient(data).accesEnvoyeLe || '',
+    accesMailId: getClient(data).accesMailId || '',
   };
 }
 
@@ -3071,7 +3078,7 @@ function htmlToText(html: string): string {
     .split('\n').map((l) => l.trim()).join('\n')
     .trim();
 }
-async function sendEmail(env: Env, to: string, subject: string, html: string): Promise<{ ok: boolean; status: number; error?: string }> {
+async function sendEmail(env: Env, to: string, subject: string, html: string): Promise<{ ok: boolean; status: number; error?: string; id?: string }> {
   if (!env.RESEND_API_KEY || !env.RESEND_FROM_EMAIL) return { ok: false, status: 0, error: 'RESEND_API_KEY / RESEND_FROM_EMAIL manquants' };
   const replyTo = await mailReplyTo(env);
   const ctrl = new AbortController();
@@ -3094,7 +3101,8 @@ async function sendEmail(env: Env, to: string, subject: string, html: string): P
       const txt = (await res.text().catch(() => '')).slice(0, 400);
       return { ok: false, status: res.status, error: txt || ('HTTP ' + res.status) };
     }
-    return { ok: true, status: res.status };
+    const d = (await res.json().catch(() => null)) as AnyObj | null;
+    return { ok: true, status: res.status, id: d && typeof d.id === 'string' ? d.id : undefined };
   } catch (e) {
     return { ok: false, status: 0, error: e instanceof Error ? e.message : String(e) };
   } finally {
@@ -3794,7 +3802,7 @@ function clientDemandeUrl(env: Env, taskId: string): string {
 /* Les e-mails aux clientes : « Bonjour Prénom, » en tête, signés Cindy. Courts, comme on parle. */
 function mailBonjour(data: AnyObj): string { const p = getClient(data).prenom || ''; return `<p>Bonjour${p ? ' ' + escHtml(p) : ''},</p>`; }
 const MAIL_SIGNE = '<p>Cindy</p>';
-async function notifyClient(env: Env, data: AnyObj, subject: string, bodyHtml: string, withLink?: boolean | string, demande?: string, ctaLabel?: string): Promise<{ ok: boolean; to: string; error?: string }> {
+async function notifyClient(env: Env, data: AnyObj, subject: string, bodyHtml: string, withLink?: boolean | string, demande?: string, ctaLabel?: string): Promise<{ ok: boolean; to: string; error?: string; id?: string }> {
   const email = getClient(data).email;
   if (!email) return { ok: false, to: '', error: 'Pas d’adresse e-mail dans sa fiche' };
   let cta = '';
@@ -3804,7 +3812,57 @@ async function notifyClient(env: Env, data: AnyObj, subject: string, bodyHtml: s
   }
   const r = await sendEmail(env, email, subject, emailWrapper(subject, bodyHtml + cta));
   if (!r.ok) console.error('resend notifyClient', r.status, r.error);
-  return { ok: r.ok, to: email, error: r.ok ? undefined : (r.error || ('Erreur ' + r.status)) };
+  if (r.ok && r.id) { try { await mailJournal(env, email, subject, r.id); } catch (e) { console.error('mail journal', e); } }
+  return { ok: r.ok, to: email, error: r.ok ? undefined : (r.error || ('Erreur ' + r.status)), id: r.id };
+}
+/* ── Suivi des e-mails envoyés aux clientes ────────────────────────────────
+ * Chaque e-mail parti est noté (par adresse), et Resend nous prévient ensuite
+ * par webhook : livré, ouvert, refusé. L'ouverture n'est connue que si le
+ * suivi des ouvertures est activé sur le domaine dans Resend ; certaines
+ * messageries (Apple Mail) ouvrent l'e-mail toutes seules, c'est un indice. */
+function mailCle(email: string): string { return 'mails:' + String(email || '').trim().toLowerCase(); }
+async function mailJournal(env: Env, email: string, sujet: string, id: string): Promise<void> {
+  const k = mailCle(email);
+  const l = ((await env.KV_ADMIN.get(k, { type: 'json' })) as AnyObj[] | null) || [];
+  l.unshift({ id, sujet: String(sujet || '').slice(0, 160), at: nowIso(), livre: '', ouvert: '', refus: '' });
+  await env.KV_ADMIN.put(k, JSON.stringify(l.slice(0, 60)));
+  await env.KV_ADMIN.put('mailid:' + id, String(email).trim().toLowerCase(), { expirationTtl: 60 * 60 * 24 * 120 });
+}
+async function mailsDe(env: Env, email: string): Promise<AnyObj[]> {
+  if (!email) return [];
+  return ((await env.KV_ADMIN.get(mailCle(email), { type: 'json' })) as AnyObj[] | null) || [];
+}
+function b64ToBytes(b64: string): Uint8Array { const bin = atob(b64); const u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return u; }
+function bytesToB64(u: Uint8Array): string { let s = ''; for (let i = 0; i < u.length; i++) s += String.fromCharCode(u[i]); return btoa(s); }
+// Signature Svix (utilisée par Resend) : HMAC-SHA256 de « id.timestamp.corps ».
+async function resendSignatureOk(env: Env, request: Request, body: string): Promise<boolean> {
+  const secret = String(env.RESEND_WEBHOOK_SECRET || '');
+  const id = request.headers.get('svix-id') || '', ts = request.headers.get('svix-timestamp') || '', sig = request.headers.get('svix-signature') || '';
+  if (!secret || !id || !ts || !sig) return false;
+  if (Math.abs(Date.now() / 1000 - Number(ts)) > 600) return false;
+  const key = await crypto.subtle.importKey('raw', b64ToBytes(secret.replace(/^whsec_/, '')), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  const mac = bytesToB64(new Uint8Array(await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(id + '.' + ts + '.' + body))));
+  return sig.split(' ').some((p) => { const v = p.split(',')[1] || ''; return v.length === mac.length && v === mac; });
+}
+async function handleResendWebhook(request: Request, env: Env): Promise<Response> {
+  const body = await request.text();
+  if (!(await resendSignatureOk(env, request, body))) return json({ error: 'Signature invalide' }, 401);
+  let ev: AnyObj = {};
+  try { ev = JSON.parse(body); } catch (e) { return json({ error: 'JSON' }, 400); }
+  const id = ev && ev.data && ev.data.email_id;
+  const champ = ({ 'email.delivered': 'livre', 'email.opened': 'ouvert', 'email.bounced': 'refus', 'email.complained': 'refus' } as AnyObj)[ev.type];
+  if (!id || !champ) return json({ ok: true, ignore: true });
+  const email = await env.KV_ADMIN.get('mailid:' + id);
+  if (!email) return json({ ok: true, inconnu: true });
+  const l = await mailsDe(env, email);
+  const m = l.find((x) => x.id === id);
+  if (!m) return json({ ok: true, inconnu: true });
+  const quand = String(ev.created_at || nowIso());
+  if (champ === 'refus') m.refus = ev.type === 'email.complained' ? 'signalé comme indésirable' : 'refusé par sa messagerie';
+  else if (!m[champ]) m[champ] = quand;
+  if (champ === 'ouvert' && !m.livre) m.livre = quand;
+  await env.KV_ADMIN.put(mailCle(email), JSON.stringify(l));
+  return json({ ok: true });
 }
 // L'état de l'e-mail d'une question, gardé avec elle : parti ou non, à qui.
 function noterMail(q: AnyObj, r: { ok: boolean; to: string; error?: string }): void {

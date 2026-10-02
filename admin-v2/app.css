@@ -3765,3 +3765,15 @@ a.ckr-b{text-decoration:none;display:inline-block}
 .ffi-c div{background:#F8F6F2;border-radius:12px;padding:10px 14px;display:flex;flex-direction:column}
 .ffi-c b{font-family:'Alegreya',Georgia,serif;font-weight:400;font-size:24px}
 .ffi-c span{font-size:14px;color:#7a5540}
+
+/* Suivi des e-mails envoyés à la cliente */
+.mlc{margin-top:18px}
+.mlc h3{margin:0 0 6px;font-family:'Alegreya',Georgia,serif;font-weight:400;font-size:24px}
+.mle{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:12px 0;border-top:1px solid rgba(17,7,4,.08)}
+.mle>div{display:flex;flex-direction:column;min-width:0}
+.mle b{font-size:15px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mle>div span{font-size:14px;color:#7a5540}
+.mle__e{font-size:14px;font-weight:600;padding:5px 12px;border-radius:999px;background:#F8F6F2;white-space:nowrap}
+.mle__e.mle--ok{background:#C5DEFF}
+.mle__e.mle--ko{background:#E6E5B2;color:#5A2A11}
+.mle__v{margin:6px 0 0;font-size:15px;color:#7a5540}

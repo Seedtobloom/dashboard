@@ -9608,7 +9608,7 @@
     var ov = document.createElement('div'); ov.className = 'admconfirm';
     ov.innerHTML = '<div class="admconfirm__box" style="max-width:640px;text-align:left">' +
       '<div class="admconfirm__title">Envoyer ses accès à ' + esc(((cl.prenom || '') + ' ' + (cl.nom || '')).trim() || cl.email) + '</div>' +
-      '<div class="admconfirm__msg">Relis et modifie le message si tu veux. Il part à <b>' + esc(cl.email) + '</b>, avec un bouton pour se connecter.' + (CUR.accesEnvoyeLe ? ' Déjà envoyé le ' + esc(fmtDate(CUR.accesEnvoyeLe)) + '.' : '') + '</div>' +
+      '<div class="admconfirm__msg">Relis et modifie le message si tu veux. Il part à <b>' + esc(cl.email) + '</b>, avec un bouton pour se connecter.' + (CUR.accesEnvoyeLe ? ' Déjà envoyé le ' + esc(fmtDate(CUR.accesEnvoyeLe)) + (function () { var m = (CUR.mails || []).filter(function (x) { return x.id && x.id === CUR.accesMailId; })[0]; return m ? ', ' + esc(mailEtat(m).t.charAt(0).toLowerCase() + mailEtat(m).t.slice(1)) : ''; })() + '.' : '') + '</div>' +
       '<div class="field" style="margin-top:12px"><label>Objet</label><input class="inp" id="acc-sujet" value="' + esc(ACCES_SUJET) + '"></div>' +
       '<div class="field" style="margin-top:10px"><label>Message</label><textarea class="inp" id="acc-texte" rows="16" style="width:100%;box-sizing:border-box;resize:vertical;line-height:1.5"></textarea></div>' +
       '<div class="admconfirm__row" style="margin-top:14px"><button class="btn btn--outline btn--sm" data-no>Annuler</button>' +
@@ -9621,7 +9621,7 @@
       var sujet = (el('acc-sujet').value || '').trim(), texte = el('acc-texte').value || '';
       if (!texte.trim()) { toast('Message vide'); return; }
       jpost('/api/clients/' + CURKEY + '/send-access', { subject: sujet, body: texte }, 'POST').then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
-        .then(function (x) { if (x.ok) { close(); CUR.accesEnvoyeLe = x.d.accesEnvoyeLe; toast('Accès envoyés à ' + cl.email); } else toast(x.d.error || 'Erreur'); })
+        .then(function (x) { if (x.ok) { close(); CUR.accesEnvoyeLe = x.d.accesEnvoyeLe; CUR.accesMailId = x.d.accesMailId; if (x.d.mails) CUR.mails = x.d.mails; toast('Accès envoyés à ' + cl.email); if (TAB === 'forfait') renderTab(); } else toast(x.d.error || 'Erreur'); })
         .catch(function () { toast('Erreur'); });
     };
     document.body.appendChild(ov);
@@ -10271,9 +10271,25 @@
       '<div class="micro mb">Supprime définitivement ce client : son espace, ses messages, ses tâches et ses fichiers. Action irréversible.</div>' +
       '<button class="btn btn--danger btn--sm" onclick="ADM.deleteClient()">Supprimer ce client et son espace</button></div>';
     return '<div class="grid grid--2" style="align-items:start;max-width:1100px">' +
-      '<div>' + coord + '</div>' +
+      '<div>' + coord + mailsCard() + '</div>' +
       '<div>' + offersCard() + ticketsSpaceCard() + '</div>' +
       '</div>' + danger;
+  }
+  // Ce qu'est devenu chaque e-mail envoyé à la cliente : parti, livré, ouvert.
+  function mailEtat(m) {
+    if (m.refus) return { t: 'Pas arrivé, ' + m.refus, c: 'mle--ko' };
+    if (m.ouvert) return { t: 'Ouvert le ' + fmtDate(m.ouvert) + ' à ' + new Date(m.ouvert).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }).replace(':', 'h'), c: 'mle--ok' };
+    if (m.livre) return { t: 'Arrivé, pas encore ouvert', c: '' };
+    return { t: 'Parti, en attente de nouvelles', c: '' };
+  }
+  function mailsCard() {
+    var l = Array.isArray(CUR.mails) ? CUR.mails : [];
+    var pr = (CUR.client && CUR.client.prenom) || 'ta cliente';
+    var corps = l.length ? l.slice(0, 8).map(function (m) {
+      var e = mailEtat(m);
+      return '<div class="mle"><div><b>' + esc(m.sujet || 'E-mail') + '</b><span>envoyé le ' + esc(fmtDate(m.at)) + '</span></div><span class="mle__e ' + e.c + '">' + esc(e.t) + '</span></div>';
+    }).join('') : '<p class="mle__v">Les prochains e-mails envoyés à ' + esc(pr) + ' s’afficheront ici, avec leur ouverture.</p>';
+    return '<div class="card infocard mlc"><h3>E-mails envoyés à ' + esc(pr) + '</h3>' + corps + '</div>';
   }
   function ticketsSpaceCard() {
     var dm = (CUR.domains || []).filter(function (x) { return x.id === 'maintenance'; })[0];
