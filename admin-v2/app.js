@@ -152,8 +152,14 @@
   function admAttachBtn(cid, projectId) {
     return '<label title="Joindre un fichier" style="display:inline-flex;align-items:center;gap:6px;height:38px;padding:0 14px;border:none;border-radius:10px;cursor:pointer;color:var(--terre);background:#fff;font-size:15px;font-weight:600;white-space:nowrap">' + admIcon('clip') + ' Joindre<input type="file" multiple style="display:none" onchange="ADM.msgAttPick(this,\'' + cid + '\',\'' + projectId + '\')"></label>';
   }
-  function fmtDate(d) { if (!d) return '·'; var t = new Date(d); return isNaN(t) ? esc(d) : t.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }); }
-  function fmtDT(d) { if (!d) return ''; var t = new Date(d); return isNaN(t) ? '' : t.toLocaleString('fr-FR'); }
+  // Dates venues d'ailleurs (Resend : « 2026-10-02 10:48:02.858000+00 ») :
+  // on les remet au format que tous les navigateurs savent lire.
+  function dateNette(d) {
+    if (typeof d !== 'string') return d;
+    return d.trim().replace(' ', 'T').replace(/(\.\d{3})\d+/, '$1').replace(/([+-]\d\d)$/, '$1:00');
+  }
+  function fmtDate(d) { if (!d) return '·'; var t = new Date(dateNette(d)); return isNaN(t) ? esc(d) : t.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }); }
+  function fmtDT(d) { if (!d) return ''; var t = new Date(dateNette(d)); return isNaN(t) ? '' : t.toLocaleString('fr-FR'); }
   function el(id) { return document.getElementById(id); }
   /* Point de passage UNIQUE de tous les appels réseau. C'est ici, et nulle part
    * ailleurs, qu'on périme les lectures mutualisées (tableau de bord, liste des
@@ -9534,7 +9540,7 @@
         vis.map(function (m) {
           var c = parEmail[m.email], e = mailEtat(m);
           var ouvrir = c ? ' onclick="ADM.openClient(\'' + esc(c.key) + '\')"' : '';
-          return '<button class="clm-l"' + ouvrir + '><span class="clm-n">' + esc(m.nom || (c ? clientName(c) : m.email)) + '</span><span class="clm-s">' + esc(m.sujet || 'E-mail') + '</span><span class="clm-d">' + esc(fmtDate(m.at)) + '</span><span class="mle__e ' + e.c + '">' + esc(e.t) + '</span></button>';
+          return '<button class="clm-l"' + ouvrir + '><span class="clm-n">' + esc(m.nom || (c ? clientName(c) : m.email)) + '</span><span class="clm-s">' + esc(m.sujet || 'E-mail') + '</span><span class="clm-d">' + esc(fmtJourHeure(m.at)) + '</span><span class="mle__e ' + e.c + '">' + esc(e.t) + '</span></button>';
         }).join('') + '</section>';
     }).catch(function () {});
   }
@@ -10307,7 +10313,7 @@
   // Ce qu'est devenu chaque e-mail envoyé à la cliente : parti, livré, ouvert.
   function mailEtat(m) {
     if (m.refus) return { t: 'Pas arrivé, ' + m.refus, c: 'mle--ko' };
-    if (m.ouvert) return { t: 'Ouvert le ' + fmtDate(m.ouvert) + ' à ' + new Date(m.ouvert).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }).replace(':', 'h'), c: 'mle--ok' };
+    if (m.ouvert) return { t: 'Ouvert le ' + fmtJourHeure(m.ouvert), c: 'mle--ok' };
     if (m.ouvertSansDate) return { t: 'Ouvert', c: 'mle--ok' };
     if (m.livre) return { t: 'Arrivé, pas encore ouvert', c: '' };
     return { t: 'Parti, en attente de nouvelles', c: '' };
@@ -10319,12 +10325,17 @@
     var m = l[0], e = mailEtat(m);
     return '<button class="cf-mail ' + e.c + '" onclick="ADM.tab(\'forfait\')" title="Voir tous les e-mails envoyés"><b>' + esc(m.sujet || 'Dernier e-mail') + '</b><span>' + esc(e.t) + '</span></button>';
   }
+  // « 2 oct., 12 h 48 »
+  function fmtJourHeure(d) {
+    var t = new Date(dateNette(d)); if (isNaN(t)) return '';
+    return t.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) + ', ' + t.getHours() + ' h ' + String(t.getMinutes()).padStart(2, '0');
+  }
   function mailsCard() {
     var l = Array.isArray(CUR.mails) ? CUR.mails : [];
     var pr = (CUR.client && CUR.client.prenom) || 'ta cliente';
     var corps = l.length ? l.slice(0, 8).map(function (m) {
       var e = mailEtat(m);
-      return '<div class="mle"><div><b>' + esc(m.sujet || 'E-mail') + '</b><span>envoyé le ' + esc(fmtDate(m.at)) + '</span></div><span class="mle__e ' + e.c + '">' + esc(e.t) + '</span></div>';
+      return '<div class="mle"><div><b>' + esc(m.sujet || 'E-mail') + '</b><span>envoyé le ' + esc(fmtJourHeure(m.at)) + '</span></div><span class="mle__e ' + e.c + '">' + esc(e.t) + '</span></div>';
     }).join('') : '<p class="mle__v">Les prochains e-mails envoyés à ' + esc(pr) + ' s’afficheront ici, avec leur ouverture.</p>';
     return '<div class="card infocard mlc"><h3>E-mails envoyés à ' + esc(pr) + '</h3>' + corps + '</div>';
   }

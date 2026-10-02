@@ -3786,10 +3786,10 @@ a.ckr-b{text-decoration:none;display:inline-block}
 .clm{background:#fff;border-radius:16px;box-shadow:0 0 0 1px rgba(17,7,4,.07);padding:20px 24px;margin:0 0 22px}
 .clm-h{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}
 .clm-h h2{margin:0;font-family:'Alegreya',Georgia,serif;font-weight:400;font-size:26px}
-.clm-l{display:grid;grid-template-columns:180px minmax(0,1fr) 110px auto;gap:14px;align-items:center;width:100%;text-align:left;border:none;background:none;border-top:1px solid rgba(17,7,4,.08);padding:12px 4px;font:inherit;color:#110704;cursor:pointer}
+.clm-l{display:grid;grid-template-columns:180px minmax(0,1fr) 130px auto;gap:14px;align-items:center;width:100%;text-align:left;border:none;background:none;border-top:1px solid rgba(17,7,4,.08);padding:12px 4px;font:inherit;color:#110704;cursor:pointer}
 .clm-l:hover{background:#F8F6F2}
 .clm-n{font-weight:600;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .clm-s{font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.clm-d{font-size:14px;color:#7a5540}
+.clm-d{font-size:14px;color:#7a5540;white-space:nowrap}
 @media(max-width:760px){.clm-l{grid-template-columns:1fr auto}.clm-s,.clm-d{display:none}}
 .clm-a{display:flex;gap:18px;align-items:baseline}

@@ -3889,7 +3889,9 @@ async function handleMailsImport(env: Env): Promise<Response> {
     const email = dest.find((x: string) => parEmail[x]);
     if (!email) continue;
     const ev = String(m.last_event || '');
-    const at = String(m.created_at || '').replace(' ', 'T');
+    const brut = String(m.created_at || '').trim().replace(' ', 'T').replace(/(\.\d{3})\d+/, '$1').replace(/([+-]\d\d)$/, '$1:00');
+    const tAt = new Date(brut);
+    const at = isNaN(tAt.getTime()) ? nowIso() : tAt.toISOString();
     const e: AnyObj = { id: m.id, sujet: String(m.subject || '').slice(0, 160), at, livre: '', ouvert: '', refus: '' };
     if (ev === 'delivered' || ev === 'opened' || ev === 'clicked') e.livre = at;
     if (ev === 'opened' || ev === 'clicked') e.ouvertSansDate = true;
