@@ -35,6 +35,7 @@ export interface Env {
   SPACE_URL?: string;
   ANTHROPIC_API_KEY?: string;
   DEEPGRAM_API_KEY?: string;
+  DEEPGRAM_BILLING_KEY?: string;
 }
 
 type AnyObj = Record<string, any>;
