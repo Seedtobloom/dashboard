@@ -155,7 +155,7 @@ function iaError(e: unknown, fallback: string): Response {
   const m = String((e as Error)?.message || e);
   if (/credit balance/i.test(m)) return json({ error: 'Ton crédit Claude est épuisé. Recharge-le dans la Console Anthropic, puis indique le montant dans l’onglet.', credit: true }, 402);
   if (/authentication|invalid x-api-key|401/i.test(m)) return json({ error: 'La clé Anthropic est refusée. Vérifie le secret ANTHROPIC_API_KEY.' }, 502);
-  return json({ error: fallback }, 502);
+  return json({ error: fallback, detail: m.replace(/sk-ant-[\w-]+/g, '').slice(0, 240) }, 502);
 }
 
 const STYLE = 'Écris en français, en phrases complètes, sans jargon ni sigle. N’utilise ni tiret ni tiret cadratin, ni deux-points dans les phrases destinées au prospect. Ne dis jamais que Cindy « code » ni qu’elle « dessine ». N’invente aucun fait : si une information n’a pas été dite, considère-la comme inconnue.';
@@ -321,7 +321,14 @@ async function handleBilan(request: Request, env: AppelEnv): Promise<Response> {
     str(b.transcript, MAX_TRANSCRIPT),
   ].join('\n');
   try {
-    const out = await claudeTool(env, MODEL_BILAN, system, user, BILAN_TOOL, 6000);
+    let out: AnyObj;
+    try {
+      out = await claudeTool(env, MODEL_BILAN, system, user, BILAN_TOOL, 6000);
+    } catch (e1) {
+      if (/credit balance|authentication|invalid x-api-key/i.test(String((e1 as Error)?.message || e1))) throw e1;
+      console.error('bilan, modèle principal:', e1);
+      out = await claudeTool(env, MODEL_LIVE, system, user, BILAN_TOOL, 8000);
+    }
     return json(out);
   } catch (e) {
     console.error('bilan:', e);
