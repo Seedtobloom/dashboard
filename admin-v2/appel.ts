@@ -17,6 +17,7 @@ export interface AppelEnv {
   KV_ADMIN: KVNamespace;
   ANTHROPIC_API_KEY?: string;
   DEEPGRAM_API_KEY?: string;
+  DEEPGRAM_BILLING_KEY?: string;
 }
 
 const MODEL_LIVE = 'claude-haiku-4-5-20251001';
@@ -104,6 +105,52 @@ async function getBudget(env: AppelEnv): Promise<AnyObj> {
   const remaining = Math.max(0, credit - spent);
   const low = credit > 0 && (remaining < 2 || remaining < credit * 0.2);
   return { credit, spent: Math.round(spent * 100) / 100, remaining: Math.round(remaining * 100) / 100, since: b.since || '', low, empty: credit > 0 && remaining <= 0.1 };
+}
+
+/* ── Solde Deepgram : solde réel si la clé y a accès, sinon estimation à partir des minutes d'appel ── */
+const DG_KEY = 'admin:appel:dg';
+const DG_PRIX_MIN = 0.0077;
+let DG_CACHE: { at: number; v: AnyObj | null } = { at: 0, v: null };
+async function dgReel(env: AppelEnv): Promise<AnyObj | null> {
+  const key = env.DEEPGRAM_BILLING_KEY || env.DEEPGRAM_API_KEY;
+  if (!key) return null;
+  if (DG_CACHE.v && Date.now() - DG_CACHE.at < 15 * 60000) return DG_CACHE.v;
+  try {
+    const h = { Authorization: 'Token ' + key };
+    const pr = await fetch('https://api.deepgram.com/v1/projects', { headers: h });
+    if (!pr.ok) throw new Error('projets ' + pr.status);
+    const pj = (await pr.json()) as AnyObj;
+    const id = pj && Array.isArray(pj.projects) && pj.projects[0] ? String(pj.projects[0].project_id || '') : '';
+    if (!/^[\w-]{8,64}$/.test(id)) throw new Error('projet');
+    const br = await fetch('https://api.deepgram.com/v1/projects/' + id + '/balances', { headers: h });
+    if (!br.ok) throw new Error('soldes ' + br.status);
+    const bj = (await br.json()) as AnyObj;
+    const list = bj && Array.isArray(bj.balances) ? bj.balances : null;
+    if (!list) throw new Error('format');
+    const remaining = list.reduce((a: number, x: AnyObj) => a + (String(x.units || 'usd').toLowerCase() === 'usd' ? Number(x.amount) || 0 : 0), 0);
+    DG_CACHE = { at: Date.now(), v: { source: 'reel', remaining: Math.round(remaining * 100) / 100 } };
+  } catch (e) {
+    DG_CACHE = { at: Date.now(), v: null };
+  }
+  return DG_CACHE.v;
+}
+async function getDeepgram(env: AppelEnv): Promise<AnyObj> {
+  const reel = await dgReel(env);
+  const st = ((await env.KV_ADMIN.get(DG_KEY, { type: 'json' })) as AnyObj | null) || {};
+  const credit = Number(st.credit) || 200;
+  let out: AnyObj;
+  if (reel) out = { source: 'reel', remaining: reel.remaining, credit: Math.max(credit, reel.remaining) };
+  else {
+    const since = String(st.since || '');
+    const mins = (await getIndex(env)).filter((x) => !since || String(x.at) >= since).reduce((a, x) => a + (Number(x.minutes) || 0), 0);
+    const spent = mins * 2 * DG_PRIX_MIN;
+    out = { source: 'estimation', remaining: Math.round(Math.max(0, credit - spent) * 100) / 100, credit, minutes: mins };
+  }
+  out.parAppel = Math.round(45 * 2 * DG_PRIX_MIN * 100) / 100;
+  out.appelsRestants = Math.floor(out.remaining / (45 * 2 * DG_PRIX_MIN));
+  out.low = out.remaining < 20 || out.remaining < out.credit * 0.1;
+  out.empty = out.remaining <= 1;
+  return out;
 }
 
 /* ── Appel à Claude avec un outil imposé : la réponse arrive en JSON structuré ── */
@@ -510,13 +557,19 @@ export async function routeAppel(request: Request, env: AppelEnv, pathname: stri
   if (pathname === '/api/appel/bilan' && method === 'POST') return handleBilan(request, env);
   if (pathname === '/api/appel/suite' && method === 'POST') return handleSuite(request, env);
   if (pathname === '/api/appel/budget') {
-    if (method === 'GET') return json(await getBudget(env));
+    if (method === 'GET') return json({ ...(await getBudget(env)), deepgram: await getDeepgram(env) });
     if (method === 'PUT') {
       const b = await readJson(request);
+      if (b.deepgramCredit !== undefined) {
+        const c = Math.max(1, Math.min(5000, Number(b.deepgramCredit) || 0));
+        await env.KV_ADMIN.put(DG_KEY, JSON.stringify({ credit: c, since: new Date().toISOString() }));
+        DG_CACHE = { at: 0, v: null };
+        return json({ ...(await getBudget(env)), deepgram: await getDeepgram(env) });
+      }
       const credit = Math.max(0, Math.min(1000, Number(b.credit) || 0));
       PENDING = 0;
       await env.KV_ADMIN.put(BUDGET_KEY, JSON.stringify({ credit, spent: 0, since: new Date().toISOString() }));
-      return json(await getBudget(env));
+      return json({ ...(await getBudget(env)), deepgram: await getDeepgram(env) });
     }
   }
   if (pathname === '/api/appel/kb') {

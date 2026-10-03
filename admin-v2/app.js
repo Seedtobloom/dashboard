@@ -3811,7 +3811,29 @@
     if (AD.budget && !force) return;
     api('/api/appel/budget').then(function (r) { return r.json(); }).then(function (d) { AD.budget = d || {}; if (VIS_TAB === 'direct' && AD.phase !== 'live') renderVisiosBody(); }).catch(function () {});
   }
+  function adEur(v) { return (Number(v) || 0).toFixed(2).replace('.', ',') + ' $'; }
+  function adDgWarn() {
+    var g = AD.budget && AD.budget.deepgram; if (!g) return '';
+    if (g.empty) return '<div class="apl-warn"><b>Ton crédit Deepgram est épuisé.</b> La transcription ne marchera plus tant que tu ne l’as pas rechargé dans la console Deepgram, rubrique Billing.</div>';
+    if (g.low) return '<div class="apl-warn"><b>Ton crédit Deepgram baisse :</b> il reste ' + (g.source === 'reel' ? '' : 'environ ') + adEur(g.remaining) + ', soit à peu près ' + g.appelsRestants + ' appel' + (g.appelsRestants > 1 ? 's' : '') + ' de 45 minutes. Pense à le recharger.</div>';
+    return '';
+  }
+  function adDgCard() {
+    var g = AD.budget && AD.budget.deepgram; if (!g) return '';
+    var pct = Math.max(0, Math.min(100, Math.round(g.remaining / (g.credit || 1) * 100)));
+    return '<div class="apl-dg"><div class="apl-pt">Transcription Deepgram</div><div class="apl-ready__t"><b>' + adEur(g.remaining) + '</b><span>' + (g.source === 'reel' ? 'solde réel' : 'estimation sur ' + g.credit + ' $') + ', environ ' + g.appelsRestants + ' appels de 45 min</span></div>' +
+      '<div class="apl-gauge"><span style="width:' + pct + '%"' + (g.low ? ' class="low"' : '') + '></span></div>' +
+      (g.source === 'reel' ? '' : '<p class="apl-muted">Calculé à partir de la durée de tes appels enregistrés (environ ' + adEur(g.parAppel) + ' par appel de 45 min). Quand tu recharges, indique le nouveau solde affiché dans la console Deepgram :</p><div class="apl-row"><input id="apl-dgcredit" class="apl-in" style="max-width:120px" inputmode="decimal" placeholder="' + Math.round(g.remaining) + '"><span class="apl-muted">$</span><button class="btn btn--dark btn--sm" onclick="ADM.adDgSet()">Mettre à jour</button></div>') + '</div>';
+  }
+  function adDgSet() {
+    var v = parseFloat(String((el('apl-dgcredit') || {}).value || '').replace(',', '.'));
+    if (!(v > 0)) { toast('Indique un montant en dollars'); return; }
+    jpost('/api/appel/budget', { deepgramCredit: v }, 'PUT').then(function (r) { return r.json(); }).then(function (d) { AD.budget = d; toast('Solde Deepgram enregistré'); renderVisiosBody(); }).catch(function () { toast('Erreur d’enregistrement'); });
+  }
   function adBudgetWarn() {
+    return adDgWarn() + adClaudeWarn();
+  }
+  function adClaudeWarn() {
     var b = AD.budget; if (!b || !b.credit) return '';
     if (b.empty) return '<div class="apl-warn"><b>Ton crédit Claude est épuisé.</b> Les relances et le compte rendu ne marcheront plus tant que tu ne l’as pas rechargé dans la Console Anthropic. La transcription, elle, continue de fonctionner.</div>';
     if (b.low) return '<div class="apl-warn"><b>Ton crédit Claude baisse :</b> il reste environ ' + b.remaining.toFixed(2).replace('.', ',') + ' $ sur ' + b.credit + ' $. Pense à le recharger avant ton prochain appel.</div>';
@@ -3819,13 +3841,13 @@
   }
   function adBudgetCard() {
     var b = AD.budget;
-    if (!b) return '<div class="apl-card"><h3 class="apl-h3">Crédit Claude</h3><div class="apl-muted">Chargement…</div></div>';
+    if (!b) return '<div class="apl-card"><h3 class="apl-h3">Crédits</h3><div class="apl-muted">Chargement…</div></div>';
     var form = '<div class="apl-row"><input id="apl-credit" class="apl-in" style="max-width:120px" inputmode="decimal" placeholder="10"><span class="apl-muted">$</span><button class="btn btn--dark btn--sm" onclick="ADM.adBudgetSet()">' + (b.credit ? 'J’ai rechargé' : 'Enregistrer') + '</button></div>';
-    if (!b.credit) return '<div class="apl-card"><h3 class="apl-h3">Crédit Claude</h3><p class="apl-muted">Indique le montant que tu as acheté dans la Console Anthropic. Je te préviens ici quand il en reste moins de 20 %.</p>' + form + '</div>';
+    if (!b.credit) return '<div class="apl-card"><h3 class="apl-h3">Crédits</h3><div class="apl-pt">Claude</div><p class="apl-muted">Indique le montant que tu as acheté dans la Console Anthropic. Je te préviens ici quand il en reste moins de 20 %.</p>' + form + adDgCard() + '</div>';
     var pct = Math.max(0, Math.min(100, Math.round(b.remaining / b.credit * 100)));
-    return '<div class="apl-card"><h3 class="apl-h3">Crédit Claude</h3><div class="apl-ready__t"><b>' + b.remaining.toFixed(2).replace('.', ',') + ' $</b><span>restants sur ' + b.credit + ' $, estimation</span></div>' +
+    return '<div class="apl-card"><h3 class="apl-h3">Crédits</h3><div class="apl-pt">Claude, relances et compte rendu</div><div class="apl-ready__t"><b>' + b.remaining.toFixed(2).replace('.', ',') + ' $</b><span>restants sur ' + b.credit + ' $, estimation</span></div>' +
       '<div class="apl-gauge"><span style="width:' + pct + '%"' + (b.low ? ' class="low"' : '') + '></span></div>' +
-      '<p class="apl-muted">Un appel de 45 minutes coûte en général quelques dizaines de centimes. Quand tu recharges, indique le nouveau solde total :</p>' + form + '</div>';
+      '<p class="apl-muted">Un appel de 45 minutes coûte en général quelques dizaines de centimes. Quand tu recharges, indique le nouveau solde total :</p>' + form + adDgCard() + '</div>';
   }
   function adBudgetSet() {
     var v = parseFloat(String((el('apl-credit') || {}).value || '').replace(',', '.'));
@@ -4270,6 +4292,7 @@
         var first = !AD.finalSaved;
         AD.savedId = d.id; AD.finalSaved = true; AD.hist = null; AD_HOME = null; adDraftClear();
         if (!AD.statut) AD.statut = 'a_rappeler';
+        adLoadBudget(true);
         var vc = AD.cardId && visCard(AD.cardId); if (vc && vc.appelId !== d.id) { vc.appelId = d.id; visSave(); }
         if (AD.calKey) { var cm = adCalMap(); cm[AD.calKey] = d.id; var ks = Object.keys(cm); if (ks.length > 200) delete cm[ks[0]]; try { localStorage.setItem('stb_ad_cal', JSON.stringify(cm)); } catch (e2) {} }
         if (first) {
@@ -15760,7 +15783,7 @@
 
   // API publique pour les onclick
   window.ADM = {
-    adStart: adStart, adBudgetSet: adBudgetSet, adPause: adPause, adMarquer: adMarquer, adTerminer: adTerminer, adReconnect: adReconnect, adSub: adSub, adSet: adSet, adMode: adMode, adKb: adKb, adKbSave: adKbSave, adPrep: adPrep, adAsk: adAsk, adRelDone: adRelDone, adRelLater: adRelLater, adLaterDel: adLaterDel, adPrix: adPrix, adPoint: adPoint, adCopyTr: adCopyTr, adCopyCr: adCopyCr, adCopyQ: adCopyQ, adCopySuite: adCopySuite, adSuite: adSuite, adSave: adSave, adOuvrir: adOuvrir, adNouveau: adNouveau, adRetryBilan: adRetryBilan, adDraftReprendre: adDraftReprendre, adDraftCopier: adDraftCopier, adDraftOublier: adDraftOublier, adTestSon: adTestSon, adTestStop: adTestStop, adPip: adPip, adLancer: adLancer, adLancerCal: adLancerCal, adStatut: adStatut, adCreerSuite: adCreerSuite, adQnr: adQnr, adAccueilOuvrir: adAccueilOuvrir, adSetupTab: adSetupTab, adHisto: adHisto,
+    adStart: adStart, adBudgetSet: adBudgetSet, adPause: adPause, adMarquer: adMarquer, adTerminer: adTerminer, adReconnect: adReconnect, adSub: adSub, adSet: adSet, adMode: adMode, adKb: adKb, adKbSave: adKbSave, adPrep: adPrep, adAsk: adAsk, adRelDone: adRelDone, adRelLater: adRelLater, adLaterDel: adLaterDel, adPrix: adPrix, adPoint: adPoint, adCopyTr: adCopyTr, adCopyCr: adCopyCr, adCopyQ: adCopyQ, adCopySuite: adCopySuite, adSuite: adSuite, adSave: adSave, adOuvrir: adOuvrir, adNouveau: adNouveau, adRetryBilan: adRetryBilan, adDraftReprendre: adDraftReprendre, adDraftCopier: adDraftCopier, adDraftOublier: adDraftOublier, adTestSon: adTestSon, adTestStop: adTestStop, adPip: adPip, adLancer: adLancer, adLancerCal: adLancerCal, adStatut: adStatut, adDgSet: adDgSet, adCreerSuite: adCreerSuite, adQnr: adQnr, adAccueilOuvrir: adAccueilOuvrir, adSetupTab: adSetupTab, adHisto: adHisto,
     nav: nav, login: login, logout: logout, scan: scan, createClient: createClient, copy: copy, editToken: editToken, cliApercu: cliApercu, ckpCorrigerPasse: ckpCorrigerPasse, ffReglages: ffReglages, ffAutoMail: ffAutoMail, accesOuvrir: accesOuvrir, navClientTab: navClientTab,
     msWeek: msWeek, msFilter: msFilter, msToggleCap: msToggleCap, msMode: msMode, msDaySel: msDaySel, msPlace: msPlace, msDone: msDone, msDelete: msDelete, msNoteOpen: msNoteOpen, msPlanOver: msPlanOver, msPlanLeave: msPlanLeave, msPlanDrop: msPlanDrop, msPlanUnplace: msPlanUnplace, msAutoPlan: msAutoPlan, msOrganizeWeek: msOrganizeWeek, msOrganizeDay: msOrganizeDay, msUnplace: msUnplace, msDragStart: msDragStart, msDragEnd: msDragEnd, msDayOver: msDayOver, msDayLeave: msDayLeave, msDrop: msDrop, msSlotOver: msSlotOver, msDropSlot: msDropSlot, msNewBlock: msNewBlock, msSaveBlock: msSaveBlock, msDeleteBlock: msDeleteBlock, msEst: msEst, msEstH: msEstH, msAddTop: msAddTop, msAddDay: msAddDay,
     rvActiver: rvActiver, rvEnregistrer: rvEnregistrer, rvPause: rvPause, rvNouveauLien: rvNouveauLien, rvFiltre: rvFiltre, rvActualiser: rvActualiser, rvCopier: rvCopier, rvRepondre: rvRepondre, rvStatut: rvStatut, rvSupprimer: rvSupprimer,

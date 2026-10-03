@@ -4034,3 +4034,4 @@ a.ckr-b{text-decoration:none;display:inline-block}
 .apl-pip__r q{font-size:16px;line-height:1.35;color:var(--terre)}
 .apl-pip__f{display:flex;gap:6px;flex-wrap:wrap}
 @media (max-width:700px){.apl-kpis{grid-template-columns:1fr}.apl-snd__r{grid-template-columns:1fr auto}.apl-snd__r>span:last-child{grid-column:1/-1}}
+.apl-dg{margin-top:16px;padding-top:14px;border-top:1px solid var(--border,#e6ddcd);display:grid;gap:8px}
