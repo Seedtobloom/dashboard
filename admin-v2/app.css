@@ -3930,3 +3930,6 @@ a.ckr-b{text-decoration:none;display:inline-block}
 @media (max-width:760px){.apl-grid--setup{grid-template-columns:minmax(0,1fr)}.apl-bar__act{width:100%}.apl-bar__act button{flex:1}}
 .apl-draft{display:grid;gap:10px;background:var(--gold-soft,#E6E5B2);color:var(--gold-ink,#3d1c0b);border-radius:16px;padding:14px 18px;font-size:15px;line-height:1.5}
 .apl-draft b{font-weight:600}
+.apl-gauge{height:8px;border-radius:8px;background:var(--surface,#EDE5D7);overflow:hidden}
+.apl-gauge span{display:block;height:100%;background:var(--terre)}
+.apl-gauge span.low{background:var(--red,#8d2b21)}
