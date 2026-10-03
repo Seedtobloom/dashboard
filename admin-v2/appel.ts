@@ -345,7 +345,7 @@ async function handleSuite(request: Request, env: AppelEnv): Promise<Response> {
   if (!env.ANTHROPIC_API_KEY) return json({ error: 'Clé Anthropic non configurée' }, 503);
   if (!allow('suite', 4, 100)) return json({ error: 'Trop de demandes, patiente un instant' }, 429);
   const b = await readJson(request);
-  const kind = b.kind === 'coach' ? 'coach' : b.kind === 'prep' ? 'prep' : 'mail';
+  const kind = b.kind === 'coach' ? 'coach' : b.kind === 'prep' ? 'prep' : b.kind === 'devis' ? 'devis' : 'mail';
   if (kind === 'prep') {
     const kb = await getKb(env);
     const entretien = b.mode === 'entretien';
@@ -385,11 +385,27 @@ async function handleSuite(request: Request, env: AppelEnv): Promise<Response> {
       STYLE, '', 'TRAME SUIVIE PAR CINDY', trameText(b.trame), '', 'CONTEXTE SEED TO BLOOM', kb,
     ].join('\n');
     try {
-      const prep = await claudeTool(env, MODEL_LIVE, sys, 'Prospect : ' + str(b.prospect, 200) + '\nCe que Cindy sait déjà :\n' + (str(b.contexte, 4000) || '(rien)'), tool, 1000);
+      const prep = await claudeTool(env, MODEL_LIVE, sys, 'Prospect : ' + str(b.prospect, 200) + '\nCe que Cindy sait déjà :\n' + (str(b.contexte, 4000) || '(rien)') + (b.historique ? '\nÉchanges précédents avec ce prospect :\n' + str(b.historique, 3000) : ''), tool, 1000);
       return json({ prep });
     } catch (e) {
       console.error('prep:', e);
       return iaError(e, 'Préparation indisponible pour le moment');
+    }
+  }
+  if (kind === 'devis') {
+    const kb = await getKb(env);
+    const sys = [
+      'Tu prépares pour Cindy un brouillon de devis à partir du compte rendu d\u2019un appel découverte. Elle le vérifiera et l\u2019ajustera elle-même.',
+      'Format : un titre court, puis les lignes du devis (une ligne par prestation, avec le livrable et un montant indicatif fondé sur ses prix d\u2019appel et son tarif horaire de 60 €), puis le total, puis les hypothèses à vérifier avant l\u2019envoi (nombre d\u2019allers-retours, délais, ce qui n\u2019est pas compris).',
+      'Micro-entreprise, TVA non applicable : n\u2019écris jamais HT. Ne promets rien qui n\u2019est pas dans le compte rendu. Montants ronds.',
+      STYLE, '', 'CONTEXTE SEED TO BLOOM', kb,
+    ].join('\n');
+    try {
+      const text = await claudeText(env, MODEL_BILAN, sys, 'Compte rendu :\n' + str(b.compteRendu, 12000), 2000);
+      return json({ text });
+    } catch (e) {
+      console.error('devis:', e);
+      return iaError(e, 'Brouillon de devis indisponible pour le moment');
     }
   }
   const system = kind === 'mail'
@@ -457,8 +473,14 @@ async function handleSave(request: Request, env: AppelEnv): Promise<Response> {
   }
   await env.KV_ADMIN.put(APPEL_PREFIX + id, JSON.stringify(rec));
   if (transcript) await env.KV_ADMIN.put(APPEL_PREFIX + id + ':transcription', transcript);
-  const idx = (await getIndex(env)).filter((x) => x.id !== id);
-  idx.unshift({ id, at, prospect: rec.prospect, mode: rec.mode, brouillon: rec.brouillon, titre: rec.compteRendu ? str(rec.compteRendu.titre, 200) : '' });
+  const idx0 = await getIndex(env);
+  const idx = idx0.filter((x) => x.id !== id);
+  const prevIdx: AnyObj = idx0.find((x) => x.id === id) || {};
+  const cr = rec.compteRendu as AnyObj | null;
+  const reco = cr && Array.isArray(cr.offres) ? cr.offres.filter((o: AnyObj) => o && o.verdict === 'recommandee').map((o: AnyObj) => str(o.offre, 60)) : [];
+  const objections = cr && Array.isArray(cr.verbatims) ? cr.verbatims.filter((v: AnyObj) => v && v.categorie === 'objection').map((v: AnyObj) => str(v.citation, 160)).slice(0, 5) : [];
+  const resume = cr ? [str(cr.besoin_court || cr.besoin, 200), cr.budget ? 'Budget : ' + str(cr.budget, 60) : '', Array.isArray(cr.suite) ? cr.suite.map((x: AnyObj) => str(x.action, 120)).join(' · ') : ''].filter(Boolean).join(' · ') : '';
+  idx.unshift({ id, at, prospect: rec.prospect, mode: rec.mode, brouillon: rec.brouillon, minutes: rec.minutes, titre: cr ? str(cr.titre, 200) : '', reco, objections, resume: resume.slice(0, 600), statut: prevIdx.statut || (cr ? 'a_rappeler' : ''), statutAt: prevIdx.statutAt || at, clientKey: prevIdx.clientKey || str(b.clientKey, 64) });
   await env.KV_ADMIN.put(INDEX_KEY, JSON.stringify(idx.slice(0, 300)));
   return json({ ok: true, id });
 }
@@ -506,6 +528,18 @@ export async function routeAppel(request: Request, env: AppelEnv, pathname: stri
     if (method === 'POST') return handleSave(request, env);
   }
   const m = pathname.match(/^\/api\/appels\/([a-f0-9]{24})$/);
+  if (m && method === 'PATCH') {
+    const b = await readJson(request);
+    const STATUTS = ['a_rappeler', 'proposition', 'signe', 'perdu'];
+    const idx = await getIndex(env);
+    const e = idx.find((x) => x.id === m[1]);
+    if (!e) return json({ error: 'Appel introuvable' }, 404);
+    if (STATUTS.includes(String(b.statut))) { e.statut = String(b.statut); e.statutAt = new Date().toISOString(); }
+    if (typeof b.clientKey === 'string') e.clientKey = str(b.clientKey, 64);
+    if (b.relanceVue === true) e.relanceVue = new Date().toISOString();
+    await env.KV_ADMIN.put(INDEX_KEY, JSON.stringify(idx));
+    return json({ ok: true, appel: e });
+  }
   if (m) {
     if (method === 'GET') return handleGet(env, m[1]);
     if (method === 'DELETE') return handleDelete(env, m[1]);
