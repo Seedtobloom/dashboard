@@ -340,6 +340,7 @@ async function handleSuite(request: Request, env: AppelEnv): Promise<Response> {
     const sys = [
       'Tu aides Cindy à préparer un ' + (b.mode === 'entretien' ? 'entretien de recherche (on ne vend rien)' : 'appel découverte') + ' de 45 minutes.',
       'Donne, en texte simple et court : trois questions pour creuser les expressions floues probables pour ce type de structure, l\u2019offre qui semble coller et pourquoi' + (b.mode === 'entretien' ? '' : ', les deux objections les plus probables avec une réponse courte à chacune') + '. Termine par les deux informations à obtenir en priorité.',
+      'Adresse-toi directement à Cindy en la tutoyant (jamais « Cindy peut »). Les questions sont formulées comme elle les dira, au tutoiement sauf si le contexte indique le vouvoiement. Titres courts, pas de titre général en tête.',
       'Appuie-toi sur ce que Cindy sait déjà du prospect, sans rien inventer à son sujet.',
       STYLE, '', 'TRAME SUIVIE PAR CINDY', trameText(b.trame), '', 'CONTEXTE SEED TO BLOOM', kb,
     ].join('\n');

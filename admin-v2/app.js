@@ -3796,7 +3796,7 @@
         '<div class="apl-row"><button class="btn btn--dark" onclick="ADM.adStart()">Démarrer la transcription</button><button class="apl-link" onclick="ADM.adPrep()">' + (AD.prepBusy ? 'Préparation…' : 'Me préparer') + '</button></div>' +
         '<p class="apl-muted">Chrome te demandera quel onglet partager : choisis celui de kMeet et coche « Partager aussi l’audio de l’onglet ».</p>' +
       '</div><div class="apl-col">' +
-        (AD.prep ? '<div class="apl-card"><h3 class="apl-h3">Préparation</h3><div class="apl-pre">' + esc(AD.prep) + '</div></div>' : '') +
+        (AD.prep ? '<div class="apl-card"><h3 class="apl-h3">Préparation</h3>' + adMd(AD.prep) + '</div>' : '') +
         adBudgetCard() +
         '<div class="apl-card"><h3 class="apl-h3">Appels enregistrés</h3>' + hist + '</div>' +
         (AD.kbOpen ? '' : '<div class="apl-card"><h3 class="apl-h3">Base de connaissance</h3><p class="apl-muted">Tes offres, ta façon de travailler et tes red flags, utilisés pour les relances et le compte rendu.</p><button class="apl-link" onclick="ADM.adKb(true)">Modifier</button></div>') +
@@ -3826,6 +3826,22 @@
     var v = parseFloat(String((el('apl-credit') || {}).value || '').replace(',', '.'));
     if (!(v > 0)) { toast('Indique un montant en dollars'); return; }
     jpost('/api/appel/budget', { credit: v }, 'PUT').then(function (r) { return r.json(); }).then(function (d) { AD.budget = d; toast('Crédit enregistré'); renderVisiosBody(); }).catch(function () { toast('Erreur d’enregistrement'); });
+  }
+  function adMd(t) {
+    var lines = String(t || '').replace(/\r/g, '').split('\n'), out = [], list = null;
+    var inl = function (x) { return esc(x).replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>').replace(/(^|[^*])\*([^*\s][^*]*)\*/g, '$1<i>$2</i>'); };
+    var close = function () { if (list) { out.push('</' + list + '>'); list = null; } };
+    lines.forEach(function (l) {
+      var x = l.trim(), m;
+      if (!x) { close(); return; }
+      if (/^#{1,2}\s/.test(x)) { close(); out.push('<div class="apl-md-h1">' + inl(x.replace(/^#+\s*/, '')) + '</div>'); return; }
+      if (/^#{3,}\s/.test(x)) { close(); out.push('<div class="apl-md-h2">' + inl(x.replace(/^#+\s*/, '')) + '</div>'); return; }
+      if ((m = x.match(/^(?:[-*•]|\d+[.)])\s+(.*)$/))) { var t2 = /^\d/.test(x) ? 'ol' : 'ul'; if (list !== t2) { close(); out.push('<' + t2 + '>'); list = t2; } out.push('<li>' + inl(m[1]) + '</li>'); return; }
+      if (/^-{3,}$/.test(x)) { close(); return; }
+      close(); out.push('<p>' + inl(x) + '</p>');
+    });
+    close();
+    return '<div class="apl-md">' + out.join('') + '</div>';
   }
   function adSet(k, v) { AD[k] = v; if (k === 'prixPhrase') { try { localStorage.setItem('stb_ad_prix', v); } catch (e) {} } }
   function adMode(m) { AD.mode = m; renderVisiosBody(); }
@@ -4057,7 +4073,7 @@
   }
   function adRenderSide() {
     var p = el('apl-pane'); if (!p) return;
-    p.innerHTML = AD.sub === 'trame' ? adTrameHtml() : AD.sub === 'offres' ? adOffresHtml() : AD.sub === 'sait' ? adSaitHtml() : AD.sub === 'prep' ? '<div class="apl-pre">' + esc(AD.prep) + '</div>' : adRelHtml();
+    p.innerHTML = AD.sub === 'trame' ? adTrameHtml() : AD.sub === 'offres' ? adOffresHtml() : AD.sub === 'sait' ? adSaitHtml() : AD.sub === 'prep' ? adMd(AD.prep) : adRelHtml();
     var n1 = el('apl-n-rel'); if (n1) n1.textContent = AD.rel.filter(function (r) { return !r.done; }).length;
     var n2 = el('apl-n-trame'); if (n2) n2.textContent = AD.etape + '/' + CALL_STEPS.length;
     AD.rel.forEach(function (r) { r.fresh = false; });
@@ -4161,7 +4177,7 @@
     var marques = AD.marques.length ? AD.marques.map(function (m) { return '<div class="apl-mk"><span>' + m.t + '</span>' + esc(m.x) + '</div>'; }).join('') : '<p class="apl-muted">Aucun moment marqué.</p>';
     var q = (b.questionnaire || []).concat(AD.plusTard.filter(function (x) { return (b.questionnaire || []).indexOf(x) < 0; }));
     var verb = (b.verbatims || []).map(function (v) { return '<div class="apl-mk"><span>' + esc(String(v.categorie || '').replace(/_/g, ' ')) + '</span>« ' + esc(v.citation) + ' »</div>'; }).join('');
-    var suiteOut = AD.suite.kind ? '<div class="apl-pre">' + (AD.suite.busy ? 'Rédaction…' : esc(AD.suite.text || '')) + '</div>' + (AD.suite.text ? '<button class="apl-link" onclick="ADM.adCopySuite()">Copier</button>' : '') : '';
+    var suiteOut = AD.suite.kind ? (AD.suite.busy ? '<div class="apl-md"><p>Rédaction…</p></div>' : adMd(AD.suite.text || '')) + (AD.suite.text ? '<button class="apl-link" onclick="ADM.adCopySuite()">Copier</button>' : '') : '';
     return '<div class="apl">' + head + '<div class="apl-cr">' +
       '<div><div class="apl-muted">Compte rendu préparé, à relire avant de l’enregistrer</div><h2 class="apl-cr__t">' + esc(b.titre || 'Compte rendu') + '</h2><div class="apl-muted">' + esc(new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })) + ' · ' + (AD.minutes || 0) + ' minutes</div></div>' +
       sec(1, 'Contexte', p(b.contexte)) + sec(2, 'Besoin exprimé', '<div class="apl-quote">' + esc(b.besoin || '') + '</div>') +

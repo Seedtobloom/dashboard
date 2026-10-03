@@ -3933,3 +3933,11 @@ a.ckr-b{text-decoration:none;display:inline-block}
 .apl-gauge{height:8px;border-radius:8px;background:var(--surface,#EDE5D7);overflow:hidden}
 .apl-gauge span{display:block;height:100%;background:var(--terre)}
 .apl-gauge span.low{background:var(--red,#8d2b21)}
+.apl-md{background:#F8F6F2;border-radius:12px;padding:16px 18px;display:grid;gap:8px;font-size:15px;line-height:1.6;color:var(--terre)}
+.apl-md p{margin:0}
+.apl-md b{font-weight:600}
+.apl-md-h1{font-family:var(--font-display,'Alegreya',Georgia,serif);font-size:21px;line-height:1.2;color:var(--terre);margin-top:8px}
+.apl-md-h1:first-child,.apl-md-h2:first-child{margin-top:0}
+.apl-md-h2{font-weight:600;font-size:15px;margin-top:4px}
+.apl-md ul,.apl-md ol{margin:0;padding-left:20px;display:grid;gap:4px}
+.apl-md ul{list-style:disc}
