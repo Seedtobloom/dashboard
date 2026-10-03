@@ -3764,7 +3764,7 @@
 
   // ── Écran de départ ──
   function adSetupHtml() {
-    adLoadCfg();
+    adLoadCfg(); adLoadBudget();
     var cfg = AD.cfg || {};
     var manque = [];
     if (AD.cfg && !cfg.transcription) manque.push('la clé Deepgram (transcription)');
@@ -3782,7 +3782,7 @@
       '<div class="apl-row"><button class="btn btn--dark btn--sm" onclick="ADM.adKbSave()">Enregistrer</button><button class="apl-link" onclick="ADM.adKb(false)">Fermer</button></div></div>' : '';
     var dr = adDraftGet();
     var draft = dr && dr.lines && dr.lines.length ? '<div class="apl-draft"><div><b>Un appel n’a pas été enregistré.</b> ' + esc(dr.prospect || 'Sans nom') + ', ' + esc(new Date(dr.at).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })) + ', ' + dr.lines.length + ' répliques. Sa transcription est en sécurité sur cet appareil.</div><div class="apl-row"><button class="btn btn--dark btn--sm" onclick="ADM.adDraftReprendre()">Préparer son compte rendu</button><button class="apl-link" onclick="ADM.adDraftCopier()">Copier la transcription</button><button class="apl-link" onclick="ADM.adDraftOublier()">Effacer</button></div></div>' : '';
-    return '<div class="apl">' + warn + navWarn + draft +
+    return '<div class="apl">' + warn + navWarn + adBudgetWarn() + draft +
       '<div class="apl-grid apl-grid--setup"><div class="apl-card">' +
         '<h3 class="apl-h3">Préparer l’appel</h3>' +
         '<div class="apl-mode" role="group" aria-label="Type d’appel">' +
@@ -3796,10 +3796,52 @@
         '<div class="apl-row"><button class="btn btn--dark" onclick="ADM.adStart()">Démarrer la transcription</button><button class="apl-link" onclick="ADM.adPrep()">' + (AD.prepBusy ? 'Préparation…' : 'Me préparer') + '</button></div>' +
         '<p class="apl-muted">Chrome te demandera quel onglet partager : choisis celui de kMeet et coche « Partager aussi l’audio de l’onglet ».</p>' +
       '</div><div class="apl-col">' +
-        (AD.prep ? '<div class="apl-card"><h3 class="apl-h3">Préparation</h3><div class="apl-pre">' + esc(AD.prep) + '</div></div>' : '') +
+        (AD.prep ? '<div class="apl-card"><h3 class="apl-h3">Préparation</h3>' + adMd(AD.prep) + '</div>' : '') +
+        adBudgetCard() +
         '<div class="apl-card"><h3 class="apl-h3">Appels enregistrés</h3>' + hist + '</div>' +
         (AD.kbOpen ? '' : '<div class="apl-card"><h3 class="apl-h3">Base de connaissance</h3><p class="apl-muted">Tes offres, ta façon de travailler et tes red flags, utilisés pour les relances et le compte rendu.</p><button class="apl-link" onclick="ADM.adKb(true)">Modifier</button></div>') +
       '</div></div>' + kb + '</div>';
+  }
+  function adLoadBudget(force) {
+    if (AD.budget && !force) return;
+    api('/api/appel/budget').then(function (r) { return r.json(); }).then(function (d) { AD.budget = d || {}; if (VIS_TAB === 'direct' && AD.phase !== 'live') renderVisiosBody(); }).catch(function () {});
+  }
+  function adBudgetWarn() {
+    var b = AD.budget; if (!b || !b.credit) return '';
+    if (b.empty) return '<div class="apl-warn"><b>Ton crédit Claude est épuisé.</b> Les relances et le compte rendu ne marcheront plus tant que tu ne l’as pas rechargé dans la Console Anthropic. La transcription, elle, continue de fonctionner.</div>';
+    if (b.low) return '<div class="apl-warn"><b>Ton crédit Claude baisse :</b> il reste environ ' + b.remaining.toFixed(2).replace('.', ',') + ' $ sur ' + b.credit + ' $. Pense à le recharger avant ton prochain appel.</div>';
+    return '';
+  }
+  function adBudgetCard() {
+    var b = AD.budget;
+    if (!b) return '<div class="apl-card"><h3 class="apl-h3">Crédit Claude</h3><div class="apl-muted">Chargement…</div></div>';
+    var form = '<div class="apl-row"><input id="apl-credit" class="apl-in" style="max-width:120px" inputmode="decimal" placeholder="10"><span class="apl-muted">$</span><button class="btn btn--dark btn--sm" onclick="ADM.adBudgetSet()">' + (b.credit ? 'J’ai rechargé' : 'Enregistrer') + '</button></div>';
+    if (!b.credit) return '<div class="apl-card"><h3 class="apl-h3">Crédit Claude</h3><p class="apl-muted">Indique le montant que tu as acheté dans la Console Anthropic. Je te préviens ici quand il en reste moins de 20 %.</p>' + form + '</div>';
+    var pct = Math.max(0, Math.min(100, Math.round(b.remaining / b.credit * 100)));
+    return '<div class="apl-card"><h3 class="apl-h3">Crédit Claude</h3><div class="apl-ready__t"><b>' + b.remaining.toFixed(2).replace('.', ',') + ' $</b><span>restants sur ' + b.credit + ' $, estimation</span></div>' +
+      '<div class="apl-gauge"><span style="width:' + pct + '%"' + (b.low ? ' class="low"' : '') + '></span></div>' +
+      '<p class="apl-muted">Un appel de 45 minutes coûte en général quelques dizaines de centimes. Quand tu recharges, indique le nouveau solde total :</p>' + form + '</div>';
+  }
+  function adBudgetSet() {
+    var v = parseFloat(String((el('apl-credit') || {}).value || '').replace(',', '.'));
+    if (!(v > 0)) { toast('Indique un montant en dollars'); return; }
+    jpost('/api/appel/budget', { credit: v }, 'PUT').then(function (r) { return r.json(); }).then(function (d) { AD.budget = d; toast('Crédit enregistré'); renderVisiosBody(); }).catch(function () { toast('Erreur d’enregistrement'); });
+  }
+  function adMd(t) {
+    var lines = String(t || '').replace(/\r/g, '').split('\n'), out = [], list = null;
+    var inl = function (x) { return esc(x).replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>').replace(/(^|[^*])\*([^*\s][^*]*)\*/g, '$1<i>$2</i>'); };
+    var close = function () { if (list) { out.push('</' + list + '>'); list = null; } };
+    lines.forEach(function (l) {
+      var x = l.trim(), m;
+      if (!x) { close(); return; }
+      if (/^#{1,2}\s/.test(x)) { close(); out.push('<div class="apl-md-h1">' + inl(x.replace(/^#+\s*/, '')) + '</div>'); return; }
+      if (/^#{3,}\s/.test(x)) { close(); out.push('<div class="apl-md-h2">' + inl(x.replace(/^#+\s*/, '')) + '</div>'); return; }
+      if ((m = x.match(/^(?:[-*•]|\d+[.)])\s+(.*)$/))) { var t2 = /^\d/.test(x) ? 'ol' : 'ul'; if (list !== t2) { close(); out.push('<' + t2 + '>'); list = t2; } out.push('<li>' + inl(m[1]) + '</li>'); return; }
+      if (/^-{3,}$/.test(x)) { close(); return; }
+      close(); out.push('<p>' + inl(x) + '</p>');
+    });
+    close();
+    return '<div class="apl-md">' + out.join('') + '</div>';
   }
   function adSet(k, v) { AD[k] = v; if (k === 'prixPhrase') { try { localStorage.setItem('stb_ad_prix', v); } catch (e) {} } }
   function adMode(m) { AD.mode = m; renderVisiosBody(); }
@@ -3934,7 +3976,7 @@
       transcript: adTranscriptText(9000)
     }).then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); }).then(function (x) {
       AD.busy = false;
-      if (!x.ok) { if (x.d && x.d.error) toast(x.d.error); return; }
+      if (!x.ok) { if (x.d && x.d.credit) { AD.budget = AD.budget || {}; AD.budget.credit = AD.budget.credit || 1; AD.budget.empty = true; AD.alerte = x.d.error; adRenderSide(); } else if (x.d && x.d.error) toast(x.d.error); return; }
       var d = x.d || {};
       if (Array.isArray(d.relances)) {
         AD.rel = d.relances.slice(0, 2).map(function (r, i) { return { type: r.type, q: r.question, why: r.pourquoi, fresh: i === 0 }; });
@@ -3952,7 +3994,7 @@
   function adLiveHtml() {
     var sub = function (k, t, n) { return '<button role="tab" aria-selected="' + (AD.sub === k) + '" class="' + (AD.sub === k ? 'on' : '') + '" onclick="ADM.adSub(\'' + k + '\')">' + t + (n != null ? ' <span class="apl-count" id="apl-n-' + k + '">' + n + '</span>' : '') + '</button>'; };
     return '<div class="apl">' +
-      '<section class="apl-bar" id="apl-bar">' + adBarInner() + '</section>' +
+      '<section class="apl-bar" id="apl-bar">' + adBarInner() + '</section>' + adBudgetWarn() +
       '<div id="apl-cut"></div>' +
       '<div class="apl-grid">' +
         '<section class="apl-card"><div class="apl-head"><h3 class="apl-h3">Transcription</h3><button class="apl-link" onclick="ADM.adCopyTr()">Copier</button></div>' +
@@ -4031,7 +4073,7 @@
   }
   function adRenderSide() {
     var p = el('apl-pane'); if (!p) return;
-    p.innerHTML = AD.sub === 'trame' ? adTrameHtml() : AD.sub === 'offres' ? adOffresHtml() : AD.sub === 'sait' ? adSaitHtml() : AD.sub === 'prep' ? '<div class="apl-pre">' + esc(AD.prep) + '</div>' : adRelHtml();
+    p.innerHTML = AD.sub === 'trame' ? adTrameHtml() : AD.sub === 'offres' ? adOffresHtml() : AD.sub === 'sait' ? adSaitHtml() : AD.sub === 'prep' ? adMd(AD.prep) : adRelHtml();
     var n1 = el('apl-n-rel'); if (n1) n1.textContent = AD.rel.filter(function (r) { return !r.done; }).length;
     var n2 = el('apl-n-trame'); if (n2) n2.textContent = AD.etape + '/' + CALL_STEPS.length;
     AD.rel.forEach(function (r) { r.fresh = false; });
@@ -4110,7 +4152,7 @@
       adDraftServer();
       AD.phase = 'fin'; AD.bilanBusy = true; AD.bilan = null;
       renderVisiosBody();
-      adBilanReq().then(function (d) { AD.bilan = d; AD.bilanBusy = false; renderVisiosBody(); }).catch(function (e) { AD.bilanBusy = false; AD.bilanErr = (e && e.message) || 'Erreur'; renderVisiosBody(); });
+      adBilanReq().then(function (d) { AD.bilan = d; AD.bilanBusy = false; adLoadBudget(true); renderVisiosBody(); }).catch(function (e) { AD.bilanBusy = false; AD.bilanErr = (e && e.message) || 'Erreur'; renderVisiosBody(); });
     });
   }
   function adCrText(b) {
@@ -4135,7 +4177,7 @@
     var marques = AD.marques.length ? AD.marques.map(function (m) { return '<div class="apl-mk"><span>' + m.t + '</span>' + esc(m.x) + '</div>'; }).join('') : '<p class="apl-muted">Aucun moment marqué.</p>';
     var q = (b.questionnaire || []).concat(AD.plusTard.filter(function (x) { return (b.questionnaire || []).indexOf(x) < 0; }));
     var verb = (b.verbatims || []).map(function (v) { return '<div class="apl-mk"><span>' + esc(String(v.categorie || '').replace(/_/g, ' ')) + '</span>« ' + esc(v.citation) + ' »</div>'; }).join('');
-    var suiteOut = AD.suite.kind ? '<div class="apl-pre">' + (AD.suite.busy ? 'Rédaction…' : esc(AD.suite.text || '')) + '</div>' + (AD.suite.text ? '<button class="apl-link" onclick="ADM.adCopySuite()">Copier</button>' : '') : '';
+    var suiteOut = AD.suite.kind ? (AD.suite.busy ? '<div class="apl-md"><p>Rédaction…</p></div>' : adMd(AD.suite.text || '')) + (AD.suite.text ? '<button class="apl-link" onclick="ADM.adCopySuite()">Copier</button>' : '') : '';
     return '<div class="apl">' + head + '<div class="apl-cr">' +
       '<div><div class="apl-muted">Compte rendu préparé, à relire avant de l’enregistrer</div><h2 class="apl-cr__t">' + esc(b.titre || 'Compte rendu') + '</h2><div class="apl-muted">' + esc(new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })) + ' · ' + (AD.minutes || 0) + ' minutes</div></div>' +
       sec(1, 'Contexte', p(b.contexte)) + sec(2, 'Besoin exprimé', '<div class="apl-quote">' + esc(b.besoin || '') + '</div>') +
@@ -15375,7 +15417,7 @@
 
   // API publique pour les onclick
   window.ADM = {
-    adStart: adStart, adPause: adPause, adMarquer: adMarquer, adTerminer: adTerminer, adReconnect: adReconnect, adSub: adSub, adSet: adSet, adMode: adMode, adKb: adKb, adKbSave: adKbSave, adPrep: adPrep, adAsk: adAsk, adRelDone: adRelDone, adRelLater: adRelLater, adLaterDel: adLaterDel, adPrix: adPrix, adPoint: adPoint, adCopyTr: adCopyTr, adCopyCr: adCopyCr, adCopyQ: adCopyQ, adCopySuite: adCopySuite, adSuite: adSuite, adSave: adSave, adOuvrir: adOuvrir, adNouveau: adNouveau, adRetryBilan: adRetryBilan, adDraftReprendre: adDraftReprendre, adDraftCopier: adDraftCopier, adDraftOublier: adDraftOublier,
+    adStart: adStart, adBudgetSet: adBudgetSet, adPause: adPause, adMarquer: adMarquer, adTerminer: adTerminer, adReconnect: adReconnect, adSub: adSub, adSet: adSet, adMode: adMode, adKb: adKb, adKbSave: adKbSave, adPrep: adPrep, adAsk: adAsk, adRelDone: adRelDone, adRelLater: adRelLater, adLaterDel: adLaterDel, adPrix: adPrix, adPoint: adPoint, adCopyTr: adCopyTr, adCopyCr: adCopyCr, adCopyQ: adCopyQ, adCopySuite: adCopySuite, adSuite: adSuite, adSave: adSave, adOuvrir: adOuvrir, adNouveau: adNouveau, adRetryBilan: adRetryBilan, adDraftReprendre: adDraftReprendre, adDraftCopier: adDraftCopier, adDraftOublier: adDraftOublier,
     nav: nav, login: login, logout: logout, scan: scan, createClient: createClient, copy: copy, editToken: editToken, cliApercu: cliApercu, ckpCorrigerPasse: ckpCorrigerPasse, ffReglages: ffReglages, ffAutoMail: ffAutoMail, accesOuvrir: accesOuvrir, navClientTab: navClientTab,
     msWeek: msWeek, msFilter: msFilter, msToggleCap: msToggleCap, msMode: msMode, msDaySel: msDaySel, msPlace: msPlace, msDone: msDone, msDelete: msDelete, msNoteOpen: msNoteOpen, msPlanOver: msPlanOver, msPlanLeave: msPlanLeave, msPlanDrop: msPlanDrop, msPlanUnplace: msPlanUnplace, msAutoPlan: msAutoPlan, msOrganizeWeek: msOrganizeWeek, msOrganizeDay: msOrganizeDay, msUnplace: msUnplace, msDragStart: msDragStart, msDragEnd: msDragEnd, msDayOver: msDayOver, msDayLeave: msDayLeave, msDrop: msDrop, msSlotOver: msSlotOver, msDropSlot: msDropSlot, msNewBlock: msNewBlock, msSaveBlock: msSaveBlock, msDeleteBlock: msDeleteBlock, msEst: msEst, msEstH: msEstH, msAddTop: msAddTop, msAddDay: msAddDay,
     rvActiver: rvActiver, rvEnregistrer: rvEnregistrer, rvPause: rvPause, rvNouveauLien: rvNouveauLien, rvFiltre: rvFiltre, rvActualiser: rvActualiser, rvCopier: rvCopier, rvRepondre: rvRepondre, rvStatut: rvStatut, rvSupprimer: rvSupprimer,

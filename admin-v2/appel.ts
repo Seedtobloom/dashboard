@@ -77,6 +77,35 @@ async function getKb(env: AppelEnv): Promise<string> {
   return v && v.trim() ? v : KB_DEFAULT;
 }
 
+
+/* ── Suivi du crédit Anthropic : estimation à partir des jetons consommés.
+ * Tarifs en dollars par million de jetons (entrée, sortie). Les sommes sont
+ * cumulées en mémoire et écrites dans KV par paquets de 5 centimes, pour
+ * rester loin du quota d'écritures. ── */
+const PRICES: Record<string, [number, number]> = {
+  [MODEL_LIVE]: [1, 5],
+  [MODEL_BILAN]: [2, 10],
+};
+const BUDGET_KEY = 'admin:appel:budget';
+let PENDING = 0;
+async function addCost(env: AppelEnv, model: string, usage: AnyObj | undefined, flush = false): Promise<void> {
+  const p = PRICES[model] || [3, 15];
+  if (usage) PENDING += ((Number(usage.input_tokens) || 0) * p[0] + (Number(usage.output_tokens) || 0) * p[1]) / 1e6;
+  if (PENDING < 0.05 && !(flush && PENDING > 0)) return;
+  const b = ((await env.KV_ADMIN.get(BUDGET_KEY, { type: 'json' })) as AnyObj | null) || { credit: 0, spent: 0 };
+  b.spent = Math.round(((Number(b.spent) || 0) + PENDING) * 10000) / 10000;
+  PENDING = 0;
+  await env.KV_ADMIN.put(BUDGET_KEY, JSON.stringify(b));
+}
+async function getBudget(env: AppelEnv): Promise<AnyObj> {
+  const b = ((await env.KV_ADMIN.get(BUDGET_KEY, { type: 'json' })) as AnyObj | null) || { credit: 0, spent: 0, since: '' };
+  const credit = Number(b.credit) || 0;
+  const spent = (Number(b.spent) || 0) + PENDING;
+  const remaining = Math.max(0, credit - spent);
+  const low = credit > 0 && (remaining < 2 || remaining < credit * 0.2);
+  return { credit, spent: Math.round(spent * 100) / 100, remaining: Math.round(remaining * 100) / 100, since: b.since || '', low, empty: credit > 0 && remaining <= 0.1 };
+}
+
 /* ── Appel à Claude avec un outil imposé : la réponse arrive en JSON structuré ── */
 async function claudeTool(env: AppelEnv, model: string, system: string, user: string, tool: AnyObj, maxTokens: number): Promise<AnyObj> {
   const res = await fetch('https://api.anthropic.com/v1/messages', {
@@ -102,6 +131,7 @@ async function claudeTool(env: AppelEnv, model: string, system: string, user: st
   const data = (await res.json()) as AnyObj;
   const block = (data.content || []).find((c: AnyObj) => c.type === 'tool_use');
   if (!block) throw new Error('réponse sans résultat structuré');
+  await addCost(env, model, data.usage, maxTokens > 3000);
   return block.input || {};
 }
 
@@ -117,7 +147,15 @@ async function claudeText(env: AppelEnv, model: string, system: string, user: st
   });
   if (!res.ok) throw new Error('anthropic ' + res.status + ' ' + (await res.text()).slice(0, 300));
   const data = (await res.json()) as AnyObj;
+  await addCost(env, model, data.usage, true);
   return (data.content || []).filter((c: AnyObj) => c.type === 'text').map((c: AnyObj) => c.text).join('').trim();
+}
+
+function iaError(e: unknown, fallback: string): Response {
+  const m = String((e as Error)?.message || e);
+  if (/credit balance/i.test(m)) return json({ error: 'Ton crédit Claude est épuisé. Recharge-le dans la Console Anthropic, puis indique le montant dans l’onglet.', credit: true }, 402);
+  if (/authentication|invalid x-api-key|401/i.test(m)) return json({ error: 'La clé Anthropic est refusée. Vérifie le secret ANTHROPIC_API_KEY.' }, 502);
+  return json({ error: fallback }, 502);
 }
 
 const STYLE = 'Écris en français, en phrases complètes, sans jargon ni sigle. N’utilise ni tiret ni tiret cadratin, ni deux-points dans les phrases destinées au prospect. Ne dis jamais que Cindy « code » ni qu’elle « dessine ». N’invente aucun fait : si une information n’a pas été dite, considère-la comme inconnue.';
@@ -205,7 +243,7 @@ async function handleRelances(request: Request, env: AppelEnv): Promise<Response
     return json(out);
   } catch (e) {
     console.error('relances:', e);
-    return json({ error: 'Aide indisponible pour le moment' }, 502);
+    return iaError(e, 'Aide indisponible pour le moment');
   }
 }
 
@@ -287,7 +325,7 @@ async function handleBilan(request: Request, env: AppelEnv): Promise<Response> {
     return json(out);
   } catch (e) {
     console.error('bilan:', e);
-    return json({ error: 'Compte rendu indisponible pour le moment' }, 502);
+    return iaError(e, 'Compte rendu indisponible pour le moment');
   }
 }
 
@@ -302,6 +340,7 @@ async function handleSuite(request: Request, env: AppelEnv): Promise<Response> {
     const sys = [
       'Tu aides Cindy à préparer un ' + (b.mode === 'entretien' ? 'entretien de recherche (on ne vend rien)' : 'appel découverte') + ' de 45 minutes.',
       'Donne, en texte simple et court : trois questions pour creuser les expressions floues probables pour ce type de structure, l\u2019offre qui semble coller et pourquoi' + (b.mode === 'entretien' ? '' : ', les deux objections les plus probables avec une réponse courte à chacune') + '. Termine par les deux informations à obtenir en priorité.',
+      'Adresse-toi directement à Cindy en la tutoyant (jamais « Cindy peut »). Les questions sont formulées comme elle les dira, au tutoiement sauf si le contexte indique le vouvoiement. Titres courts, pas de titre général en tête.',
       'Appuie-toi sur ce que Cindy sait déjà du prospect, sans rien inventer à son sujet.',
       STYLE, '', 'TRAME SUIVIE PAR CINDY', trameText(b.trame), '', 'CONTEXTE SEED TO BLOOM', kb,
     ].join('\n');
@@ -310,7 +349,7 @@ async function handleSuite(request: Request, env: AppelEnv): Promise<Response> {
       return json({ text });
     } catch (e) {
       console.error('prep:', e);
-      return json({ error: 'Préparation indisponible pour le moment' }, 502);
+      return iaError(e, 'Préparation indisponible pour le moment');
     }
   }
   const system = kind === 'mail'
@@ -330,7 +369,7 @@ async function handleSuite(request: Request, env: AppelEnv): Promise<Response> {
     return json({ text });
   } catch (e) {
     console.error('suite:', e);
-    return json({ error: 'Indisponible pour le moment' }, 502);
+    return iaError(e, 'Indisponible pour le moment');
   }
 }
 
@@ -408,6 +447,16 @@ export async function routeAppel(request: Request, env: AppelEnv, pathname: stri
   if (pathname === '/api/appel/relances' && method === 'POST') return handleRelances(request, env);
   if (pathname === '/api/appel/bilan' && method === 'POST') return handleBilan(request, env);
   if (pathname === '/api/appel/suite' && method === 'POST') return handleSuite(request, env);
+  if (pathname === '/api/appel/budget') {
+    if (method === 'GET') return json(await getBudget(env));
+    if (method === 'PUT') {
+      const b = await readJson(request);
+      const credit = Math.max(0, Math.min(1000, Number(b.credit) || 0));
+      PENDING = 0;
+      await env.KV_ADMIN.put(BUDGET_KEY, JSON.stringify({ credit, spent: 0, since: new Date().toISOString() }));
+      return json(await getBudget(env));
+    }
+  }
   if (pathname === '/api/appel/kb') {
     if (method === 'GET') { const v = await env.KV_ADMIN.get(KB_KEY); return json({ kb: v || '', defaut: KB_DEFAULT }); }
     if (method === 'PUT') { const b = await readJson(request); await env.KV_ADMIN.put(KB_KEY, str(b.kb, 30000)); return json({ ok: true }); }
