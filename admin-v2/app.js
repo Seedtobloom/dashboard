@@ -3796,7 +3796,7 @@
         '<div class="apl-row"><button class="btn btn--dark" onclick="ADM.adStart()">Démarrer la transcription</button><button class="apl-link" onclick="ADM.adPrep()">' + (AD.prepBusy ? 'Préparation…' : 'Me préparer') + '</button></div>' +
         '<p class="apl-muted">Chrome te demandera quel onglet partager : choisis celui de kMeet et coche « Partager aussi l’audio de l’onglet ».</p>' +
       '</div><div class="apl-col">' +
-        (AD.prep ? '<div class="apl-card"><h3 class="apl-h3">Préparation</h3>' + adMd(AD.prep) + '</div>' : '') +
+        (AD.prep ? '<div class="apl-card"><h3 class="apl-h3">Préparation</h3>' + adPrepHtml(AD.prep) + '</div>' : '') +
         adBudgetCard() +
         '<div class="apl-card"><h3 class="apl-h3">Appels enregistrés</h3>' + hist + '</div>' +
         (AD.kbOpen ? '' : '<div class="apl-card"><h3 class="apl-h3">Base de connaissance</h3><p class="apl-muted">Tes offres, ta façon de travailler et tes red flags, utilisés pour les relances et le compte rendu.</p><button class="apl-link" onclick="ADM.adKb(true)">Modifier</button></div>') +
@@ -3843,6 +3843,17 @@
     close();
     return '<div class="apl-md">' + out.join('') + '</div>';
   }
+  function adPrepHtml(p) {
+    if (!p) return '';
+    if (typeof p === 'string') return adMd(p);
+    var h = '';
+    if ((p.priorites || []).length) h += '<div class="apl-pblk"><div class="apl-pt">À obtenir en priorité</div><div class="apl-pills">' + p.priorites.map(function (x) { return '<span>' + esc(x) + '</span>'; }).join('') + '</div></div>';
+    if ((p.questions || []).length) h += '<div class="apl-pblk"><div class="apl-pt">Questions pour creuser</div>' + p.questions.map(function (q) { return '<div class="apl-pc">' + (q.si ? '<span class="apl-chip apl-chip--valise">' + esc(q.si) + '</span>' : '') + '<div class="apl-pq">« ' + esc(String(q.question || '').replace(/^«\s*|\s*»$/g, '')) + ' »</div></div>'; }).join('') + '</div>';
+    var off = p.offre && p.offre.nom ? '<div class="apl-pblk"><div class="apl-pt">Offre qui semble coller</div><div class="apl-pc apl-pc--best"><div class="apl-pq">' + esc(p.offre.nom) + '</div><div class="apl-muted">' + esc(p.offre.pourquoi || '') + '</div></div></div>' : '';
+    var obj = (p.objections || []).length ? '<div class="apl-pblk"><div class="apl-pt">Objections probables</div>' + p.objections.map(function (o) { return '<div class="apl-pc"><div class="apl-pq">« ' + esc(String(o.objection || '').replace(/^«\s*|\s*»$/g, '')) + ' »</div><div class="apl-muted">' + esc(o.reponse || '') + '</div></div>'; }).join('') + '</div>' : '';
+    if (off || obj) h += '<div class="apl-pduo">' + off + obj + '</div>';
+    return '<div class="apl-prep">' + h + '</div>';
+  }
   function adSet(k, v) { AD[k] = v; if (k === 'prixPhrase') { try { localStorage.setItem('stb_ad_prix', v); } catch (e) {} } }
   function adMode(m) { AD.mode = m; renderVisiosBody(); }
   function adKb(open) {
@@ -3860,7 +3871,7 @@
     if (AD.prepBusy) return;
     AD.prepBusy = true; renderVisiosBody();
     jpost('/api/appel/suite', { kind: 'prep', prospect: AD.prospect + (AD.structure ? ', ' + AD.structure : ''), mode: AD.mode, contexte: AD.contexte, trame: adTrame() }).then(function (r) { return r.json(); }).then(function (d) {
-      AD.prepBusy = false; AD.prep = (d && d.text) || (d && d.error) || ''; renderVisiosBody();
+      AD.prepBusy = false; if (d && d.prep) AD.prep = d.prep; else toast((d && d.error) || 'Préparation indisponible'); renderVisiosBody();
     }).catch(function () { AD.prepBusy = false; toast('Préparation indisponible'); renderVisiosBody(); });
   }
 
@@ -4073,7 +4084,7 @@
   }
   function adRenderSide() {
     var p = el('apl-pane'); if (!p) return;
-    p.innerHTML = AD.sub === 'trame' ? adTrameHtml() : AD.sub === 'offres' ? adOffresHtml() : AD.sub === 'sait' ? adSaitHtml() : AD.sub === 'prep' ? adMd(AD.prep) : adRelHtml();
+    p.innerHTML = AD.sub === 'trame' ? adTrameHtml() : AD.sub === 'offres' ? adOffresHtml() : AD.sub === 'sait' ? adSaitHtml() : AD.sub === 'prep' ? adPrepHtml(AD.prep) : adRelHtml();
     var n1 = el('apl-n-rel'); if (n1) n1.textContent = AD.rel.filter(function (r) { return !r.done; }).length;
     var n2 = el('apl-n-trame'); if (n2) n2.textContent = AD.etape + '/' + CALL_STEPS.length;
     AD.rel.forEach(function (r) { r.fresh = false; });
