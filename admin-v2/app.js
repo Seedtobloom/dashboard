@@ -3716,11 +3716,496 @@
       '<button role="menuitem" class="ckm-i" onclick="ADM.visAdd(\'nouveau\')">Avec un nouveau contact</button></div></div>';
     var head = '<div class="cl-h"><h1 class="pg-h1">Visios</h1>' + nouvelle + '</div>';
     var ong = function (k, t) { var on = VIS_TAB === k; return '<button role="tab" aria-selected="' + on + '" class="pg-ong pg-ong--seul pj-ong' + (on ? ' on' : '') + '" onclick="ADM.visTab(\'' + k + '\')"><span class="pg-ong__n">' + t + '</span></button>'; };
-    var tabs = '<div class="pj-ongs" role="tablist" aria-label="Visios">' + ong('cards', 'Rendez-vous') + ong('templates', 'Modèles de déroulé') + ong('fiche', 'Fiche d’appel') + '</div>';
+    var tabs = '<div class="pj-ongs" role="tablist" aria-label="Visios">' + ong('cards', 'Rendez-vous') + ong('templates', 'Modèles de déroulé') + ong('fiche', 'Fiche d’appel') + ong('direct', 'En direct') + '</div>';
     // La fiche d'appel travaille sur trois colonnes : elle prend toute la largeur.
-    body.classList.toggle('vis-page--large', VIS_TAB === 'fiche');
-    body.innerHTML = head + tabs + (VIS_TAB === 'trames' ? visTramesHtml() : VIS_TAB === 'fiche' ? visFicheHtml() : VIS_TAB === 'templates' ? visTemplatesHtml() : visCardsHtml());
+    body.classList.toggle('vis-page--large', VIS_TAB === 'fiche' || VIS_TAB === 'direct');
+    body.innerHTML = head + tabs + (VIS_TAB === 'trames' ? visTramesHtml() : VIS_TAB === 'fiche' ? visFicheHtml() : VIS_TAB === 'direct' ? visDirectHtml() : VIS_TAB === 'templates' ? visTemplatesHtml() : visCardsHtml());
+    adAfterRender();
   }
+  // ── Visios · appel en direct : transcription, relances, compte rendu ──
+  var AD = {
+    phase: 'setup', mode: 'decouverte', prospect: '', structure: '', contexte: '', prixPhrase: '',
+    lines: [], interim: { me: '', them: '' }, startedAt: 0, pausedMs: 0, pausedAt: 0, paused: false,
+    rel: [], deja: [], plusTard: [], faits: {}, etape: 1, alerte: '', marques: [], notes: '',
+    sub: 'rel', busy: false, lastAsk: 0, pendingAsk: false, cut: false, cfg: null,
+    bilan: null, bilanBusy: false, point: null, pointBusy: false, savedId: null, suite: {}, prep: '', prepBusy: false,
+    silenceAt: 0, hist: null, kbOpen: false, kb: null, kbDefaut: ''
+  };
+  var AD_RT = { streams: [], recs: [], socks: {}, keep: null, tick: null, silence: null };
+  var AD_DG = 'wss://api.deepgram.com/v1/listen?model=nova-3&language=fr&smart_format=true&punctuate=true&interim_results=true&utterance_end_ms=1200&endpointing=400&mip_opt_out=true';
+  try { AD.prixPhrase = localStorage.getItem('stb_ad_prix') || ''; } catch (e) {}
+
+  function adTrame() { return CALL_STEPS.map(function (s) { return { t: s.t, q: s.q, r: s.r }; }); }
+  function adMinutes() {
+    if (!AD.startedAt) return 0;
+    var end = AD.paused ? AD.pausedAt : Date.now();
+    return Math.max(0, Math.round((end - AD.startedAt - AD.pausedMs) / 60000));
+  }
+  function adClock() {
+    if (!AD.startedAt) return '0:00';
+    var end = AD.paused ? AD.pausedAt : Date.now();
+    var s = Math.max(0, Math.floor((end - AD.startedAt - AD.pausedMs) / 1000));
+    return Math.floor(s / 60) + ':' + ('0' + (s % 60)).slice(-2);
+  }
+  function adStamp() { return adClock(); }
+  function adWho(w) { return w === 'me' ? 'Cindy' : (AD.prospect.split(' ')[0] || 'Prospect'); }
+  function adTranscriptText(lastChars) {
+    var t = AD.lines.map(function (l) { return '[' + l.t + '] ' + (l.w === 'me' ? 'Cindy' : 'Prospect') + ' : ' + l.x; }).join('\n');
+    return lastChars ? t.slice(-lastChars) : t;
+  }
+  function adTranscriptCopy() {
+    return AD.lines.map(function (l) { return '[' + l.t + '] ' + adWho(l.w) + ' : ' + l.x; }).join('\n\n');
+  }
+
+  function adLoadCfg() {
+    if (AD.cfg) return;
+    api('/api/appel/config').then(function (r) { return r.json(); }).then(function (d) { AD.cfg = d || {}; if (VIS_TAB === 'direct') renderVisiosBody(); }).catch(function () { AD.cfg = {}; });
+  }
+
+  // ── Écran de départ ──
+  function adSetupHtml() {
+    adLoadCfg();
+    var cfg = AD.cfg || {};
+    var manque = [];
+    if (AD.cfg && !cfg.transcription) manque.push('la clé Deepgram (transcription)');
+    if (AD.cfg && !cfg.assistant) manque.push('la clé Anthropic (relances et compte rendu)');
+    var warn = manque.length ? '<div class="ad-warn">Il manque ' + manque.join(' et ') + ' dans les secrets du serveur. L’outil fonctionnera dès qu’elles seront ajoutées.</div>' : '';
+    var nav = /Chrome|Edg\//.test(navigator.userAgent) && !/OPR\//.test(navigator.userAgent);
+    var navWarn = nav ? '' : '<div class="ad-warn">La capture du son de l’onglet de visio ne marche que dans Chrome ou Edge. Ouvre l’admin et kMeet dans Chrome.</div>';
+    var hist = AD.hist === null ? '<div class="ad-muted">Chargement…</div>' : (AD.hist.length ? AD.hist.slice(0, 12).map(function (h) {
+      var d = new Date(h.at);
+      return '<div class="ad-hist"><button class="ad-link" onclick="ADM.adOuvrir(\'' + h.id + '\')">' + esc(h.titre || h.prospect || 'Appel') + (h.brouillon ? ' <span class="ad-muted">(sans compte rendu)</span>' : '') + '</button><span class="ad-muted">' + esc(d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })) + '</span></div>';
+    }).join('') : '<div class="ad-muted">Aucun appel enregistré pour le moment.</div>');
+    if (AD.hist === null) api('/api/appels').then(function (r) { return r.json(); }).then(function (d) { AD.hist = (d && d.appels) || []; if (VIS_TAB === 'direct' && AD.phase === 'setup') renderVisiosBody(); }).catch(function () { AD.hist = []; });
+    var kb = AD.kbOpen ? '<div class="ad-card"><h3 class="ad-h3">Base de connaissance</h3><p class="ad-muted">Ce que l’assistant sait de toi : offres, prix, façon de travailler, red flags. Laisse vide pour garder le texte par défaut.</p>' +
+      '<textarea id="ad-kb" class="ad-ta" style="min-height:280px" placeholder="' + esc(AD.kbDefaut) + '">' + esc(AD.kb || '') + '</textarea>' +
+      '<div class="ad-row"><button class="btn btn--dark btn--sm" onclick="ADM.adKbSave()">Enregistrer</button><button class="ad-link" onclick="ADM.adKb(false)">Fermer</button></div></div>' : '';
+    var dr = adDraftGet();
+    var draft = dr && dr.lines && dr.lines.length ? '<div class="ad-draft"><div><b>Un appel n’a pas été enregistré.</b> ' + esc(dr.prospect || 'Sans nom') + ', ' + esc(new Date(dr.at).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })) + ', ' + dr.lines.length + ' répliques. Sa transcription est en sécurité sur cet appareil.</div><div class="ad-row"><button class="btn btn--dark btn--sm" onclick="ADM.adDraftReprendre()">Préparer son compte rendu</button><button class="ad-link" onclick="ADM.adDraftCopier()">Copier la transcription</button><button class="ad-link" onclick="ADM.adDraftOublier()">Effacer</button></div></div>' : '';
+    return '<div class="ad">' + warn + navWarn + draft +
+      '<div class="ad-grid ad-grid--setup"><div class="ad-card">' +
+        '<h3 class="ad-h3">Préparer l’appel</h3>' +
+        '<div class="ad-mode" role="group" aria-label="Type d’appel">' +
+          '<button class="' + (AD.mode === 'decouverte' ? 'on' : '') + '" onclick="ADM.adMode(\'decouverte\')">Appel découverte</button>' +
+          '<button class="' + (AD.mode === 'entretien' ? 'on' : '') + '" onclick="ADM.adMode(\'entretien\')">Entretien</button></div>' +
+        '<label class="ad-lab" for="ad-pro">Prénom et nom</label><input id="ad-pro" class="ad-in" value="' + esc(AD.prospect) + '" placeholder="Julie Martin" oninput="ADM.adSet(\'prospect\',this.value)">' +
+        '<label class="ad-lab" for="ad-str">Structure</label><input id="ad-str" class="ad-in" value="' + esc(AD.structure) + '" placeholder="Association Terre Vive" oninput="ADM.adSet(\'structure\',this.value)">' +
+        '<label class="ad-lab" for="ad-ctx">Ce que tu sais déjà (sa demande, son site, comment elle t’a trouvée)</label><textarea id="ad-ctx" class="ad-ta" oninput="ADM.adSet(\'contexte\',this.value)">' + esc(AD.contexte) + '</textarea>' +
+        (AD.mode === 'decouverte' ? '<label class="ad-lab" for="ad-prix">Ta phrase pour annoncer le prix (optionnel)</label><input id="ad-prix" class="ad-in" value="' + esc(AD.prixPhrase) + '" placeholder="Pour poser une charte simple et vos gabarits, je suis à 2 500 €." oninput="ADM.adSet(\'prixPhrase\',this.value)">' : '') +
+        '<div class="ad-consent">Avant de démarrer, demande son accord : « Ça te va si je transcris notre échange pour ma prise de notes ? Rien n’est enregistré. »</div>' +
+        '<div class="ad-row"><button class="btn btn--dark" onclick="ADM.adStart()">Démarrer la transcription</button><button class="ad-link" onclick="ADM.adPrep()">' + (AD.prepBusy ? 'Préparation…' : 'Me préparer') + '</button></div>' +
+        '<p class="ad-muted">Chrome te demandera quel onglet partager : choisis celui de kMeet et coche « Partager aussi l’audio de l’onglet ».</p>' +
+      '</div><div class="ad-col">' +
+        (AD.prep ? '<div class="ad-card"><h3 class="ad-h3">Préparation</h3><div class="ad-pre">' + esc(AD.prep) + '</div></div>' : '') +
+        '<div class="ad-card"><h3 class="ad-h3">Appels enregistrés</h3>' + hist + '</div>' +
+        (AD.kbOpen ? '' : '<div class="ad-card"><h3 class="ad-h3">Base de connaissance</h3><p class="ad-muted">Tes offres, ta façon de travailler et tes red flags, utilisés pour les relances et le compte rendu.</p><button class="ad-link" onclick="ADM.adKb(true)">Modifier</button></div>') +
+      '</div></div>' + kb + '</div>';
+  }
+  function adSet(k, v) { AD[k] = v; if (k === 'prixPhrase') { try { localStorage.setItem('stb_ad_prix', v); } catch (e) {} } }
+  function adMode(m) { AD.mode = m; renderVisiosBody(); }
+  function adKb(open) {
+    AD.kbOpen = open;
+    if (open && AD.kb === null) {
+      api('/api/appel/kb').then(function (r) { return r.json(); }).then(function (d) { AD.kb = (d && d.kb) || ''; AD.kbDefaut = (d && d.defaut) || ''; renderVisiosBody(); }).catch(function () { AD.kb = ''; renderVisiosBody(); });
+    }
+    renderVisiosBody();
+  }
+  function adKbSave() {
+    var v = (el('ad-kb') || {}).value || '';
+    jpost('/api/appel/kb', { kb: v }, 'PUT').then(function (r) { if (!r.ok) throw 0; AD.kb = v; toast('Base de connaissance enregistrée'); }).catch(function () { toast('Erreur d’enregistrement'); });
+  }
+  function adPrep() {
+    if (AD.prepBusy) return;
+    AD.prepBusy = true; renderVisiosBody();
+    jpost('/api/appel/suite', { kind: 'prep', prospect: AD.prospect + (AD.structure ? ', ' + AD.structure : ''), mode: AD.mode, contexte: AD.contexte, trame: adTrame() }).then(function (r) { return r.json(); }).then(function (d) {
+      AD.prepBusy = false; AD.prep = (d && d.text) || (d && d.error) || ''; renderVisiosBody();
+    }).catch(function () { AD.prepBusy = false; toast('Préparation indisponible'); renderVisiosBody(); });
+  }
+
+  // ── Capture audio et transcription ──
+  function adStart() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) { toast('Ce navigateur ne permet pas de capter le son de l’onglet'); return; }
+    var mic, tab;
+    navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } }).then(function (m) {
+      mic = m;
+      return navigator.mediaDevices.getDisplayMedia({ video: true, audio: true, preferCurrentTab: false, selfBrowserSurface: 'exclude', systemAudio: 'exclude' });
+    }).then(function (t) {
+      tab = t;
+      tab.getVideoTracks().forEach(function (v) { v.stop(); });
+      if (!tab.getAudioTracks().length) {
+        mic.getTracks().forEach(function (x) { x.stop(); });
+        toast('Pas de son partagé : coche « Partager aussi l’audio de l’onglet »');
+        return;
+      }
+      AD_RT.streams = [mic, tab];
+      AD.phase = 'live'; AD.startedAt = Date.now(); AD.pausedMs = 0; AD.paused = false; AD.cut = false;
+      AD.lines = []; AD.rel = []; AD.deja = []; AD.plusTard = []; AD.faits = {}; AD.etape = 1; AD.alerte = ''; AD.marques = []; AD.bilan = null; AD.point = null; AD.savedId = null; AD.finalSaved = false; AD.suite = {};
+      adOpen('me', new MediaStream(mic.getAudioTracks()));
+      adOpen('them', new MediaStream(tab.getAudioTracks()));
+      tab.getAudioTracks()[0].addEventListener('ended', function () { if (AD.phase === 'live') { AD.cut = true; adRefreshBar(); } });
+      AD_RT.tick = setInterval(adTick, 1000);
+      AD_RT.draft = setInterval(adDraftLocal, 5000);
+      AD_RT.draftSrv = setInterval(adDraftServer, 300000);
+      AD_RT.keep = setInterval(function () { Object.keys(AD_RT.socks).forEach(function (k) { var s = AD_RT.socks[k]; if (s && s.readyState === 1) { try { s.send(JSON.stringify({ type: 'KeepAlive' })); } catch (e) {} } }); }, 8000);
+      renderVisiosBody();
+    }).catch(function (e) {
+      if (mic) mic.getTracks().forEach(function (x) { x.stop(); });
+      if (tab) tab.getTracks().forEach(function (x) { x.stop(); });
+      toast(e && e.name === 'NotAllowedError' ? 'Partage refusé : autorise le micro et l’onglet de visio' : 'Impossible de démarrer la capture');
+    });
+  }
+  function adOpen(who, stream) {
+    jpost('/api/appel/stt-token', {}).then(function (r) { return r.json().then(function (d) { if (!r.ok || !d.token) throw new Error(d.error || 'jeton'); return d.token; }); }).then(function (token) {
+      var ws = new WebSocket(AD_DG, ['bearer', token]);
+      AD_RT.socks[who] = ws;
+      ws.onopen = function () {
+        var mt = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : 'audio/webm';
+        var rec = new MediaRecorder(stream, { mimeType: mt });
+        rec.ondataavailable = function (ev) { if (ev.data && ev.data.size && ws.readyState === 1 && !AD.paused) ws.send(ev.data); };
+        rec.start(250);
+        AD_RT.recs.push({ who: who, rec: rec });
+        if (AD.cut) { AD.cut = false; adRefreshBar(); }
+      };
+      ws.onmessage = function (ev) { var d; try { d = JSON.parse(ev.data); } catch (e) { return; } adOnResult(who, d); };
+      ws.onclose = function () {
+        AD_RT.recs = AD_RT.recs.filter(function (x) { if (x.who === who) { try { x.rec.stop(); } catch (e) {} return false; } return true; });
+        if (AD.phase === 'live' && AD_RT.socks[who] === ws) { AD.cut = true; adRefreshBar(); }
+      };
+    }).catch(function () { AD.cut = true; adRefreshBar(); });
+  }
+  function adReconnect() {
+    if (AD.phase !== 'live') return;
+    var streams = AD_RT.streams;
+    if (!streams.length) return;
+    ['me', 'them'].forEach(function (who, i) {
+      var s = AD_RT.socks[who];
+      if (s && s.readyState <= 1) return;
+      var tr = streams[i].getAudioTracks();
+      if (tr.length && tr[0].readyState === 'live') adOpen(who, new MediaStream(tr));
+      else if (who === 'them') toast('Le partage de l’onglet est arrêté : termine l’appel ou relance la transcription');
+    });
+  }
+  function adOnResult(who, d) {
+    if (d.type === 'UtteranceEnd') { if (who === 'them') adMaybeAsk(); return; }
+    if (d.type !== 'Results' || !d.channel || !d.channel.alternatives) return;
+    var txt = (d.channel.alternatives[0].transcript || '').trim();
+    if (d.is_final) {
+      AD.interim[who] = '';
+      if (txt) {
+        var last = AD.lines[AD.lines.length - 1];
+        if (last && last.w === who && Date.now() - last.ms < 6000) { last.x += ' ' + txt; last.ms = Date.now(); }
+        else AD.lines.push({ w: who, x: txt, t: adStamp(), ms: Date.now() });
+      }
+      if (who === 'them' && d.speech_final) adMaybeAsk();
+    } else AD.interim[who] = txt;
+    adRenderTranscript();
+  }
+  function adStopAll() {
+    AD_RT.recs.forEach(function (x) { try { x.rec.stop(); } catch (e) {} });
+    AD_RT.recs = [];
+    Object.keys(AD_RT.socks).forEach(function (k) { var s = AD_RT.socks[k]; AD_RT.socks[k] = null; try { if (s && s.readyState === 1) s.send(JSON.stringify({ type: 'CloseStream' })); s && s.close(); } catch (e) {} });
+    AD_RT.streams.forEach(function (st) { st.getTracks().forEach(function (t) { t.stop(); }); });
+    AD_RT.streams = [];
+    clearInterval(AD_RT.keep); clearInterval(AD_RT.tick); clearInterval(AD_RT.silence); clearInterval(AD_RT.draft); clearInterval(AD_RT.draftSrv);
+  }
+  function adPause() {
+    if (AD.phase !== 'live') return;
+    AD.paused = !AD.paused;
+    if (AD.paused) AD.pausedAt = Date.now(); else AD.pausedMs += Date.now() - AD.pausedAt;
+    adRefreshBar();
+  }
+  function adTick() {
+    var c = el('ad-clock'); if (c) c.textContent = adClock();
+    if (Date.now() % 15000 < 1000) adRenderReady();
+  }
+
+  // ── Relances : quand le prospect a fini de parler, au plus une demande toutes les 15 s ──
+  function adMaybeAsk(force) {
+    if (AD.phase !== 'live' || AD.paused) return;
+    if (AD.busy) { AD.pendingAsk = true; return; }
+    if (!force && Date.now() - AD.lastAsk < 15000) return;
+    var lastThem = AD.lines.filter(function (l) { return l.w === 'them'; }).slice(-1)[0];
+    if (!force && (!lastThem || lastThem.ms < AD.lastAsk)) return;
+    AD.busy = true; AD.lastAsk = Date.now(); adRefreshHint();
+    var notes = (el('ad-notes') || {}).value; if (typeof notes === 'string') AD.notes = notes;
+    jpost('/api/appel/relances', {
+      mode: AD.mode, prospect: AD.prospect + (AD.structure ? ', ' + AD.structure : ''), minutes: adMinutes(),
+      trame: adTrame(), faits: AD.faits, deja: AD.deja, plusTard: AD.plusTard, notes: (AD.contexte ? 'Avant l’appel : ' + AD.contexte + '\n' : '') + AD.notes,
+      transcript: adTranscriptText(9000)
+    }).then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); }).then(function (x) {
+      AD.busy = false;
+      if (!x.ok) { if (x.d && x.d.error) toast(x.d.error); return; }
+      var d = x.d || {};
+      if (Array.isArray(d.relances)) {
+        AD.rel = d.relances.slice(0, 2).map(function (r, i) { return { type: r.type, q: r.question, why: r.pourquoi, fresh: i === 0 }; });
+        AD.rel.forEach(function (r) { if (AD.deja.indexOf(r.q) < 0) AD.deja.push(r.q); });
+      }
+      if (Array.isArray(d.plus_tard)) d.plus_tard.forEach(function (q) { if (q && AD.plusTard.indexOf(q) < 0) AD.plusTard.push(q); });
+      if (d.faits && typeof d.faits === 'object') Object.keys(d.faits).forEach(function (k) { if (d.faits[k]) AD.faits[k] = d.faits[k]; });
+      if (d.etape) AD.etape = Math.max(1, Math.min(CALL_STEPS.length, +d.etape || 1));
+      AD.alerte = d.alerte || '';
+      adRenderSide();
+    }).catch(function () { AD.busy = false; }).then(function () { adRefreshHint(); if (AD.pendingAsk) { AD.pendingAsk = false; setTimeout(function () { adMaybeAsk(); }, 1500); } });
+  }
+
+  // ── Écran pendant l'appel ──
+  function adLiveHtml() {
+    var sub = function (k, t, n) { return '<button role="tab" aria-selected="' + (AD.sub === k) + '" class="' + (AD.sub === k ? 'on' : '') + '" onclick="ADM.adSub(\'' + k + '\')">' + t + (n != null ? ' <span class="ad-count" id="ad-n-' + k + '">' + n + '</span>' : '') + '</button>'; };
+    return '<div class="ad">' +
+      '<section class="ad-bar" id="ad-bar">' + adBarInner() + '</section>' +
+      '<div id="ad-cut"></div>' +
+      '<div class="ad-grid">' +
+        '<section class="ad-card"><div class="ad-head"><h3 class="ad-h3">Transcription</h3><button class="ad-link" onclick="ADM.adCopyTr()">Copier</button></div>' +
+          '<div class="ad-tr" id="ad-tr" aria-live="polite"></div>' +
+          '<label class="ad-lab" for="ad-notes">Mes notes, reprises dans le compte rendu</label>' +
+          '<textarea id="ad-notes" class="ad-ta" oninput="ADM.adSet(\'notes\',this.value)">' + esc(AD.notes) + '</textarea></section>' +
+        '<section class="ad-side"><div class="ad-subs" role="tablist">' + sub('rel', 'Relances', AD.rel.length) + sub('trame', 'Trame', AD.etape + '/' + CALL_STEPS.length) + sub('offres', 'Offres et signaux') + sub('sait', 'Ce qu’on sait') + (AD.prep ? sub('prep', 'Préparation') : '') + '</div>' +
+          '<div class="ad-pane" id="ad-pane"></div></section>' +
+      '</div></div>';
+  }
+  function adBarInner() {
+    var titre = (AD.mode === 'entretien' ? 'Entretien' : 'Appel découverte') + (AD.structure ? ' · ' + AD.structure : (AD.prospect ? ' · ' + AD.prospect : ''));
+    var etat = AD.cut ? 'Transcription interrompue' : AD.paused ? 'En pause' : 'Transcription active';
+    return '<div class="ad-bar__id"><h2 class="ad-bar__t">' + esc(titre) + '</h2><div class="ad-bar__meta"><span class="ad-rec' + (AD.paused || AD.cut ? ' off' : '') + '"><i></i>' + etat + '</span>' + (AD.prospect ? '<span>' + esc(AD.prospect) + '</span>' : '') + '<span id="ad-clock">' + adClock() + '</span></div></div>' +
+      '<div class="ad-bar__act"><button class="ad-btn-l" onclick="ADM.adMarquer()">Marquer ce moment</button><button class="ad-btn-l" onclick="ADM.adPause()">' + (AD.paused ? 'Reprendre' : 'Pause') + '</button><button class="ad-btn-p" onclick="ADM.adTerminer()">Terminer l’appel</button></div>';
+  }
+  function adRefreshBar() {
+    var b = el('ad-bar'); if (b) b.innerHTML = adBarInner();
+    var c = el('ad-cut');
+    if (c) c.innerHTML = AD.cut ? '<div class="ad-cutbox" role="alert"><div><b>La transcription s’est interrompue.</b> Tes notes fonctionnent toujours, continue d’y écrire l’essentiel.</div><button class="btn btn--dark btn--sm" onclick="ADM.adReconnect()">Relancer la transcription</button></div>' : '';
+  }
+  function adRenderTranscript() {
+    var box = el('ad-tr'); if (!box) return;
+    var near = box.scrollHeight - box.scrollTop - box.clientHeight < 60;
+    var marked = AD.marques.map(function (m) { return m.i; });
+    var html = AD.lines.map(function (l, i) {
+      return '<div class="ad-line ad-line--' + l.w + (marked.indexOf(i) > -1 ? ' ad-line--mk' : '') + '"><div class="ad-who">' + esc(adWho(l.w)) + '<span>' + l.t + '</span></div><p>' + esc(l.x) + '</p></div>';
+    }).join('');
+    ['me', 'them'].forEach(function (w) { if (AD.interim[w]) html += '<div class="ad-line ad-line--' + w + ' ad-line--int"><div class="ad-who">' + esc(adWho(w)) + '</div><p>' + esc(AD.interim[w]) + '</p></div>'; });
+    box.innerHTML = html || '<div class="ad-muted">La transcription s’affichera ici dès que quelqu’un parle.</div>';
+    if (near) box.scrollTop = box.scrollHeight;
+  }
+  function adSub(k) { AD.sub = k; renderVisiosBody(); }
+  var AD_ESS = [['Besoin', ['veulent', 'probleme']], ['Échéance', ['projet']], ['Décideur', ['decide']], ['Budget', ['budget']]];
+  function adEssGot() { return AD_ESS.filter(function (e) { return e[1].some(function (k) { return AD.faits[k]; }); }).length; }
+  function adReadyHtml() {
+    var got = adEssGot(), m = adMinutes();
+    var msg = got >= 3 ? 'Tu as de quoi faire ta synthèse. Garde une seule relance sur ce qui manque, le reste peut attendre le questionnaire.' : m >= 35 ? 'Le temps avance. Va à l’essentiel, le reste ira dans le questionnaire.' : '';
+    return '<div class="ad-ready"><div class="ad-ready__t"><b>L’essentiel pour décider</b><span>' + got + ' sur 4 · ' + m + ' min sur 45</span></div><div class="ad-chips">' +
+      AD_ESS.map(function (e) { var ok = e[1].some(function (k) { return AD.faits[k]; }); return '<span class="' + (ok ? 'ok' : '') + '">' + e[0] + '</span>'; }).join('') + '</div>' + (msg ? '<div class="ad-ready__m">' + msg + '</div>' : '') + '</div>';
+  }
+  function adRenderReady() { var r = el('ad-ready'); if (r) r.innerHTML = adReadyHtml(); }
+  function adRefreshHint() { var h = el('ad-hint'); if (h) h.textContent = AD.busy ? 'Je réfléchis…' : 'deux relances maximum, la plus utile en haut'; }
+  function adRelHtml() {
+    var lab = { valise: 'Expression floue', perche: 'Perche', trame: 'Trame' };
+    var cards = AD.rel.map(function (r, i) {
+      return '<article class="ad-rel' + (r.fresh && i === 0 ? ' ad-rel--fresh' : '') + (r.done ? ' ad-rel--done' : '') + '"><div class="ad-rel__top"><span class="ad-chip ad-chip--' + esc(r.type) + '">' + (lab[r.type] || 'Relance') + '</span><span><button class="ad-link" onclick="ADM.adRelLater(' + i + ')">Plus tard</button> <button class="ad-link" onclick="ADM.adRelDone(' + i + ')">' + (r.done ? 'Remettre' : 'Posée') + '</button></span></div><q>' + esc(r.q) + '</q><span class="ad-muted">' + esc(r.why || '') + '</span></article>';
+    }).join('') || '<p class="ad-muted">Rien d’urgent à relancer. Laisse parler ton interlocuteur.</p>';
+    var prix = AD.mode === 'decouverte' ? '<div class="ad-prix"><div class="ad-rel__top"><span class="ad-chip ad-chip--trame">Moment du prix</span><button class="ad-link" onclick="ADM.adPrix()">J’annonce le prix</button></div>' + (AD.prixPhrase ? '<q>' + esc(AD.prixPhrase) + '</q>' : '<span class="ad-muted">Annonce ton prix en une phrase, calmement, puis laisse le silence travailler.</span>') + '<div id="ad-sil"></div></div>' : '';
+    var alerte = AD.alerte ? '<div class="ad-alert">' + esc(AD.alerte) + '</div>' : '';
+    var later = '<details class="ad-later"' + (AD.plusTard.length ? '' : '') + '><summary><span>Pour plus tard, dans le questionnaire</span><span class="ad-count">' + AD.plusTard.length + '</span></summary><p class="ad-muted">Les questions utiles mais pas urgentes. Tu les envoies après l’appel si vous continuez ensemble.</p><ul>' +
+      AD.plusTard.map(function (q, i) { return '<li><span>' + esc(q) + '</span><button class="ad-link" onclick="ADM.adLaterDel(' + i + ')">Retirer</button></li>'; }).join('') + '</ul></details>';
+    return alerte + '<div id="ad-ready">' + adReadyHtml() + '</div>' + prix + '<div class="ad-hint"><b>à dire</b> <span id="ad-hint">' + (AD.busy ? 'Je réfléchis…' : 'deux relances maximum, la plus utile en haut') + '</span> <button class="ad-link" onclick="ADM.adAsk()">Actualiser</button></div>' + cards + later;
+  }
+  function adTrameHtml() {
+    return '<ol class="ad-steps">' + CALL_STEPS.map(function (s, i) {
+      var n = i + 1, cls = n < AD.etape ? 'done' : n === AD.etape ? 'now' : '';
+      return '<li class="' + cls + '"><span class="ad-num">' + n + '</span><div><div class="ad-step__t">' + esc(s.t) + '</div>' + (n === AD.etape ? '<div class="ad-step__q">' + esc(s.q) + '</div>' + (s.r || []).map(function (x) { return '<div class="ad-muted">› ' + esc(x) + '</div>'; }).join('') : '') + '</div></li>';
+    }).join('') + '</ol>';
+  }
+  function adSaitHtml() {
+    return '<div class="ad-facts">' + CALL_FIELDS.map(function (f) { var v = AD.faits[f[0]]; return '<div class="ad-fact"><div class="ad-muted">' + esc(f[1]) + '</div><div class="ad-fact__v' + (v ? '' : ' empty') + '">' + (v ? esc(v) : 'Pas encore abordé') + '</div></div>'; }).join('') + '</div>';
+  }
+  function adOffresBlock(b) {
+    if (!b) return '';
+    var V = { recommandee: ['Recommandée', 'yes'], selon: ['Selon le contexte', 'maybe'], plus_tard: ['Plus tard', 'later'], non: ['Pas pour ce besoin', 'no'] };
+    var NV = { ok: 'ok', vigilance: 'warn', red_flag: 'red' };
+    var off = (b.offres || []).map(function (o) { var v = V[o.verdict] || ['', 'no']; return '<div class="ad-offer' + (v[1] === 'yes' ? ' ad-offer--best' : '') + '"><div class="ad-offer__t">' + esc(o.offre) + '</div><span class="ad-verdict ad-verdict--' + v[1] + '">' + v[0] + '</span><p>' + esc(o.raison) + '</p></div>'; }).join('');
+    var exp = (b.explication || []).length ? '<div class="ad-gt">Comment je fonctionne, à dire</div><div class="ad-explain"><ol>' + b.explication.map(function (x) { return '<li>« ' + esc(x) + ' »</li>'; }).join('') + '</ol></div>' : '';
+    var sig = (b.signaux || []).map(function (s) { return '<div class="ad-sig ad-sig--' + (NV[s.niveau] || 'ok') + '"><i></i><div>' + esc(s.constat) + (s.quoi_faire ? '<small>' + esc(s.quoi_faire) + '</small>' : '') + '</div></div>'; }).join('') || '<div class="ad-muted">Aucun signal particulier.</div>';
+    return '<div class="ad-gt">Quelle offre lui correspond</div>' + off + exp + '<div class="ad-gt">Signaux</div>' + sig;
+  }
+  function adOffresHtml() {
+    var btn = '<div class="ad-row"><button class="btn btn--dark btn--sm" onclick="ADM.adPoint()">' + (AD.pointBusy ? 'Analyse en cours…' : AD.point ? 'Refaire le point' : 'Faire le point maintenant') + '</button></div>';
+    return (AD.point ? '' : '<p class="ad-muted">Au moment de présenter ton offre, fais le point : l’offre qui colle, ta façon de travailler en phrases prêtes à dire, et les signaux à surveiller.</p>') + btn + adOffresBlock(AD.point);
+  }
+  function adRenderSide() {
+    var p = el('ad-pane'); if (!p) return;
+    p.innerHTML = AD.sub === 'trame' ? adTrameHtml() : AD.sub === 'offres' ? adOffresHtml() : AD.sub === 'sait' ? adSaitHtml() : AD.sub === 'prep' ? '<div class="ad-pre">' + esc(AD.prep) + '</div>' : adRelHtml();
+    var n1 = el('ad-n-rel'); if (n1) n1.textContent = AD.rel.filter(function (r) { return !r.done; }).length;
+    var n2 = el('ad-n-trame'); if (n2) n2.textContent = AD.etape + '/' + CALL_STEPS.length;
+    AD.rel.forEach(function (r) { r.fresh = false; });
+  }
+  function adRelDone(i) { var r = AD.rel[i]; if (r) { r.done = !r.done; adRenderSide(); } }
+  function adRelLater(i) { var r = AD.rel[i]; if (!r) return; if (AD.plusTard.indexOf(r.q) < 0) AD.plusTard.push(r.q); AD.rel.splice(i, 1); adRenderSide(); }
+  function adLaterDel(i) { AD.plusTard.splice(i, 1); adRenderSide(); }
+  function adAsk() { adMaybeAsk(true); }
+  function adMarquer() {
+    var i = AD.lines.length - 1; if (i < 0) { toast('Rien à marquer pour l’instant'); return; }
+    if (!AD.marques.some(function (m) { return m.i === i; })) AD.marques.push({ i: i, t: AD.lines[i].t, x: adWho(AD.lines[i].w) + ' : ' + AD.lines[i].x });
+    toast('Moment marqué'); adRenderTranscript();
+  }
+  function adPrix() {
+    var s = el('ad-sil'); if (!s) return;
+    var early = AD.etape < CALL_STEPS.length;
+    var t0 = Date.now();
+    clearInterval(AD_RT.silence);
+    var draw = function () { var sec = Math.round((Date.now() - t0) / 1000); var x = el('ad-sil'); if (!x) { clearInterval(AD_RT.silence); return; } x.innerHTML = (early ? '<div class="ad-alert">Tu n’as pas encore reformulé ni proposé. Si c’est voulu, garde ta phrase courte.</div>' : '') + '<div class="ad-silence">Maintenant tu te tais. Silence depuis <b>' + sec + ' s</b></div>'; if (sec >= 20) clearInterval(AD_RT.silence); };
+    draw(); AD_RT.silence = setInterval(draw, 1000);
+  }
+  function adPoint() {
+    if (AD.pointBusy) return;
+    AD.pointBusy = true; adRenderSide();
+    adBilanReq().then(function (d) { AD.pointBusy = false; AD.point = d; adRenderSide(); }).catch(function (e) { AD.pointBusy = false; toast((e && e.message) || 'Analyse indisponible'); adRenderSide(); });
+  }
+  function adBilanReq() {
+    var notes = (el('ad-notes') || {}).value; if (typeof notes === 'string') AD.notes = notes;
+    return jpost('/api/appel/bilan', {
+      mode: AD.mode, prospect: AD.prospect + (AD.structure ? ', ' + AD.structure : ''), date: new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }),
+      trame: adTrame(), notes: (AD.contexte ? 'Avant l’appel : ' + AD.contexte + '\n' : '') + AD.notes,
+      marques: AD.marques.map(function (m) { return '[' + m.t + '] ' + m.x; }), plusTard: AD.plusTard, transcript: adTranscriptText()
+    }).then(function (r) { return r.json().then(function (d) { if (!r.ok) throw new Error((d && d.error) || 'Erreur'); return d; }); });
+  }
+  function adCopy(text, ok) {
+    var done = function () { toast(ok); };
+    try { navigator.clipboard.writeText(text).then(done, function () { toast('Copie refusée par le navigateur'); }); } catch (e) { toast('Copie refusée par le navigateur'); }
+  }
+  function adCopyTr() { adCopy(adTranscriptCopy(), 'Transcription copiée'); }
+
+  // ── Fin d'appel ──
+  var AD_DRAFT_KEY = 'stb_ad_brouillon';
+  function adDraftData() {
+    return { id: AD.savedId, prospect: AD.prospect, structure: AD.structure, mode: AD.mode, contexte: AD.contexte, lines: AD.lines, notes: AD.notes, marques: AD.marques, plusTard: AD.plusTard, faits: AD.faits, minutes: adMinutes(), at: Date.now() };
+  }
+  function adDraftLocal() {
+    if (!AD.lines.length && !AD.notes) return;
+    var n = el('ad-notes'); if (n && typeof n.value === 'string') AD.notes = n.value;
+    try { localStorage.setItem(AD_DRAFT_KEY, JSON.stringify(adDraftData())); } catch (e) {}
+  }
+  function adDraftServer() {
+    if (!AD.lines.length) return Promise.resolve();
+    adDraftLocal();
+    return jpost('/api/appels', { id: AD.savedId || undefined, prospect: AD.prospect + (AD.structure ? ', ' + AD.structure : ''), mode: AD.mode, minutes: adMinutes(), notes: AD.notes, marques: AD.marques.map(function (m) { return '[' + m.t + '] ' + m.x; }), plusTard: AD.plusTard, transcript: adTranscriptCopy() })
+      .then(function (r) { return r.json(); }).then(function (d) { if (d && d.ok) { AD.savedId = d.id; AD.draftOk = Date.now(); adDraftLocal(); } }).catch(function () {});
+  }
+  function adDraftClear() { try { localStorage.removeItem(AD_DRAFT_KEY); } catch (e) {} }
+  function adDraftGet() { try { return JSON.parse(localStorage.getItem(AD_DRAFT_KEY) || 'null'); } catch (e) { return null; } }
+  function adDraftReprendre() {
+    var d = adDraftGet(); if (!d) return;
+    AD.savedId = d.id || null; AD.prospect = d.prospect || ''; AD.structure = d.structure || ''; AD.mode = d.mode || 'decouverte'; AD.contexte = d.contexte || '';
+    AD.lines = d.lines || []; AD.notes = d.notes || ''; AD.marques = d.marques || []; AD.plusTard = d.plusTard || []; AD.faits = d.faits || {}; AD.minutes = d.minutes || 0;
+    AD.phase = 'fin'; AD.bilan = null; AD.bilanErr = ''; AD.suite = {};
+    adDraftServer();
+    adRetryBilan();
+  }
+  function adDraftCopier() { var d = adDraftGet(); if (!d) return; adCopy((d.lines || []).map(function (l) { return '[' + l.t + '] ' + (l.w === 'me' ? 'Cindy' : ((d.prospect || '').split(' ')[0] || 'Prospect')) + ' : ' + l.x; }).join('\n\n'), 'Transcription copiée'); }
+  function adDraftOublier() {
+    admConfirm({ title: 'Effacer ce brouillon ?', message: 'La copie de cet appareil sera effacée. Si une copie a été envoyée sur le serveur, elle reste dans tes appels enregistrés.', yes: 'Effacer', no: 'Annuler', danger: true }, function () { adDraftClear(); renderVisiosBody(); });
+  }
+  function adTerminer() {
+    admConfirm({ title: 'Terminer l’appel ?', message: 'La transcription s’arrête et le compte rendu se prépare.', yes: 'Terminer', no: 'Continuer l’appel' }, function () {
+      var notes = (el('ad-notes') || {}).value; if (typeof notes === 'string') AD.notes = notes;
+      AD.minutes = adMinutes();
+      adStopAll();
+      adDraftServer();
+      AD.phase = 'fin'; AD.bilanBusy = true; AD.bilan = null;
+      renderVisiosBody();
+      adBilanReq().then(function (d) { AD.bilan = d; AD.bilanBusy = false; renderVisiosBody(); }).catch(function (e) { AD.bilanBusy = false; AD.bilanErr = (e && e.message) || 'Erreur'; renderVisiosBody(); });
+    });
+  }
+  function adCrText(b) {
+    if (!b) return '';
+    var V = { recommandee: 'Recommandée', selon: 'Selon le contexte', plus_tard: 'Plus tard', non: 'Pas pour ce besoin' };
+    var NV = { ok: 'Rassurant', vigilance: 'À surveiller', red_flag: 'Red flag' };
+    var out = [b.titre || '', '', 'Contexte', b.contexte || '', '', 'Besoin exprimé', b.besoin || '', '', 'Échéance, décision, budget', b.echeance_decision_budget || '', '', 'Diagnostic', b.diagnostic || '', '', 'Offres'];
+    (b.offres || []).forEach(function (o) { out.push(o.offre + ' · ' + (V[o.verdict] || '') + '. ' + o.raison); });
+    out.push('', 'Signaux'); (b.signaux || []).forEach(function (s) { out.push((NV[s.niveau] || '') + ' · ' + s.constat + (s.quoi_faire ? ' ' + s.quoi_faire : '')); });
+    out.push('', 'Suite'); (b.suite || []).forEach(function (s) { out.push(s.action + (s.date ? ' (' + s.date + ')' : '')); });
+    if ((b.questionnaire || []).length) { out.push('', 'À compléter par questionnaire'); b.questionnaire.forEach(function (q) { out.push(q); }); }
+    return out.join('\n');
+  }
+  function adFinHtml() {
+    var head = '<div class="ad-row" style="justify-content:space-between"><button class="ad-link" onclick="ADM.adNouveau()">Nouvel appel</button><span class="ad-muted">' + esc(AD.prospect || '') + '</span></div>';
+    if (AD.bilanBusy) return '<div class="ad">' + head + '<div class="ad-card ad-center"><div class="spin" style="margin:16px auto"></div><p class="ad-muted">Préparation du compte rendu, une petite minute…</p></div></div>';
+    var b = AD.bilan;
+    if (!b) return '<div class="ad">' + head + '<div class="ad-card"><p>' + (AD.bilanErr === 'pas encore préparé' ? 'Le compte rendu de cet appel n’a pas encore été préparé. La transcription est bien enregistrée.' : 'Le compte rendu n’a pas pu être préparé (' + esc(AD.bilanErr || 'erreur') + '). La transcription est bien enregistrée.') + '</p><div class="ad-row"><button class="btn btn--dark btn--sm" onclick="ADM.adRetryBilan()">' + (AD.bilanErr === 'pas encore préparé' ? 'Préparer le compte rendu' : 'Réessayer') + '</button><button class="ad-link" onclick="ADM.adCopyTr()">Copier la transcription</button></div><div class="ad-tr ad-tr--fin" id="ad-tr"></div></div></div>';
+    var sec = function (n, t, body) { return '<div class="ad-sec"><span class="ad-num ad-num--dark">' + n + '</span><h3 class="ad-h3">' + t + '</h3><div class="ad-sec__b">' + body + '</div></div>'; };
+    var p = function (x) { return '<p>' + esc(x || '') + '</p>'; };
+    var suite = (b.suite || []).map(function (s, i) { return '<label class="ad-todo"><input type="checkbox" id="ad-s' + i + '" checked> ' + esc(s.action) + (s.date ? ' <span class="ad-muted">(' + esc(s.date) + ')</span>' : '') + '</label>'; }).join('') || '<p class="ad-muted">Aucune action précise convenue.</p>';
+    var marques = AD.marques.length ? AD.marques.map(function (m) { return '<div class="ad-mk"><span>' + m.t + '</span>' + esc(m.x) + '</div>'; }).join('') : '<p class="ad-muted">Aucun moment marqué.</p>';
+    var q = (b.questionnaire || []).concat(AD.plusTard.filter(function (x) { return (b.questionnaire || []).indexOf(x) < 0; }));
+    var verb = (b.verbatims || []).map(function (v) { return '<div class="ad-mk"><span>' + esc(String(v.categorie || '').replace(/_/g, ' ')) + '</span>« ' + esc(v.citation) + ' »</div>'; }).join('');
+    var suiteOut = AD.suite.kind ? '<div class="ad-pre">' + (AD.suite.busy ? 'Rédaction…' : esc(AD.suite.text || '')) + '</div>' + (AD.suite.text ? '<button class="ad-link" onclick="ADM.adCopySuite()">Copier</button>' : '') : '';
+    return '<div class="ad">' + head + '<div class="ad-cr">' +
+      '<div><div class="ad-muted">Compte rendu préparé, à relire avant de l’enregistrer</div><h2 class="ad-cr__t">' + esc(b.titre || 'Compte rendu') + '</h2><div class="ad-muted">' + esc(new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })) + ' · ' + (AD.minutes || 0) + ' minutes</div></div>' +
+      sec(1, 'Contexte', p(b.contexte)) + sec(2, 'Besoin exprimé', '<div class="ad-quote">' + esc(b.besoin || '') + '</div>') +
+      sec(3, 'Échéance, décision, budget', p(b.echeance_decision_budget)) + sec(4, 'Diagnostic', p(b.diagnostic)) +
+      sec(5, 'Offres et signaux', adOffresBlock(b)) +
+      sec(6, 'Et maintenant', '<p class="ad-muted">Rien n’est créé ni envoyé sans toi. Coche ce que tu veux garder comme tâches dans ta note d’appel.</p>' + suite +
+        '<div class="ad-after"><button class="ad-acard' + (AD.suite.kind === 'mail' ? ' on' : '') + '" onclick="ADM.adSuite(\'mail\')"><span>Mail de suite</span>Brouillon dans ton ton, à relire</button><button class="ad-acard' + (AD.suite.kind === 'coach' ? ' on' : '') + '" onclick="ADM.adSuite(\'coach\')"><span>Retour de coach</span>Perches manquées et relances</button></div>' + suiteOut) +
+      sec(7, 'À compléter par questionnaire', q.length ? '<ol class="ad-ol">' + q.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ol><button class="ad-link" onclick="ADM.adCopyQ()">Copier le questionnaire</button>' : '<p class="ad-muted">Rien de plus à demander.</p>') +
+      sec(8, 'Moments marqués', marques) +
+      (verb ? sec(9, 'Verbatims', '<p class="ad-muted">Ses mots exacts, utiles pour ton tableau des messages.</p>' + verb) : '') +
+      sec(verb ? 10 : 9, 'Transcription complète', '<p class="ad-muted">Gardée sur le serveur sans limite de durée, avec une copie dans ta fiche d’appel.</p><div class="ad-tr ad-tr--fin" id="ad-tr"></div><button class="ad-link" onclick="ADM.adCopyTr()">Copier la transcription</button>') +
+      '<div class="ad-cr__foot"><button class="ad-link" onclick="ADM.adCopyCr()">Copier le compte rendu</button><button class="btn btn--dark" onclick="ADM.adSave()">' + (AD.finalSaved ? 'Enregistré' : 'Enregistrer dans la fiche d’appel') + '</button></div>' +
+    '</div></div>';
+  }
+  function adRetryBilan() { AD.bilanBusy = true; renderVisiosBody(); adBilanReq().then(function (d) { AD.bilan = d; AD.bilanBusy = false; renderVisiosBody(); }).catch(function (e) { AD.bilanBusy = false; AD.bilanErr = (e && e.message) || 'Erreur'; renderVisiosBody(); }); }
+  function adCopyCr() { adCopy(adCrText(AD.bilan), 'Compte rendu copié'); }
+  function adCopyQ() { var q = (AD.bilan && AD.bilan.questionnaire || []).concat(AD.plusTard); var seen = {}; q = q.filter(function (x) { if (seen[x]) return false; seen[x] = 1; return true; }); adCopy(q.map(function (x, i) { return (i + 1) + '. ' + x; }).join('\n'), 'Questionnaire copié'); }
+  function adCopySuite() { adCopy(AD.suite.text || '', 'Texte copié'); }
+  function adSuite(kind) {
+    if (AD.suite.busy) return;
+    AD.suite = { kind: kind, busy: true }; renderVisiosBody();
+    jpost('/api/appel/suite', { kind: kind, compteRendu: adCrText(AD.bilan), transcript: adTranscriptText() }).then(function (r) { return r.json(); }).then(function (d) {
+      AD.suite = { kind: kind, busy: false, text: (d && d.text) || (d && d.error) || '' }; renderVisiosBody();
+    }).catch(function () { AD.suite = { kind: kind, busy: false, text: 'Indisponible pour le moment.' }; renderVisiosBody(); });
+  }
+  function adSave() {
+    if (!AD.bilan) return;
+    var b = AD.bilan, keep = (b.suite || []).filter(function (s, i) { var c = el('ad-s' + i); return !c || c.checked; });
+    jpost('/api/appels', { id: AD.savedId || undefined, prospect: AD.prospect + (AD.structure ? ', ' + AD.structure : ''), mode: AD.mode, minutes: AD.minutes || 0, compteRendu: b, notes: AD.notes, marques: AD.marques.map(function (m) { return '[' + m.t + '] ' + m.x; }), plusTard: AD.plusTard, transcript: adTranscriptCopy() })
+      .then(function (r) { return r.json(); }).then(function (d) {
+        if (!d || !d.ok) throw 0;
+        var first = !AD.finalSaved;
+        AD.savedId = d.id; AD.finalSaved = true; AD.hist = null; adDraftClear();
+        if (first) {
+          var a = callNotesLoad(), dt = new Date(), f = {};
+          Object.keys(b.fiche || {}).forEach(function (k) { if (b.fiche[k]) f[k] = b.fiche[k]; });
+          if (keep.length) f.etape = keep.map(function (s) { return s.action + (s.date ? ' (' + s.date + ')' : ''); }).join(' · ');
+          a.unshift({ id: 'n' + Date.now(), title: b.titre || AD.prospect || 'Appel', date: dt.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }), f: f, text: adCrText(b) + (AD.notes ? '\n\nMes notes\n' + AD.notes : '') });
+          callNotesSave(a);
+        }
+        toast('Compte rendu enregistré'); renderVisiosBody();
+      }).catch(function () { toast('Erreur d’enregistrement'); });
+  }
+  function adOuvrir(id) {
+    api('/api/appels/' + id).then(function (r) { return r.json(); }).then(function (d) {
+      if (!d || d.error) { toast((d && d.error) || 'Appel introuvable'); return; }
+      AD.phase = 'fin'; AD.bilanBusy = false; AD.bilan = d.compteRendu; AD.savedId = d.id; AD.finalSaved = !!d.compteRendu; AD.bilanErr = d.compteRendu ? '' : 'pas encore préparé'; AD.prospect = d.prospect || ''; AD.structure = ''; AD.mode = d.mode || 'decouverte';
+      AD.minutes = d.minutes || 0; AD.notes = d.notes || ''; AD.plusTard = d.plusTard || []; AD.suite = {};
+      AD.marques = (d.marques || []).map(function (x) { var m = String(x).match(/^\[([^\]]*)\]\s*(.*)$/); return { i: -1, t: m ? m[1] : '', x: m ? m[2] : x }; });
+      AD.lines = String(d.transcript || '').split(/\n\n/).filter(Boolean).map(function (s) { var m = s.match(/^\[([^\]]*)\]\s*([^:]+?)\s:\s([\s\S]*)$/); return m ? { t: m[1], w: m[2] === 'Cindy' ? 'me' : 'them', x: m[3], ms: 0 } : { t: '', w: 'them', x: s, ms: 0 }; });
+      renderVisiosBody();
+    }).catch(function () { toast('Erreur de chargement'); });
+  }
+  function adNouveau() {
+    if (AD.phase === 'fin' && AD.bilan && !AD.finalSaved) {
+      admConfirm({ title: 'Quitter sans enregistrer ?', message: 'Le compte rendu et la transcription de cet appel seront perdus.', yes: 'Quitter', no: 'Rester', danger: true }, function () { adReset(); });
+      return;
+    }
+    adReset();
+  }
+  function adReset() { AD.phase = 'setup'; AD.bilan = null; AD.point = null; AD.savedId = null; AD.finalSaved = false; AD.lines = []; AD.marques = []; AD.plusTard = []; AD.notes = ''; AD.suite = {}; AD.prep = ''; AD.prospect = ''; AD.structure = ''; AD.contexte = ''; renderVisiosBody(); }
+  function visDirectHtml() {
+    return AD.phase === 'live' ? adLiveHtml() : AD.phase === 'fin' ? adFinHtml() : adSetupHtml();
+  }
+  function adAfterRender() {
+    if (VIS_TAB !== 'direct') return;
+    if (AD.phase === 'live') { adRenderTranscript(); adRenderSide(); adRefreshBar(); }
+    else if (AD.phase === 'fin') adRenderTranscript();
+  }
+  window.addEventListener('beforeunload', function (e) { if (AD.phase === 'live') adDraftLocal(); if (AD.phase === 'live' || (AD.phase === 'fin' && AD.bilan && !AD.finalSaved)) { e.preventDefault(); e.returnValue = ''; } });
   function visTab(t) { VIS_TAB = t; renderVisiosBody(); }
 
   // ── Fiche d'appel : notes multiples (façon Apple Notes) + suivi + anti-sèche ──
@@ -14890,6 +15375,7 @@
 
   // API publique pour les onclick
   window.ADM = {
+    adStart: adStart, adPause: adPause, adMarquer: adMarquer, adTerminer: adTerminer, adReconnect: adReconnect, adSub: adSub, adSet: adSet, adMode: adMode, adKb: adKb, adKbSave: adKbSave, adPrep: adPrep, adAsk: adAsk, adRelDone: adRelDone, adRelLater: adRelLater, adLaterDel: adLaterDel, adPrix: adPrix, adPoint: adPoint, adCopyTr: adCopyTr, adCopyCr: adCopyCr, adCopyQ: adCopyQ, adCopySuite: adCopySuite, adSuite: adSuite, adSave: adSave, adOuvrir: adOuvrir, adNouveau: adNouveau, adRetryBilan: adRetryBilan, adDraftReprendre: adDraftReprendre, adDraftCopier: adDraftCopier, adDraftOublier: adDraftOublier,
     nav: nav, login: login, logout: logout, scan: scan, createClient: createClient, copy: copy, editToken: editToken, cliApercu: cliApercu, ckpCorrigerPasse: ckpCorrigerPasse, ffReglages: ffReglages, ffAutoMail: ffAutoMail, accesOuvrir: accesOuvrir, navClientTab: navClientTab,
     msWeek: msWeek, msFilter: msFilter, msToggleCap: msToggleCap, msMode: msMode, msDaySel: msDaySel, msPlace: msPlace, msDone: msDone, msDelete: msDelete, msNoteOpen: msNoteOpen, msPlanOver: msPlanOver, msPlanLeave: msPlanLeave, msPlanDrop: msPlanDrop, msPlanUnplace: msPlanUnplace, msAutoPlan: msAutoPlan, msOrganizeWeek: msOrganizeWeek, msOrganizeDay: msOrganizeDay, msUnplace: msUnplace, msDragStart: msDragStart, msDragEnd: msDragEnd, msDayOver: msDayOver, msDayLeave: msDayLeave, msDrop: msDrop, msSlotOver: msSlotOver, msDropSlot: msDropSlot, msNewBlock: msNewBlock, msSaveBlock: msSaveBlock, msDeleteBlock: msDeleteBlock, msEst: msEst, msEstH: msEstH, msAddTop: msAddTop, msAddDay: msAddDay,
     rvActiver: rvActiver, rvEnregistrer: rvEnregistrer, rvPause: rvPause, rvNouveauLien: rvNouveauLien, rvFiltre: rvFiltre, rvActualiser: rvActualiser, rvCopier: rvCopier, rvRepondre: rvRepondre, rvStatut: rvStatut, rvSupprimer: rvSupprimer,

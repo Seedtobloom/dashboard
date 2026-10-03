@@ -9,7 +9,8 @@
  *   KV  KV_CLIENT   · espaces clients (clé 32 chars = 1 client) + sessions client
  *   KV  KV_ADMIN    · auth admin (admin:auth), sessions admin (session:<id>), index clients
  *   R2  R2_FILES    · bucket "stb-files"
- *   Secrets : RESEND_API_KEY, RESEND_FROM_EMAIL, INTERNAL_SECRET
+ *   Secrets : RESEND_API_KEY, RESEND_FROM_EMAIL, INTERNAL_SECRET,
+ *             ANTHROPIC_API_KEY, DEEPGRAM_API_KEY (appel en direct, Visios)
  *
  * Auth admin : 2 clés de 32 chars (KV_ADMIN `admin:auth` = {keyA, keyB}),
  * saisies ensemble. Session 24h (cookie HttpOnly stb_admin).
@@ -19,6 +20,7 @@ import { stbTaskMinByMonth, stbForfaitState, stbSessionMin } from '../shared/for
 import { stbMissionDetail } from '../shared/mission-types.js';
 import { getReviewDoc, putReviewDoc, computeOrigins, originOf, buildReply, setStatus, reviewHex, clip, REVIEW_PREFIX, REVIEWOF_PREFIX, REVIEW_MAIL_GAP_MS } from '../shared/review';
 import type { ReviewDoc } from '../shared/review';
+import { routeAppel } from './appel';
 
 export interface Env {
   KV_CLIENT: KVNamespace;
@@ -31,6 +33,8 @@ export interface Env {
   RESEND_READ_API_KEY?: string;   // clé Resend « Full access », pour relire l'historique // « Signing secret » du webhook Resend (whsec_…)   // adresse de réponse (optionnelle)
   INTERNAL_SECRET?: string;
   SPACE_URL?: string;
+  ANTHROPIC_API_KEY?: string;
+  DEEPGRAM_API_KEY?: string;
 }
 
 type AnyObj = Record<string, any>;
@@ -126,6 +130,8 @@ export default {
       const ok = await isAdmin(request, env);
       if (!ok) return json({ error: 'Non authentifié' }, 401);
 
+      const appel = await routeAppel(request, env, pathname, method);
+      if (appel) return appel;
       if (method === 'GET' && pathname === '/api/me') return json({ ok: true });
       if (method === 'POST' && pathname === '/api/mails/importer') return handleMailsImport(env);
       if (method === 'GET' && pathname === '/api/mails') return json({ mails: (((await env.KV_ADMIN.get(MAILS_TOUS, { type: 'json' })) as AnyObj[] | null) || []).slice(0, 40) });
