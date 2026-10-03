@@ -3729,7 +3729,8 @@
     rel: [], deja: [], plusTard: [], faits: {}, etape: 1, alerte: '', marques: [], notes: '',
     sub: 'rel', busy: false, lastAsk: 0, pendingAsk: false, cut: false, cfg: null,
     bilan: null, bilanBusy: false, point: null, pointBusy: false, savedId: null, suite: {}, prep: '', prepBusy: false,
-    silenceAt: 0, hist: null, kbOpen: false, kb: null, kbDefaut: ''
+    silenceAt: 0, hist: null, kbOpen: false, kb: null, kbDefaut: '',
+    clientKey: '', cardId: '', meetingUrl: '', setupTab: 'nouvel', statut: '', suiteCree: false, qnrEnvoye: false
   };
   var AD_RT = { streams: [], recs: [], socks: {}, keep: null, tick: null, silence: null };
   var AD_DG = 'wss://api.deepgram.com/v1/listen?model=nova-3&language=fr&smart_format=true&punctuate=true&interim_results=true&utterance_end_ms=1200&endpointing=400&mip_opt_out=true';
@@ -3774,7 +3775,7 @@
     var navWarn = nav ? '' : '<div class="apl-warn">La capture du son de l’onglet de visio ne marche que dans Chrome ou Edge. Ouvre l’admin et kMeet dans Chrome.</div>';
     var hist = AD.hist === null ? '<div class="apl-muted">Chargement…</div>' : (AD.hist.length ? AD.hist.slice(0, 12).map(function (h) {
       var d = new Date(h.at);
-      return '<div class="apl-hist"><button class="apl-link" onclick="ADM.adOuvrir(\'' + h.id + '\')">' + esc(h.titre || h.prospect || 'Appel') + (h.brouillon ? ' <span class="apl-muted">(sans compte rendu)</span>' : '') + '</button><span class="apl-muted">' + esc(d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })) + '</span></div>';
+      return '<div class="apl-hist"><button class="apl-link" onclick="ADM.adOuvrir(\'' + h.id + '\')">' + esc(h.titre || h.prospect || 'Appel') + (h.brouillon ? ' <span class="apl-muted">(sans compte rendu)</span>' : '') + '</button>' + (h.statut ? '<span class="apl-st apl-st--' + esc(h.statut) + '">' + adStatutLabel(h.statut) + '</span>' : '') + '<span class="apl-muted">' + esc(d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })) + '</span></div>';
     }).join('') : '<div class="apl-muted">Aucun appel enregistré pour le moment.</div>');
     if (AD.hist === null) api('/api/appels').then(function (r) { return r.json(); }).then(function (d) { AD.hist = (d && d.appels) || []; if (VIS_TAB === 'direct' && AD.phase === 'setup') renderVisiosBody(); }).catch(function () { AD.hist = []; });
     var kb = AD.kbOpen ? '<div class="apl-card"><h3 class="apl-h3">Base de connaissance</h3><p class="apl-muted">Ce que l’assistant sait de toi : offres, prix, façon de travailler, red flags. Laisse vide pour garder le texte par défaut.</p>' +
@@ -3782,20 +3783,24 @@
       '<div class="apl-row"><button class="btn btn--dark btn--sm" onclick="ADM.adKbSave()">Enregistrer</button><button class="apl-link" onclick="ADM.adKb(false)">Fermer</button></div></div>' : '';
     var dr = adDraftGet();
     var draft = dr && dr.lines && dr.lines.length ? '<div class="apl-draft"><div><b>Un appel n’a pas été enregistré.</b> ' + esc(dr.prospect || 'Sans nom') + ', ' + esc(new Date(dr.at).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })) + ', ' + dr.lines.length + ' répliques. Sa transcription est en sécurité sur cet appareil.</div><div class="apl-row"><button class="btn btn--dark btn--sm" onclick="ADM.adDraftReprendre()">Préparer son compte rendu</button><button class="apl-link" onclick="ADM.adDraftCopier()">Copier la transcription</button><button class="apl-link" onclick="ADM.adDraftOublier()">Effacer</button></div></div>' : '';
-    return '<div class="apl">' + warn + navWarn + adBudgetWarn() + draft +
-      '<div class="apl-grid apl-grid--setup"><div class="apl-card">' +
+    var stabs = '<div class="apl-subs apl-subs--setup" role="tablist"><button role="tab" aria-selected="' + (AD.setupTab !== 'vue') + '" class="' + (AD.setupTab !== 'vue' ? 'on' : '') + '" onclick="ADM.adSetupTab(\'nouvel\')">Nouvel appel</button><button role="tab" aria-selected="' + (AD.setupTab === 'vue') + '" class="' + (AD.setupTab === 'vue' ? 'on' : '') + '" onclick="ADM.adSetupTab(\'vue\')">Vue d’ensemble</button></div>';
+    if (AD.setupTab === 'vue') return '<div class="apl">' + warn + adBudgetWarn() + stabs + (AD.hist === null ? '<div class="apl-card"><div class="apl-muted">Chargement…</div></div>' : adVueHtml()) + '</div>';
+    var son = '<div class="apl-card"><h3 class="apl-h3">Test du son</h3>' + (AD_RT.pre ? '<div class="apl-snd" id="apl-snd">' + adSndState() + '</div><p class="apl-muted">Parle, puis fais parler la visio (ou lance une vidéo dans l’onglet partagé). Si les deux barres bougent, tout est prêt : « Démarrer » réutilisera ce partage.</p><button class="apl-link" onclick="ADM.adTestStop()">Arrêter le test</button>' : '<p class="apl-muted">Vérifie ton micro et le son de l’onglet kMeet avant que la personne arrive.</p><button class="apl-link" onclick="ADM.adTestSon()">Tester le son</button>') + '</div>';
+    var rdv = AD.cardId ? '<div class="apl-rdv"><span>Rendez-vous de l’agenda' + (AD.meetingUrl ? '' : ', sans lien de visio') + '</span>' + (AD.meetingUrl ? '<a class="apl-link" href="' + esc(/^https?:\/\//i.test(AD.meetingUrl) ? AD.meetingUrl : 'https://' + AD.meetingUrl) + '" target="_blank" rel="noopener">Ouvrir la visio</a>' : '') + '</div>' : '';
+    return '<div class="apl">' + warn + navWarn + adBudgetWarn() + draft + stabs +
+      '<div class="apl-grid apl-grid--setup"><div class="apl-card">' + rdv +
         '<h3 class="apl-h3">Préparer l’appel</h3>' +
         '<div class="apl-mode" role="group" aria-label="Type d’appel">' +
           '<button class="' + (AD.mode === 'decouverte' ? 'on' : '') + '" onclick="ADM.adMode(\'decouverte\')">Appel découverte</button>' +
           '<button class="' + (AD.mode === 'entretien' ? 'on' : '') + '" onclick="ADM.adMode(\'entretien\')">Entretien</button></div>' +
-        '<label class="apl-lab" for="apl-pro">Prénom et nom</label><input id="apl-pro" class="apl-in" value="' + esc(AD.prospect) + '" placeholder="Julie Martin" oninput="ADM.adSet(\'prospect\',this.value)">' +
+        '<label class="apl-lab" for="apl-pro">Prénom et nom</label><input id="apl-pro" class="apl-in" value="' + esc(AD.prospect) + '" placeholder="Julie Martin" oninput="ADM.adSet(\'prospect\',this.value)" onchange="ADM.adHisto()">' +
         '<label class="apl-lab" for="apl-str">Structure</label><input id="apl-str" class="apl-in" value="' + esc(AD.structure) + '" placeholder="Association Terre Vive" oninput="ADM.adSet(\'structure\',this.value)">' +
         '<label class="apl-lab" for="apl-ctx">Ce que tu sais déjà (sa demande, son site, comment elle t’a trouvée)</label><textarea id="apl-ctx" class="apl-ta" oninput="ADM.adSet(\'contexte\',this.value)">' + esc(AD.contexte) + '</textarea>' +
         (AD.mode === 'decouverte' ? '<label class="apl-lab" for="apl-prix">Ta phrase pour annoncer le prix (optionnel)</label><input id="apl-prix" class="apl-in" value="' + esc(AD.prixPhrase) + '" placeholder="Pour poser une charte simple et vos gabarits, je suis à 2 500 €." oninput="ADM.adSet(\'prixPhrase\',this.value)">' : '') +
         '<div class="apl-consent">Avant de démarrer, demande son accord : « Ça te va si je transcris notre échange pour ma prise de notes ? Rien n’est enregistré. »</div>' +
         '<div class="apl-row"><button class="btn btn--dark" onclick="ADM.adStart()">Démarrer la transcription</button><button class="apl-link" onclick="ADM.adPrep()">' + (AD.prepBusy ? 'Préparation…' : 'Me préparer') + '</button></div>' +
         '<p class="apl-muted">Chrome te demandera quel onglet partager : choisis celui de kMeet et coche « Partager aussi l’audio de l’onglet ».</p>' +
-      '</div><div class="apl-col">' +
+      '</div><div class="apl-col">' + adHistoHtml() + son +
         (AD.prep ? '<div class="apl-card"><h3 class="apl-h3">Préparation</h3>' + adPrepHtml(AD.prep) + '</div>' : '') +
         adBudgetCard() +
         '<div class="apl-card"><h3 class="apl-h3">Appels enregistrés</h3>' + hist + '</div>' +
@@ -3870,42 +3875,30 @@
   function adPrep() {
     if (AD.prepBusy) return;
     AD.prepBusy = true; renderVisiosBody();
-    jpost('/api/appel/suite', { kind: 'prep', prospect: AD.prospect + (AD.structure ? ', ' + AD.structure : ''), mode: AD.mode, contexte: AD.contexte, trame: adTrame() }).then(function (r) { return r.json(); }).then(function (d) {
+    jpost('/api/appel/suite', { kind: 'prep', prospect: AD.prospect + (AD.structure ? ', ' + AD.structure : ''), mode: AD.mode, contexte: AD.contexte, historique: adHistoText(), trame: adTrame() }).then(function (r) { return r.json(); }).then(function (d) {
       AD.prepBusy = false; if (d && d.prep) AD.prep = d.prep; else toast((d && d.error) || 'Préparation indisponible'); renderVisiosBody();
     }).catch(function () { AD.prepBusy = false; toast('Préparation indisponible'); renderVisiosBody(); });
   }
 
   // ── Capture audio et transcription ──
   function adStart() {
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) { toast('Ce navigateur ne permet pas de capter le son de l’onglet'); return; }
-    var mic, tab;
-    navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } }).then(function (m) {
-      mic = m;
-      return navigator.mediaDevices.getDisplayMedia({ video: true, audio: true, preferCurrentTab: false, selfBrowserSurface: 'exclude', systemAudio: 'exclude' });
-    }).then(function (t) {
-      tab = t;
-      tab.getVideoTracks().forEach(function (v) { v.stop(); });
-      if (!tab.getAudioTracks().length) {
-        mic.getTracks().forEach(function (x) { x.stop(); });
-        toast('Pas de son partagé : coche « Partager aussi l’audio de l’onglet »');
-        return;
-      }
+    var pre = adStreamsLive(AD_RT.pre) ? Promise.resolve(AD_RT.pre) : adCapture();
+    AD_RT.pre = null;
+    pre.then(function (st) {
+      var mic = st[0], tab = st[1];
       AD_RT.streams = [mic, tab];
       AD.phase = 'live'; AD.startedAt = Date.now(); AD.pausedMs = 0; AD.paused = false; AD.cut = false;
-      AD.lines = []; AD.rel = []; AD.deja = []; AD.plusTard = []; AD.faits = {}; AD.etape = 1; AD.alerte = ''; AD.marques = []; AD.bilan = null; AD.point = null; AD.savedId = null; AD.finalSaved = false; AD.suite = {};
+      AD.lines = []; AD.rel = []; AD.deja = []; AD.plusTard = []; AD.faits = {}; AD.etape = 1; AD.alerte = ''; AD.marques = []; AD.bilan = null; AD.point = null; AD.savedId = null; AD.finalSaved = false; AD.suite = {}; AD.statut = ''; AD.suiteCree = false; AD.qnrEnvoye = false;
       adOpen('me', new MediaStream(mic.getAudioTracks()));
       adOpen('them', new MediaStream(tab.getAudioTracks()));
       tab.getAudioTracks()[0].addEventListener('ended', function () { if (AD.phase === 'live') { AD.cut = true; adRefreshBar(); } });
+      adMetersStart(st); adKeysOn();
       AD_RT.tick = setInterval(adTick, 1000);
       AD_RT.draft = setInterval(adDraftLocal, 5000);
       AD_RT.draftSrv = setInterval(adDraftServer, 300000);
       AD_RT.keep = setInterval(function () { Object.keys(AD_RT.socks).forEach(function (k) { var s = AD_RT.socks[k]; if (s && s.readyState === 1) { try { s.send(JSON.stringify({ type: 'KeepAlive' })); } catch (e) {} } }); }, 8000);
       renderVisiosBody();
-    }).catch(function (e) {
-      if (mic) mic.getTracks().forEach(function (x) { x.stop(); });
-      if (tab) tab.getTracks().forEach(function (x) { x.stop(); });
-      toast(e && e.name === 'NotAllowedError' ? 'Partage refusé : autorise le micro et l’onglet de visio' : 'Impossible de démarrer la capture');
-    });
+    }).catch(function (e) { adMetersStop(); toast(adCaptureError(e)); });
   }
   function adOpen(who, stream) {
     jpost('/api/appel/stt-token', {}).then(function (r) { return r.json().then(function (d) { if (!r.ok || !d.token) throw new Error(d.error || 'jeton'); return d.token; }); }).then(function (token) {
@@ -3988,6 +3981,8 @@
     AD_RT.streams.forEach(function (st) { st.getTracks().forEach(function (t) { t.stop(); }); });
     AD_RT.streams = [];
     clearInterval(AD_RT.keep); clearInterval(AD_RT.tick); clearInterval(AD_RT.silence); clearInterval(AD_RT.draft); clearInterval(AD_RT.draftSrv);
+    adMetersStop();
+    if (AD_PIP.win) { try { AD_PIP.win.close(); } catch (e) {} AD_PIP.win = null; }
   }
   function adPause() {
     if (AD.phase !== 'live') return;
@@ -3997,6 +3992,7 @@
   }
   function adTick() {
     var c = el('apl-clock'); if (c) c.textContent = adClock();
+    if (AD_PIP.win) { var pc = AD_PIP.win.document.getElementById('apl-clock'); if (pc) pc.textContent = adClock(); }
     if (Date.now() % 15000 < 1000) adRenderReady();
   }
 
@@ -4037,21 +4033,22 @@
       '<div id="apl-cut"></div>' +
       '<div class="apl-grid">' +
         '<section class="apl-card"><div class="apl-head"><h3 class="apl-h3">Transcription</h3><button class="apl-link" onclick="ADM.adCopyTr()">Copier</button></div>' +
-          '<div class="apl-tr" id="apl-tr" aria-live="polite"></div>' +
+          '<div class="apl-tr" id="apl-tr" aria-live="polite"></div><div id="apl-talk"></div>' +
           '<label class="apl-lab" for="apl-notes">Mes notes, reprises dans le compte rendu</label>' +
           '<textarea id="apl-notes" class="apl-ta" oninput="ADM.adSet(\'notes\',this.value)">' + esc(AD.notes) + '</textarea></section>' +
         '<section class="apl-side"><div class="apl-subs" role="tablist">' + sub('rel', 'Relances', AD.rel.length) + sub('trame', 'Trame', AD.etape + '/' + CALL_STEPS.length) + sub('offres', 'Offres et signaux') + sub('sait', 'Ce qu’on sait') + (AD.prep ? sub('prep', 'Préparation') : '') + '</div>' +
           '<div class="apl-pane" id="apl-pane"></div></section>' +
-      '</div></div>';
+      '</div><p class="apl-keys">Raccourcis : <kbd>M</kbd> marquer · <kbd>Espace</kbd> pause · <kbd>R</kbd> actualiser · <kbd>1</kbd> <kbd>2</kbd> relance posée</p></div>';
   }
   function adBarInner() {
     var titre = (AD.mode === 'entretien' ? 'Entretien' : 'Appel découverte') + (AD.structure ? ' · ' + AD.structure : (AD.prospect ? ' · ' + AD.prospect : ''));
     var etat = AD.cut ? 'Transcription interrompue' : AD.paused ? 'En pause' : 'Transcription active';
-    return '<div class="apl-bar__id"><h2 class="apl-bar__t">' + esc(titre) + '</h2><div class="apl-bar__meta"><span class="apl-rec' + (AD.paused || AD.cut ? ' off' : '') + '"><i></i>' + etat + '</span>' + (AD.prospect ? '<span>' + esc(AD.prospect) + '</span>' : '') + '<span id="apl-clock">' + adClock() + '</span></div></div>' +
-      '<div class="apl-bar__act"><button class="apl-btn-l" onclick="ADM.adMarquer()">Marquer ce moment</button><button class="apl-btn-l" onclick="ADM.adPause()">' + (AD.paused ? 'Reprendre' : 'Pause') + '</button><button class="apl-btn-p" onclick="ADM.adTerminer()">Terminer l’appel</button></div>';
+    return '<div class="apl-bar__id"><h2 class="apl-bar__t">' + esc(titre) + '</h2><div class="apl-bar__meta"><span class="apl-rec' + (AD.paused || AD.cut ? ' off' : '') + '"><i></i>' + etat + '</span>' + (AD.prospect ? '<span>' + esc(AD.prospect) + '</span>' : '') + '<span id="apl-clock">' + adClock() + '</span><span class="apl-vus" title="Niveau du son : toi, puis la visio">' + adVuHtml('me') + adVuHtml('them') + '</span></div></div>' +
+      '<div class="apl-bar__act"><button class="apl-btn-l" onclick="ADM.adPip()" title="Garde les relances au-dessus de kMeet">' + (AD_PIP.win ? 'Fermer la fenêtre flottante' : 'Fenêtre flottante') + '</button><button class="apl-btn-l" onclick="ADM.adMarquer()" title="Raccourci : M">Marquer ce moment</button><button class="apl-btn-l" onclick="ADM.adPause()" title="Raccourci : espace">' + (AD.paused ? 'Reprendre' : 'Pause') + '</button><button class="apl-btn-p" onclick="ADM.adTerminer()">Terminer l’appel</button></div>';
   }
   function adRefreshBar() {
     var b = el('apl-bar'); if (b) b.innerHTML = adBarInner();
+    adPipRender();
     var c = el('apl-cut');
     if (c) c.innerHTML = AD.cut ? '<div class="apl-cutbox" role="alert"><div><b>La transcription s’est interrompue.</b> Tes notes fonctionnent toujours, continue d’y écrire l’essentiel.</div><button class="btn btn--dark btn--sm" onclick="ADM.adReconnect()">Relancer la transcription</button></div>' : '';
   }
@@ -4065,6 +4062,7 @@
     ['me', 'them'].forEach(function (w) { if (AD.interim[w]) html += '<div class="apl-line apl-line--' + w + ' apl-line--int"><div class="apl-who">' + esc(adWho(w)) + '</div><p>' + esc(AD.interim[w]) + '</p></div>'; });
     box.innerHTML = html || '<div class="apl-muted">La transcription s’affichera ici dès que quelqu’un parle.</div>';
     if (near) box.scrollTop = box.scrollHeight;
+    var tk = el('apl-talk'); if (tk) tk.innerHTML = adTalkHtml();
   }
   function adSub(k) { AD.sub = k; renderVisiosBody(); }
   var AD_ESS = [['Besoin', ['veulent', 'probleme']], ['Échéance', ['projet']], ['Décideur', ['decide']], ['Budget', ['budget']]];
@@ -4116,6 +4114,7 @@
     var n1 = el('apl-n-rel'); if (n1) n1.textContent = AD.rel.filter(function (r) { return !r.done; }).length;
     var n2 = el('apl-n-trame'); if (n2) n2.textContent = AD.etape + '/' + CALL_STEPS.length;
     AD.rel.forEach(function (r) { r.fresh = false; });
+    adPipRender();
   }
   function adRelDone(i) { var r = AD.rel[i]; if (r) { r.done = !r.done; adRenderSide(); } }
   function adRelLater(i) { var r = AD.rel[i]; if (!r) return; if (AD.plusTard.indexOf(r.q) < 0) AD.plusTard.push(r.q); AD.rel.splice(i, 1); adRenderSide(); }
@@ -4237,17 +4236,19 @@
       ((b.explication || []).length ? '<details class="apl-sub"><summary>Comment j’explique mon fonctionnement</summary><ol>' + b.explication.map(function (x) { return '<li>« ' + esc(x) + ' »</li>'; }).join('') + '</ol></details>' : '') +
       '<div class="apl-blk__t" style="margin-top:6px">Diagnostic</div><p class="apl-blk__p">' + esc(b.diagnostic || '') + '</p></div>';
     var right = '<div class="apl-blk"><div class="apl-blk__t">Signaux</div>' + sig +
-      '<div class="apl-blk__t" style="margin-top:6px">Et maintenant</div><p class="apl-muted">Coche ce que tu veux garder comme tâches dans ta note d’appel.</p>' + suite +
-      '<div class="apl-row"><button class="apl-pill' + (AD.suite.kind === 'mail' ? ' on' : '') + '" onclick="ADM.adSuite(\'mail\')">Mail de suite</button><button class="apl-pill' + (AD.suite.kind === 'coach' ? ' on' : '') + '" onclick="ADM.adSuite(\'coach\')">Retour de coach</button></div>' + suiteOut + '</div>';
+      '<div class="apl-blk__t" style="margin-top:6px">Et maintenant</div><p class="apl-muted">Coche ce que tu veux transformer en tâches.</p>' + suite +
+      ((b.suite || []).length ? '<div class="apl-row"><button class="btn btn--dark btn--sm" onclick="ADM.adCreerSuite()"' + (AD.suiteCree ? ' disabled' : '') + '>' + (AD.suiteCree ? 'Tâches créées ✓' : 'Créer les tâches et le rappel') + '</button></div>' : '') +
+      '<div class="apl-row"><button class="apl-pill' + (AD.suite.kind === 'mail' ? ' on' : '') + '" onclick="ADM.adSuite(\'mail\')">Mail de suite</button><button class="apl-pill' + (AD.suite.kind === 'devis' ? ' on' : '') + '" onclick="ADM.adSuite(\'devis\')">Brouillon de devis</button><button class="apl-pill' + (AD.suite.kind === 'coach' ? ' on' : '') + '" onclick="ADM.adSuite(\'coach\')">Retour de coach</button></div>' + suiteOut + '</div>';
     var q = (b.questionnaire || []).concat(AD.plusTard.filter(function (x) { return (b.questionnaire || []).indexOf(x) < 0; }));
     var verb = (b.verbatims || []).map(function (v) { return '<div class="apl-mk"><span>' + esc(String(v.categorie || '').replace(/_/g, ' ')) + '</span>« ' + esc(v.citation) + ' »</div>'; }).join('');
     var marques = AD.marques.map(function (m) { return '<div class="apl-mk"><span>' + m.t + '</span>' + esc(m.x) + '</div>'; }).join('');
     var acc = function (t, n, body, open) { return '<details class="apl-acc"' + (open ? ' open' : '') + '><summary><span>' + t + '</span><span class="apl-acc__n">' + n + '</span></summary><div class="apl-acc__b">' + body + '</div></details>'; };
-    var accs = acc('Questionnaire de suite', q.length ? q.length + ' question' + (q.length > 1 ? 's' : '') : 'rien', q.length ? '<ol class="apl-ol">' + q.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ol><button class="apl-link" onclick="ADM.adCopyQ()">Copier le questionnaire</button>' : '<p class="apl-muted">Rien de plus à demander.</p>') +
+    var accs = acc('Questionnaire de suite', q.length ? q.length + ' question' + (q.length > 1 ? 's' : '') : 'rien', q.length ? '<ol class="apl-ol">' + q.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ol><div class="apl-row"><button class="btn btn--dark btn--sm" onclick="ADM.adQnr()"' + (AD.qnrEnvoye ? ' disabled' : '') + '>' + (AD.qnrEnvoye ? 'Questionnaire envoyé ✓' : 'Envoyer par le portail') + '</button><button class="apl-link" onclick="ADM.adCopyQ()">Copier le questionnaire</button></div>' : '<p class="apl-muted">Rien de plus à demander.</p>') +
       acc('Moments marqués et verbatims', (AD.marques.length + (b.verbatims || []).length) || '0', (marques || '<p class="apl-muted">Aucun moment marqué.</p>') + (verb ? '<p class="apl-muted" style="margin-top:8px">Ses mots exacts, utiles pour ton tableau des messages.</p>' + verb : '')) +
       acc('Contexte détaillé', '', '<p>' + esc(b.contexte || '') + '</p>' + (b.besoin ? '<div class="apl-quote">' + esc(b.besoin) + '</div>' : '')) +
       acc('Transcription complète', AD.lines.length + ' répliques', '<p class="apl-muted">Gardée sur le serveur sans limite de durée.</p><div class="apl-tr apl-tr--fin" id="apl-tr"></div>');
-    return '<div class="apl">' + back + bar + tiles + '<div class="apl-two">' + left + right + '</div>' + accs + '</div>';
+    var suivi = '<div class="apl-suivibar"><span class="apl-blk__t">Suivi du prospect</span>' + (AD.finalSaved ? adStatutHtml(AD.savedId, AD.statut) : '<span class="apl-muted">Enregistre le compte rendu pour suivre ce prospect.</span>') + '</div>';
+    return '<div class="apl">' + back + bar + suivi + tiles + '<div class="apl-two">' + left + right + '</div>' + accs + '</div>';
   }
   function adRetryBilan() { AD.bilanBusy = true; renderVisiosBody(); adBilanReq().then(function (d) { AD.bilan = d; AD.bilanBusy = false; renderVisiosBody(); }).catch(function (e) { AD.bilanBusy = false; AD.bilanErr = (e && e.message) || 'Erreur'; renderVisiosBody(); }); }
   function adCopyCr() { adCopy(adCrText(AD.bilan), 'Compte rendu copié'); }
@@ -4263,11 +4264,13 @@
   function adSave() {
     if (!AD.bilan) return;
     var b = AD.bilan, keep = (b.suite || []).filter(function (s, i) { var c = el('apl-s' + i); return !c || c.checked; });
-    jpost('/api/appels', { id: AD.savedId || undefined, prospect: AD.prospect + (AD.structure ? ', ' + AD.structure : ''), mode: AD.mode, minutes: AD.minutes || 0, compteRendu: b, notes: AD.notes, marques: AD.marques.map(function (m) { return '[' + m.t + '] ' + m.x; }), plusTard: AD.plusTard, transcript: adTranscriptCopy() })
+    jpost('/api/appels', { id: AD.savedId || undefined, prospect: AD.prospect + (AD.structure ? ', ' + AD.structure : ''), clientKey: AD.clientKey || undefined, mode: AD.mode, minutes: AD.minutes || 0, compteRendu: b, notes: AD.notes, marques: AD.marques.map(function (m) { return '[' + m.t + '] ' + m.x; }), plusTard: AD.plusTard, transcript: adTranscriptCopy() })
       .then(function (r) { return r.json(); }).then(function (d) {
         if (!d || !d.ok) throw 0;
         var first = !AD.finalSaved;
-        AD.savedId = d.id; AD.finalSaved = true; AD.hist = null; adDraftClear();
+        AD.savedId = d.id; AD.finalSaved = true; AD.hist = null; AD_HOME = null; adDraftClear();
+        if (!AD.statut) AD.statut = 'a_rappeler';
+        var vc = AD.cardId && visCard(AD.cardId); if (vc && vc.appelId !== d.id) { vc.appelId = d.id; visSave(); }
         if (first) {
           var a = callNotesLoad(), dt = new Date(), f = {};
           Object.keys(b.fiche || {}).forEach(function (k) { if (b.fiche[k]) f[k] = b.fiche[k]; });
@@ -4282,7 +4285,9 @@
     api('/api/appels/' + id).then(function (r) { return r.json(); }).then(function (d) {
       if (!d || d.error) { toast((d && d.error) || 'Appel introuvable'); return; }
       AD.phase = 'fin'; AD.bilanBusy = false; AD.bilan = d.compteRendu; AD.savedId = d.id; AD.finalSaved = !!d.compteRendu; AD.bilanErr = d.compteRendu ? '' : 'pas encore préparé'; AD.prospect = d.prospect || ''; AD.structure = ''; AD.mode = d.mode || 'decouverte';
-      AD.minutes = d.minutes || 0; AD.notes = d.notes || ''; AD.plusTard = d.plusTard || []; AD.suite = {};
+      AD.minutes = d.minutes || 0; AD.notes = d.notes || ''; AD.plusTard = d.plusTard || []; AD.suite = {}; AD.suiteCree = false; AD.qnrEnvoye = false;
+      var ix = (AD.hist || []).concat(AD_HOME || []).filter(function (h) { return h.id === d.id; })[0] || {};
+      AD.statut = ix.statut || ''; AD.clientKey = ix.clientKey || ''; AD.cardId = '';
       AD.marques = (d.marques || []).map(function (x) { var m = String(x).match(/^\[([^\]]*)\]\s*(.*)$/); return { i: -1, t: m ? m[1] : '', x: m ? m[2] : x }; });
       AD.lines = String(d.transcript || '').split(/\n\n/).filter(Boolean).map(function (s) { var m = s.match(/^\[([^\]]*)\]\s*([^:]+?)\s:\s([\s\S]*)$/); return m ? { t: m[1], w: m[2] === 'Cindy' ? 'me' : 'them', x: m[3], ms: 0 } : { t: '', w: 'them', x: s, ms: 0 }; });
       renderVisiosBody();
@@ -4295,7 +4300,266 @@
     }
     adReset();
   }
-  function adReset() { AD.phase = 'setup'; AD.bilan = null; AD.point = null; AD.savedId = null; AD.finalSaved = false; AD.lines = []; AD.marques = []; AD.plusTard = []; AD.notes = ''; AD.suite = {}; AD.prep = ''; AD.prospect = ''; AD.structure = ''; AD.contexte = ''; renderVisiosBody(); }
+  function adReset() { AD.phase = 'setup'; AD.bilan = null; AD.point = null; AD.savedId = null; AD.finalSaved = false; AD.lines = []; AD.marques = []; AD.plusTard = []; AD.notes = ''; AD.suite = {}; AD.prep = ''; AD.prospect = ''; AD.structure = ''; AD.contexte = ''; AD.clientKey = ''; AD.cardId = ''; AD.meetingUrl = ''; AD.statut = ''; AD.suiteCree = false; AD.qnrEnvoye = false; renderVisiosBody(); }
+  // ── Appel en direct : son, fenêtre flottante, raccourcis, suite, suivi, vue d'ensemble ──
+  var AD_STATUTS = [['a_rappeler', 'À rappeler'], ['proposition', 'Proposition envoyée'], ['signe', 'Signé'], ['perdu', 'Perdu']];
+  function adNorm(t) { return String(t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim(); }
+
+  function adCapture() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) return Promise.reject(new Error('nav'));
+    var mic;
+    return navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } }).then(function (m) {
+      mic = m;
+      return navigator.mediaDevices.getDisplayMedia({ video: true, audio: true, preferCurrentTab: false, selfBrowserSurface: 'exclude', systemAudio: 'exclude' });
+    }).then(function (tab) {
+      tab.getVideoTracks().forEach(function (v) { v.stop(); });
+      if (!tab.getAudioTracks().length) { mic.getTracks().forEach(function (x) { x.stop(); }); var e = new Error('noaudio'); e.name = 'NoAudio'; throw e; }
+      return [mic, tab];
+    }).catch(function (e) { if (mic && (!e || e.name !== 'NoAudio')) mic.getTracks().forEach(function (x) { x.stop(); }); throw e; });
+  }
+  function adCaptureError(e) {
+    if (e && e.name === 'NoAudio') return 'Pas de son partagé : coche « Partager aussi l’audio de l’onglet »';
+    if (e && e.message === 'nav') return 'Ce navigateur ne permet pas de capter le son de l’onglet';
+    return e && e.name === 'NotAllowedError' ? 'Partage refusé : autorise le micro et l’onglet de visio' : 'Impossible de démarrer la capture';
+  }
+  function adStreamsLive(st) { return st && st.length === 2 && st.every(function (s) { return s.getAudioTracks().some(function (t) { return t.readyState === 'live'; }); }); }
+
+  var AD_VU = { ctx: null, an: {}, t: null, me: 0, them: 0 };
+  function adMetersStart(streams) {
+    adMetersStop();
+    try {
+      var Ctx = window.AudioContext || window.webkitAudioContext; if (!Ctx) return;
+      AD_VU.ctx = new Ctx();
+      ['me', 'them'].forEach(function (w, i) {
+        var src = AD_VU.ctx.createMediaStreamSource(new MediaStream(streams[i].getAudioTracks()));
+        var an = AD_VU.ctx.createAnalyser(); an.fftSize = 512; src.connect(an); AD_VU.an[w] = an;
+      });
+      var buf = new Uint8Array(512);
+      AD_VU.t = setInterval(function () {
+        ['me', 'them'].forEach(function (w) {
+          var an = AD_VU.an[w]; if (!an) return;
+          an.getByteTimeDomainData(buf);
+          var sum = 0; for (var k = 0; k < buf.length; k++) { var v = (buf[k] - 128) / 128; sum += v * v; }
+          AD_VU[w] = Math.min(1, Math.sqrt(sum / buf.length) * 4);
+          if (AD_VU[w] > 0.08) AD_VU['seen_' + w] = true;
+        });
+        adVuPaint(document); if (AD_PIP.win) adVuPaint(AD_PIP.win.document);
+      }, 120);
+    } catch (e) {}
+  }
+  function adMetersStop() { clearInterval(AD_VU.t); AD_VU.t = null; try { AD_VU.ctx && AD_VU.ctx.close(); } catch (e) {} AD_VU.ctx = null; AD_VU.an = {}; AD_VU.me = 0; AD_VU.them = 0; }
+  function adVuHtml(w) { return '<span class="apl-vu" data-w="' + w + '" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>'; }
+  function adVuPaint(doc) {
+    [].forEach.call(doc.querySelectorAll('.apl-vu'), function (el2) {
+      var lv = AD_VU[el2.getAttribute('data-w')] || 0, bars = el2.children;
+      for (var k = 0; k < bars.length; k++) { var on = lv > (k + 0.5) / (bars.length + 1); bars[k].className = on ? 'on' : ''; }
+    });
+    var st = doc.getElementById('apl-snd');
+    if (st) st.innerHTML = adSndState();
+  }
+  function adSndState() {
+    var ok = function (w) { return AD_VU['seen_' + w] ? '<span class="apl-ok">Son capté</span>' : '<span class="apl-muted">En attente de son…</span>'; };
+    return '<div class="apl-snd__r"><span>Ton micro</span>' + adVuHtml('me') + ok('me') + '</div><div class="apl-snd__r"><span>Onglet de visio</span>' + adVuHtml('them') + ok('them') + '</div>';
+  }
+  function adTestSon() {
+    adCapture().then(function (st) {
+      if (AD_RT.pre) AD_RT.pre.forEach(function (s) { s.getTracks().forEach(function (t) { t.stop(); }); });
+      AD_RT.pre = st; AD_VU.seen_me = false; AD_VU.seen_them = false;
+      adMetersStart(st); renderVisiosBody();
+    }).catch(function (e) { toast(adCaptureError(e)); });
+  }
+  function adTestStop() { if (AD_RT.pre) AD_RT.pre.forEach(function (s) { s.getTracks().forEach(function (t) { t.stop(); }); }); AD_RT.pre = null; adMetersStop(); renderVisiosBody(); }
+
+  function adTalk() {
+    var c = { me: 0, them: 0 };
+    AD.lines.forEach(function (l) { c[l.w] += String(l.x).split(/\s+/).length; });
+    var tot = c.me + c.them; if (!tot) return null;
+    return Math.round(c.me / tot * 100);
+  }
+  function adTalkHtml() {
+    var p = adTalk(); if (p == null) return '';
+    var who = adWho('them');
+    return '<div class="apl-talk"><div class="apl-talk__l">Temps de parole · toi ' + p + ' %, ' + esc(who) + ' ' + (100 - p) + ' %' + (p > 55 ? ' · laisse parler' : '') + '</div><div class="apl-talk__b"><span style="width:' + p + '%"></span><span style="width:' + (100 - p) + '%"></span></div></div>';
+  }
+
+  var AD_PIP = { win: null };
+  function adPip() {
+    if (AD_PIP.win) { try { AD_PIP.win.close(); } catch (e) {} AD_PIP.win = null; return; }
+    if (!window.documentPictureInPicture) { toast('La fenêtre flottante demande Chrome ou Edge sur ordinateur'); return; }
+    window.documentPictureInPicture.requestWindow({ width: 340, height: 480 }).then(function (w) {
+      AD_PIP.win = w;
+      [].forEach.call(document.styleSheets, function (sh) {
+        try { var css = [].map.call(sh.cssRules, function (r) { return r.cssText; }).join('\n'); var st = w.document.createElement('style'); st.textContent = css; w.document.head.appendChild(st); }
+        catch (e) { if (sh.href) { var l = w.document.createElement('link'); l.rel = 'stylesheet'; l.href = sh.href; w.document.head.appendChild(l); } }
+      });
+      w.document.body.className = 'apl-pipbody';
+      w.document.body.addEventListener('click', function (ev) {
+        var b = ev.target.closest('[data-act]'); if (!b) return;
+        var a = b.getAttribute('data-act'), i = +b.getAttribute('data-i');
+        if (a === 'mark') adMarquer(); else if (a === 'pause') adPause(); else if (a === 'ask') adAsk(); else if (a === 'done') adRelDone(i); else if (a === 'later') adRelLater(i);
+      });
+      w.addEventListener('pagehide', function () { AD_PIP.win = null; });
+      adPipRender();
+    }).catch(function () { toast('Fenêtre flottante refusée par le navigateur'); });
+  }
+  function adPipRender() {
+    var w = AD_PIP.win; if (!w) return;
+    var lab = { valise: 'Expression floue', perche: 'Perche', trame: 'Trame' };
+    var rel = AD.rel.filter(function (r) { return !r.done; }).slice(0, 2);
+    w.document.body.innerHTML = '<div class="apl-pip">' +
+      '<div class="apl-pip__h"><b id="apl-clock">' + adClock() + '</b><span>' + adVuHtml('me') + adVuHtml('them') + '</span><span class="apl-muted">Essentiel ' + adEssGot() + '/4</span></div>' +
+      (AD.alerte ? '<div class="apl-alert">' + esc(AD.alerte) + '</div>' : '') +
+      (rel.length ? rel.map(function (r) { var i = AD.rel.indexOf(r); return '<div class="apl-pip__r"><span class="apl-chip apl-chip--' + esc(r.type) + '">' + (lab[r.type] || 'Relance') + '</span><q>' + esc(r.q) + '</q><div class="apl-row"><button class="apl-link" data-act="done" data-i="' + i + '">Posée</button><button class="apl-link" data-act="later" data-i="' + i + '">Plus tard</button></div></div>'; }).join('') : '<p class="apl-muted">Rien d’urgent. Laisse parler.</p>') +
+      '<div class="apl-pip__f"><button class="apl-pill" data-act="mark">Marquer</button><button class="apl-pill" data-act="ask">Actualiser</button><button class="apl-pill" data-act="pause">' + (AD.paused ? 'Reprendre' : 'Pause') + '</button></div></div>';
+  }
+
+  var AD_KEYS = false;
+  function adKeysOn() {
+    if (AD_KEYS) return; AD_KEYS = true;
+    document.addEventListener('keydown', function (e) {
+      if (VIEW !== 'visios' || VIS_TAB !== 'direct' || AD.phase !== 'live') return;
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      var t = e.target, tag = t && t.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (t && t.isContentEditable)) return;
+      var k = e.key.toLowerCase();
+      if (k === 'm') { e.preventDefault(); adMarquer(); }
+      else if (k === ' ') { e.preventDefault(); adPause(); }
+      else if (k === 'r') { e.preventDefault(); adAsk(); }
+      else if (k === '1' || k === '2') { e.preventDefault(); adRelDone(+k - 1); }
+    });
+  }
+
+  // ── Lancer depuis un rendez-vous ──
+  function adTexte(h) { var d = document.createElement('div'); d.innerHTML = String(h || '').replace(/<br\s*\/?>/gi, '\n').replace(/<\/(p|div|li)>/gi, '\n'); return (d.textContent || '').replace(/\n{3,}/g, '\n\n').trim(); }
+  function adLancer(cardId) {
+    var c = visCard(cardId); if (!c) return;
+    adReset();
+    var picked = c.clientKey && NAV_CLIENTS.filter(function (k) { return k.key === c.clientKey; })[0];
+    AD.prospect = c.client || (picked ? clientName(picked) : '');
+    AD.clientKey = c.clientKey || '';
+    AD.cardId = c.id; AD.meetingUrl = c.meetingUrl || '';
+    var q = (c.questions || []).filter(function (x) { return x && x.text; }).map(function (x) { return 'Question prévue : ' + x.text; });
+    AD.contexte = [adTexte(c.notes), q.join('\n')].filter(Boolean).join('\n').slice(0, 3000);
+    AD.mode = 'decouverte';
+    VIS_TAB = 'direct'; AD.setupTab = 'nouvel';
+    renderVisiosBody();
+  }
+  function adHistoFor() {
+    var key = AD.clientKey, n = adNorm(AD.prospect);
+    if ((!key && n.length < 3) || !Array.isArray(AD.hist)) return [];
+    return AD.hist.filter(function (h) {
+      if (h.id === AD.savedId || h.brouillon) return false;
+      if (key && h.clientKey === key) return true;
+      var hn = adNorm(h.prospect); return n.length >= 3 && hn && (hn.indexOf(n) > -1 || n.indexOf(hn) > -1);
+    }).slice(0, 3);
+  }
+  function adHistoHtml() {
+    var h = adHistoFor(); if (!h.length) return '';
+    return '<div class="apl-card"><h3 class="apl-h3">Déjà échangé</h3>' + h.map(function (x) {
+      return '<div class="apl-histo"><div class="apl-muted">' + esc(new Date(x.at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })) + (x.statut ? ' · ' + adStatutLabel(x.statut) : '') + '</div><div>' + esc(x.resume || x.titre || '') + '</div><button class="apl-link" onclick="ADM.adOuvrir(\'' + x.id + '\')">Revoir le compte rendu</button></div>';
+    }).join('') + '</div>';
+  }
+  function adHistoText() { return adHistoFor().map(function (x) { return new Date(x.at).toLocaleDateString('fr-FR') + ' : ' + (x.resume || x.titre || ''); }).join('\n'); }
+
+  // ── Suivi du prospect ──
+  function adStatutLabel(s) { for (var i = 0; i < AD_STATUTS.length; i++) if (AD_STATUTS[i][0] === s) return AD_STATUTS[i][1]; return ''; }
+  function adStatutHtml(id, cur) {
+    return '<div class="apl-statuts" role="group" aria-label="Suivi du prospect">' + AD_STATUTS.map(function (s) { return '<button class="' + (cur === s[0] ? 'on' : '') + '" onclick="ADM.adStatut(\'' + id + '\',\'' + s[0] + '\')">' + s[1] + '</button>'; }).join('') + '</div>';
+  }
+  function adStatut(id, st) {
+    if (!id) { toast('Enregistre d’abord le compte rendu'); return; }
+    jpost('/api/appels/' + id, { statut: st }, 'PATCH').then(function (r) { return r.json(); }).then(function (d) {
+      if (!d || !d.ok) throw 0;
+      if (Array.isArray(AD.hist)) AD.hist = AD.hist.map(function (h) { return h.id === id ? d.appel : h; });
+      if (id === AD.savedId) AD.statut = st;
+      AD_HOME = null; toast('Suivi mis à jour'); renderVisiosBody();
+    }).catch(function () { toast('Erreur de mise à jour'); });
+  }
+
+  // ── Après l'appel : tâches, rappel, questionnaire ──
+  function adSuiteChoisie() { var b = AD.bilan || {}; return (b.suite || []).filter(function (s, i) { var c = el('apl-s' + i); return !c || c.checked; }); }
+  function adCreerSuite() {
+    var items = adSuiteChoisie();
+    if (!items.length) { toast('Coche au moins une action'); return; }
+    var nom = AD.prospect || 'Prospect';
+    var rappels = items.filter(function (s) { return s.date && /rappel|rappeler|appel|visio|point|rendez/i.test(s.action); });
+    admConfirm({ title: 'Créer ' + items.length + ' tâche' + (items.length > 1 ? 's' : '') + ' ?', message: items.map(function (s) { return '« ' + s.action + ' »' + (s.date ? ' pour le ' + s.date : ''); }).join(', ') + (rappels.length ? '. Les rappels datés iront aussi dans ton calendrier, à 10 h.' : '.'), yes: 'Créer', no: 'Annuler' }, function () {
+      var jobs = items.map(function (s) {
+        return jpost('/api/admin/tasks', { title: s.action + ' · ' + nom, dueDate: /^\d{4}-\d{2}-\d{2}$/.test(s.date || '') ? s.date : undefined, clientKey: AD.clientKey || undefined, clientName: nom, mode: 'client', estMinutes: 30 }).then(function (r) { return r.ok; });
+      });
+      var cal = rappels.filter(function (s) { return /^\d{4}-\d{2}-\d{2}$/.test(s.date); }).map(function (s) {
+        var st = new Date(s.date + 'T10:00:00');
+        return jpost('/api/calendar/events', { title: nom + ' · ' + s.action, start: st.toISOString(), end: new Date(+st + 30 * 60000).toISOString() }).then(function (r) { return r.ok ? 'ok' : r.status === 400 ? 'noconf' : 'err'; });
+      });
+      Promise.all([Promise.all(jobs), Promise.all(cal)]).then(function (res) {
+        var okT = res[0].filter(Boolean).length, c = res[1];
+        AD.suiteCree = true;
+        toast(okT + ' tâche' + (okT > 1 ? 's' : '') + ' créée' + (okT > 1 ? 's' : '') + (c.length ? (c.indexOf('noconf') > -1 ? ', calendrier iCloud non configuré' : ', rappel ajouté au calendrier') : ''));
+        renderVisiosBody();
+      }).catch(function () { toast('Erreur pendant la création'); });
+    });
+  }
+  function adQuestions() { var b = AD.bilan || {}; var q = (b.questionnaire || []).concat(AD.plusTard); var seen = {}; return q.filter(function (x) { if (!x || seen[x]) return false; seen[x] = 1; return true; }); }
+  function adClientPour() {
+    if (AD.clientKey) return NAV_CLIENTS.filter(function (k) { return k.key === AD.clientKey; })[0] || { key: AD.clientKey };
+    var n = adNorm(AD.prospect); if (n.length < 3) return null;
+    return NAV_CLIENTS.filter(function (c) { var cn = adNorm(clientName(c)); return cn && (cn === n || cn.indexOf(n) > -1 || n.indexOf(cn) > -1); })[0] || null;
+  }
+  function adQnr() {
+    var q = adQuestions(); if (!q.length) { toast('Aucune question à envoyer'); return; }
+    var go = function () {
+      var c = adClientPour();
+      if (!c) { adCopy(q.map(function (x, i) { return (i + 1) + '. ' + x; }).join('\n'), 'Pas encore d’espace client : questionnaire copié, à coller dans ton mail'); return; }
+      var tpl = { name: 'Quelques questions pour ma proposition', description: 'Pour que ma proposition colle au plus près de ton besoin. Quelques mots suffisent.', category: 'projet', steps: [{ title: 'Pour affiner ma proposition', blocks: q.map(function (x) { return { type: 'long', label: x, required: false }; }) }] };
+      admConfirm({ title: 'Envoyer le questionnaire ?', message: q.length + ' question' + (q.length > 1 ? 's' : '') + ' dans l’espace de ' + (clientName(c) || 'ce client') + ', avec le mail « questionnaire prêt ».', yes: 'Envoyer', no: 'Annuler' }, function () {
+        jpost('/api/clients/' + c.key + '/questionnaires', { template: tpl, notify: true }).then(function (r) { if (!r.ok) throw 0; AD.qnrEnvoye = true; toast('Questionnaire envoyé'); renderVisiosBody(); }).catch(function () { toast('Envoi impossible'); });
+      });
+    };
+    if (!NAV_CLIENTS.length) clientsGet().then(function (d) { NAV_CLIENTS = d.clients || []; go(); }).catch(go); else go();
+  }
+
+  // ── Vue d'ensemble ──
+  function adVueHtml() {
+    var h = (AD.hist || []).filter(function (x) { return !x.brouillon && x.titre; });
+    if (!h.length) return '<div class="apl-card"><p class="apl-muted">La vue d’ensemble se remplira après tes premiers appels enregistrés.</p></div>';
+    var mins = h.filter(function (x) { return x.minutes; }).map(function (x) { return x.minutes; });
+    var avg = mins.length ? Math.round(mins.reduce(function (a, b) { return a + b; }, 0) / mins.length) : 0;
+    var signe = h.filter(function (x) { return x.statut === 'signe'; }).length, decide = h.filter(function (x) { return x.statut === 'signe' || x.statut === 'perdu'; }).length;
+    var count = function (arr) { var m = {}; arr.forEach(function (o) { var k = adNorm(o); if (!k) return; m[k] = m[k] || { t: o, n: 0 }; m[k].n++; }); return Object.keys(m).map(function (k) { return m[k]; }).sort(function (a, b) { return b.n - a.n; }).slice(0, 5); };
+    var obj = count([].concat.apply([], h.map(function (x) { return x.objections || []; })));
+    var off = count([].concat.apply([], h.map(function (x) { return x.reco || []; })));
+    var kpi = function (k, v) { return '<div class="apl-kpi"><span>' + k + '</span><b>' + v + '</b></div>'; };
+    var list = function (arr, vide) { return arr.length ? arr.map(function (o) { return '<div class="apl-freq"><span>' + esc(o.t) + '</span><span class="apl-muted">' + o.n + ' fois</span></div>'; }).join('') : '<p class="apl-muted">' + vide + '</p>'; };
+    var suivi = h.slice(0, 15).map(function (x) {
+      return '<div class="apl-suivi"><div><button class="apl-link" onclick="ADM.adOuvrir(\'' + x.id + '\')">' + esc(x.prospect || x.titre) + '</button><div class="apl-muted">' + esc(new Date(x.at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })) + (x.reco && x.reco.length ? ' · ' + esc(x.reco[0]) : '') + '</div></div>' + adStatutHtml(x.id, x.statut) + '</div>';
+    }).join('');
+    return '<div class="apl-kpis">' + kpi('Appels', h.length) + kpi('Durée moyenne', avg ? avg + ' min' : '·') + kpi('Signés', decide ? signe + ' sur ' + decide : signe) + '</div>' +
+      '<div class="apl-two"><div class="apl-blk"><div class="apl-blk__t">Objections fréquentes</div>' + list(obj, 'Pas encore d’objection relevée.') + '</div><div class="apl-blk"><div class="apl-blk__t">Offres recommandées</div>' + list(off, 'Pas encore de recommandation.') + '</div></div>' +
+      '<div class="apl-blk"><div class="apl-blk__t">Suivi des prospects</div>' + suivi + '</div>';
+  }
+
+  // ── Accueil : prospects à relancer ──
+  var AD_HOME = null;
+  function adHomeLoad(cb) {
+    if (AD_HOME) return;
+    AD_HOME = [];
+    api('/api/appels').then(function (r) { return r.json(); }).then(function (d) { AD_HOME = (d && d.appels) || []; if (cb) cb(); }).catch(function () {});
+  }
+  function adHomeItems() {
+    if (!Array.isArray(AD_HOME)) return [];
+    var now = Date.now();
+    return AD_HOME.filter(function (x) { return x.statut === 'proposition' && x.statutAt && now - +new Date(x.statutAt) > 5 * 86400000 && !(x.relanceVue && +new Date(x.relanceVue) > +new Date(x.statutAt) && now - +new Date(x.relanceVue) < 5 * 86400000); }).slice(0, 2).map(function (x) {
+      var j = Math.floor((now - +new Date(x.statutAt)) / 86400000);
+      return { g: 64, tag: ['À relancer', 'info'], action: 'Voir', aller: 'ADM.adAccueilOuvrir(\'' + x.id + '\')', titre: 'Relancer ' + (x.prospect || 'un prospect'), texte: 'Proposition envoyée il y a ' + j + ' jours, sans nouvelle depuis.' };
+    });
+  }
+  function adSetupTab(t) { AD.setupTab = t; renderVisiosBody(); }
+  function adHisto() { if (VIS_TAB === 'direct' && AD.phase === 'setup') renderVisiosBody(); }
+  function adAccueilOuvrir(id) {
+    jpost('/api/appels/' + id, { relanceVue: true }, 'PATCH').catch(function () {});
+    AD_HOME = null; nav('visios'); VIS_TAB = 'direct'; setTimeout(function () { adOuvrir(id); }, 300);
+  }
+
   function visDirectHtml() {
     return AD.phase === 'live' ? adLiveHtml() : AD.phase === 'fin' ? adFinHtml() : adSetupHtml();
   }
@@ -5218,7 +5482,7 @@
       items.push({ t: isNaN(t) ? null : t, passe: c.done || (!isNaN(t) && t < now), nom: name,
         objet: m ? m[1] : (c.category === 'suivi' ? 'Point client' : 'Premier échange'),
         prep: [ns ? ns + ' étape' + (ns > 1 ? 's' : '') + ' de déroulé' : '', nq ? nq + ' question' + (nq > 1 ? 's' : '') + ' à poser' : ''].filter(Boolean).join(' · '),
-        ouvrir: 'ADM.visOpen(\'' + esc(c.id) + '\')', fait: c.done,
+        ouvrir: 'ADM.visOpen(\'' + esc(c.id) + '\')', fait: c.done, appel: 'ADM.adLancer(\'' + esc(c.id) + '\')', appelId: c.appelId || '',
         lien: ml ? (/^https?:\/\//i.test(ml) ? ml : 'https://' + ml) : '' });
     });
     ((VIS_CAL.configured && Array.isArray(VIS_CAL.events)) ? VIS_CAL.events : []).forEach(function (e) {
@@ -5230,6 +5494,7 @@
     var passees = items.filter(function (x) { return x.passe; }).sort(function (a, b) { return (b.t || 0) - (a.t || 0); });
     var actions = function (x) {
       return '<span class="vis-a">' + (x.ouvrir ? '<button class="tps-lien" onclick="' + x.ouvrir + '">' + (x.passe ? 'Compte-rendu' : 'Préparer') + '</button>' : '') +
+        (x.appelId ? '<button class="tps-lien" onclick="ADM.visTab(\'direct\');ADM.adOuvrir(\'' + esc(x.appelId) + '\')">Appel en direct</button>' : x.appel && !x.passe ? '<button class="tps-lien" onclick="' + x.appel + '">Lancer en direct</button>' : '') +
         (x.lien && !x.passe ? '<a class="tps-lien" href="' + esc(x.lien) + '" target="_blank" rel="noopener">Rejoindre</a>' : '') + '</span>';
     };
     var ligne = function (x) {
@@ -5244,7 +5509,8 @@
         '<p class="pj-mnt__p">' + esc(p.nom) + ' · ' + esc(p.objet.charAt(0).toLowerCase() + p.objet.slice(1)) + '</p>' +
         '<p class="pj-mnt__q">' + esc(p.prep || 'Pas encore de déroulé : prépare les questions à poser.') + '</p></div>' +
         '<div class="vis-mnt__a">' + (p.lien ? '<a class="btn vis-mnt__j" href="' + esc(p.lien) + '" target="_blank" rel="noopener">Rejoindre</a>' : '') +
-        (p.ouvrir ? '<button class="btn pj-mnt__b" onclick="' + p.ouvrir + '">Préparer l’appel</button>' : '') + '</div></section>';
+        (p.ouvrir ? '<button class="btn pj-mnt__b" onclick="' + p.ouvrir + '">Préparer l’appel</button>' : '') +
+        (p.appel ? '<button class="btn pj-mnt__b" onclick="' + p.appel + '">Lancer en direct</button>' : '') + '</div></section>';
     }
     var liste = '<section class="vis-t"><div class="vis-th"><h2>À venir</h2><span class="num">' + avenir.length + ' visio' + (avenir.length > 1 ? 's' : '') + '</span></div>' +
       (avenir.length ? avenir.map(ligne).join('') : '<p class="pj-vide" style="margin:12px 0">Aucune visio à venir. Planifie la prochaine avec « Nouvelle visio ».</p>') +
@@ -5873,6 +6139,7 @@
           : ckpDuree(sem.besoin) + ' à caser pour ' + ckpDuree(sem.libre) + ' de place libre.' });
     }
 
+    out = out.concat(adHomeItems());
     return out.sort(function (a, b) { return b.g - a.g; }).slice(0, 5);
   }
 
@@ -5926,6 +6193,7 @@
   }
 
   function renderCockpitBody() {
+    adHomeLoad(function () { if (VIEW === 'cockpit' && CKP.pret) renderCockpitBody(); });
     var auj = ckpAuj(), c = ckpCapaciteDu(auj), cap = ckpCap();
     var d = ckpD(auj);
 
@@ -15474,7 +15742,7 @@
 
   // API publique pour les onclick
   window.ADM = {
-    adStart: adStart, adBudgetSet: adBudgetSet, adPause: adPause, adMarquer: adMarquer, adTerminer: adTerminer, adReconnect: adReconnect, adSub: adSub, adSet: adSet, adMode: adMode, adKb: adKb, adKbSave: adKbSave, adPrep: adPrep, adAsk: adAsk, adRelDone: adRelDone, adRelLater: adRelLater, adLaterDel: adLaterDel, adPrix: adPrix, adPoint: adPoint, adCopyTr: adCopyTr, adCopyCr: adCopyCr, adCopyQ: adCopyQ, adCopySuite: adCopySuite, adSuite: adSuite, adSave: adSave, adOuvrir: adOuvrir, adNouveau: adNouveau, adRetryBilan: adRetryBilan, adDraftReprendre: adDraftReprendre, adDraftCopier: adDraftCopier, adDraftOublier: adDraftOublier,
+    adStart: adStart, adBudgetSet: adBudgetSet, adPause: adPause, adMarquer: adMarquer, adTerminer: adTerminer, adReconnect: adReconnect, adSub: adSub, adSet: adSet, adMode: adMode, adKb: adKb, adKbSave: adKbSave, adPrep: adPrep, adAsk: adAsk, adRelDone: adRelDone, adRelLater: adRelLater, adLaterDel: adLaterDel, adPrix: adPrix, adPoint: adPoint, adCopyTr: adCopyTr, adCopyCr: adCopyCr, adCopyQ: adCopyQ, adCopySuite: adCopySuite, adSuite: adSuite, adSave: adSave, adOuvrir: adOuvrir, adNouveau: adNouveau, adRetryBilan: adRetryBilan, adDraftReprendre: adDraftReprendre, adDraftCopier: adDraftCopier, adDraftOublier: adDraftOublier, adTestSon: adTestSon, adTestStop: adTestStop, adPip: adPip, adLancer: adLancer, adStatut: adStatut, adCreerSuite: adCreerSuite, adQnr: adQnr, adAccueilOuvrir: adAccueilOuvrir, adSetupTab: adSetupTab, adHisto: adHisto,
     nav: nav, login: login, logout: logout, scan: scan, createClient: createClient, copy: copy, editToken: editToken, cliApercu: cliApercu, ckpCorrigerPasse: ckpCorrigerPasse, ffReglages: ffReglages, ffAutoMail: ffAutoMail, accesOuvrir: accesOuvrir, navClientTab: navClientTab,
     msWeek: msWeek, msFilter: msFilter, msToggleCap: msToggleCap, msMode: msMode, msDaySel: msDaySel, msPlace: msPlace, msDone: msDone, msDelete: msDelete, msNoteOpen: msNoteOpen, msPlanOver: msPlanOver, msPlanLeave: msPlanLeave, msPlanDrop: msPlanDrop, msPlanUnplace: msPlanUnplace, msAutoPlan: msAutoPlan, msOrganizeWeek: msOrganizeWeek, msOrganizeDay: msOrganizeDay, msUnplace: msUnplace, msDragStart: msDragStart, msDragEnd: msDragEnd, msDayOver: msDayOver, msDayLeave: msDayLeave, msDrop: msDrop, msSlotOver: msSlotOver, msDropSlot: msDropSlot, msNewBlock: msNewBlock, msSaveBlock: msSaveBlock, msDeleteBlock: msDeleteBlock, msEst: msEst, msEstH: msEstH, msAddTop: msAddTop, msAddDay: msAddDay,
     rvActiver: rvActiver, rvEnregistrer: rvEnregistrer, rvPause: rvPause, rvNouveauLien: rvNouveauLien, rvFiltre: rvFiltre, rvActualiser: rvActualiser, rvCopier: rvCopier, rvRepondre: rvRepondre, rvStatut: rvStatut, rvSupprimer: rvSupprimer,

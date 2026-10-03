@@ -3434,6 +3434,10 @@ function cleanVisioCards(arr: any): AnyObj[] {
     notes: (c && c.notes ? String(c.notes) : '').slice(0, 10000),
     done: c && c.done === true,
     createdAt: (c && c.createdAt ? String(c.createdAt) : nowIso()).slice(0, 30),
+    visioType: (c && c.visioType ? String(c.visioType) : '').slice(0, 20),
+    meetingUrl: (c && c.meetingUrl && /^https?:\/\//i.test(String(c.meetingUrl)) ? String(c.meetingUrl) : '').slice(0, 500),
+    icalPushed: !!(c && c.icalPushed),
+    appelId: (c && c.appelId && /^[a-f0-9]{24}$/.test(String(c.appelId)) ? String(c.appelId) : ''),
   })).slice(0, 300);
 }
 function cleanVisioTemplates(arr: any): AnyObj[] {
