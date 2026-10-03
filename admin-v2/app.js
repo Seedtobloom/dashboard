@@ -3769,36 +3769,36 @@
     var manque = [];
     if (AD.cfg && !cfg.transcription) manque.push('la clé Deepgram (transcription)');
     if (AD.cfg && !cfg.assistant) manque.push('la clé Anthropic (relances et compte rendu)');
-    var warn = manque.length ? '<div class="ad-warn">Il manque ' + manque.join(' et ') + ' dans les secrets du serveur. L’outil fonctionnera dès qu’elles seront ajoutées.</div>' : '';
+    var warn = manque.length ? '<div class="apl-warn">Il manque ' + manque.join(' et ') + ' dans les secrets du serveur. L’outil fonctionnera dès qu’elles seront ajoutées.</div>' : '';
     var nav = /Chrome|Edg\//.test(navigator.userAgent) && !/OPR\//.test(navigator.userAgent);
-    var navWarn = nav ? '' : '<div class="ad-warn">La capture du son de l’onglet de visio ne marche que dans Chrome ou Edge. Ouvre l’admin et kMeet dans Chrome.</div>';
-    var hist = AD.hist === null ? '<div class="ad-muted">Chargement…</div>' : (AD.hist.length ? AD.hist.slice(0, 12).map(function (h) {
+    var navWarn = nav ? '' : '<div class="apl-warn">La capture du son de l’onglet de visio ne marche que dans Chrome ou Edge. Ouvre l’admin et kMeet dans Chrome.</div>';
+    var hist = AD.hist === null ? '<div class="apl-muted">Chargement…</div>' : (AD.hist.length ? AD.hist.slice(0, 12).map(function (h) {
       var d = new Date(h.at);
-      return '<div class="ad-hist"><button class="ad-link" onclick="ADM.adOuvrir(\'' + h.id + '\')">' + esc(h.titre || h.prospect || 'Appel') + (h.brouillon ? ' <span class="ad-muted">(sans compte rendu)</span>' : '') + '</button><span class="ad-muted">' + esc(d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })) + '</span></div>';
-    }).join('') : '<div class="ad-muted">Aucun appel enregistré pour le moment.</div>');
+      return '<div class="apl-hist"><button class="apl-link" onclick="ADM.adOuvrir(\'' + h.id + '\')">' + esc(h.titre || h.prospect || 'Appel') + (h.brouillon ? ' <span class="apl-muted">(sans compte rendu)</span>' : '') + '</button><span class="apl-muted">' + esc(d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })) + '</span></div>';
+    }).join('') : '<div class="apl-muted">Aucun appel enregistré pour le moment.</div>');
     if (AD.hist === null) api('/api/appels').then(function (r) { return r.json(); }).then(function (d) { AD.hist = (d && d.appels) || []; if (VIS_TAB === 'direct' && AD.phase === 'setup') renderVisiosBody(); }).catch(function () { AD.hist = []; });
-    var kb = AD.kbOpen ? '<div class="ad-card"><h3 class="ad-h3">Base de connaissance</h3><p class="ad-muted">Ce que l’assistant sait de toi : offres, prix, façon de travailler, red flags. Laisse vide pour garder le texte par défaut.</p>' +
-      '<textarea id="ad-kb" class="ad-ta" style="min-height:280px" placeholder="' + esc(AD.kbDefaut) + '">' + esc(AD.kb || '') + '</textarea>' +
-      '<div class="ad-row"><button class="btn btn--dark btn--sm" onclick="ADM.adKbSave()">Enregistrer</button><button class="ad-link" onclick="ADM.adKb(false)">Fermer</button></div></div>' : '';
+    var kb = AD.kbOpen ? '<div class="apl-card"><h3 class="apl-h3">Base de connaissance</h3><p class="apl-muted">Ce que l’assistant sait de toi : offres, prix, façon de travailler, red flags. Laisse vide pour garder le texte par défaut.</p>' +
+      '<textarea id="apl-kb" class="apl-ta" style="min-height:280px" placeholder="' + esc(AD.kbDefaut) + '">' + esc(AD.kb || '') + '</textarea>' +
+      '<div class="apl-row"><button class="btn btn--dark btn--sm" onclick="ADM.adKbSave()">Enregistrer</button><button class="apl-link" onclick="ADM.adKb(false)">Fermer</button></div></div>' : '';
     var dr = adDraftGet();
-    var draft = dr && dr.lines && dr.lines.length ? '<div class="ad-draft"><div><b>Un appel n’a pas été enregistré.</b> ' + esc(dr.prospect || 'Sans nom') + ', ' + esc(new Date(dr.at).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })) + ', ' + dr.lines.length + ' répliques. Sa transcription est en sécurité sur cet appareil.</div><div class="ad-row"><button class="btn btn--dark btn--sm" onclick="ADM.adDraftReprendre()">Préparer son compte rendu</button><button class="ad-link" onclick="ADM.adDraftCopier()">Copier la transcription</button><button class="ad-link" onclick="ADM.adDraftOublier()">Effacer</button></div></div>' : '';
-    return '<div class="ad">' + warn + navWarn + draft +
-      '<div class="ad-grid ad-grid--setup"><div class="ad-card">' +
-        '<h3 class="ad-h3">Préparer l’appel</h3>' +
-        '<div class="ad-mode" role="group" aria-label="Type d’appel">' +
+    var draft = dr && dr.lines && dr.lines.length ? '<div class="apl-draft"><div><b>Un appel n’a pas été enregistré.</b> ' + esc(dr.prospect || 'Sans nom') + ', ' + esc(new Date(dr.at).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })) + ', ' + dr.lines.length + ' répliques. Sa transcription est en sécurité sur cet appareil.</div><div class="apl-row"><button class="btn btn--dark btn--sm" onclick="ADM.adDraftReprendre()">Préparer son compte rendu</button><button class="apl-link" onclick="ADM.adDraftCopier()">Copier la transcription</button><button class="apl-link" onclick="ADM.adDraftOublier()">Effacer</button></div></div>' : '';
+    return '<div class="apl">' + warn + navWarn + draft +
+      '<div class="apl-grid apl-grid--setup"><div class="apl-card">' +
+        '<h3 class="apl-h3">Préparer l’appel</h3>' +
+        '<div class="apl-mode" role="group" aria-label="Type d’appel">' +
           '<button class="' + (AD.mode === 'decouverte' ? 'on' : '') + '" onclick="ADM.adMode(\'decouverte\')">Appel découverte</button>' +
           '<button class="' + (AD.mode === 'entretien' ? 'on' : '') + '" onclick="ADM.adMode(\'entretien\')">Entretien</button></div>' +
-        '<label class="ad-lab" for="ad-pro">Prénom et nom</label><input id="ad-pro" class="ad-in" value="' + esc(AD.prospect) + '" placeholder="Julie Martin" oninput="ADM.adSet(\'prospect\',this.value)">' +
-        '<label class="ad-lab" for="ad-str">Structure</label><input id="ad-str" class="ad-in" value="' + esc(AD.structure) + '" placeholder="Association Terre Vive" oninput="ADM.adSet(\'structure\',this.value)">' +
-        '<label class="ad-lab" for="ad-ctx">Ce que tu sais déjà (sa demande, son site, comment elle t’a trouvée)</label><textarea id="ad-ctx" class="ad-ta" oninput="ADM.adSet(\'contexte\',this.value)">' + esc(AD.contexte) + '</textarea>' +
-        (AD.mode === 'decouverte' ? '<label class="ad-lab" for="ad-prix">Ta phrase pour annoncer le prix (optionnel)</label><input id="ad-prix" class="ad-in" value="' + esc(AD.prixPhrase) + '" placeholder="Pour poser une charte simple et vos gabarits, je suis à 2 500 €." oninput="ADM.adSet(\'prixPhrase\',this.value)">' : '') +
-        '<div class="ad-consent">Avant de démarrer, demande son accord : « Ça te va si je transcris notre échange pour ma prise de notes ? Rien n’est enregistré. »</div>' +
-        '<div class="ad-row"><button class="btn btn--dark" onclick="ADM.adStart()">Démarrer la transcription</button><button class="ad-link" onclick="ADM.adPrep()">' + (AD.prepBusy ? 'Préparation…' : 'Me préparer') + '</button></div>' +
-        '<p class="ad-muted">Chrome te demandera quel onglet partager : choisis celui de kMeet et coche « Partager aussi l’audio de l’onglet ».</p>' +
-      '</div><div class="ad-col">' +
-        (AD.prep ? '<div class="ad-card"><h3 class="ad-h3">Préparation</h3><div class="ad-pre">' + esc(AD.prep) + '</div></div>' : '') +
-        '<div class="ad-card"><h3 class="ad-h3">Appels enregistrés</h3>' + hist + '</div>' +
-        (AD.kbOpen ? '' : '<div class="ad-card"><h3 class="ad-h3">Base de connaissance</h3><p class="ad-muted">Tes offres, ta façon de travailler et tes red flags, utilisés pour les relances et le compte rendu.</p><button class="ad-link" onclick="ADM.adKb(true)">Modifier</button></div>') +
+        '<label class="apl-lab" for="apl-pro">Prénom et nom</label><input id="apl-pro" class="apl-in" value="' + esc(AD.prospect) + '" placeholder="Julie Martin" oninput="ADM.adSet(\'prospect\',this.value)">' +
+        '<label class="apl-lab" for="apl-str">Structure</label><input id="apl-str" class="apl-in" value="' + esc(AD.structure) + '" placeholder="Association Terre Vive" oninput="ADM.adSet(\'structure\',this.value)">' +
+        '<label class="apl-lab" for="apl-ctx">Ce que tu sais déjà (sa demande, son site, comment elle t’a trouvée)</label><textarea id="apl-ctx" class="apl-ta" oninput="ADM.adSet(\'contexte\',this.value)">' + esc(AD.contexte) + '</textarea>' +
+        (AD.mode === 'decouverte' ? '<label class="apl-lab" for="apl-prix">Ta phrase pour annoncer le prix (optionnel)</label><input id="apl-prix" class="apl-in" value="' + esc(AD.prixPhrase) + '" placeholder="Pour poser une charte simple et vos gabarits, je suis à 2 500 €." oninput="ADM.adSet(\'prixPhrase\',this.value)">' : '') +
+        '<div class="apl-consent">Avant de démarrer, demande son accord : « Ça te va si je transcris notre échange pour ma prise de notes ? Rien n’est enregistré. »</div>' +
+        '<div class="apl-row"><button class="btn btn--dark" onclick="ADM.adStart()">Démarrer la transcription</button><button class="apl-link" onclick="ADM.adPrep()">' + (AD.prepBusy ? 'Préparation…' : 'Me préparer') + '</button></div>' +
+        '<p class="apl-muted">Chrome te demandera quel onglet partager : choisis celui de kMeet et coche « Partager aussi l’audio de l’onglet ».</p>' +
+      '</div><div class="apl-col">' +
+        (AD.prep ? '<div class="apl-card"><h3 class="apl-h3">Préparation</h3><div class="apl-pre">' + esc(AD.prep) + '</div></div>' : '') +
+        '<div class="apl-card"><h3 class="apl-h3">Appels enregistrés</h3>' + hist + '</div>' +
+        (AD.kbOpen ? '' : '<div class="apl-card"><h3 class="apl-h3">Base de connaissance</h3><p class="apl-muted">Tes offres, ta façon de travailler et tes red flags, utilisés pour les relances et le compte rendu.</p><button class="apl-link" onclick="ADM.adKb(true)">Modifier</button></div>') +
       '</div></div>' + kb + '</div>';
   }
   function adSet(k, v) { AD[k] = v; if (k === 'prixPhrase') { try { localStorage.setItem('stb_ad_prix', v); } catch (e) {} } }
@@ -3811,7 +3811,7 @@
     renderVisiosBody();
   }
   function adKbSave() {
-    var v = (el('ad-kb') || {}).value || '';
+    var v = (el('apl-kb') || {}).value || '';
     jpost('/api/appel/kb', { kb: v }, 'PUT').then(function (r) { if (!r.ok) throw 0; AD.kb = v; toast('Base de connaissance enregistrée'); }).catch(function () { toast('Erreur d’enregistrement'); });
   }
   function adPrep() {
@@ -3915,7 +3915,7 @@
     adRefreshBar();
   }
   function adTick() {
-    var c = el('ad-clock'); if (c) c.textContent = adClock();
+    var c = el('apl-clock'); if (c) c.textContent = adClock();
     if (Date.now() % 15000 < 1000) adRenderReady();
   }
 
@@ -3927,7 +3927,7 @@
     var lastThem = AD.lines.filter(function (l) { return l.w === 'them'; }).slice(-1)[0];
     if (!force && (!lastThem || lastThem.ms < AD.lastAsk)) return;
     AD.busy = true; AD.lastAsk = Date.now(); adRefreshHint();
-    var notes = (el('ad-notes') || {}).value; if (typeof notes === 'string') AD.notes = notes;
+    var notes = (el('apl-notes') || {}).value; if (typeof notes === 'string') AD.notes = notes;
     jpost('/api/appel/relances', {
       mode: AD.mode, prospect: AD.prospect + (AD.structure ? ', ' + AD.structure : ''), minutes: adMinutes(),
       trame: adTrame(), faits: AD.faits, deja: AD.deja, plusTard: AD.plusTard, notes: (AD.contexte ? 'Avant l’appel : ' + AD.contexte + '\n' : '') + AD.notes,
@@ -3950,39 +3950,39 @@
 
   // ── Écran pendant l'appel ──
   function adLiveHtml() {
-    var sub = function (k, t, n) { return '<button role="tab" aria-selected="' + (AD.sub === k) + '" class="' + (AD.sub === k ? 'on' : '') + '" onclick="ADM.adSub(\'' + k + '\')">' + t + (n != null ? ' <span class="ad-count" id="ad-n-' + k + '">' + n + '</span>' : '') + '</button>'; };
-    return '<div class="ad">' +
-      '<section class="ad-bar" id="ad-bar">' + adBarInner() + '</section>' +
-      '<div id="ad-cut"></div>' +
-      '<div class="ad-grid">' +
-        '<section class="ad-card"><div class="ad-head"><h3 class="ad-h3">Transcription</h3><button class="ad-link" onclick="ADM.adCopyTr()">Copier</button></div>' +
-          '<div class="ad-tr" id="ad-tr" aria-live="polite"></div>' +
-          '<label class="ad-lab" for="ad-notes">Mes notes, reprises dans le compte rendu</label>' +
-          '<textarea id="ad-notes" class="ad-ta" oninput="ADM.adSet(\'notes\',this.value)">' + esc(AD.notes) + '</textarea></section>' +
-        '<section class="ad-side"><div class="ad-subs" role="tablist">' + sub('rel', 'Relances', AD.rel.length) + sub('trame', 'Trame', AD.etape + '/' + CALL_STEPS.length) + sub('offres', 'Offres et signaux') + sub('sait', 'Ce qu’on sait') + (AD.prep ? sub('prep', 'Préparation') : '') + '</div>' +
-          '<div class="ad-pane" id="ad-pane"></div></section>' +
+    var sub = function (k, t, n) { return '<button role="tab" aria-selected="' + (AD.sub === k) + '" class="' + (AD.sub === k ? 'on' : '') + '" onclick="ADM.adSub(\'' + k + '\')">' + t + (n != null ? ' <span class="apl-count" id="apl-n-' + k + '">' + n + '</span>' : '') + '</button>'; };
+    return '<div class="apl">' +
+      '<section class="apl-bar" id="apl-bar">' + adBarInner() + '</section>' +
+      '<div id="apl-cut"></div>' +
+      '<div class="apl-grid">' +
+        '<section class="apl-card"><div class="apl-head"><h3 class="apl-h3">Transcription</h3><button class="apl-link" onclick="ADM.adCopyTr()">Copier</button></div>' +
+          '<div class="apl-tr" id="apl-tr" aria-live="polite"></div>' +
+          '<label class="apl-lab" for="apl-notes">Mes notes, reprises dans le compte rendu</label>' +
+          '<textarea id="apl-notes" class="apl-ta" oninput="ADM.adSet(\'notes\',this.value)">' + esc(AD.notes) + '</textarea></section>' +
+        '<section class="apl-side"><div class="apl-subs" role="tablist">' + sub('rel', 'Relances', AD.rel.length) + sub('trame', 'Trame', AD.etape + '/' + CALL_STEPS.length) + sub('offres', 'Offres et signaux') + sub('sait', 'Ce qu’on sait') + (AD.prep ? sub('prep', 'Préparation') : '') + '</div>' +
+          '<div class="apl-pane" id="apl-pane"></div></section>' +
       '</div></div>';
   }
   function adBarInner() {
     var titre = (AD.mode === 'entretien' ? 'Entretien' : 'Appel découverte') + (AD.structure ? ' · ' + AD.structure : (AD.prospect ? ' · ' + AD.prospect : ''));
     var etat = AD.cut ? 'Transcription interrompue' : AD.paused ? 'En pause' : 'Transcription active';
-    return '<div class="ad-bar__id"><h2 class="ad-bar__t">' + esc(titre) + '</h2><div class="ad-bar__meta"><span class="ad-rec' + (AD.paused || AD.cut ? ' off' : '') + '"><i></i>' + etat + '</span>' + (AD.prospect ? '<span>' + esc(AD.prospect) + '</span>' : '') + '<span id="ad-clock">' + adClock() + '</span></div></div>' +
-      '<div class="ad-bar__act"><button class="ad-btn-l" onclick="ADM.adMarquer()">Marquer ce moment</button><button class="ad-btn-l" onclick="ADM.adPause()">' + (AD.paused ? 'Reprendre' : 'Pause') + '</button><button class="ad-btn-p" onclick="ADM.adTerminer()">Terminer l’appel</button></div>';
+    return '<div class="apl-bar__id"><h2 class="apl-bar__t">' + esc(titre) + '</h2><div class="apl-bar__meta"><span class="apl-rec' + (AD.paused || AD.cut ? ' off' : '') + '"><i></i>' + etat + '</span>' + (AD.prospect ? '<span>' + esc(AD.prospect) + '</span>' : '') + '<span id="apl-clock">' + adClock() + '</span></div></div>' +
+      '<div class="apl-bar__act"><button class="apl-btn-l" onclick="ADM.adMarquer()">Marquer ce moment</button><button class="apl-btn-l" onclick="ADM.adPause()">' + (AD.paused ? 'Reprendre' : 'Pause') + '</button><button class="apl-btn-p" onclick="ADM.adTerminer()">Terminer l’appel</button></div>';
   }
   function adRefreshBar() {
-    var b = el('ad-bar'); if (b) b.innerHTML = adBarInner();
-    var c = el('ad-cut');
-    if (c) c.innerHTML = AD.cut ? '<div class="ad-cutbox" role="alert"><div><b>La transcription s’est interrompue.</b> Tes notes fonctionnent toujours, continue d’y écrire l’essentiel.</div><button class="btn btn--dark btn--sm" onclick="ADM.adReconnect()">Relancer la transcription</button></div>' : '';
+    var b = el('apl-bar'); if (b) b.innerHTML = adBarInner();
+    var c = el('apl-cut');
+    if (c) c.innerHTML = AD.cut ? '<div class="apl-cutbox" role="alert"><div><b>La transcription s’est interrompue.</b> Tes notes fonctionnent toujours, continue d’y écrire l’essentiel.</div><button class="btn btn--dark btn--sm" onclick="ADM.adReconnect()">Relancer la transcription</button></div>' : '';
   }
   function adRenderTranscript() {
-    var box = el('ad-tr'); if (!box) return;
+    var box = el('apl-tr'); if (!box) return;
     var near = box.scrollHeight - box.scrollTop - box.clientHeight < 60;
     var marked = AD.marques.map(function (m) { return m.i; });
     var html = AD.lines.map(function (l, i) {
-      return '<div class="ad-line ad-line--' + l.w + (marked.indexOf(i) > -1 ? ' ad-line--mk' : '') + '"><div class="ad-who">' + esc(adWho(l.w)) + '<span>' + l.t + '</span></div><p>' + esc(l.x) + '</p></div>';
+      return '<div class="apl-line apl-line--' + l.w + (marked.indexOf(i) > -1 ? ' apl-line--mk' : '') + '"><div class="apl-who">' + esc(adWho(l.w)) + '<span>' + l.t + '</span></div><p>' + esc(l.x) + '</p></div>';
     }).join('');
-    ['me', 'them'].forEach(function (w) { if (AD.interim[w]) html += '<div class="ad-line ad-line--' + w + ' ad-line--int"><div class="ad-who">' + esc(adWho(w)) + '</div><p>' + esc(AD.interim[w]) + '</p></div>'; });
-    box.innerHTML = html || '<div class="ad-muted">La transcription s’affichera ici dès que quelqu’un parle.</div>';
+    ['me', 'them'].forEach(function (w) { if (AD.interim[w]) html += '<div class="apl-line apl-line--' + w + ' apl-line--int"><div class="apl-who">' + esc(adWho(w)) + '</div><p>' + esc(AD.interim[w]) + '</p></div>'; });
+    box.innerHTML = html || '<div class="apl-muted">La transcription s’affichera ici dès que quelqu’un parle.</div>';
     if (near) box.scrollTop = box.scrollHeight;
   }
   function adSub(k) { AD.sub = k; renderVisiosBody(); }
@@ -3991,49 +3991,49 @@
   function adReadyHtml() {
     var got = adEssGot(), m = adMinutes();
     var msg = got >= 3 ? 'Tu as de quoi faire ta synthèse. Garde une seule relance sur ce qui manque, le reste peut attendre le questionnaire.' : m >= 35 ? 'Le temps avance. Va à l’essentiel, le reste ira dans le questionnaire.' : '';
-    return '<div class="ad-ready"><div class="ad-ready__t"><b>L’essentiel pour décider</b><span>' + got + ' sur 4 · ' + m + ' min sur 45</span></div><div class="ad-chips">' +
-      AD_ESS.map(function (e) { var ok = e[1].some(function (k) { return AD.faits[k]; }); return '<span class="' + (ok ? 'ok' : '') + '">' + e[0] + '</span>'; }).join('') + '</div>' + (msg ? '<div class="ad-ready__m">' + msg + '</div>' : '') + '</div>';
+    return '<div class="apl-ready"><div class="apl-ready__t"><b>L’essentiel pour décider</b><span>' + got + ' sur 4 · ' + m + ' min sur 45</span></div><div class="apl-chips">' +
+      AD_ESS.map(function (e) { var ok = e[1].some(function (k) { return AD.faits[k]; }); return '<span class="' + (ok ? 'ok' : '') + '">' + e[0] + '</span>'; }).join('') + '</div>' + (msg ? '<div class="apl-ready__m">' + msg + '</div>' : '') + '</div>';
   }
-  function adRenderReady() { var r = el('ad-ready'); if (r) r.innerHTML = adReadyHtml(); }
-  function adRefreshHint() { var h = el('ad-hint'); if (h) h.textContent = AD.busy ? 'Je réfléchis…' : 'deux relances maximum, la plus utile en haut'; }
+  function adRenderReady() { var r = el('apl-ready'); if (r) r.innerHTML = adReadyHtml(); }
+  function adRefreshHint() { var h = el('apl-hint'); if (h) h.textContent = AD.busy ? 'Je réfléchis…' : 'deux relances maximum, la plus utile en haut'; }
   function adRelHtml() {
     var lab = { valise: 'Expression floue', perche: 'Perche', trame: 'Trame' };
     var cards = AD.rel.map(function (r, i) {
-      return '<article class="ad-rel' + (r.fresh && i === 0 ? ' ad-rel--fresh' : '') + (r.done ? ' ad-rel--done' : '') + '"><div class="ad-rel__top"><span class="ad-chip ad-chip--' + esc(r.type) + '">' + (lab[r.type] || 'Relance') + '</span><span><button class="ad-link" onclick="ADM.adRelLater(' + i + ')">Plus tard</button> <button class="ad-link" onclick="ADM.adRelDone(' + i + ')">' + (r.done ? 'Remettre' : 'Posée') + '</button></span></div><q>' + esc(r.q) + '</q><span class="ad-muted">' + esc(r.why || '') + '</span></article>';
-    }).join('') || '<p class="ad-muted">Rien d’urgent à relancer. Laisse parler ton interlocuteur.</p>';
-    var prix = AD.mode === 'decouverte' ? '<div class="ad-prix"><div class="ad-rel__top"><span class="ad-chip ad-chip--trame">Moment du prix</span><button class="ad-link" onclick="ADM.adPrix()">J’annonce le prix</button></div>' + (AD.prixPhrase ? '<q>' + esc(AD.prixPhrase) + '</q>' : '<span class="ad-muted">Annonce ton prix en une phrase, calmement, puis laisse le silence travailler.</span>') + '<div id="ad-sil"></div></div>' : '';
-    var alerte = AD.alerte ? '<div class="ad-alert">' + esc(AD.alerte) + '</div>' : '';
-    var later = '<details class="ad-later"' + (AD.plusTard.length ? '' : '') + '><summary><span>Pour plus tard, dans le questionnaire</span><span class="ad-count">' + AD.plusTard.length + '</span></summary><p class="ad-muted">Les questions utiles mais pas urgentes. Tu les envoies après l’appel si vous continuez ensemble.</p><ul>' +
-      AD.plusTard.map(function (q, i) { return '<li><span>' + esc(q) + '</span><button class="ad-link" onclick="ADM.adLaterDel(' + i + ')">Retirer</button></li>'; }).join('') + '</ul></details>';
-    return alerte + '<div id="ad-ready">' + adReadyHtml() + '</div>' + prix + '<div class="ad-hint"><b>à dire</b> <span id="ad-hint">' + (AD.busy ? 'Je réfléchis…' : 'deux relances maximum, la plus utile en haut') + '</span> <button class="ad-link" onclick="ADM.adAsk()">Actualiser</button></div>' + cards + later;
+      return '<article class="apl-rel' + (r.fresh && i === 0 ? ' apl-rel--fresh' : '') + (r.done ? ' apl-rel--done' : '') + '"><div class="apl-rel__top"><span class="apl-chip apl-chip--' + esc(r.type) + '">' + (lab[r.type] || 'Relance') + '</span><span><button class="apl-link" onclick="ADM.adRelLater(' + i + ')">Plus tard</button> <button class="apl-link" onclick="ADM.adRelDone(' + i + ')">' + (r.done ? 'Remettre' : 'Posée') + '</button></span></div><q>' + esc(r.q) + '</q><span class="apl-muted">' + esc(r.why || '') + '</span></article>';
+    }).join('') || '<p class="apl-muted">Rien d’urgent à relancer. Laisse parler ton interlocuteur.</p>';
+    var prix = AD.mode === 'decouverte' ? '<div class="apl-prix"><div class="apl-rel__top"><span class="apl-chip apl-chip--trame">Moment du prix</span><button class="apl-link" onclick="ADM.adPrix()">J’annonce le prix</button></div>' + (AD.prixPhrase ? '<q>' + esc(AD.prixPhrase) + '</q>' : '<span class="apl-muted">Annonce ton prix en une phrase, calmement, puis laisse le silence travailler.</span>') + '<div id="apl-sil"></div></div>' : '';
+    var alerte = AD.alerte ? '<div class="apl-alert">' + esc(AD.alerte) + '</div>' : '';
+    var later = '<details class="apl-later"' + (AD.plusTard.length ? '' : '') + '><summary><span>Pour plus tard, dans le questionnaire</span><span class="apl-count">' + AD.plusTard.length + '</span></summary><p class="apl-muted">Les questions utiles mais pas urgentes. Tu les envoies après l’appel si vous continuez ensemble.</p><ul>' +
+      AD.plusTard.map(function (q, i) { return '<li><span>' + esc(q) + '</span><button class="apl-link" onclick="ADM.adLaterDel(' + i + ')">Retirer</button></li>'; }).join('') + '</ul></details>';
+    return alerte + '<div id="apl-ready">' + adReadyHtml() + '</div>' + prix + '<div class="apl-hint"><b>à dire</b> <span id="apl-hint">' + (AD.busy ? 'Je réfléchis…' : 'deux relances maximum, la plus utile en haut') + '</span> <button class="apl-link" onclick="ADM.adAsk()">Actualiser</button></div>' + cards + later;
   }
   function adTrameHtml() {
-    return '<ol class="ad-steps">' + CALL_STEPS.map(function (s, i) {
+    return '<ol class="apl-steps">' + CALL_STEPS.map(function (s, i) {
       var n = i + 1, cls = n < AD.etape ? 'done' : n === AD.etape ? 'now' : '';
-      return '<li class="' + cls + '"><span class="ad-num">' + n + '</span><div><div class="ad-step__t">' + esc(s.t) + '</div>' + (n === AD.etape ? '<div class="ad-step__q">' + esc(s.q) + '</div>' + (s.r || []).map(function (x) { return '<div class="ad-muted">› ' + esc(x) + '</div>'; }).join('') : '') + '</div></li>';
+      return '<li class="' + cls + '"><span class="apl-num">' + n + '</span><div><div class="apl-step__t">' + esc(s.t) + '</div>' + (n === AD.etape ? '<div class="apl-step__q">' + esc(s.q) + '</div>' + (s.r || []).map(function (x) { return '<div class="apl-muted">› ' + esc(x) + '</div>'; }).join('') : '') + '</div></li>';
     }).join('') + '</ol>';
   }
   function adSaitHtml() {
-    return '<div class="ad-facts">' + CALL_FIELDS.map(function (f) { var v = AD.faits[f[0]]; return '<div class="ad-fact"><div class="ad-muted">' + esc(f[1]) + '</div><div class="ad-fact__v' + (v ? '' : ' empty') + '">' + (v ? esc(v) : 'Pas encore abordé') + '</div></div>'; }).join('') + '</div>';
+    return '<div class="apl-facts">' + CALL_FIELDS.map(function (f) { var v = AD.faits[f[0]]; return '<div class="apl-fact"><div class="apl-muted">' + esc(f[1]) + '</div><div class="apl-fact__v' + (v ? '' : ' empty') + '">' + (v ? esc(v) : 'Pas encore abordé') + '</div></div>'; }).join('') + '</div>';
   }
   function adOffresBlock(b) {
     if (!b) return '';
     var V = { recommandee: ['Recommandée', 'yes'], selon: ['Selon le contexte', 'maybe'], plus_tard: ['Plus tard', 'later'], non: ['Pas pour ce besoin', 'no'] };
     var NV = { ok: 'ok', vigilance: 'warn', red_flag: 'red' };
-    var off = (b.offres || []).map(function (o) { var v = V[o.verdict] || ['', 'no']; return '<div class="ad-offer' + (v[1] === 'yes' ? ' ad-offer--best' : '') + '"><div class="ad-offer__t">' + esc(o.offre) + '</div><span class="ad-verdict ad-verdict--' + v[1] + '">' + v[0] + '</span><p>' + esc(o.raison) + '</p></div>'; }).join('');
-    var exp = (b.explication || []).length ? '<div class="ad-gt">Comment je fonctionne, à dire</div><div class="ad-explain"><ol>' + b.explication.map(function (x) { return '<li>« ' + esc(x) + ' »</li>'; }).join('') + '</ol></div>' : '';
-    var sig = (b.signaux || []).map(function (s) { return '<div class="ad-sig ad-sig--' + (NV[s.niveau] || 'ok') + '"><i></i><div>' + esc(s.constat) + (s.quoi_faire ? '<small>' + esc(s.quoi_faire) + '</small>' : '') + '</div></div>'; }).join('') || '<div class="ad-muted">Aucun signal particulier.</div>';
-    return '<div class="ad-gt">Quelle offre lui correspond</div>' + off + exp + '<div class="ad-gt">Signaux</div>' + sig;
+    var off = (b.offres || []).map(function (o) { var v = V[o.verdict] || ['', 'no']; return '<div class="apl-offer' + (v[1] === 'yes' ? ' apl-offer--best' : '') + '"><div class="apl-offer__t">' + esc(o.offre) + '</div><span class="apl-verdict apl-verdict--' + v[1] + '">' + v[0] + '</span><p>' + esc(o.raison) + '</p></div>'; }).join('');
+    var exp = (b.explication || []).length ? '<div class="apl-gt">Comment je fonctionne, à dire</div><div class="apl-explain"><ol>' + b.explication.map(function (x) { return '<li>« ' + esc(x) + ' »</li>'; }).join('') + '</ol></div>' : '';
+    var sig = (b.signaux || []).map(function (s) { return '<div class="apl-sig apl-sig--' + (NV[s.niveau] || 'ok') + '"><i></i><div>' + esc(s.constat) + (s.quoi_faire ? '<small>' + esc(s.quoi_faire) + '</small>' : '') + '</div></div>'; }).join('') || '<div class="apl-muted">Aucun signal particulier.</div>';
+    return '<div class="apl-gt">Quelle offre lui correspond</div>' + off + exp + '<div class="apl-gt">Signaux</div>' + sig;
   }
   function adOffresHtml() {
-    var btn = '<div class="ad-row"><button class="btn btn--dark btn--sm" onclick="ADM.adPoint()">' + (AD.pointBusy ? 'Analyse en cours…' : AD.point ? 'Refaire le point' : 'Faire le point maintenant') + '</button></div>';
-    return (AD.point ? '' : '<p class="ad-muted">Au moment de présenter ton offre, fais le point : l’offre qui colle, ta façon de travailler en phrases prêtes à dire, et les signaux à surveiller.</p>') + btn + adOffresBlock(AD.point);
+    var btn = '<div class="apl-row"><button class="btn btn--dark btn--sm" onclick="ADM.adPoint()">' + (AD.pointBusy ? 'Analyse en cours…' : AD.point ? 'Refaire le point' : 'Faire le point maintenant') + '</button></div>';
+    return (AD.point ? '' : '<p class="apl-muted">Au moment de présenter ton offre, fais le point : l’offre qui colle, ta façon de travailler en phrases prêtes à dire, et les signaux à surveiller.</p>') + btn + adOffresBlock(AD.point);
   }
   function adRenderSide() {
-    var p = el('ad-pane'); if (!p) return;
-    p.innerHTML = AD.sub === 'trame' ? adTrameHtml() : AD.sub === 'offres' ? adOffresHtml() : AD.sub === 'sait' ? adSaitHtml() : AD.sub === 'prep' ? '<div class="ad-pre">' + esc(AD.prep) + '</div>' : adRelHtml();
-    var n1 = el('ad-n-rel'); if (n1) n1.textContent = AD.rel.filter(function (r) { return !r.done; }).length;
-    var n2 = el('ad-n-trame'); if (n2) n2.textContent = AD.etape + '/' + CALL_STEPS.length;
+    var p = el('apl-pane'); if (!p) return;
+    p.innerHTML = AD.sub === 'trame' ? adTrameHtml() : AD.sub === 'offres' ? adOffresHtml() : AD.sub === 'sait' ? adSaitHtml() : AD.sub === 'prep' ? '<div class="apl-pre">' + esc(AD.prep) + '</div>' : adRelHtml();
+    var n1 = el('apl-n-rel'); if (n1) n1.textContent = AD.rel.filter(function (r) { return !r.done; }).length;
+    var n2 = el('apl-n-trame'); if (n2) n2.textContent = AD.etape + '/' + CALL_STEPS.length;
     AD.rel.forEach(function (r) { r.fresh = false; });
   }
   function adRelDone(i) { var r = AD.rel[i]; if (r) { r.done = !r.done; adRenderSide(); } }
@@ -4046,11 +4046,11 @@
     toast('Moment marqué'); adRenderTranscript();
   }
   function adPrix() {
-    var s = el('ad-sil'); if (!s) return;
+    var s = el('apl-sil'); if (!s) return;
     var early = AD.etape < CALL_STEPS.length;
     var t0 = Date.now();
     clearInterval(AD_RT.silence);
-    var draw = function () { var sec = Math.round((Date.now() - t0) / 1000); var x = el('ad-sil'); if (!x) { clearInterval(AD_RT.silence); return; } x.innerHTML = (early ? '<div class="ad-alert">Tu n’as pas encore reformulé ni proposé. Si c’est voulu, garde ta phrase courte.</div>' : '') + '<div class="ad-silence">Maintenant tu te tais. Silence depuis <b>' + sec + ' s</b></div>'; if (sec >= 20) clearInterval(AD_RT.silence); };
+    var draw = function () { var sec = Math.round((Date.now() - t0) / 1000); var x = el('apl-sil'); if (!x) { clearInterval(AD_RT.silence); return; } x.innerHTML = (early ? '<div class="apl-alert">Tu n’as pas encore reformulé ni proposé. Si c’est voulu, garde ta phrase courte.</div>' : '') + '<div class="apl-silence">Maintenant tu te tais. Silence depuis <b>' + sec + ' s</b></div>'; if (sec >= 20) clearInterval(AD_RT.silence); };
     draw(); AD_RT.silence = setInterval(draw, 1000);
   }
   function adPoint() {
@@ -4059,7 +4059,7 @@
     adBilanReq().then(function (d) { AD.pointBusy = false; AD.point = d; adRenderSide(); }).catch(function (e) { AD.pointBusy = false; toast((e && e.message) || 'Analyse indisponible'); adRenderSide(); });
   }
   function adBilanReq() {
-    var notes = (el('ad-notes') || {}).value; if (typeof notes === 'string') AD.notes = notes;
+    var notes = (el('apl-notes') || {}).value; if (typeof notes === 'string') AD.notes = notes;
     return jpost('/api/appel/bilan', {
       mode: AD.mode, prospect: AD.prospect + (AD.structure ? ', ' + AD.structure : ''), date: new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }),
       trame: adTrame(), notes: (AD.contexte ? 'Avant l’appel : ' + AD.contexte + '\n' : '') + AD.notes,
@@ -4079,7 +4079,7 @@
   }
   function adDraftLocal() {
     if (!AD.lines.length && !AD.notes) return;
-    var n = el('ad-notes'); if (n && typeof n.value === 'string') AD.notes = n.value;
+    var n = el('apl-notes'); if (n && typeof n.value === 'string') AD.notes = n.value;
     try { localStorage.setItem(AD_DRAFT_KEY, JSON.stringify(adDraftData())); } catch (e) {}
   }
   function adDraftServer() {
@@ -4104,7 +4104,7 @@
   }
   function adTerminer() {
     admConfirm({ title: 'Terminer l’appel ?', message: 'La transcription s’arrête et le compte rendu se prépare.', yes: 'Terminer', no: 'Continuer l’appel' }, function () {
-      var notes = (el('ad-notes') || {}).value; if (typeof notes === 'string') AD.notes = notes;
+      var notes = (el('apl-notes') || {}).value; if (typeof notes === 'string') AD.notes = notes;
       AD.minutes = adMinutes();
       adStopAll();
       adDraftServer();
@@ -4125,29 +4125,29 @@
     return out.join('\n');
   }
   function adFinHtml() {
-    var head = '<div class="ad-row" style="justify-content:space-between"><button class="ad-link" onclick="ADM.adNouveau()">Nouvel appel</button><span class="ad-muted">' + esc(AD.prospect || '') + '</span></div>';
-    if (AD.bilanBusy) return '<div class="ad">' + head + '<div class="ad-card ad-center"><div class="spin" style="margin:16px auto"></div><p class="ad-muted">Préparation du compte rendu, une petite minute…</p></div></div>';
+    var head = '<div class="apl-row" style="justify-content:space-between"><button class="apl-link" onclick="ADM.adNouveau()">Nouvel appel</button><span class="apl-muted">' + esc(AD.prospect || '') + '</span></div>';
+    if (AD.bilanBusy) return '<div class="apl">' + head + '<div class="apl-card apl-center"><div class="spin" style="margin:16px auto"></div><p class="apl-muted">Préparation du compte rendu, une petite minute…</p></div></div>';
     var b = AD.bilan;
-    if (!b) return '<div class="ad">' + head + '<div class="ad-card"><p>' + (AD.bilanErr === 'pas encore préparé' ? 'Le compte rendu de cet appel n’a pas encore été préparé. La transcription est bien enregistrée.' : 'Le compte rendu n’a pas pu être préparé (' + esc(AD.bilanErr || 'erreur') + '). La transcription est bien enregistrée.') + '</p><div class="ad-row"><button class="btn btn--dark btn--sm" onclick="ADM.adRetryBilan()">' + (AD.bilanErr === 'pas encore préparé' ? 'Préparer le compte rendu' : 'Réessayer') + '</button><button class="ad-link" onclick="ADM.adCopyTr()">Copier la transcription</button></div><div class="ad-tr ad-tr--fin" id="ad-tr"></div></div></div>';
-    var sec = function (n, t, body) { return '<div class="ad-sec"><span class="ad-num ad-num--dark">' + n + '</span><h3 class="ad-h3">' + t + '</h3><div class="ad-sec__b">' + body + '</div></div>'; };
+    if (!b) return '<div class="apl">' + head + '<div class="apl-card"><p>' + (AD.bilanErr === 'pas encore préparé' ? 'Le compte rendu de cet appel n’a pas encore été préparé. La transcription est bien enregistrée.' : 'Le compte rendu n’a pas pu être préparé (' + esc(AD.bilanErr || 'erreur') + '). La transcription est bien enregistrée.') + '</p><div class="apl-row"><button class="btn btn--dark btn--sm" onclick="ADM.adRetryBilan()">' + (AD.bilanErr === 'pas encore préparé' ? 'Préparer le compte rendu' : 'Réessayer') + '</button><button class="apl-link" onclick="ADM.adCopyTr()">Copier la transcription</button></div><div class="apl-tr apl-tr--fin" id="apl-tr"></div></div></div>';
+    var sec = function (n, t, body) { return '<div class="apl-sec"><span class="apl-num apl-num--dark">' + n + '</span><h3 class="apl-h3">' + t + '</h3><div class="apl-sec__b">' + body + '</div></div>'; };
     var p = function (x) { return '<p>' + esc(x || '') + '</p>'; };
-    var suite = (b.suite || []).map(function (s, i) { return '<label class="ad-todo"><input type="checkbox" id="ad-s' + i + '" checked> ' + esc(s.action) + (s.date ? ' <span class="ad-muted">(' + esc(s.date) + ')</span>' : '') + '</label>'; }).join('') || '<p class="ad-muted">Aucune action précise convenue.</p>';
-    var marques = AD.marques.length ? AD.marques.map(function (m) { return '<div class="ad-mk"><span>' + m.t + '</span>' + esc(m.x) + '</div>'; }).join('') : '<p class="ad-muted">Aucun moment marqué.</p>';
+    var suite = (b.suite || []).map(function (s, i) { return '<label class="apl-todo"><input type="checkbox" id="apl-s' + i + '" checked> ' + esc(s.action) + (s.date ? ' <span class="apl-muted">(' + esc(s.date) + ')</span>' : '') + '</label>'; }).join('') || '<p class="apl-muted">Aucune action précise convenue.</p>';
+    var marques = AD.marques.length ? AD.marques.map(function (m) { return '<div class="apl-mk"><span>' + m.t + '</span>' + esc(m.x) + '</div>'; }).join('') : '<p class="apl-muted">Aucun moment marqué.</p>';
     var q = (b.questionnaire || []).concat(AD.plusTard.filter(function (x) { return (b.questionnaire || []).indexOf(x) < 0; }));
-    var verb = (b.verbatims || []).map(function (v) { return '<div class="ad-mk"><span>' + esc(String(v.categorie || '').replace(/_/g, ' ')) + '</span>« ' + esc(v.citation) + ' »</div>'; }).join('');
-    var suiteOut = AD.suite.kind ? '<div class="ad-pre">' + (AD.suite.busy ? 'Rédaction…' : esc(AD.suite.text || '')) + '</div>' + (AD.suite.text ? '<button class="ad-link" onclick="ADM.adCopySuite()">Copier</button>' : '') : '';
-    return '<div class="ad">' + head + '<div class="ad-cr">' +
-      '<div><div class="ad-muted">Compte rendu préparé, à relire avant de l’enregistrer</div><h2 class="ad-cr__t">' + esc(b.titre || 'Compte rendu') + '</h2><div class="ad-muted">' + esc(new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })) + ' · ' + (AD.minutes || 0) + ' minutes</div></div>' +
-      sec(1, 'Contexte', p(b.contexte)) + sec(2, 'Besoin exprimé', '<div class="ad-quote">' + esc(b.besoin || '') + '</div>') +
+    var verb = (b.verbatims || []).map(function (v) { return '<div class="apl-mk"><span>' + esc(String(v.categorie || '').replace(/_/g, ' ')) + '</span>« ' + esc(v.citation) + ' »</div>'; }).join('');
+    var suiteOut = AD.suite.kind ? '<div class="apl-pre">' + (AD.suite.busy ? 'Rédaction…' : esc(AD.suite.text || '')) + '</div>' + (AD.suite.text ? '<button class="apl-link" onclick="ADM.adCopySuite()">Copier</button>' : '') : '';
+    return '<div class="apl">' + head + '<div class="apl-cr">' +
+      '<div><div class="apl-muted">Compte rendu préparé, à relire avant de l’enregistrer</div><h2 class="apl-cr__t">' + esc(b.titre || 'Compte rendu') + '</h2><div class="apl-muted">' + esc(new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })) + ' · ' + (AD.minutes || 0) + ' minutes</div></div>' +
+      sec(1, 'Contexte', p(b.contexte)) + sec(2, 'Besoin exprimé', '<div class="apl-quote">' + esc(b.besoin || '') + '</div>') +
       sec(3, 'Échéance, décision, budget', p(b.echeance_decision_budget)) + sec(4, 'Diagnostic', p(b.diagnostic)) +
       sec(5, 'Offres et signaux', adOffresBlock(b)) +
-      sec(6, 'Et maintenant', '<p class="ad-muted">Rien n’est créé ni envoyé sans toi. Coche ce que tu veux garder comme tâches dans ta note d’appel.</p>' + suite +
-        '<div class="ad-after"><button class="ad-acard' + (AD.suite.kind === 'mail' ? ' on' : '') + '" onclick="ADM.adSuite(\'mail\')"><span>Mail de suite</span>Brouillon dans ton ton, à relire</button><button class="ad-acard' + (AD.suite.kind === 'coach' ? ' on' : '') + '" onclick="ADM.adSuite(\'coach\')"><span>Retour de coach</span>Perches manquées et relances</button></div>' + suiteOut) +
-      sec(7, 'À compléter par questionnaire', q.length ? '<ol class="ad-ol">' + q.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ol><button class="ad-link" onclick="ADM.adCopyQ()">Copier le questionnaire</button>' : '<p class="ad-muted">Rien de plus à demander.</p>') +
+      sec(6, 'Et maintenant', '<p class="apl-muted">Rien n’est créé ni envoyé sans toi. Coche ce que tu veux garder comme tâches dans ta note d’appel.</p>' + suite +
+        '<div class="apl-after"><button class="apl-acard' + (AD.suite.kind === 'mail' ? ' on' : '') + '" onclick="ADM.adSuite(\'mail\')"><span>Mail de suite</span>Brouillon dans ton ton, à relire</button><button class="apl-acard' + (AD.suite.kind === 'coach' ? ' on' : '') + '" onclick="ADM.adSuite(\'coach\')"><span>Retour de coach</span>Perches manquées et relances</button></div>' + suiteOut) +
+      sec(7, 'À compléter par questionnaire', q.length ? '<ol class="apl-ol">' + q.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ol><button class="apl-link" onclick="ADM.adCopyQ()">Copier le questionnaire</button>' : '<p class="apl-muted">Rien de plus à demander.</p>') +
       sec(8, 'Moments marqués', marques) +
-      (verb ? sec(9, 'Verbatims', '<p class="ad-muted">Ses mots exacts, utiles pour ton tableau des messages.</p>' + verb) : '') +
-      sec(verb ? 10 : 9, 'Transcription complète', '<p class="ad-muted">Gardée sur le serveur sans limite de durée, avec une copie dans ta fiche d’appel.</p><div class="ad-tr ad-tr--fin" id="ad-tr"></div><button class="ad-link" onclick="ADM.adCopyTr()">Copier la transcription</button>') +
-      '<div class="ad-cr__foot"><button class="ad-link" onclick="ADM.adCopyCr()">Copier le compte rendu</button><button class="btn btn--dark" onclick="ADM.adSave()">' + (AD.finalSaved ? 'Enregistré' : 'Enregistrer dans la fiche d’appel') + '</button></div>' +
+      (verb ? sec(9, 'Verbatims', '<p class="apl-muted">Ses mots exacts, utiles pour ton tableau des messages.</p>' + verb) : '') +
+      sec(verb ? 10 : 9, 'Transcription complète', '<p class="apl-muted">Gardée sur le serveur sans limite de durée, avec une copie dans ta fiche d’appel.</p><div class="apl-tr apl-tr--fin" id="apl-tr"></div><button class="apl-link" onclick="ADM.adCopyTr()">Copier la transcription</button>') +
+      '<div class="apl-cr__foot"><button class="apl-link" onclick="ADM.adCopyCr()">Copier le compte rendu</button><button class="btn btn--dark" onclick="ADM.adSave()">' + (AD.finalSaved ? 'Enregistré' : 'Enregistrer dans la fiche d’appel') + '</button></div>' +
     '</div></div>';
   }
   function adRetryBilan() { AD.bilanBusy = true; renderVisiosBody(); adBilanReq().then(function (d) { AD.bilan = d; AD.bilanBusy = false; renderVisiosBody(); }).catch(function (e) { AD.bilanBusy = false; AD.bilanErr = (e && e.message) || 'Erreur'; renderVisiosBody(); }); }
@@ -4163,7 +4163,7 @@
   }
   function adSave() {
     if (!AD.bilan) return;
-    var b = AD.bilan, keep = (b.suite || []).filter(function (s, i) { var c = el('ad-s' + i); return !c || c.checked; });
+    var b = AD.bilan, keep = (b.suite || []).filter(function (s, i) { var c = el('apl-s' + i); return !c || c.checked; });
     jpost('/api/appels', { id: AD.savedId || undefined, prospect: AD.prospect + (AD.structure ? ', ' + AD.structure : ''), mode: AD.mode, minutes: AD.minutes || 0, compteRendu: b, notes: AD.notes, marques: AD.marques.map(function (m) { return '[' + m.t + '] ' + m.x; }), plusTard: AD.plusTard, transcript: adTranscriptCopy() })
       .then(function (r) { return r.json(); }).then(function (d) {
         if (!d || !d.ok) throw 0;
