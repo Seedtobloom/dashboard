@@ -3730,7 +3730,7 @@
     sub: 'rel', busy: false, lastAsk: 0, pendingAsk: false, cut: false, cfg: null,
     bilan: null, bilanBusy: false, point: null, pointBusy: false, savedId: null, suite: {}, prep: '', prepBusy: false,
     silenceAt: 0, hist: null, kbOpen: false, kb: null, kbDefaut: '',
-    clientKey: '', cardId: '', meetingUrl: '', setupTab: 'nouvel', statut: '', suiteCree: false, qnrEnvoye: false
+    clientKey: '', cardId: '', calKey: '', meetingUrl: '', setupTab: 'nouvel', statut: '', suiteCree: false, qnrEnvoye: false
   };
   var AD_RT = { streams: [], recs: [], socks: {}, keep: null, tick: null, silence: null };
   var AD_DG = 'wss://api.deepgram.com/v1/listen?model=nova-3&language=fr&smart_format=true&punctuate=true&interim_results=true&utterance_end_ms=1200&endpointing=400&mip_opt_out=true';
@@ -3786,7 +3786,7 @@
     var stabs = '<div class="apl-subs apl-subs--setup" role="tablist"><button role="tab" aria-selected="' + (AD.setupTab !== 'vue') + '" class="' + (AD.setupTab !== 'vue' ? 'on' : '') + '" onclick="ADM.adSetupTab(\'nouvel\')">Nouvel appel</button><button role="tab" aria-selected="' + (AD.setupTab === 'vue') + '" class="' + (AD.setupTab === 'vue' ? 'on' : '') + '" onclick="ADM.adSetupTab(\'vue\')">Vue d’ensemble</button></div>';
     if (AD.setupTab === 'vue') return '<div class="apl">' + warn + adBudgetWarn() + stabs + (AD.hist === null ? '<div class="apl-card"><div class="apl-muted">Chargement…</div></div>' : adVueHtml()) + '</div>';
     var son = '<div class="apl-card"><h3 class="apl-h3">Test du son</h3>' + (AD_RT.pre ? '<div class="apl-snd" id="apl-snd">' + adSndState() + '</div><p class="apl-muted">Parle, puis fais parler la visio (ou lance une vidéo dans l’onglet partagé). Si les deux barres bougent, tout est prêt : « Démarrer » réutilisera ce partage.</p><button class="apl-link" onclick="ADM.adTestStop()">Arrêter le test</button>' : '<p class="apl-muted">Vérifie ton micro et le son de l’onglet kMeet avant que la personne arrive.</p><button class="apl-link" onclick="ADM.adTestSon()">Tester le son</button>') + '</div>';
-    var rdv = AD.cardId ? '<div class="apl-rdv"><span>Rendez-vous de l’agenda' + (AD.meetingUrl ? '' : ', sans lien de visio') + '</span>' + (AD.meetingUrl ? '<a class="apl-link" href="' + esc(/^https?:\/\//i.test(AD.meetingUrl) ? AD.meetingUrl : 'https://' + AD.meetingUrl) + '" target="_blank" rel="noopener">Ouvrir la visio</a>' : '') + '</div>' : '';
+    var rdv = AD.cardId || AD.calKey ? '<div class="apl-rdv"><span>' + (AD.calKey ? 'Rendez-vous de ton calendrier' : 'Rendez-vous de l’agenda') + (AD.meetingUrl ? '' : ', sans lien de visio') + '</span>' + (AD.meetingUrl ? '<a class="apl-link" href="' + esc(/^https?:\/\//i.test(AD.meetingUrl) ? AD.meetingUrl : 'https://' + AD.meetingUrl) + '" target="_blank" rel="noopener">Ouvrir la visio</a>' : '') + '</div>' : '';
     return '<div class="apl">' + warn + navWarn + adBudgetWarn() + draft + stabs +
       '<div class="apl-grid apl-grid--setup"><div class="apl-card">' + rdv +
         '<h3 class="apl-h3">Préparer l’appel</h3>' +
@@ -4271,6 +4271,7 @@
         AD.savedId = d.id; AD.finalSaved = true; AD.hist = null; AD_HOME = null; adDraftClear();
         if (!AD.statut) AD.statut = 'a_rappeler';
         var vc = AD.cardId && visCard(AD.cardId); if (vc && vc.appelId !== d.id) { vc.appelId = d.id; visSave(); }
+        if (AD.calKey) { var cm = adCalMap(); cm[AD.calKey] = d.id; var ks = Object.keys(cm); if (ks.length > 200) delete cm[ks[0]]; try { localStorage.setItem('stb_ad_cal', JSON.stringify(cm)); } catch (e2) {} }
         if (first) {
           var a = callNotesLoad(), dt = new Date(), f = {};
           Object.keys(b.fiche || {}).forEach(function (k) { if (b.fiche[k]) f[k] = b.fiche[k]; });
@@ -4287,7 +4288,7 @@
       AD.phase = 'fin'; AD.bilanBusy = false; AD.bilan = d.compteRendu; AD.savedId = d.id; AD.finalSaved = !!d.compteRendu; AD.bilanErr = d.compteRendu ? '' : 'pas encore préparé'; AD.prospect = d.prospect || ''; AD.structure = ''; AD.mode = d.mode || 'decouverte';
       AD.minutes = d.minutes || 0; AD.notes = d.notes || ''; AD.plusTard = d.plusTard || []; AD.suite = {}; AD.suiteCree = false; AD.qnrEnvoye = false;
       var ix = (AD.hist || []).concat(AD_HOME || []).filter(function (h) { return h.id === d.id; })[0] || {};
-      AD.statut = ix.statut || ''; AD.clientKey = ix.clientKey || ''; AD.cardId = '';
+      AD.statut = ix.statut || ''; AD.clientKey = ix.clientKey || ''; AD.cardId = ''; AD.calKey = '';
       AD.marques = (d.marques || []).map(function (x) { var m = String(x).match(/^\[([^\]]*)\]\s*(.*)$/); return { i: -1, t: m ? m[1] : '', x: m ? m[2] : x }; });
       AD.lines = String(d.transcript || '').split(/\n\n/).filter(Boolean).map(function (s) { var m = s.match(/^\[([^\]]*)\]\s*([^:]+?)\s:\s([\s\S]*)$/); return m ? { t: m[1], w: m[2] === 'Cindy' ? 'me' : 'them', x: m[3], ms: 0 } : { t: '', w: 'them', x: s, ms: 0 }; });
       renderVisiosBody();
@@ -4300,7 +4301,7 @@
     }
     adReset();
   }
-  function adReset() { AD.phase = 'setup'; AD.bilan = null; AD.point = null; AD.savedId = null; AD.finalSaved = false; AD.lines = []; AD.marques = []; AD.plusTard = []; AD.notes = ''; AD.suite = {}; AD.prep = ''; AD.prospect = ''; AD.structure = ''; AD.contexte = ''; AD.clientKey = ''; AD.cardId = ''; AD.meetingUrl = ''; AD.statut = ''; AD.suiteCree = false; AD.qnrEnvoye = false; renderVisiosBody(); }
+  function adReset() { AD.phase = 'setup'; AD.bilan = null; AD.point = null; AD.savedId = null; AD.finalSaved = false; AD.lines = []; AD.marques = []; AD.plusTard = []; AD.notes = ''; AD.suite = {}; AD.prep = ''; AD.prospect = ''; AD.structure = ''; AD.contexte = ''; AD.clientKey = ''; AD.cardId = ''; AD.calKey = ''; AD.meetingUrl = ''; AD.statut = ''; AD.suiteCree = false; AD.qnrEnvoye = false; renderVisiosBody(); }
   // ── Appel en direct : son, fenêtre flottante, raccourcis, suite, suivi, vue d'ensemble ──
   var AD_STATUTS = [['a_rappeler', 'À rappeler'], ['proposition', 'Proposition envoyée'], ['signe', 'Signé'], ['perdu', 'Perdu']];
   function adNorm(t) { return String(t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim(); }
@@ -4433,6 +4434,7 @@
   function adTexte(h) { var d = document.createElement('div'); d.innerHTML = String(h || '').replace(/<br\s*\/?>/gi, '\n').replace(/<\/(p|div|li)>/gi, '\n'); return (d.textContent || '').replace(/\n{3,}/g, '\n\n').trim(); }
   function adLancer(cardId) {
     var c = visCard(cardId); if (!c) return;
+    if (AD.phase === 'live' || (AD.phase === 'fin' && AD.bilan && !AD.finalSaved)) { toast(AD.phase === 'live' ? 'Un appel est en cours : termine-le d’abord' : 'Enregistre d’abord le compte rendu en cours'); VIS_TAB = 'direct'; renderVisiosBody(); return; }
     adReset();
     var picked = c.clientKey && NAV_CLIENTS.filter(function (k) { return k.key === c.clientKey; })[0];
     AD.prospect = c.client || (picked ? clientName(picked) : '');
@@ -4441,6 +4443,21 @@
     var q = (c.questions || []).filter(function (x) { return x && x.text; }).map(function (x) { return 'Question prévue : ' + x.text; });
     AD.contexte = [adTexte(c.notes), q.join('\n')].filter(Boolean).join('\n').slice(0, 3000);
     AD.mode = 'decouverte';
+    VIS_TAB = 'direct'; AD.setupTab = 'nouvel';
+    renderVisiosBody();
+  }
+  function adCalKey(e) { return (e.uid || e.title || '') + '|' + e.start; }
+  function adCalMap() { try { return JSON.parse(localStorage.getItem('stb_ad_cal') || '{}') || {}; } catch (e) { return {}; } }
+  function adCalNom(t) {
+    var x = String(t || '').replace(/^\s*(visio|appel|rdv|rendez-vous|call|kmeet|r[ée]union)(\s+(d[ée]couverte|de d[ée]couverte|d’?\s*[ée]change|t[ée]l[ée]phonique))?\s*(avec|:|·|-|–)?\s*/i, '').replace(/\s*(\(|\[).*$/, '').trim();
+    return x || String(t || '').trim();
+  }
+  function adLancerCal(i) {
+    var e = (VIS_CAL.events || [])[i]; if (!e) return;
+    if (AD.phase === 'live' || (AD.phase === 'fin' && AD.bilan && !AD.finalSaved)) { toast(AD.phase === 'live' ? 'Un appel est en cours : termine-le d’abord' : 'Enregistre d’abord le compte rendu en cours'); VIS_TAB = 'direct'; renderVisiosBody(); return; }
+    adReset();
+    AD.prospect = adCalNom(e.title); AD.meetingUrl = e.joinUrl || ''; AD.calKey = adCalKey(e); AD.cardId = '';
+    AD.contexte = [e.notes ? 'Dans l’invitation : ' + e.notes : '', e.location && !/^https?:/i.test(e.location) ? 'Lieu : ' + e.location : ''].filter(Boolean).join('\n').slice(0, 3000);
     VIS_TAB = 'direct'; AD.setupTab = 'nouvel';
     renderVisiosBody();
   }
@@ -5485,10 +5502,11 @@
         ouvrir: 'ADM.visOpen(\'' + esc(c.id) + '\')', fait: c.done, appel: 'ADM.adLancer(\'' + esc(c.id) + '\')', appelId: c.appelId || '',
         lien: ml ? (/^https?:\/\//i.test(ml) ? ml : 'https://' + ml) : '' });
     });
-    ((VIS_CAL.configured && Array.isArray(VIS_CAL.events)) ? VIS_CAL.events : []).forEach(function (e) {
+    var calAppels = adCalMap();
+    ((VIS_CAL.configured && Array.isArray(VIS_CAL.events)) ? VIS_CAL.events : []).forEach(function (e, i) {
       if (!e.joinUrl) return;
       var t = e.start ? +new Date(e.start) : NaN; if (isNaN(t)) return;
-      items.push({ t: t, passe: t < now, nom: e.title || 'Visio', objet: 'Depuis ton calendrier', prep: '', ouvrir: '', lien: e.joinUrl });
+      items.push({ t: t, passe: t < now, nom: e.title || 'Visio', objet: 'Depuis ton calendrier', prep: '', ouvrir: '', lien: e.joinUrl, appel: 'ADM.adLancerCal(' + i + ')', appelId: calAppels[adCalKey(e)] || '' });
     });
     var avenir = items.filter(function (x) { return !x.passe; }).sort(function (a, b) { return (a.t || 8.64e15) - (b.t || 8.64e15); });
     var passees = items.filter(function (x) { return x.passe; }).sort(function (a, b) { return (b.t || 0) - (a.t || 0); });
@@ -15742,7 +15760,7 @@
 
   // API publique pour les onclick
   window.ADM = {
-    adStart: adStart, adBudgetSet: adBudgetSet, adPause: adPause, adMarquer: adMarquer, adTerminer: adTerminer, adReconnect: adReconnect, adSub: adSub, adSet: adSet, adMode: adMode, adKb: adKb, adKbSave: adKbSave, adPrep: adPrep, adAsk: adAsk, adRelDone: adRelDone, adRelLater: adRelLater, adLaterDel: adLaterDel, adPrix: adPrix, adPoint: adPoint, adCopyTr: adCopyTr, adCopyCr: adCopyCr, adCopyQ: adCopyQ, adCopySuite: adCopySuite, adSuite: adSuite, adSave: adSave, adOuvrir: adOuvrir, adNouveau: adNouveau, adRetryBilan: adRetryBilan, adDraftReprendre: adDraftReprendre, adDraftCopier: adDraftCopier, adDraftOublier: adDraftOublier, adTestSon: adTestSon, adTestStop: adTestStop, adPip: adPip, adLancer: adLancer, adStatut: adStatut, adCreerSuite: adCreerSuite, adQnr: adQnr, adAccueilOuvrir: adAccueilOuvrir, adSetupTab: adSetupTab, adHisto: adHisto,
+    adStart: adStart, adBudgetSet: adBudgetSet, adPause: adPause, adMarquer: adMarquer, adTerminer: adTerminer, adReconnect: adReconnect, adSub: adSub, adSet: adSet, adMode: adMode, adKb: adKb, adKbSave: adKbSave, adPrep: adPrep, adAsk: adAsk, adRelDone: adRelDone, adRelLater: adRelLater, adLaterDel: adLaterDel, adPrix: adPrix, adPoint: adPoint, adCopyTr: adCopyTr, adCopyCr: adCopyCr, adCopyQ: adCopyQ, adCopySuite: adCopySuite, adSuite: adSuite, adSave: adSave, adOuvrir: adOuvrir, adNouveau: adNouveau, adRetryBilan: adRetryBilan, adDraftReprendre: adDraftReprendre, adDraftCopier: adDraftCopier, adDraftOublier: adDraftOublier, adTestSon: adTestSon, adTestStop: adTestStop, adPip: adPip, adLancer: adLancer, adLancerCal: adLancerCal, adStatut: adStatut, adCreerSuite: adCreerSuite, adQnr: adQnr, adAccueilOuvrir: adAccueilOuvrir, adSetupTab: adSetupTab, adHisto: adHisto,
     nav: nav, login: login, logout: logout, scan: scan, createClient: createClient, copy: copy, editToken: editToken, cliApercu: cliApercu, ckpCorrigerPasse: ckpCorrigerPasse, ffReglages: ffReglages, ffAutoMail: ffAutoMail, accesOuvrir: accesOuvrir, navClientTab: navClientTab,
     msWeek: msWeek, msFilter: msFilter, msToggleCap: msToggleCap, msMode: msMode, msDaySel: msDaySel, msPlace: msPlace, msDone: msDone, msDelete: msDelete, msNoteOpen: msNoteOpen, msPlanOver: msPlanOver, msPlanLeave: msPlanLeave, msPlanDrop: msPlanDrop, msPlanUnplace: msPlanUnplace, msAutoPlan: msAutoPlan, msOrganizeWeek: msOrganizeWeek, msOrganizeDay: msOrganizeDay, msUnplace: msUnplace, msDragStart: msDragStart, msDragEnd: msDragEnd, msDayOver: msDayOver, msDayLeave: msDayLeave, msDrop: msDrop, msSlotOver: msSlotOver, msDropSlot: msDropSlot, msNewBlock: msNewBlock, msSaveBlock: msSaveBlock, msDeleteBlock: msDeleteBlock, msEst: msEst, msEstH: msEstH, msAddTop: msAddTop, msAddDay: msAddDay,
     rvActiver: rvActiver, rvEnregistrer: rvEnregistrer, rvPause: rvPause, rvNouveauLien: rvNouveauLien, rvFiltre: rvFiltre, rvActualiser: rvActualiser, rvCopier: rvCopier, rvRepondre: rvRepondre, rvStatut: rvStatut, rvSupprimer: rvSupprimer,

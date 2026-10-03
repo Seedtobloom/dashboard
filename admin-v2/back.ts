@@ -4041,10 +4041,10 @@ function calPick(cfg: CalCfg, cals: { url: string; name: string }[]): { url: str
   const pref = cals.find((c) => /home|domicile|personnel|calendar|calendrier/i.test(c.name));
   return pref || cals[0];
 }
-function calParseVevents(ics: string): { uid: string; title: string; start: string; end: string; allDay: boolean }[] {
+function calParseVevents(ics: string): { uid: string; title: string; start: string; end: string; allDay: boolean; joinUrl?: string; isVisio?: boolean; location?: string; notes?: string; calendar?: string; href?: string }[] {
   // Déplie les lignes (RFC5545 : continuation = CRLF + espace/tab).
   const unfolded = ics.replace(/\r?\n[ \t]/g, '');
-  const out: { uid: string; title: string; start: string; end: string; allDay: boolean }[] = [];
+  const out: ReturnType<typeof calParseVevents> = [];
   const blocks = unfolded.split(/BEGIN:VEVENT/i).slice(1);
   for (const b0 of blocks) {
     const b = b0.split(/END:VEVENT/i)[0];
@@ -4063,7 +4063,7 @@ function calParseVevents(ics: string): { uid: string; title: string; start: stri
     const conf = (get('X-GOOGLE-CONFERENCE')?.val) || (get('CONFERENCE')?.val) || '';
     const desc = (get('DESCRIPTION')?.val) || '';
     const joinUrl = calFindJoinUrl([loc, urlp, conf, calUnescape(desc)].join(' '));
-    out.push({ uid, title: calUnescape(sum), start: s.iso, end: e.iso, allDay: s.allDay, joinUrl, isVisio: !!joinUrl, location: calUnescape(loc) });
+    out.push({ uid, title: calUnescape(sum), start: s.iso, end: e.iso, allDay: s.allDay, joinUrl, isVisio: !!joinUrl, location: calUnescape(loc), notes: calUnescape(desc).replace(/https?:\/\/\S+/g, '').replace(/\n{3,}/g, '\n\n').trim().slice(0, 1500) });
   }
   return out;
 }
