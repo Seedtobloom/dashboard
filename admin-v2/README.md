@@ -67,3 +67,20 @@ En déploiement manuel, lancer `node build-front.js` avant `wrangler deploy` : `
 `POST /api/clients/:key/tasks/:id/comments` · `POST|PATCH|DELETE /api/clients/:key/steps[/:id]` ·
 `POST /api/clients/:key/supports` · `GET|POST|DELETE /api/clients/:key/files` ·
 `GET /api/clients/:key/files/:k/download` · `PATCH /api/clients/:key/deliverables/:id`.
+
+## Visios · appel en direct
+
+Onglet « En direct » de la section Visios : transcription de l'appel (ta voix par le micro, celle du prospect par l'onglet kMeet partagé), deux relances maximum suivant la trame de la Fiche d'appel, point sur les offres et les signaux, puis compte rendu, mail de suite, retour de coach et questionnaire. Chrome ou Edge uniquement (capture du son d'un onglet).
+
+Code serveur : `appel.ts`, branché dans `back.ts` après le contrôle de session.
+
+Secrets à ajouter sur `stb-admin-back` (jamais dans le dépôt) :
+
+```bash
+wrangler secret put ANTHROPIC_API_KEY --config wrangler.admin-back.toml
+wrangler secret put DEEPGRAM_API_KEY  --config wrangler.admin-back.toml   # rôle « Member » minimum
+```
+
+Le navigateur ne reçoit qu'un jeton Deepgram de 60 secondes, valable pour ouvrir la connexion. Stockage dans `KV_ADMIN` : `appel:<id>` (compte rendu, sans limite), `appel:<id>:transcription` (expire au bout de 30 jours), `admin:appels` (index), `admin:appel:kb` (base de connaissance, modifiable depuis l'onglet). Trois écritures par appel enregistré, aucune pendant l'appel.
+
+Routes : `GET /api/appel/config` · `POST /api/appel/stt-token` · `POST /api/appel/relances` · `POST /api/appel/bilan` · `POST /api/appel/suite` (`mail`, `coach`, `prep`) · `GET|PUT /api/appel/kb` · `GET|POST /api/appels` · `GET|DELETE /api/appels/:id`.
