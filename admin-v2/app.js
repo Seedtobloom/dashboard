@@ -3938,19 +3938,47 @@
       else if (who === 'them') toast('Le partage de l’onglet est arrêté : termine l’appel ou relance la transcription');
     });
   }
+  function adWords(t) { return String(t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9 ]+/g, ' ').split(/\s+/).filter(function (w) { return w.length > 1; }); }
+  function adEchoOf(meTxt, themTxt) {
+    var a = adWords(meTxt), b = adWords(themTxt);
+    if (a.length < 3 || !b.length) return false;
+    var set = {}; b.forEach(function (w) { set[w] = 1; });
+    var hit = a.filter(function (w) { return set[w]; }).length;
+    return hit / a.length >= 0.6;
+  }
+  function adRecentThem(ms) {
+    var now = Date.now(), t = AD.lines.filter(function (l) { return l.w === 'them' && now - l.ms < ms; }).map(function (l) { return l.x; }).join(' ');
+    return t + ' ' + (AD.interim.them || '');
+  }
+  function adDropEchoes(themTxt) {
+    var now = Date.now();
+    for (var i = AD.lines.length - 1; i >= 0; i--) {
+      var l = AD.lines[i];
+      if (now - l.ms > 12000) break;
+      if (l.w !== 'me') continue;
+      var parts = (l.p || [l.x]).filter(function (x) { return !adEchoOf(x, themTxt); });
+      if (parts.length) { l.p = parts; l.x = parts.join(' '); continue; }
+      AD.lines.splice(i, 1);
+      AD.marques = AD.marques.filter(function (m) { return m.i !== i; }).map(function (m) { if (m.i > i) m.i--; return m; });
+    }
+  }
   function adOnResult(who, d) {
     if (d.type === 'UtteranceEnd') { if (who === 'them') adMaybeAsk(); return; }
     if (d.type !== 'Results' || !d.channel || !d.channel.alternatives) return;
     var txt = (d.channel.alternatives[0].transcript || '').trim();
     if (d.is_final) {
       AD.interim[who] = '';
+      if (txt && who === 'me' && adEchoOf(txt, adRecentThem(12000))) txt = '';
       if (txt) {
         var last = AD.lines[AD.lines.length - 1];
-        if (last && last.w === who && Date.now() - last.ms < 6000) { last.x += ' ' + txt; last.ms = Date.now(); }
-        else AD.lines.push({ w: who, x: txt, t: adStamp(), ms: Date.now() });
+        if (last && last.w === who && Date.now() - last.ms < 6000) { last.p = (last.p || [last.x]).concat(txt); last.x = last.p.join(' '); last.ms = Date.now(); }
+        else AD.lines.push({ w: who, x: txt, p: [txt], t: adStamp(), ms: Date.now() });
+        if (who === 'them') adDropEchoes(adRecentThem(12000));
       }
       if (who === 'them' && d.speech_final) adMaybeAsk();
-    } else AD.interim[who] = txt;
+    } else {
+      AD.interim[who] = (who === 'me' && adEchoOf(txt, adRecentThem(12000))) ? '' : txt;
+    }
     adRenderTranscript();
   }
   function adStopAll() {
@@ -4117,7 +4145,7 @@
       mode: AD.mode, prospect: AD.prospect + (AD.structure ? ', ' + AD.structure : ''), date: new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }),
       trame: adTrame(), notes: (AD.contexte ? 'Avant l’appel : ' + AD.contexte + '\n' : '') + AD.notes,
       marques: AD.marques.map(function (m) { return '[' + m.t + '] ' + m.x; }), plusTard: AD.plusTard, transcript: adTranscriptText()
-    }).then(function (r) { return r.json().then(function (d) { if (!r.ok) throw new Error((d && d.error) || 'Erreur'); return d; }); });
+    }).then(function (r) { return r.json().then(function (d) { if (!r.ok) throw new Error(((d && d.error) || 'Erreur') + (d && d.detail ? ' · ' + d.detail : '')); return d; }); });
   }
   function adCopy(text, ok) {
     var done = function () { toast(ok); };
