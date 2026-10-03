@@ -255,10 +255,13 @@ const BILAN_TOOL = {
     type: 'object',
     properties: {
       titre: { type: 'string', description: 'Ex. Appel découverte avec Julie Martin, Terre Vive' },
-      contexte: { type: 'string' },
+      contexte: { type: 'string', description: 'Deux ou trois phrases.' },
       besoin: { type: 'string', description: 'Le besoin exprimé, avec si possible une citation exacte du prospect entre guillemets.' },
-      echeance_decision_budget: { type: 'string' },
-      diagnostic: { type: 'string', description: 'Avec esprit critique : ce qui bloque vraiment et dans quel ordre avancer.' },
+      besoin_court: { type: 'string', description: 'Le besoin en une citation exacte ou une phrase de 12 mots maximum.' },
+      echeance: { type: 'string', description: 'Échéance en 6 mots maximum, ou exactement « Pas abordé ».' },
+      decideur: { type: 'string', description: 'Qui décide en 6 mots maximum, ou exactement « Pas abordé ».' },
+      budget: { type: 'string', description: 'Budget évoqué en 6 mots maximum, ou exactement « Pas abordé ».' },
+      diagnostic: { type: 'string', description: 'Deux phrases maximum, avec esprit critique : ce qui bloque vraiment et dans quel ordre avancer.' },
       offres: {
         type: 'array',
         items: {
@@ -289,7 +292,7 @@ const BILAN_TOOL = {
       verbatims: { type: 'array', items: { type: 'object', properties: { citation: { type: 'string' }, categorie: { type: 'string', enum: ['frustration', 'resultat_souhaite', 'erreur_passee', 'objection', 'fausse_croyance'] } }, required: ['citation', 'categorie'] } },
       fiche: { ...factsSchema, description: 'Champs de la fiche d’appel, remplis seulement avec ce qui a été dit.' },
     },
-    required: ['titre', 'contexte', 'besoin', 'echeance_decision_budget', 'diagnostic', 'offres', 'explication', 'signaux', 'suite', 'questionnaire', 'verbatims', 'fiche'],
+    required: ['titre', 'contexte', 'besoin', 'besoin_court', 'echeance', 'decideur', 'budget', 'diagnostic', 'offres', 'explication', 'signaux', 'suite', 'questionnaire', 'verbatims', 'fiche'],
   },
 };
 
@@ -300,6 +303,7 @@ async function handleBilan(request: Request, env: AppelEnv): Promise<Response> {
   const kb = await getKb(env);
   const system = [
     'Tu rédiges le compte rendu d’un ' + (b.mode === 'entretien' ? 'entretien de recherche' : 'appel découverte') + ' mené par Cindy.',
+    'Sois bref : chaque champ se lit en quelques secondes. Une raison d\u2019offre tient en une phrase. Quand une information n\u2019a pas été dite, écris « Pas abordé », jamais de balise ni de valeur inventée.',
     'Les citations viennent mot pour mot de la transcription. Rien d’inventé. Les verdicts sur les offres se fondent sur ce que le prospect a dit et sur le contexte Seed to Bloom.',
     'Les signaux : ok pour ce qui rassure, vigilance pour un point à traiter, red_flag seulement pour ce que Cindy refuse explicitement.',
     'Date du jour : ' + str(b.date, 40) + '.',

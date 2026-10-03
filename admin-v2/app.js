@@ -4194,42 +4194,60 @@
       adBilanReq().then(function (d) { AD.bilan = d; AD.bilanBusy = false; adLoadBudget(true); renderVisiosBody(); }).catch(function (e) { AD.bilanBusy = false; AD.bilanErr = (e && e.message) || 'Erreur'; renderVisiosBody(); });
     });
   }
+  function adClean(x) { x = String(x == null ? '' : x).trim(); return (!x || /^<?\s*unknown\s*>?$/i.test(x) || /^(inconnu|non précisé|n\/a)$/i.test(x)) ? 'Pas abordé' : x; }
+  function adEss(b) {
+    var old = b.echeance_decision_budget || '';
+    return [['Besoin', adClean(b.besoin_court || b.besoin)], ['Échéance', adClean(b.echeance || old)], ['Décideur', adClean(b.decideur)], ['Budget', adClean(b.budget)]];
+  }
   function adCrText(b) {
     if (!b) return '';
     var V = { recommandee: 'Recommandée', selon: 'Selon le contexte', plus_tard: 'Plus tard', non: 'Pas pour ce besoin' };
     var NV = { ok: 'Rassurant', vigilance: 'À surveiller', red_flag: 'Red flag' };
-    var out = [b.titre || '', '', 'Contexte', b.contexte || '', '', 'Besoin exprimé', b.besoin || '', '', 'Échéance, décision, budget', b.echeance_decision_budget || '', '', 'Diagnostic', b.diagnostic || '', '', 'Offres'];
+    var out = [b.titre || '', ''];
+    adEss(b).forEach(function (e) { out.push(e[0] + ' · ' + e[1]); });
+    out.push('', 'Diagnostic', b.diagnostic || '', '', 'Offres');
     (b.offres || []).forEach(function (o) { out.push(o.offre + ' · ' + (V[o.verdict] || '') + '. ' + o.raison); });
     out.push('', 'Signaux'); (b.signaux || []).forEach(function (s) { out.push((NV[s.niveau] || '') + ' · ' + s.constat + (s.quoi_faire ? ' ' + s.quoi_faire : '')); });
     out.push('', 'Suite'); (b.suite || []).forEach(function (s) { out.push(s.action + (s.date ? ' (' + s.date + ')' : '')); });
     if ((b.questionnaire || []).length) { out.push('', 'À compléter par questionnaire'); b.questionnaire.forEach(function (q) { out.push(q); }); }
+    out.push('', 'Contexte', b.contexte || '', '', 'Besoin exprimé', b.besoin || '');
     return out.join('\n');
   }
   function adFinHtml() {
-    var head = '<div class="apl-row" style="justify-content:space-between"><button class="apl-link" onclick="ADM.adNouveau()">Nouvel appel</button><span class="apl-muted">' + esc(AD.prospect || '') + '</span></div>';
-    if (AD.bilanBusy) return '<div class="apl">' + head + '<div class="apl-card apl-center"><div class="spin" style="margin:16px auto"></div><p class="apl-muted">Préparation du compte rendu, une petite minute…</p></div></div>';
+    var back = '<button class="apl-back" onclick="ADM.adNouveau()">← Retour aux appels</button>';
+    if (AD.bilanBusy) return '<div class="apl">' + back + '<div class="apl-card apl-center"><div class="spin" style="margin:16px auto"></div><p class="apl-muted">Préparation du compte rendu, une petite minute…</p></div></div>';
     var b = AD.bilan;
-    if (!b) return '<div class="apl">' + head + '<div class="apl-card"><p>' + (AD.bilanErr === 'pas encore préparé' ? 'Le compte rendu de cet appel n’a pas encore été préparé. La transcription est bien enregistrée.' : 'Le compte rendu n’a pas pu être préparé (' + esc(AD.bilanErr || 'erreur') + '). La transcription est bien enregistrée.') + '</p><div class="apl-row"><button class="btn btn--dark btn--sm" onclick="ADM.adRetryBilan()">' + (AD.bilanErr === 'pas encore préparé' ? 'Préparer le compte rendu' : 'Réessayer') + '</button><button class="apl-link" onclick="ADM.adCopyTr()">Copier la transcription</button></div><div class="apl-tr apl-tr--fin" id="apl-tr"></div></div></div>';
-    var sec = function (n, t, body) { return '<div class="apl-sec"><span class="apl-num apl-num--dark">' + n + '</span><h3 class="apl-h3">' + t + '</h3><div class="apl-sec__b">' + body + '</div></div>'; };
-    var p = function (x) { return '<p>' + esc(x || '') + '</p>'; };
-    var suite = (b.suite || []).map(function (s, i) { return '<label class="apl-todo"><input type="checkbox" id="apl-s' + i + '" checked> ' + esc(s.action) + (s.date ? ' <span class="apl-muted">(' + esc(s.date) + ')</span>' : '') + '</label>'; }).join('') || '<p class="apl-muted">Aucune action précise convenue.</p>';
-    var marques = AD.marques.length ? AD.marques.map(function (m) { return '<div class="apl-mk"><span>' + m.t + '</span>' + esc(m.x) + '</div>'; }).join('') : '<p class="apl-muted">Aucun moment marqué.</p>';
+    if (!b) return '<div class="apl">' + back + '<div class="apl-card"><p>' + (AD.bilanErr === 'pas encore préparé' ? 'Le compte rendu de cet appel n’a pas encore été préparé. La transcription est bien enregistrée.' : 'Le compte rendu n’a pas pu être préparé (' + esc(AD.bilanErr || 'erreur') + '). La transcription est bien enregistrée.') + '</p><div class="apl-row"><button class="btn btn--dark btn--sm" onclick="ADM.adRetryBilan()">' + (AD.bilanErr === 'pas encore préparé' ? 'Préparer le compte rendu' : 'Réessayer') + '</button><button class="apl-link" onclick="ADM.adCopyTr()">Copier la transcription</button></div><div class="apl-tr apl-tr--fin" id="apl-tr"></div></div></div>';
+    var mins = AD.minutes || 0;
+    var date = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+    var bar = '<section class="apl-bar apl-bar--cr"><div class="apl-bar__id"><h2 class="apl-bar__t">' + esc(b.titre || 'Compte rendu') + '</h2><div class="apl-bar__meta"><span>' + esc(date) + '</span><span>' + mins + ' minute' + (mins > 1 ? 's' : '') + '</span><span>' + (AD.finalSaved ? 'Enregistré' : 'À relire avant d’enregistrer') + '</span></div></div>' +
+      '<div class="apl-bar__act"><button class="apl-btn-p" onclick="ADM.adSave()">' + (AD.finalSaved ? 'Enregistré ✓' : 'Enregistrer') + '</button><button class="apl-btn-l" onclick="ADM.adCopyCr()">Copier le compte rendu</button><button class="apl-btn-l" onclick="ADM.adCopyTr()">Copier la transcription</button></div></section>';
+    var tiles = '<div class="apl-ess">' + adEss(b).map(function (e) { var empty = e[1] === 'Pas abordé'; return '<div class="apl-tile"><span class="apl-tile__k">' + e[0] + '</span><span class="apl-tile__v' + (empty ? ' empty' : '') + '">' + esc(e[1]) + '</span></div>'; }).join('') + '</div>';
+    var V = { recommandee: ['Recommandée', 'yes'], selon: ['Selon le contexte', 'maybe'], plus_tard: ['Plus tard', 'later'], non: ['Non', 'no'] };
+    var offs = b.offres || [];
+    var best = offs.filter(function (o) { return o.verdict === 'recommandee'; });
+    var others = offs.filter(function (o) { return o.verdict !== 'recommandee'; });
+    var bestHtml = best.length ? best.map(function (o) { return '<div class="apl-best"><div class="apl-best__t">' + esc(o.offre) + '</div><div class="apl-muted">' + esc(o.raison) + '</div></div>'; }).join('') : '<div class="apl-muted">Pas d’offre évidente pour l’instant.</div>';
+    var otherHtml = others.length ? '<div class="apl-ochips">' + others.map(function (o) { var v = V[o.verdict] || ['', 'no']; return '<span class="apl-ochip apl-ochip--' + v[1] + '" title="' + esc(o.raison) + '">' + esc(o.offre) + ' · ' + v[0] + '</span>'; }).join('') + '</div>' : '';
+    var NV = { ok: 'ok', vigilance: 'warn', red_flag: 'red' };
+    var sig = (b.signaux || []).map(function (x) { return '<div class="apl-sig apl-sig--' + (NV[x.niveau] || 'ok') + '"><i></i><div>' + esc(x.constat) + (x.quoi_faire ? '<small>' + esc(x.quoi_faire) + '</small>' : '') + '</div></div>'; }).join('') || '<div class="apl-muted">Aucun signal particulier.</div>';
+    var suite = (b.suite || []).map(function (s2, i) { return '<label class="apl-todo apl-todo--card"><input type="checkbox" id="apl-s' + i + '" checked> <span>' + esc(s2.action) + (s2.date ? ' <span class="apl-muted">· ' + esc(s2.date) + '</span>' : '') + '</span></label>'; }).join('') || '<p class="apl-muted">Aucune action précise convenue.</p>';
+    var suiteOut = AD.suite.kind ? (AD.suite.busy ? '<div class="apl-md"><p>Rédaction…</p></div>' : adMd(AD.suite.text || '')) + (AD.suite.text ? '<button class="apl-link" onclick="ADM.adCopySuite()">Copier</button>' : '') : '';
+    var left = '<div class="apl-blk"><div class="apl-blk__t">Offre recommandée</div>' + bestHtml + otherHtml +
+      ((b.explication || []).length ? '<details class="apl-sub"><summary>Comment j’explique mon fonctionnement</summary><ol>' + b.explication.map(function (x) { return '<li>« ' + esc(x) + ' »</li>'; }).join('') + '</ol></details>' : '') +
+      '<div class="apl-blk__t" style="margin-top:6px">Diagnostic</div><p class="apl-blk__p">' + esc(b.diagnostic || '') + '</p></div>';
+    var right = '<div class="apl-blk"><div class="apl-blk__t">Signaux</div>' + sig +
+      '<div class="apl-blk__t" style="margin-top:6px">Et maintenant</div><p class="apl-muted">Coche ce que tu veux garder comme tâches dans ta note d’appel.</p>' + suite +
+      '<div class="apl-row"><button class="apl-pill' + (AD.suite.kind === 'mail' ? ' on' : '') + '" onclick="ADM.adSuite(\'mail\')">Mail de suite</button><button class="apl-pill' + (AD.suite.kind === 'coach' ? ' on' : '') + '" onclick="ADM.adSuite(\'coach\')">Retour de coach</button></div>' + suiteOut + '</div>';
     var q = (b.questionnaire || []).concat(AD.plusTard.filter(function (x) { return (b.questionnaire || []).indexOf(x) < 0; }));
     var verb = (b.verbatims || []).map(function (v) { return '<div class="apl-mk"><span>' + esc(String(v.categorie || '').replace(/_/g, ' ')) + '</span>« ' + esc(v.citation) + ' »</div>'; }).join('');
-    var suiteOut = AD.suite.kind ? (AD.suite.busy ? '<div class="apl-md"><p>Rédaction…</p></div>' : adMd(AD.suite.text || '')) + (AD.suite.text ? '<button class="apl-link" onclick="ADM.adCopySuite()">Copier</button>' : '') : '';
-    return '<div class="apl">' + head + '<div class="apl-cr">' +
-      '<div><div class="apl-muted">Compte rendu préparé, à relire avant de l’enregistrer</div><h2 class="apl-cr__t">' + esc(b.titre || 'Compte rendu') + '</h2><div class="apl-muted">' + esc(new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })) + ' · ' + (AD.minutes || 0) + ' minutes</div></div>' +
-      sec(1, 'Contexte', p(b.contexte)) + sec(2, 'Besoin exprimé', '<div class="apl-quote">' + esc(b.besoin || '') + '</div>') +
-      sec(3, 'Échéance, décision, budget', p(b.echeance_decision_budget)) + sec(4, 'Diagnostic', p(b.diagnostic)) +
-      sec(5, 'Offres et signaux', adOffresBlock(b)) +
-      sec(6, 'Et maintenant', '<p class="apl-muted">Rien n’est créé ni envoyé sans toi. Coche ce que tu veux garder comme tâches dans ta note d’appel.</p>' + suite +
-        '<div class="apl-after"><button class="apl-acard' + (AD.suite.kind === 'mail' ? ' on' : '') + '" onclick="ADM.adSuite(\'mail\')"><span>Mail de suite</span>Brouillon dans ton ton, à relire</button><button class="apl-acard' + (AD.suite.kind === 'coach' ? ' on' : '') + '" onclick="ADM.adSuite(\'coach\')"><span>Retour de coach</span>Perches manquées et relances</button></div>' + suiteOut) +
-      sec(7, 'À compléter par questionnaire', q.length ? '<ol class="apl-ol">' + q.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ol><button class="apl-link" onclick="ADM.adCopyQ()">Copier le questionnaire</button>' : '<p class="apl-muted">Rien de plus à demander.</p>') +
-      sec(8, 'Moments marqués', marques) +
-      (verb ? sec(9, 'Verbatims', '<p class="apl-muted">Ses mots exacts, utiles pour ton tableau des messages.</p>' + verb) : '') +
-      sec(verb ? 10 : 9, 'Transcription complète', '<p class="apl-muted">Gardée sur le serveur sans limite de durée, avec une copie dans ta fiche d’appel.</p><div class="apl-tr apl-tr--fin" id="apl-tr"></div><button class="apl-link" onclick="ADM.adCopyTr()">Copier la transcription</button>') +
-      '<div class="apl-cr__foot"><button class="apl-link" onclick="ADM.adCopyCr()">Copier le compte rendu</button><button class="btn btn--dark" onclick="ADM.adSave()">' + (AD.finalSaved ? 'Enregistré' : 'Enregistrer dans la fiche d’appel') + '</button></div>' +
-    '</div></div>';
+    var marques = AD.marques.map(function (m) { return '<div class="apl-mk"><span>' + m.t + '</span>' + esc(m.x) + '</div>'; }).join('');
+    var acc = function (t, n, body, open) { return '<details class="apl-acc"' + (open ? ' open' : '') + '><summary><span>' + t + '</span><span class="apl-acc__n">' + n + '</span></summary><div class="apl-acc__b">' + body + '</div></details>'; };
+    var accs = acc('Questionnaire de suite', q.length ? q.length + ' question' + (q.length > 1 ? 's' : '') : 'rien', q.length ? '<ol class="apl-ol">' + q.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ol><button class="apl-link" onclick="ADM.adCopyQ()">Copier le questionnaire</button>' : '<p class="apl-muted">Rien de plus à demander.</p>') +
+      acc('Moments marqués et verbatims', (AD.marques.length + (b.verbatims || []).length) || '0', (marques || '<p class="apl-muted">Aucun moment marqué.</p>') + (verb ? '<p class="apl-muted" style="margin-top:8px">Ses mots exacts, utiles pour ton tableau des messages.</p>' + verb : '')) +
+      acc('Contexte détaillé', '', '<p>' + esc(b.contexte || '') + '</p>' + (b.besoin ? '<div class="apl-quote">' + esc(b.besoin) + '</div>' : '')) +
+      acc('Transcription complète', AD.lines.length + ' répliques', '<p class="apl-muted">Gardée sur le serveur sans limite de durée.</p><div class="apl-tr apl-tr--fin" id="apl-tr"></div>');
+    return '<div class="apl">' + back + bar + tiles + '<div class="apl-two">' + left + right + '</div>' + accs + '</div>';
   }
   function adRetryBilan() { AD.bilanBusy = true; renderVisiosBody(); adBilanReq().then(function (d) { AD.bilan = d; AD.bilanBusy = false; renderVisiosBody(); }).catch(function (e) { AD.bilanBusy = false; AD.bilanErr = (e && e.message) || 'Erreur'; renderVisiosBody(); }); }
   function adCopyCr() { adCopy(adCrText(AD.bilan), 'Compte rendu copié'); }
