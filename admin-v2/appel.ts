@@ -337,16 +337,45 @@ async function handleSuite(request: Request, env: AppelEnv): Promise<Response> {
   const kind = b.kind === 'coach' ? 'coach' : b.kind === 'prep' ? 'prep' : 'mail';
   if (kind === 'prep') {
     const kb = await getKb(env);
+    const entretien = b.mode === 'entretien';
+    const tool = {
+      name: 'preparation',
+      description: 'Préparation courte et structurée d\u2019un appel.',
+      input_schema: {
+        type: 'object',
+        properties: {
+          priorites: { type: 'array', maxItems: 2, items: { type: 'string' }, description: 'Les deux informations à obtenir en priorité, 8 mots maximum chacune.' },
+          questions: {
+            type: 'array', maxItems: 3,
+            items: { type: 'object', properties: {
+              si: { type: 'string', description: 'La situation qui déclenche la question, 8 mots maximum, ex. Si elle dit « manque de temps ».' },
+              question: { type: 'string', description: 'La phrase exacte à dire, une seule question, courte.' },
+            }, required: ['si', 'question'] },
+          },
+          offre: { type: 'object', properties: {
+            nom: { type: 'string', enum: ['Identité visuelle', 'Site web', 'Supports de communication', 'Partenaire créative', 'À déterminer'] },
+            pourquoi: { type: 'string', description: 'Une phrase de 20 mots maximum.' },
+          }, required: ['nom', 'pourquoi'] },
+          objections: {
+            type: 'array', maxItems: 2,
+            items: { type: 'object', properties: {
+              objection: { type: 'string', description: 'Entre guillemets, telle que le prospect la dirait, 8 mots maximum.' },
+              reponse: { type: 'string', description: 'Une phrase courte, 20 mots maximum.' },
+            }, required: ['objection', 'reponse'] },
+          },
+        },
+        required: ['priorites', 'questions', 'offre', 'objections'],
+      },
+    };
     const sys = [
-      'Tu aides Cindy à préparer un ' + (b.mode === 'entretien' ? 'entretien de recherche (on ne vend rien)' : 'appel découverte') + ' de 45 minutes.',
-      'Donne, en texte simple et court : trois questions pour creuser les expressions floues probables pour ce type de structure, l\u2019offre qui semble coller et pourquoi' + (b.mode === 'entretien' ? '' : ', les deux objections les plus probables avec une réponse courte à chacune') + '. Termine par les deux informations à obtenir en priorité.',
-      'Adresse-toi directement à Cindy en la tutoyant (jamais « Cindy peut »). Les questions sont formulées comme elle les dira, au tutoiement sauf si le contexte indique le vouvoiement. Titres courts, pas de titre général en tête.',
-      'Appuie-toi sur ce que Cindy sait déjà du prospect, sans rien inventer à son sujet.',
+      'Tu aides Cindy à préparer un ' + (entretien ? 'entretien de recherche (on ne vend rien, laisse objections vide)' : 'appel découverte') + ' de 45 minutes. Sois très bref : chaque élément se lit en une seconde.',
+      'Les questions creusent les expressions floues probables pour ce type de structure, formulées comme Cindy les dira, au tutoiement sauf si le contexte indique le vouvoiement.',
+      'Appuie-toi sur ce que Cindy sait déjà du prospect, sans rien inventer à son sujet. Si on ne sait rien, l\u2019offre peut être À déterminer.',
       STYLE, '', 'TRAME SUIVIE PAR CINDY', trameText(b.trame), '', 'CONTEXTE SEED TO BLOOM', kb,
     ].join('\n');
     try {
-      const text = await claudeText(env, MODEL_LIVE, sys, 'Prospect : ' + str(b.prospect, 200) + '\nCe que Cindy sait déjà :\n' + str(b.contexte, 4000), 1200);
-      return json({ text });
+      const prep = await claudeTool(env, MODEL_LIVE, sys, 'Prospect : ' + str(b.prospect, 200) + '\nCe que Cindy sait déjà :\n' + (str(b.contexte, 4000) || '(rien)'), tool, 1000);
+      return json({ prep });
     } catch (e) {
       console.error('prep:', e);
       return iaError(e, 'Préparation indisponible pour le moment');
