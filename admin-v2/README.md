@@ -81,6 +81,6 @@ wrangler secret put ANTHROPIC_API_KEY --config wrangler.admin-back.toml
 wrangler secret put DEEPGRAM_API_KEY  --config wrangler.admin-back.toml   # rôle « Member » minimum
 ```
 
-Le navigateur ne reçoit qu'un jeton Deepgram de 60 secondes, valable pour ouvrir la connexion. Stockage dans `KV_ADMIN` : `appel:<id>` (compte rendu, sans limite), `appel:<id>:transcription` (expire au bout de 30 jours), `admin:appels` (index), `admin:appel:kb` (base de connaissance, modifiable depuis l'onglet). Trois écritures par appel enregistré, aucune pendant l'appel.
+Le navigateur ne reçoit qu'un jeton Deepgram de 60 secondes, valable pour ouvrir la connexion. Stockage dans `KV_ADMIN` : `appel:<id>` (compte rendu, sans limite), `appel:<id>:transcription` (sans limite), `admin:appels` (index), `admin:appel:kb` (base de connaissance, modifiable depuis l'onglet). Pendant l'appel : brouillon dans le navigateur toutes les 5 secondes, et copie de sécurité sur le serveur toutes les 5 minutes et dès la fin de l'appel (trois écritures KV à chaque fois).
 
 Routes : `GET /api/appel/config` · `POST /api/appel/stt-token` · `POST /api/appel/relances` · `POST /api/appel/bilan` · `POST /api/appel/suite` (`mail`, `coach`, `prep`) · `GET|PUT /api/appel/kb` · `GET|POST /api/appels` · `GET|DELETE /api/appels/:id`.

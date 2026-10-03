@@ -3928,3 +3928,5 @@ a.ckr-b{text-decoration:none;display:inline-block}
 .ad-cr__foot{display:flex;flex-wrap:wrap;gap:12px 18px;justify-content:flex-end;align-items:center;border-top:1px solid var(--border,#e6ddcd);padding-top:18px}
 @media (max-width:1100px){.ad-grid{grid-template-columns:minmax(0,1fr)}.ad-side{order:-1}.ad-tr{max-height:280px}}
 @media (max-width:760px){.ad-grid--setup{grid-template-columns:minmax(0,1fr)}.ad-bar__act{width:100%}.ad-bar__act button{flex:1}}
+.ad-draft{display:grid;gap:10px;background:var(--gold-soft,#E6E5B2);color:var(--gold-ink,#3d1c0b);border-radius:16px;padding:14px 18px;font-size:15px;line-height:1.5}
+.ad-draft b{font-weight:600}

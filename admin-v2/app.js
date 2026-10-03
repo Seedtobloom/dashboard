@@ -3774,13 +3774,15 @@
     var navWarn = nav ? '' : '<div class="ad-warn">La capture du son de l’onglet de visio ne marche que dans Chrome ou Edge. Ouvre l’admin et kMeet dans Chrome.</div>';
     var hist = AD.hist === null ? '<div class="ad-muted">Chargement…</div>' : (AD.hist.length ? AD.hist.slice(0, 12).map(function (h) {
       var d = new Date(h.at);
-      return '<div class="ad-hist"><button class="ad-link" onclick="ADM.adOuvrir(\'' + h.id + '\')">' + esc(h.titre || h.prospect || 'Appel') + '</button><span class="ad-muted">' + esc(d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })) + '</span></div>';
+      return '<div class="ad-hist"><button class="ad-link" onclick="ADM.adOuvrir(\'' + h.id + '\')">' + esc(h.titre || h.prospect || 'Appel') + (h.brouillon ? ' <span class="ad-muted">(sans compte rendu)</span>' : '') + '</button><span class="ad-muted">' + esc(d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })) + '</span></div>';
     }).join('') : '<div class="ad-muted">Aucun appel enregistré pour le moment.</div>');
     if (AD.hist === null) api('/api/appels').then(function (r) { return r.json(); }).then(function (d) { AD.hist = (d && d.appels) || []; if (VIS_TAB === 'direct' && AD.phase === 'setup') renderVisiosBody(); }).catch(function () { AD.hist = []; });
     var kb = AD.kbOpen ? '<div class="ad-card"><h3 class="ad-h3">Base de connaissance</h3><p class="ad-muted">Ce que l’assistant sait de toi : offres, prix, façon de travailler, red flags. Laisse vide pour garder le texte par défaut.</p>' +
       '<textarea id="ad-kb" class="ad-ta" style="min-height:280px" placeholder="' + esc(AD.kbDefaut) + '">' + esc(AD.kb || '') + '</textarea>' +
       '<div class="ad-row"><button class="btn btn--dark btn--sm" onclick="ADM.adKbSave()">Enregistrer</button><button class="ad-link" onclick="ADM.adKb(false)">Fermer</button></div></div>' : '';
-    return '<div class="ad">' + warn + navWarn +
+    var dr = adDraftGet();
+    var draft = dr && dr.lines && dr.lines.length ? '<div class="ad-draft"><div><b>Un appel n’a pas été enregistré.</b> ' + esc(dr.prospect || 'Sans nom') + ', ' + esc(new Date(dr.at).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })) + ', ' + dr.lines.length + ' répliques. Sa transcription est en sécurité sur cet appareil.</div><div class="ad-row"><button class="btn btn--dark btn--sm" onclick="ADM.adDraftReprendre()">Préparer son compte rendu</button><button class="ad-link" onclick="ADM.adDraftCopier()">Copier la transcription</button><button class="ad-link" onclick="ADM.adDraftOublier()">Effacer</button></div></div>' : '';
+    return '<div class="ad">' + warn + navWarn + draft +
       '<div class="ad-grid ad-grid--setup"><div class="ad-card">' +
         '<h3 class="ad-h3">Préparer l’appel</h3>' +
         '<div class="ad-mode" role="group" aria-label="Type d’appel">' +
@@ -3837,11 +3839,13 @@
       }
       AD_RT.streams = [mic, tab];
       AD.phase = 'live'; AD.startedAt = Date.now(); AD.pausedMs = 0; AD.paused = false; AD.cut = false;
-      AD.lines = []; AD.rel = []; AD.deja = []; AD.plusTard = []; AD.faits = {}; AD.etape = 1; AD.alerte = ''; AD.marques = []; AD.bilan = null; AD.point = null; AD.savedId = null; AD.suite = {};
+      AD.lines = []; AD.rel = []; AD.deja = []; AD.plusTard = []; AD.faits = {}; AD.etape = 1; AD.alerte = ''; AD.marques = []; AD.bilan = null; AD.point = null; AD.savedId = null; AD.finalSaved = false; AD.suite = {};
       adOpen('me', new MediaStream(mic.getAudioTracks()));
       adOpen('them', new MediaStream(tab.getAudioTracks()));
       tab.getAudioTracks()[0].addEventListener('ended', function () { if (AD.phase === 'live') { AD.cut = true; adRefreshBar(); } });
       AD_RT.tick = setInterval(adTick, 1000);
+      AD_RT.draft = setInterval(adDraftLocal, 5000);
+      AD_RT.draftSrv = setInterval(adDraftServer, 300000);
       AD_RT.keep = setInterval(function () { Object.keys(AD_RT.socks).forEach(function (k) { var s = AD_RT.socks[k]; if (s && s.readyState === 1) { try { s.send(JSON.stringify({ type: 'KeepAlive' })); } catch (e) {} } }); }, 8000);
       renderVisiosBody();
     }).catch(function (e) {
@@ -3902,7 +3906,7 @@
     Object.keys(AD_RT.socks).forEach(function (k) { var s = AD_RT.socks[k]; AD_RT.socks[k] = null; try { if (s && s.readyState === 1) s.send(JSON.stringify({ type: 'CloseStream' })); s && s.close(); } catch (e) {} });
     AD_RT.streams.forEach(function (st) { st.getTracks().forEach(function (t) { t.stop(); }); });
     AD_RT.streams = [];
-    clearInterval(AD_RT.keep); clearInterval(AD_RT.tick); clearInterval(AD_RT.silence);
+    clearInterval(AD_RT.keep); clearInterval(AD_RT.tick); clearInterval(AD_RT.silence); clearInterval(AD_RT.draft); clearInterval(AD_RT.draftSrv);
   }
   function adPause() {
     if (AD.phase !== 'live') return;
@@ -4069,11 +4073,41 @@
   function adCopyTr() { adCopy(adTranscriptCopy(), 'Transcription copiée'); }
 
   // ── Fin d'appel ──
+  var AD_DRAFT_KEY = 'stb_ad_brouillon';
+  function adDraftData() {
+    return { id: AD.savedId, prospect: AD.prospect, structure: AD.structure, mode: AD.mode, contexte: AD.contexte, lines: AD.lines, notes: AD.notes, marques: AD.marques, plusTard: AD.plusTard, faits: AD.faits, minutes: adMinutes(), at: Date.now() };
+  }
+  function adDraftLocal() {
+    if (!AD.lines.length && !AD.notes) return;
+    var n = el('ad-notes'); if (n && typeof n.value === 'string') AD.notes = n.value;
+    try { localStorage.setItem(AD_DRAFT_KEY, JSON.stringify(adDraftData())); } catch (e) {}
+  }
+  function adDraftServer() {
+    if (!AD.lines.length) return Promise.resolve();
+    adDraftLocal();
+    return jpost('/api/appels', { id: AD.savedId || undefined, prospect: AD.prospect + (AD.structure ? ', ' + AD.structure : ''), mode: AD.mode, minutes: adMinutes(), notes: AD.notes, marques: AD.marques.map(function (m) { return '[' + m.t + '] ' + m.x; }), plusTard: AD.plusTard, transcript: adTranscriptCopy() })
+      .then(function (r) { return r.json(); }).then(function (d) { if (d && d.ok) { AD.savedId = d.id; AD.draftOk = Date.now(); adDraftLocal(); } }).catch(function () {});
+  }
+  function adDraftClear() { try { localStorage.removeItem(AD_DRAFT_KEY); } catch (e) {} }
+  function adDraftGet() { try { return JSON.parse(localStorage.getItem(AD_DRAFT_KEY) || 'null'); } catch (e) { return null; } }
+  function adDraftReprendre() {
+    var d = adDraftGet(); if (!d) return;
+    AD.savedId = d.id || null; AD.prospect = d.prospect || ''; AD.structure = d.structure || ''; AD.mode = d.mode || 'decouverte'; AD.contexte = d.contexte || '';
+    AD.lines = d.lines || []; AD.notes = d.notes || ''; AD.marques = d.marques || []; AD.plusTard = d.plusTard || []; AD.faits = d.faits || {}; AD.minutes = d.minutes || 0;
+    AD.phase = 'fin'; AD.bilan = null; AD.bilanErr = ''; AD.suite = {};
+    adDraftServer();
+    adRetryBilan();
+  }
+  function adDraftCopier() { var d = adDraftGet(); if (!d) return; adCopy((d.lines || []).map(function (l) { return '[' + l.t + '] ' + (l.w === 'me' ? 'Cindy' : ((d.prospect || '').split(' ')[0] || 'Prospect')) + ' : ' + l.x; }).join('\n\n'), 'Transcription copiée'); }
+  function adDraftOublier() {
+    admConfirm({ title: 'Effacer ce brouillon ?', message: 'La copie de cet appareil sera effacée. Si une copie a été envoyée sur le serveur, elle reste dans tes appels enregistrés.', yes: 'Effacer', no: 'Annuler', danger: true }, function () { adDraftClear(); renderVisiosBody(); });
+  }
   function adTerminer() {
     admConfirm({ title: 'Terminer l’appel ?', message: 'La transcription s’arrête et le compte rendu se prépare.', yes: 'Terminer', no: 'Continuer l’appel' }, function () {
       var notes = (el('ad-notes') || {}).value; if (typeof notes === 'string') AD.notes = notes;
       AD.minutes = adMinutes();
       adStopAll();
+      adDraftServer();
       AD.phase = 'fin'; AD.bilanBusy = true; AD.bilan = null;
       renderVisiosBody();
       adBilanReq().then(function (d) { AD.bilan = d; AD.bilanBusy = false; renderVisiosBody(); }).catch(function (e) { AD.bilanBusy = false; AD.bilanErr = (e && e.message) || 'Erreur'; renderVisiosBody(); });
@@ -4094,7 +4128,7 @@
     var head = '<div class="ad-row" style="justify-content:space-between"><button class="ad-link" onclick="ADM.adNouveau()">Nouvel appel</button><span class="ad-muted">' + esc(AD.prospect || '') + '</span></div>';
     if (AD.bilanBusy) return '<div class="ad">' + head + '<div class="ad-card ad-center"><div class="spin" style="margin:16px auto"></div><p class="ad-muted">Préparation du compte rendu, une petite minute…</p></div></div>';
     var b = AD.bilan;
-    if (!b) return '<div class="ad">' + head + '<div class="ad-card"><p>Le compte rendu n’a pas pu être préparé (' + esc(AD.bilanErr || 'erreur') + ').</p><div class="ad-row"><button class="btn btn--dark btn--sm" onclick="ADM.adRetryBilan()">Réessayer</button><button class="ad-link" onclick="ADM.adCopyTr()">Copier la transcription</button></div></div></div>';
+    if (!b) return '<div class="ad">' + head + '<div class="ad-card"><p>' + (AD.bilanErr === 'pas encore préparé' ? 'Le compte rendu de cet appel n’a pas encore été préparé. La transcription est bien enregistrée.' : 'Le compte rendu n’a pas pu être préparé (' + esc(AD.bilanErr || 'erreur') + '). La transcription est bien enregistrée.') + '</p><div class="ad-row"><button class="btn btn--dark btn--sm" onclick="ADM.adRetryBilan()">' + (AD.bilanErr === 'pas encore préparé' ? 'Préparer le compte rendu' : 'Réessayer') + '</button><button class="ad-link" onclick="ADM.adCopyTr()">Copier la transcription</button></div><div class="ad-tr ad-tr--fin" id="ad-tr"></div></div></div>';
     var sec = function (n, t, body) { return '<div class="ad-sec"><span class="ad-num ad-num--dark">' + n + '</span><h3 class="ad-h3">' + t + '</h3><div class="ad-sec__b">' + body + '</div></div>'; };
     var p = function (x) { return '<p>' + esc(x || '') + '</p>'; };
     var suite = (b.suite || []).map(function (s, i) { return '<label class="ad-todo"><input type="checkbox" id="ad-s' + i + '" checked> ' + esc(s.action) + (s.date ? ' <span class="ad-muted">(' + esc(s.date) + ')</span>' : '') + '</label>'; }).join('') || '<p class="ad-muted">Aucune action précise convenue.</p>';
@@ -4112,8 +4146,8 @@
       sec(7, 'À compléter par questionnaire', q.length ? '<ol class="ad-ol">' + q.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ol><button class="ad-link" onclick="ADM.adCopyQ()">Copier le questionnaire</button>' : '<p class="ad-muted">Rien de plus à demander.</p>') +
       sec(8, 'Moments marqués', marques) +
       (verb ? sec(9, 'Verbatims', '<p class="ad-muted">Ses mots exacts, utiles pour ton tableau des messages.</p>' + verb) : '') +
-      sec(verb ? 10 : 9, 'Transcription complète', '<p class="ad-muted">Gardée 30 jours après l’enregistrement, puis supprimée automatiquement.</p><div class="ad-tr ad-tr--fin" id="ad-tr"></div><button class="ad-link" onclick="ADM.adCopyTr()">Copier la transcription</button>') +
-      '<div class="ad-cr__foot"><button class="ad-link" onclick="ADM.adCopyCr()">Copier le compte rendu</button><button class="btn btn--dark" onclick="ADM.adSave()">' + (AD.savedId ? 'Enregistré' : 'Enregistrer dans la fiche d’appel') + '</button></div>' +
+      sec(verb ? 10 : 9, 'Transcription complète', '<p class="ad-muted">Gardée sur le serveur sans limite de durée, avec une copie dans ta fiche d’appel.</p><div class="ad-tr ad-tr--fin" id="ad-tr"></div><button class="ad-link" onclick="ADM.adCopyTr()">Copier la transcription</button>') +
+      '<div class="ad-cr__foot"><button class="ad-link" onclick="ADM.adCopyCr()">Copier le compte rendu</button><button class="btn btn--dark" onclick="ADM.adSave()">' + (AD.finalSaved ? 'Enregistré' : 'Enregistrer dans la fiche d’appel') + '</button></div>' +
     '</div></div>';
   }
   function adRetryBilan() { AD.bilanBusy = true; renderVisiosBody(); adBilanReq().then(function (d) { AD.bilan = d; AD.bilanBusy = false; renderVisiosBody(); }).catch(function (e) { AD.bilanBusy = false; AD.bilanErr = (e && e.message) || 'Erreur'; renderVisiosBody(); }); }
@@ -4133,8 +4167,8 @@
     jpost('/api/appels', { id: AD.savedId || undefined, prospect: AD.prospect + (AD.structure ? ', ' + AD.structure : ''), mode: AD.mode, minutes: AD.minutes || 0, compteRendu: b, notes: AD.notes, marques: AD.marques.map(function (m) { return '[' + m.t + '] ' + m.x; }), plusTard: AD.plusTard, transcript: adTranscriptCopy() })
       .then(function (r) { return r.json(); }).then(function (d) {
         if (!d || !d.ok) throw 0;
-        var first = !AD.savedId;
-        AD.savedId = d.id; AD.hist = null;
+        var first = !AD.finalSaved;
+        AD.savedId = d.id; AD.finalSaved = true; AD.hist = null; adDraftClear();
         if (first) {
           var a = callNotesLoad(), dt = new Date(), f = {};
           Object.keys(b.fiche || {}).forEach(function (k) { if (b.fiche[k]) f[k] = b.fiche[k]; });
@@ -4148,7 +4182,7 @@
   function adOuvrir(id) {
     api('/api/appels/' + id).then(function (r) { return r.json(); }).then(function (d) {
       if (!d || d.error) { toast((d && d.error) || 'Appel introuvable'); return; }
-      AD.phase = 'fin'; AD.bilanBusy = false; AD.bilan = d.compteRendu; AD.savedId = d.id; AD.prospect = d.prospect || ''; AD.structure = ''; AD.mode = d.mode || 'decouverte';
+      AD.phase = 'fin'; AD.bilanBusy = false; AD.bilan = d.compteRendu; AD.savedId = d.id; AD.finalSaved = !!d.compteRendu; AD.bilanErr = d.compteRendu ? '' : 'pas encore préparé'; AD.prospect = d.prospect || ''; AD.structure = ''; AD.mode = d.mode || 'decouverte';
       AD.minutes = d.minutes || 0; AD.notes = d.notes || ''; AD.plusTard = d.plusTard || []; AD.suite = {};
       AD.marques = (d.marques || []).map(function (x) { var m = String(x).match(/^\[([^\]]*)\]\s*(.*)$/); return { i: -1, t: m ? m[1] : '', x: m ? m[2] : x }; });
       AD.lines = String(d.transcript || '').split(/\n\n/).filter(Boolean).map(function (s) { var m = s.match(/^\[([^\]]*)\]\s*([^:]+?)\s:\s([\s\S]*)$/); return m ? { t: m[1], w: m[2] === 'Cindy' ? 'me' : 'them', x: m[3], ms: 0 } : { t: '', w: 'them', x: s, ms: 0 }; });
@@ -4156,13 +4190,13 @@
     }).catch(function () { toast('Erreur de chargement'); });
   }
   function adNouveau() {
-    if (AD.phase === 'fin' && AD.bilan && !AD.savedId) {
+    if (AD.phase === 'fin' && AD.bilan && !AD.finalSaved) {
       admConfirm({ title: 'Quitter sans enregistrer ?', message: 'Le compte rendu et la transcription de cet appel seront perdus.', yes: 'Quitter', no: 'Rester', danger: true }, function () { adReset(); });
       return;
     }
     adReset();
   }
-  function adReset() { AD.phase = 'setup'; AD.bilan = null; AD.point = null; AD.savedId = null; AD.lines = []; AD.marques = []; AD.plusTard = []; AD.notes = ''; AD.suite = {}; AD.prep = ''; AD.prospect = ''; AD.structure = ''; AD.contexte = ''; renderVisiosBody(); }
+  function adReset() { AD.phase = 'setup'; AD.bilan = null; AD.point = null; AD.savedId = null; AD.finalSaved = false; AD.lines = []; AD.marques = []; AD.plusTard = []; AD.notes = ''; AD.suite = {}; AD.prep = ''; AD.prospect = ''; AD.structure = ''; AD.contexte = ''; renderVisiosBody(); }
   function visDirectHtml() {
     return AD.phase === 'live' ? adLiveHtml() : AD.phase === 'fin' ? adFinHtml() : adSetupHtml();
   }
@@ -4171,7 +4205,7 @@
     if (AD.phase === 'live') { adRenderTranscript(); adRenderSide(); adRefreshBar(); }
     else if (AD.phase === 'fin') adRenderTranscript();
   }
-  window.addEventListener('beforeunload', function (e) { if (AD.phase === 'live' || (AD.phase === 'fin' && AD.bilan && !AD.savedId)) { e.preventDefault(); e.returnValue = ''; } });
+  window.addEventListener('beforeunload', function (e) { if (AD.phase === 'live') adDraftLocal(); if (AD.phase === 'live' || (AD.phase === 'fin' && AD.bilan && !AD.finalSaved)) { e.preventDefault(); e.returnValue = ''; } });
   function visTab(t) { VIS_TAB = t; renderVisiosBody(); }
 
   // ── Fiche d'appel : notes multiples (façon Apple Notes) + suivi + anti-sèche ──
@@ -15341,7 +15375,7 @@
 
   // API publique pour les onclick
   window.ADM = {
-    adStart: adStart, adPause: adPause, adMarquer: adMarquer, adTerminer: adTerminer, adReconnect: adReconnect, adSub: adSub, adSet: adSet, adMode: adMode, adKb: adKb, adKbSave: adKbSave, adPrep: adPrep, adAsk: adAsk, adRelDone: adRelDone, adRelLater: adRelLater, adLaterDel: adLaterDel, adPrix: adPrix, adPoint: adPoint, adCopyTr: adCopyTr, adCopyCr: adCopyCr, adCopyQ: adCopyQ, adCopySuite: adCopySuite, adSuite: adSuite, adSave: adSave, adOuvrir: adOuvrir, adNouveau: adNouveau, adRetryBilan: adRetryBilan,
+    adStart: adStart, adPause: adPause, adMarquer: adMarquer, adTerminer: adTerminer, adReconnect: adReconnect, adSub: adSub, adSet: adSet, adMode: adMode, adKb: adKb, adKbSave: adKbSave, adPrep: adPrep, adAsk: adAsk, adRelDone: adRelDone, adRelLater: adRelLater, adLaterDel: adLaterDel, adPrix: adPrix, adPoint: adPoint, adCopyTr: adCopyTr, adCopyCr: adCopyCr, adCopyQ: adCopyQ, adCopySuite: adCopySuite, adSuite: adSuite, adSave: adSave, adOuvrir: adOuvrir, adNouveau: adNouveau, adRetryBilan: adRetryBilan, adDraftReprendre: adDraftReprendre, adDraftCopier: adDraftCopier, adDraftOublier: adDraftOublier,
     nav: nav, login: login, logout: logout, scan: scan, createClient: createClient, copy: copy, editToken: editToken, cliApercu: cliApercu, ckpCorrigerPasse: ckpCorrigerPasse, ffReglages: ffReglages, ffAutoMail: ffAutoMail, accesOuvrir: accesOuvrir, navClientTab: navClientTab,
     msWeek: msWeek, msFilter: msFilter, msToggleCap: msToggleCap, msMode: msMode, msDaySel: msDaySel, msPlace: msPlace, msDone: msDone, msDelete: msDelete, msNoteOpen: msNoteOpen, msPlanOver: msPlanOver, msPlanLeave: msPlanLeave, msPlanDrop: msPlanDrop, msPlanUnplace: msPlanUnplace, msAutoPlan: msAutoPlan, msOrganizeWeek: msOrganizeWeek, msOrganizeDay: msOrganizeDay, msUnplace: msUnplace, msDragStart: msDragStart, msDragEnd: msDragEnd, msDayOver: msDayOver, msDayLeave: msDayLeave, msDrop: msDrop, msSlotOver: msSlotOver, msDropSlot: msDropSlot, msNewBlock: msNewBlock, msSaveBlock: msSaveBlock, msDeleteBlock: msDeleteBlock, msEst: msEst, msEstH: msEstH, msAddTop: msAddTop, msAddDay: msAddDay,
     rvActiver: rvActiver, rvEnregistrer: rvEnregistrer, rvPause: rvPause, rvNouveauLien: rvNouveauLien, rvFiltre: rvFiltre, rvActualiser: rvActualiser, rvCopier: rvCopier, rvRepondre: rvRepondre, rvStatut: rvStatut, rvSupprimer: rvSupprimer,

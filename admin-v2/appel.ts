@@ -6,8 +6,9 @@
  * qu'un jeton Deepgram de courte durée, valable pour ouvrir la connexion.
  *
  * Écritures KV limitées à l'enregistrement final (offre gratuite : 1 000
- * écritures par jour). La transcription expire au bout de 30 jours, le compte
- * rendu reste.
+ * écritures par jour) : pendant l'appel, une sauvegarde de sécurité toutes les
+ * cinq minutes, puis l'enregistrement final. Transcription et compte rendu sont
+ * gardés sans limite de durée.
  */
 
 type AnyObj = Record<string, any>;
@@ -20,7 +21,6 @@ export interface AppelEnv {
 
 const MODEL_LIVE = 'claude-haiku-4-5-20251001';
 const MODEL_BILAN = 'claude-sonnet-5-5';
-const TRANSCRIPT_TTL = 60 * 60 * 24 * 30;
 const KB_KEY = 'admin:appel:kb';
 const INDEX_KEY = 'admin:appels';
 const APPEL_PREFIX = 'appel:';
@@ -351,7 +351,8 @@ async function handleSttToken(env: AppelEnv): Promise<Response> {
   return json({ token: d.access_token, expiresIn: d.expires_in });
 }
 
-/* ── Enregistrement : compte rendu sans limite, transcription 30 jours ── */
+/* ── Enregistrement : compte rendu et transcription, sans limite de durée.
+ * Appelé aussi pendant l'appel (brouillon) pour ne jamais perdre la transcription. ── */
 async function getIndex(env: AppelEnv): Promise<AnyObj[]> {
   return ((await env.KV_ADMIN.get(INDEX_KEY, { type: 'json' })) as AnyObj[] | null) || [];
 }
@@ -368,13 +369,17 @@ async function handleSave(request: Request, env: AppelEnv): Promise<Response> {
     notes: str(b.notes, 20000),
     marques: Array.isArray(b.marques) ? b.marques.slice(0, 50).map((x: unknown) => str(x, 600)) : [],
     plusTard: Array.isArray(b.plusTard) ? b.plusTard.slice(0, 50).map((x: unknown) => str(x, 400)) : [],
-    transcriptExpiresAt: new Date(Date.now() + TRANSCRIPT_TTL * 1000).toISOString(),
+    brouillon: !(b.compteRendu && typeof b.compteRendu === 'object'),
   };
   const transcript = str(b.transcript, 400000);
+  if (!rec.compteRendu) {
+    const prev = (await env.KV_ADMIN.get(APPEL_PREFIX + id, { type: 'json' })) as AnyObj | null;
+    if (prev && prev.compteRendu) { rec.compteRendu = prev.compteRendu; rec.brouillon = false; }
+  }
   await env.KV_ADMIN.put(APPEL_PREFIX + id, JSON.stringify(rec));
-  if (transcript) await env.KV_ADMIN.put(APPEL_PREFIX + id + ':transcription', transcript, { expirationTtl: TRANSCRIPT_TTL });
+  if (transcript) await env.KV_ADMIN.put(APPEL_PREFIX + id + ':transcription', transcript);
   const idx = (await getIndex(env)).filter((x) => x.id !== id);
-  idx.unshift({ id, at, prospect: rec.prospect, mode: rec.mode, titre: rec.compteRendu ? str(rec.compteRendu.titre, 200) : '' });
+  idx.unshift({ id, at, prospect: rec.prospect, mode: rec.mode, brouillon: rec.brouillon, titre: rec.compteRendu ? str(rec.compteRendu.titre, 200) : '' });
   await env.KV_ADMIN.put(INDEX_KEY, JSON.stringify(idx.slice(0, 300)));
   return json({ ok: true, id });
 }
